@@ -18,6 +18,7 @@ export default function HomeMap() {
   const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 20], zoom: 1 });
 
   const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
+  const markerScale = useMemo(() => 0.85 / Math.sqrt(position.zoom || 1), [position.zoom]);
 
   function handleCountryClick(geo: any) {
     const name: string = geo.properties.name;
@@ -52,9 +53,9 @@ export default function HomeMap() {
                   geography={geo}
                   onClick={() => handleCountryClick(geo)}
                   style={{
-                    default: { fill: "#E5E7EB", outline: "none", stroke: "#CBD5E1", strokeWidth: 0.5 },
-                    hover: { fill: "#C7D2FE", outline: "none" },
-                    pressed: { fill: "#A5B4FC", outline: "none" },
+                    default: { fill: "#EEF2F7", outline: "none", stroke: "#CBD5E1", strokeWidth: 0.5 },
+                    hover: { fill: "#DDE3F5", outline: "none" },
+                    pressed: { fill: "#C7D2FE", outline: "none" },
                   }}
                 />
               ))
@@ -63,13 +64,37 @@ export default function HomeMap() {
 
           {/* City markers when a country is selected */}
           <AnimatePresence>
-            {cityData.map((c) => (
-              <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
-                <motion.g initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
-                  <circle r={4} fill="#6C63FF" stroke="#fff" strokeWidth={2} />
-                </motion.g>
-              </Marker>
-            ))}
+            {cityData.map((c) => {
+              const label = c.city;
+              const w = Math.max(58, 14 + label.length * 7);
+              const h = 22;
+              const pillX = 12; // offset to the right of the emblem
+              const textX = pillX + w / 2;
+              const textY = 4; // optical centering
+              return (
+                <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
+                  <motion.g
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: markerScale, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                  >
+                    {/* Emblem circle with white rim */}
+                    <g>
+                      <circle r={8} fill="#ffffff" />
+                      <circle r={6} fill="#6C63FF" />
+                    </g>
+                    {/* Label pill */}
+                    <g>
+                      <rect x={pillX} y={-h / 2} rx={12} ry={12} width={w} height={h} fill="#ffffff" stroke="#E5E7EB" />
+                      <text x={textX} y={textY} textAnchor="middle" fontSize={11} fill="#4F46E5" fontWeight={600}>
+                        {label}
+                      </text>
+                    </g>
+                  </motion.g>
+                </Marker>
+              );
+            })}
           </AnimatePresence>
         </ZoomableGroup>
       </ComposableMap>
