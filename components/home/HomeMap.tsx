@@ -18,7 +18,8 @@ export default function HomeMap() {
   const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 20], zoom: 1 });
 
   const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
-  const markerScale = useMemo(() => 0.7 / Math.sqrt(position.zoom || 1), [position.zoom]);
+  const markerScale = useMemo(() => 0.5 / Math.sqrt(position.zoom || 1), [position.zoom]);
+  const [hovered, setHovered] = useState(false);
 
   function handleCountryClick(geo: any) {
     const name: string = geo.properties.name;
@@ -33,9 +34,13 @@ export default function HomeMap() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       {/* Hero map */}
-      <div className="relative rounded-xl border bg-gradient-to-b from-indigo-50 to-white p-2 shadow-sm" style={{ minHeight: "75vh" }}>
+      <div className="relative rounded-none border-0 bg-black/70 p-0" style={{ minHeight: "calc(100vh - 120px)" }}>
+        {/* dimmer overlay + gradient, fades away on hover or when selected */}
+        <div className={`pointer-events-none absolute inset-0 z-0 transition-opacity duration-500 ${hovered || selected ? "opacity-0" : "opacity-100"}`}>
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/80 to-slate-800" />
+        </div>
         <div className="absolute right-4 top-4 z-10">
           {selected && (
             <button onClick={reset} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">
@@ -46,9 +51,9 @@ export default function HomeMap() {
 
         {/* Title overlay */}
         {!selected && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-center">
-            <h1 className="mx-4 text-3xl font-extrabold text-gray-800 sm:text-4xl md:text-5xl">
-              Where would you like to <span className="font-brand text-indigo-600">EnterMedSchool</span>?
+          <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-center transition-opacity duration-500 ${hovered ? "opacity-0" : "opacity-100"}`}>
+            <h1 className="mx-4 text-4xl font-extrabold text-white drop-shadow sm:text-5xl md:text-6xl">
+              Where would you like to <span className="font-brand text-indigo-300">EnterMedSchool</span>?
             </h1>
           </div>
         )}
@@ -63,12 +68,12 @@ export default function HomeMap() {
                     geography={geo}
                     onClick={() => handleCountryClick(geo)}
                     style={{
-                      default: { fill: "#EEF2F7", outline: "none", stroke: "#CBD5E1", strokeWidth: 0.5 },
-                      hover: { fill: "#DDE3F5", outline: "none" },
-                      pressed: { fill: "#C7D2FE", outline: "none" },
-                    }}
-                  />
-                ))
+                    default: { fill: hovered || selected ? "#1E293B" : "#EEF2F7", outline: "none", stroke: hovered || selected ? "#334155" : "#CBD5E1", strokeWidth: 0.5 },
+                    hover: { fill: hovered || selected ? "#334155" : "#DDE3F5", outline: "none" },
+                    pressed: { fill: hovered || selected ? "#475569" : "#C7D2FE", outline: "none" },
+                  }}
+                />
+              ))
               }
             </Geographies>
 
@@ -76,16 +81,17 @@ export default function HomeMap() {
             <AnimatePresence>
               {cityData.map((c, idx) => {
                 const label = c.city;
-                const w = Math.max(58, 14 + label.length * 7);
-                const h = 22;
+                const w = Math.max(52, 12 + label.length * 7);
+                const h = 20;
                 const pillX = 12; // offset to the right of the emblem
                 const textX = pillX + w / 2 + (c.kind === "private" ? 6 : 0);
                 const textY = 4; // optical centering
-                const rimR = 7.5;
-                const emblemR = 5.5;
+                const rimR = 6.5;
+                const emblemR = 4.8;
                 const isPrivate = c.kind === "private";
                 const accent = isPrivate ? "#F59E0B" : "#6C63FF"; // amber for private, indigo for public
                 const clipId = `logo-${(selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
+                const yJitter = (idx % 3) - 1; // -1,0,1
                 return (
                   <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
                     <motion.g
@@ -93,6 +99,7 @@ export default function HomeMap() {
                       animate={{ scale: markerScale, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                      transform={`translate(0, ${yJitter * 6})`}
                     >
                       {/* Emblem circle with white rim or logo masked in a circle */}
                       <g>
@@ -136,21 +143,33 @@ export default function HomeMap() {
             </AnimatePresence>
           </ZoomableGroup>
         </ComposableMap>
+
+        {/* Right side panel of universities when a country is selected */}
+        {selected && cityData.length > 0 && (
+          <div className="pointer-events-auto absolute right-4 top-1/2 z-20 w-[360px] -translate-y-1/2 rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur">
+            <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
+            <div className="space-y-3 max-h-[60vh] overflow-auto pr-2">
+              {cityData.map((c, i) => (
+                <div key={`${c.city}-${i}`} className="flex items-center gap-3 rounded-xl border p-2 hover:bg-gray-50">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
+                    {c.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={c.logo} alt="logo" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-indigo-700">{c.city[0]}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{c.uni}</div>
+                    <div className="text-sm text-gray-500">{c.city} • {c.kind === "private" ? "Private" : "Public"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Cards below the map */}
-      {selected && cityData.length > 0 && (
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {cityData.map((c) => (
-            <div key={c.city} className="rounded-lg border bg-white p-3 shadow-sm">
-              <div className="text-sm text-gray-500">{selected.name} • {c.city}</div>
-              <div className="font-medium">{c.uni}</div>
-              <div className="mt-1 text-sm text-indigo-600">Read more →</div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
-

@@ -13,7 +13,7 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="mt-4">
+      <section className="mt-4 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
         <HomeMap />
       </section>
 
