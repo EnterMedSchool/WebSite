@@ -1,4 +1,7 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
 
 export default function HomePage() {
   return (
@@ -10,7 +13,11 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="mt-4">
+        <HomeMap />
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 mt-8">
         <Link href="/dashboard" className="rounded-lg border bg-white p-6 shadow-sm hover:shadow-md transition">
           <h2 className="text-lg font-medium">Dashboard (protected)</h2>
           <p className="text-gray-600">Requires sign-in. Uses NextAuth (credentials or GitHub).</p>
@@ -31,4 +38,3 @@ export default function HomePage() {
     </div>
   );
 }
-
