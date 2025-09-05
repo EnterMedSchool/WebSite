@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import AuthButtons from "@/components/auth/AuthButtons";
+import UserMenu from "@/components/auth/UserMenu";
 import { isAdminSession } from "@/lib/authz";
 import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
@@ -52,7 +52,7 @@ export default async function Navbar() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <AuthButtons variant="light" isAuthed={!!session} name={session?.user?.name ?? undefined} />
+            <UserMenu isAuthed={!!session} name={session?.user?.name ?? undefined} imageUrl={(session as any)?.user?.image ?? undefined} />
           </div>
         </div>
       </div>
