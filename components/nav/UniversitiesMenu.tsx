@@ -142,7 +142,7 @@ export default function UniversitiesMenu() {
   }
 
   return (
-    <div ref={ref} className="relative inline-block">
+    <div ref={ref} className="inline-block">
       <button
         type="button"
         className={`text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white px-1 py-1 ${open ? "opacity-100" : ""}`}
