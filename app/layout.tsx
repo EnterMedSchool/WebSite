@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
         <Navbar />
-        <main className="mx-auto max-w-5xl p-4">{children}</main>
+        <main className="mx-auto max-w-6xl p-6">{children}</main>
       </body>
     </html>
   );

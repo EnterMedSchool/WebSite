@@ -26,16 +26,16 @@ export default async function Navbar() {
   ];
 
   return (
-    <header className="shadow-sm">
+    <header className="sticky top-0 z-50 shadow-sm">
       {/* Top (blue) bar */}
-      <div className="w-full bg-indigo-500 text-white">
+      <div className="w-full bg-[#6C63FF] text-white">
         <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-10 md:flex">
             {/* Universities mega menu trigger */}
             <div className="relative"><UniversitiesMenu /></div>
             {/* Other primary items */}
@@ -59,7 +59,7 @@ export default async function Navbar() {
 
       {/* Secondary (white) bar */}
       <div className="w-full border-b bg-white">
-        <div className="mx-auto hidden max-w-6xl items-center justify-center gap-8 px-4 py-3 sm:flex">
+        <div className="mx-auto hidden max-w-6xl items-center justify-center gap-10 px-4 py-3 sm:flex">
           {secondary.map((item) => (
             <Link
               key={item.label}
