@@ -10,6 +10,7 @@ What you get:
 - Example protected page (`/dashboard`)
 - Example dynamic pages (`/course/[slug]`, `/quiz/[id]`)
 - Example API routes (`/api/health`, `/api/quiz/[id]`)
+- Optional database via Vercel Postgres + Drizzle ORM (scaffolded)
 
 ### Getting Started
 
@@ -59,7 +60,28 @@ Open http://localhost:3000 and test:
 
 ### Notes & Next Steps
 
-- Database layer is not included yet. For scale, consider Vercel Postgres (Neon) + Drizzle ORM or Prisma.
+- Database: Vercel Postgres (Neon) + Drizzle ORM is scaffolded. Add the Postgres integration in Vercel → Storage to enable.
 - Content strategy: MDX for rich content, or headless CMS (Sanity/Contentful), or database-backed lessons.
 - Add design system components, animation libs (Framer Motion), analytics, and e2e tests as we proceed.
 
+## Database (Vercel Postgres + Drizzle)
+
+1) In Vercel dashboard: Project → Storage → Add → Postgres. Link it to this project.
+   - Vercel will inject env vars like `POSTGRES_URL` automatically.
+
+2) For local development, copy those values into `.env` (or run `vercel env pull .env.local`).
+
+3) Generate and push the initial schema:
+
+```bash
+npm run db:generate   # create SQL migrations from drizzle/schema.ts
+npm run db:push       # apply migrations to the database
+```
+
+4) Verify the DB connection:
+
+Open `/api/db-check` in the browser. You should see `{ connected: true }`.
+
+Schema lives in `drizzle/schema.ts`. Database client lives in `lib/db.ts`.
+
+Recommended: use Vercel KV (Upstash) later for presence/ephemeral chat state, and Vercel Cron for scheduled jobs.
