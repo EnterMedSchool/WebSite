@@ -19,7 +19,7 @@ export default async function BlogIndex() {
         <ul className="grid gap-4">
           {posts.map((p) => (
             <li key={p.slug} className="rounded-lg border bg-white p-4 shadow-sm">
-              <Link className="text-lg font-medium hover:underline" href={`/blog/${p.slug}`}>
+              <Link className="text-lg font-medium hover:underline" href={`/${p.slug}`}>
                 {p.title}
               </Link>
               <div className="text-sm text-gray-500">{new Date(p.createdAt).toLocaleString()}</div>
@@ -30,4 +30,3 @@ export default async function BlogIndex() {
     </div>
   );
 }
-

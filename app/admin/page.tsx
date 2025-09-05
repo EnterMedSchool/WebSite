@@ -54,10 +54,10 @@ export default async function AdminHome() {
               <div>
                 <div className="font-medium">{p.title}</div>
                 <div className="text-sm text-gray-500">
-                  {p.published ? "Published" : "Draft"} • {new Date(p.createdAt).toLocaleString()} • /blog/{p.slug}
+                  {p.published ? "Published" : "Draft"} • {new Date(p.createdAt).toLocaleString()} • /{p.slug}
                 </div>
               </div>
-              <Link className="text-blue-600 underline" href={`/blog/${p.slug}`}>View</Link>
+              <Link className="text-blue-600 underline" href={`/${p.slug}`}>View</Link>
             </li>
           ))}
         </ul>

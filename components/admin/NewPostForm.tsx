@@ -39,7 +39,7 @@ export default function NewPostForm() {
         throw new Error(j.error || `Save failed (${res.status})`);
       }
       const { slug: createdSlug } = await res.json();
-      router.push(`/blog/${createdSlug}`);
+      router.push(`/${createdSlug}`);
     } catch (err: any) {
       setError(String(err.message || err));
     } finally {
@@ -66,7 +66,7 @@ export default function NewPostForm() {
           onChange={(e) => setSlug(e.target.value)}
           placeholder={derivedSlug}
         />
-        <p className="mt-1 text-xs text-gray-500">Final: /blog/{derivedSlug || "your-slug"}</p>
+        <p className="mt-1 text-xs text-gray-500">Final: /{derivedSlug || "your-slug"}</p>
       </div>
       <div>
         <label className="block text-sm font-medium">Body (Markdown)</label>
@@ -92,4 +92,3 @@ export default function NewPostForm() {
     </form>
   );
 }
-
