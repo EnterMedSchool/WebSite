@@ -1,5 +1,7 @@
 import Stripe from 'stripe'
 
+export const runtime = 'nodejs'
+
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET
   if (!secret) return new Response('Missing STRIPE_WEBHOOK_SECRET', { status: 500 })
@@ -31,6 +33,4 @@ export async function POST(req: Request) {
 
   return new Response('ok')
 }
-
-export const config = { api: { bodyParser: false } }
 
