@@ -83,15 +83,16 @@ export default function HomeMap() {
                 const label = c.city;
                 const w = Math.max(52, 12 + label.length * 7);
                 const h = 20;
-                const pillX = 12; // offset to the right of the emblem
+                const pillX = 8; // tighter offset to right of emblem
                 const textX = pillX + w / 2 + (c.kind === "private" ? 6 : 0);
                 const textY = 4; // optical centering
-                const rimR = 6.5;
-                const emblemR = 4.8;
+                const rimR = 6.2;
+                const emblemR = 4.5;
                 const isPrivate = c.kind === "private";
                 const accent = isPrivate ? "#F59E0B" : "#6C63FF"; // amber for private, indigo for public
                 const clipId = `logo-${(selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
                 const yJitter = (idx % 3) - 1; // -1,0,1
+                const xNudge = -6; // shift entire marker slightly left to align visually with country
                 return (
                   <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
                     <motion.g
@@ -99,7 +100,7 @@ export default function HomeMap() {
                       animate={{ scale: markerScale, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                      transform={`translate(0, ${yJitter * 6})`}
+                      transform={`translate(${xNudge}, ${yJitter * 6})`}
                     >
                       {/* Emblem circle with white rim or logo masked in a circle */}
                       <g>
@@ -146,22 +147,50 @@ export default function HomeMap() {
 
         {/* Right side panel of universities when a country is selected */}
         {selected && cityData.length > 0 && (
-          <div className="pointer-events-auto absolute right-4 top-1/2 z-20 w-[360px] -translate-y-1/2 rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur">
-            <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
-            <div className="space-y-3 max-h-[60vh] overflow-auto pr-2">
+          <div className="pointer-events-auto absolute right-4 top-1/2 z-20 w-[400px] -translate-y-1/2 rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur">
+            <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
+            <div className="space-y-3 max-h-[60vh] overflow-auto pr-1">
               {cityData.map((c, i) => (
-                <div key={`${c.city}-${i}`} className="flex items-center gap-3 rounded-xl border p-2 hover:bg-gray-50">
-                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
-                    {c.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.logo} alt="logo" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="text-indigo-700">{c.city[0]}</span>
-                    )}
+                <div key={`${c.city}-${i}`} className="rounded-xl border p-3 hover:bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
+                      {c.logo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.logo} alt="logo" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-semibold text-indigo-700">{c.city[0]}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{c.uni}</div>
+                      <div className="text-sm text-gray-500">{c.city} • {c.kind === "private" ? "Private" : "Public"}</div>
+                    </div>
+                    <div className="ml-auto text-sm font-semibold text-gray-700">⭐ {c.rating?.toFixed(1) ?? "4.3"}</div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{c.uni}</div>
-                    <div className="text-sm text-gray-500">{c.city} • {c.kind === "private" ? "Private" : "Public"}</div>
+                  {/* Meta grid */}
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    <div className="col-span-1 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
+                      <div className="font-semibold text-gray-700">Last Score</div>
+                      <div className="mt-1 text-gray-800">{c.lastScore ?? 65}/100</div>
+                    </div>
+                    <div className="col-span-2 rounded-lg bg-gray-50 p-2">
+                      <div className="mb-1 text-xs font-semibold text-gray-700">Gallery</div>
+                      <div className="flex gap-1">
+                        {(c.photos ?? ["https://placehold.co/64x64", "https://placehold.co/64x64", "https://placehold.co/64x64"]).slice(0,3).map((src, idx) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img key={idx} src={src} alt="photo" className="h-12 w-12 rounded object-cover" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Orgs + article */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {(c.orgs ?? ["EMS", "Volunteering"]).slice(0,3).map((o) => (
+                      <span key={o} className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{o}</span>
+                    ))}
+                    {c.article && (
+                      <span className="ml-auto text-xs text-indigo-600 underline">{c.article.title}</span>
+                    )}
                   </div>
                 </div>
               ))}
