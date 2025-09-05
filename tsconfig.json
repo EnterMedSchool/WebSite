@@ -24,6 +24,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "drizzle.config.ts" // exclude CLI-only config from Next typecheck
+  ]
 }
-
