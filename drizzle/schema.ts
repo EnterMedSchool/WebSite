@@ -134,3 +134,19 @@ export const messages = pgTable(
     userIdx: index("messages_user_idx").on(t.userId),
   })
 );
+
+// Blog posts
+export const posts = pgTable(
+  "posts",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 160 }).notNull().unique(),
+    title: varchar("title", { length: 200 }).notNull(),
+    body: text("body").notNull(),
+    published: boolean("published").default(false).notNull(),
+    coverImageUrl: varchar("cover_image_url", { length: 500 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({ slugIdx: index("posts_slug_idx").on(t.slug) })
+);
