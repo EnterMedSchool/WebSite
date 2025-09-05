@@ -34,17 +34,27 @@ export default function HomeMap() {
 
   return (
     <div className="relative">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-brand text-2xl">Explore Universities</h2>
-        {selected && (
-          <button onClick={reset} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">
-            Back to world
-          </button>
-        )}
-      </div>
+      {/* Hero map */}
+      <div className="relative rounded-xl border bg-gradient-to-b from-indigo-50 to-white p-2 shadow-sm" style={{ minHeight: "75vh" }}>
+        <div className="absolute right-4 top-4 z-10">
+          {selected && (
+            <button onClick={reset} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">
+              Back to world
+            </button>
+          )}
+        </div>
 
-      <ComposableMap projectionConfig={{ scale: 165 }} style={{ width: "100%", height: "520px" }}>
-        <ZoomableGroup center={position.center} zoom={position.zoom}>
+        {/* Title overlay */}
+        {!selected && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-center">
+            <h1 className="mx-4 text-3xl font-extrabold text-gray-800 sm:text-4xl md:text-5xl">
+              Where would you like to <span className="font-brand text-indigo-600">EnterMedSchool</span>?
+            </h1>
+          </div>
+        )}
+
+        <ComposableMap projectionConfig={{ scale: 165 }} style={{ width: "100%", height: "100%" }}>
+          <ZoomableGroup center={position.center} zoom={position.zoom}>
           <Geographies geography={GEO_URL}>
             {({ geographies }: { geographies: any[] }) =>
               geographies.map((geo: any) => (
@@ -84,17 +94,26 @@ export default function HomeMap() {
                     exit={{ scale: 0, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 260, damping: 20 }}
                   >
-                    {/* Emblem circle with white rim */}
+                    {/* Emblem circle with white rim or logo masked in a circle */}
                     <g>
                       <circle r={rimR} fill="#ffffff" />
-                      {c.logo && patternId ? (
+                      {c.logo ? (
                         <>
                           <defs>
-                            <pattern id={patternId} patternUnits="userSpaceOnUse" width={emblemR * 2} height={emblemR * 2} x={-emblemR} y={-emblemR}>
-                              <image href={c.logo} width={emblemR * 2} height={emblemR * 2} preserveAspectRatio="xMidYMid slice" />
-                            </pattern>
+                            <clipPath id={`${patternId}-clip`}>
+                              <circle r={emblemR} />
+                            </clipPath>
                           </defs>
-                          <circle r={emblemR} fill={`url(#${patternId})`} stroke={accent} strokeWidth={0.8} />
+                          <image
+                            href={c.logo}
+                            x={-emblemR}
+                            y={-emblemR}
+                            width={emblemR * 2}
+                            height={emblemR * 2}
+                            preserveAspectRatio="xMidYMid slice"
+                            clipPath={`url(#${patternId}-clip)`}
+                          />
+                          <circle r={emblemR} fill="none" stroke={accent} strokeWidth={0.8} />
                         </>
                       ) : (
                         <circle r={emblemR} fill={accent} />
@@ -118,9 +137,9 @@ export default function HomeMap() {
         </ZoomableGroup>
       </ComposableMap>
 
-      {/* Cute popups below the map for demo (easier cross-device) */}
+      {/* Cards below the map */}
       {selected && cityData.length > 0 && (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {cityData.map((c) => (
             <div key={c.city} className="rounded-lg border bg-white p-3 shadow-sm">
               <div className="text-sm text-gray-500">{selected.name} • {c.city}</div>
