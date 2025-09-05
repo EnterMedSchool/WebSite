@@ -1,17 +1,24 @@
-export type City = { city: string; lat: number; lng: number; uni: string };
+export type City = {
+  city: string;
+  lat: number;
+  lng: number;
+  uni: string;
+  kind?: "public" | "private"; // demo flag
+  logo?: string; // logo URL (optional)
+};
 export type CountryCities = Record<string, City[]>; // keyed by ISO A3 or name
 
 // Demo dataset: a handful of cities per country
 export const demoUniversities: CountryCities = {
   Italy: [
-    { city: "Turin", lat: 45.0703, lng: 7.6869, uni: "University of Turin" },
-    { city: "Pavia", lat: 45.185, lng: 9.160, uni: "University of Pavia" },
-    { city: "Parma", lat: 44.8015, lng: 10.3279, uni: "University of Parma" },
-    { city: "Padova", lat: 45.4064, lng: 11.8768, uni: "University of Padua" },
-    { city: "Milano", lat: 45.4642, lng: 9.19, uni: "Università degli Studi di Milano" },
-    { city: "Bologna", lat: 44.4949, lng: 11.3426, uni: "University of Bologna" },
-    { city: "Rome", lat: 41.9028, lng: 12.4964, uni: "Sapienza University of Rome" },
-    { city: "Naples", lat: 40.8518, lng: 14.2681, uni: "Federico II" },
+    { city: "Turin", lat: 45.0703, lng: 7.6869, uni: "University of Turin", kind: "public" },
+    { city: "Pavia", lat: 45.185, lng: 9.160, uni: "University of Pavia", kind: "public", logo: "https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/University-of-Pavia-Logo.png" },
+    { city: "Parma", lat: 44.8015, lng: 10.3279, uni: "University of Parma", kind: "private", logo: "https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/logo-parma-mapa-300x272.png" },
+    { city: "Padova", lat: 45.4064, lng: 11.8768, uni: "University of Padua", kind: "private", logo: "https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/University-of-Padova-Logo-150x150.jpg" },
+    { city: "Milano", lat: 45.4642, lng: 9.19, uni: "Università degli Studi di Milano", kind: "public" },
+    { city: "Bologna", lat: 44.4949, lng: 11.3426, uni: "University of Bologna", kind: "public" },
+    { city: "Rome", lat: 41.9028, lng: 12.4964, uni: "Sapienza University of Rome", kind: "public" },
+    { city: "Naples", lat: 40.8518, lng: 14.2681, uni: "Federico II", kind: "public" },
   ],
   "United Kingdom": [
     { city: "London", lat: 51.5072, lng: -0.1276, uni: "King's College London" },
@@ -31,4 +38,3 @@ export const demoUniversities: CountryCities = {
     { city: "Munich", lat: 48.1374, lng: 11.5755, uni: "LMU Munich" },
   ],
 };
-
