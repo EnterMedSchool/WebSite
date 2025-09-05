@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import AuthButtons from "@/components/auth/AuthButtons";
 import { isAdminSession } from "@/lib/authz";
+import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
+import LeoLogo from "@/assets/LeoLogoWebsite.png";
 
 export default async function Navbar() {
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
@@ -27,19 +29,18 @@ export default async function Navbar() {
     <header className="shadow-sm">
       {/* Top (blue) bar */}
       <div className="w-full bg-indigo-500 text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.svg" alt="EnterMedSchool" width={28} height={28} />
+            <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
           <nav className="hidden items-center gap-8 md:flex">
-            {primary.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white"
-              >
+            {/* Universities mega menu trigger */}
+            <div className="relative"><UniversitiesMenu /></div>
+            {/* Other primary items */}
+            {primary.slice(1).map((item) => (
+              <Link key={item.label} href={item.href} className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white">
                 {item.label}
               </Link>
             ))}
