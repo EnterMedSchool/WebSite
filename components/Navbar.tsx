@@ -37,7 +37,7 @@ export default async function Navbar() {
 
           <nav className="hidden items-center gap-10 md:flex">
             {/* Universities mega menu trigger */}
-            <div className="relative"><UniversitiesMenu /></div>
+            <UniversitiesMenu />
             {/* Other primary items */}
             {primary.slice(1).map((item) => (
               <Link key={item.label} href={item.href} className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white">

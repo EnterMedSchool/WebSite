@@ -31,7 +31,7 @@ export default function UniversitiesMenu() {
   return (
     <div
       ref={ref}
-      className="relative"
+      className="inline-block"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
@@ -49,12 +49,12 @@ export default function UniversitiesMenu() {
 
       {open && (
         <div className="absolute left-0 right-0 top-full z-50 pt-3">
-          <div className="mx-auto max-w-6xl rounded-2xl border bg-white p-4 shadow-2xl">
+          <div className="mx-auto max-w-6xl rounded-2xl border bg-white p-6 shadow-2xl">
             <div className="grid grid-cols-12 gap-4">
               {/* Left: country image */}
               <div className="col-span-12 rounded-lg bg-indigo-50 p-3 sm:col-span-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ITALY_SVG} alt="Italy" className="h-64 w-full rounded-md object-contain" />
+                <img src={ITALY_SVG} alt="Italy" className="h-72 w-full rounded-md object-contain" />
               </div>
 
               {/* Middle: exam selector */}
@@ -116,4 +116,3 @@ export default function UniversitiesMenu() {
     </div>
   );
 }
-
