@@ -98,6 +98,7 @@ export default function UniversitiesMenu() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(EXAMS[0].id);
   const ref = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | null>(null);
 
   const selected = useMemo(() => EXAMS.find((e) => e.id === selectedId) ?? EXAMS[0], [selectedId]);
 
@@ -128,12 +129,30 @@ export default function UniversitiesMenu() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
+  function clearCloseTimer() {
+    if (closeTimer.current) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }
+
+  function scheduleClose() {
+    clearCloseTimer();
+    closeTimer.current = window.setTimeout(() => setOpen(false), 200);
+  }
+
   return (
-    <div ref={ref} className="inline-block" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+    <div ref={ref} className="relative inline-block">
       <button
         type="button"
         className={`text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white px-1 py-1 ${open ? "opacity-100" : ""}`}
         onClick={() => setOpen((v) => !v)}
+        onMouseEnter={() => {
+          clearCloseTimer();
+          setOpen(true);
+        }}
+        onMouseLeave={scheduleClose}
+        onFocus={() => setOpen(true)}
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -141,7 +160,7 @@ export default function UniversitiesMenu() {
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 pt-3">
+        <div className="absolute left-0 right-0 top-full z-50 pt-3" onMouseEnter={clearCloseTimer} onMouseLeave={scheduleClose}>
           <div className="mx-auto max-w-6xl rounded-2xl border bg-white p-6 shadow-2xl">
             <div className="grid grid-cols-12 gap-6">
               {/* Left: country image (for selected exam) */}
