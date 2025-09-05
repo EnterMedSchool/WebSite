@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Baloo_2, Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
@@ -8,16 +8,16 @@ export const metadata: Metadata = {
   description: "Learning platform skeleton",
 };
 
-const inter = Inter({ subsets: ["latin"] });
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700" ] });
+const baloo = Baloo_2({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-baloo" });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-gray-50 text-gray-900`}>
+      <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
         <Navbar />
         <main className="mx-auto max-w-5xl p-4">{children}</main>
       </body>
     </html>
   );
 }
-

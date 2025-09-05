@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import AuthButtons from "@/components/auth/AuthButtons";
@@ -9,22 +10,65 @@ export default async function Navbar() {
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
   const isAdmin = isAdminSession(session);
 
+  const primary = [
+    { href: "/#universities", label: "Universities" },
+    { href: "/#exams", label: "Entrance Exams" },
+    { href: "/#communities", label: "Communities" },
+    { href: "/#imat", label: "IMAT Course" },
+  ];
+  const secondary = [
+    { href: "/blog", label: "Study Materials" },
+    { href: "/#parents", label: "Information for Parents" },
+    { href: "/#portal", label: "Student Portal" },
+    { href: "/#scholarships", label: "Scholarship Program" },
+  ];
+
   return (
-    <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="font-semibold">WebSite</Link>
-          <nav className="hidden gap-4 sm:flex">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
-            <Link href="/course/foundation" className="text-gray-600 hover:text-gray-900">Course</Link>
-            <Link href="/quiz/42" className="text-gray-600 hover:text-gray-900">Quiz</Link>
-            <Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link>
+    <header className="shadow-sm">
+      {/* Top (blue) bar */}
+      <div className="w-full bg-indigo-500 text-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.svg" alt="EnterMedSchool" width={28} height={28} />
+            <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
+          </Link>
+
+          <nav className="hidden items-center gap-8 md:flex">
+            {primary.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
             {isAdmin && (
-              <Link href="/admin" className="text-gray-600 hover:text-gray-900">Admin</Link>
+              <Link href="/admin" className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white">
+                Admin
+              </Link>
             )}
           </nav>
+
+          <div className="flex items-center gap-3">
+            <AuthButtons variant="light" isAuthed={!!session} name={session?.user?.name ?? undefined} />
+          </div>
         </div>
-        <AuthButtons isAuthed={!!session} name={session?.user?.name ?? undefined} />
+      </div>
+
+      {/* Secondary (white) bar */}
+      <div className="w-full border-b bg-white">
+        <div className="mx-auto hidden max-w-6xl items-center justify-center gap-8 px-4 py-3 sm:flex">
+          {secondary.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="text-sm font-semibold uppercase tracking-wide text-indigo-600 hover:text-indigo-700"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
       </div>
     </header>
   );
