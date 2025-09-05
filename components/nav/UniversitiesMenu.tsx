@@ -160,8 +160,13 @@ export default function UniversitiesMenu() {
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 pt-3" onMouseEnter={clearCloseTimer} onMouseLeave={scheduleClose}>
-          <div className="mx-auto max-w-6xl rounded-2xl border bg-white p-6 shadow-2xl">
+        <div
+          className="fixed inset-x-0 z-50 pt-3"
+          style={{ top: "96px" }}
+          onMouseEnter={clearCloseTimer}
+          onMouseLeave={scheduleClose}
+        >
+          <div className="mx-auto w-[min(96vw,72rem)] rounded-2xl border bg-white p-6 shadow-2xl">
             <div className="grid grid-cols-12 gap-6">
               {/* Left: country image (for selected exam) */}
               <div className="col-span-12 rounded-lg bg-indigo-50 p-3 sm:col-span-4">
