@@ -3,6 +3,18 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
+  if (!isAuthConfigured) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-gray-600">
+          Auth is not configured yet. Set `NEXTAUTH_SECRET` on Vercel to enable protected pages.
+        </p>
+      </div>
+    );
+  }
+
   const session = await getServerSession(authOptions);
   if (!session) redirect("/api/auth/signin");
 
@@ -18,4 +30,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-

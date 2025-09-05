@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth";
 import AuthButtons from "@/components/auth/AuthButtons";
 
 export default async function Navbar() {
-  const session = await getServerSession(authOptions);
+  const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
+  const session = isAuthConfigured ? await getServerSession(authOptions) : null;
 
   return (
     <header className="border-b bg-white">
@@ -22,4 +23,3 @@ export default async function Navbar() {
     </header>
   );
 }
-
