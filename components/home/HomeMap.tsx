@@ -45,8 +45,8 @@ export default function HomeMap() {
       <ComposableMap projectionConfig={{ scale: 165 }} style={{ width: "100%", height: "520px" }}>
         <ZoomableGroup center={position.center} zoom={position.zoom}>
           <Geographies geography={GEO_URL}>
-            {({ geographies }) =>
-              geographies.map((geo) => (
+            {({ geographies }: { geographies: any[] }) =>
+              geographies.map((geo: any) => (
                 <Geography
                   key={(geo as Feature).id}
                   geography={geo}
@@ -89,4 +89,3 @@ export default function HomeMap() {
     </div>
   );
 }
-
