@@ -18,14 +18,14 @@ export default function HomeMap() {
   const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 20], zoom: 1 });
 
   const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
-  const markerScale = useMemo(() => 0.5 / Math.sqrt(position.zoom || 1), [position.zoom]);
-  const [hovered, setHovered] = useState(false);
+  const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
 
   function handleCountryClick(geo: any) {
     const name: string = geo.properties.name;
     const center = geoCentroid(geo) as [number, number];
     setSelected({ name, center });
-    setPosition({ center, zoom: 3 });
+    // Zoom in strongly on selection for clarity
+    setPosition({ center, zoom: 5.5 });
   }
 
   function reset() {
@@ -34,13 +34,9 @@ export default function HomeMap() {
   }
 
   return (
-    <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+    <div className="relative">
       {/* Hero map */}
-      <div className="relative rounded-none border-0 bg-black/70 p-0" style={{ minHeight: "calc(100vh - 120px)" }}>
-        {/* dimmer overlay + gradient, fades away on hover or when selected */}
-        <div className={`pointer-events-none absolute inset-0 z-0 transition-opacity duration-500 ${hovered || selected ? "opacity-0" : "opacity-100"}`}>
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/80 to-slate-800" />
-        </div>
+      <div className="relative rounded-none border-0 bg-white p-0" style={{ minHeight: "calc(100vh - 120px)" }}>
         <div className="absolute right-4 top-4 z-10">
           {selected && (
             <button onClick={reset} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">
@@ -49,17 +45,10 @@ export default function HomeMap() {
           )}
         </div>
 
-        {/* Title overlay */}
-        {!selected && (
-          <div className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-center transition-opacity duration-500 ${hovered ? "opacity-0" : "opacity-100"}`}>
-            <h1 className="mx-4 text-4xl font-extrabold text-white drop-shadow sm:text-5xl md:text-6xl">
-              Where would you like to <span className="font-brand text-indigo-300">EnterMedSchool</span>?
-            </h1>
-          </div>
-        )}
+        {/* Title removed per latest UX request */}
 
         <ComposableMap projectionConfig={{ scale: 165 }} style={{ width: "100%", height: "100%" }}>
-          <ZoomableGroup center={position.center} zoom={position.zoom}>
+          <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={1} maxZoom={8} animate animationDuration={900}>
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) =>
                 geographies.map((geo: any) => (
@@ -68,9 +57,9 @@ export default function HomeMap() {
                     geography={geo}
                     onClick={() => handleCountryClick(geo)}
                     style={{
-                    default: { fill: hovered || selected ? "#1E293B" : "#EEF2F7", outline: "none", stroke: hovered || selected ? "#334155" : "#CBD5E1", strokeWidth: 0.5 },
-                    hover: { fill: hovered || selected ? "#334155" : "#DDE3F5", outline: "none" },
-                    pressed: { fill: hovered || selected ? "#475569" : "#C7D2FE", outline: "none" },
+                    default: { fill: "#EEF2F7", outline: "none", stroke: "#CBD5E1", strokeWidth: 0.5 },
+                    hover: { fill: "#DDE3F5", outline: "none" },
+                    pressed: { fill: "#C7D2FE", outline: "none" },
                   }}
                 />
               ))
@@ -81,26 +70,25 @@ export default function HomeMap() {
             <AnimatePresence>
               {cityData.map((c, idx) => {
                 const label = c.city;
-                const w = Math.max(52, 12 + label.length * 7);
-                const h = 20;
-                const pillX = 8; // tighter offset to right of emblem
+                const w = Math.max(48, 10 + label.length * 6.5);
+                const h = 18;
+                const pillX = 6; // tighter offset to right of emblem
                 const textX = pillX + w / 2 + (c.kind === "private" ? 6 : 0);
                 const textY = 4; // optical centering
-                const rimR = 6.2;
-                const emblemR = 4.5;
+                const rimR = 5.5;
+                const emblemR = 4.0;
                 const isPrivate = c.kind === "private";
                 const accent = isPrivate ? "#F59E0B" : "#6C63FF"; // amber for private, indigo for public
                 const clipId = `logo-${(selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
-                const yJitter = (idx % 3) - 1; // -1,0,1
-                const xNudge = -6; // shift entire marker slightly left to align visually with country
+                const yJitter = 0; // keep precise alignment; jitter removed
                 return (
                   <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
                     <motion.g
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: markerScale, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                      transform={`translate(${xNudge}, ${yJitter * 6})`}
+                      transition={{ type: "spring", stiffness: 140, damping: 18 }}
+                      transform={`translate(0, ${yJitter})`}
                     >
                       {/* Emblem circle with white rim or logo masked in a circle */}
                       <g>
@@ -133,7 +121,7 @@ export default function HomeMap() {
                         {isPrivate && (
                           <rect x={pillX + 6} y={-6} rx={3} ry={3} width={10} height={12} fill={accent} />
                         )}
-                        <text x={textX} y={textY} textAnchor="middle" fontSize={11} fill={isPrivate ? "#B45309" : "#4F46E5"} fontWeight={700}>
+                        <text x={textX} y={textY} textAnchor="middle" fontSize={10} fill={isPrivate ? "#B45309" : "#4F46E5"} fontWeight={700}>
                           {label}
                         </text>
                       </g>
