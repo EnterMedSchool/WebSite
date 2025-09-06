@@ -22,6 +22,8 @@ export async function GET(request: Request) {
   if (forbidden) return forbidden;
 
   try {
+    const url = new URL(request.url);
+    const force = ((url.searchParams.get('force') ?? '').toLowerCase() === '1' || (url.searchParams.get('force') ?? '').toLowerCase() === 'true');
     const list = await db.select({ id: universities.id, name: universities.name }).from(universities);
     const years = [2019, 2020, 2021, 2022, 2023, 2024];
     let insertedScores = 0;
@@ -30,24 +32,29 @@ export async function GET(request: Request) {
       const existingScores = await db.select().from(universityScores).where(eq(universityScores.universityId, u.id));
       const existingSeats = await db.select().from(universitySeats).where(eq(universitySeats.universityId, u.id));
       for (const year of years) {
-        if (existingScores.find((r: any) => r.year === year && r.candidateType === 'EU') == null) {
+        if (force) {
+          // wipe year rows for deterministic reseed (per type)
+          await db.delete(universityScores).where(eq(universityScores.universityId, u.id)).then(async () => {});
+          await db.delete(universitySeats).where(eq(universitySeats.universityId, u.id)).then(async () => {});
+        }
+        if (force || existingScores.find((r: any) => r.year === year && r.candidateType === 'EU') == null) {
           const base = 45 + (Math.abs(u.id * 13 + year) % 20); // deterministic-ish base
           const eu = Math.max(30, Math.min(85, base + ((year % 2 === 0) ? -3 : 2)));
           await db.insert(universityScores).values({ universityId: u.id, year, candidateType: 'EU', minScore: eu });
           insertedScores += 1;
         }
-        if (existingScores.find((r: any) => r.year === year && r.candidateType === 'NonEU') == null) {
+        if (force || existingScores.find((r: any) => r.year === year && r.candidateType === 'NonEU') == null) {
           const base = 45 + (Math.abs(u.id * 13 + year) % 20);
           const noneu = Math.max(35, Math.min(95, base + ((year % 3 === 0) ? 5 : -1)));
           await db.insert(universityScores).values({ universityId: u.id, year, candidateType: 'NonEU', minScore: noneu });
           insertedScores += 1;
         }
-        if (existingSeats.find((r: any) => r.year === year && r.candidateType === 'EU') == null) {
+        if (force || existingSeats.find((r: any) => r.year === year && r.candidateType === 'EU') == null) {
           const seatsEU = 60 + ((u.id + year) % 40); // 60–99
           await db.insert(universitySeats).values({ universityId: u.id, year, candidateType: 'EU', seats: seatsEU });
           insertedSeats += 1;
         }
-        if (existingSeats.find((r: any) => r.year === year && r.candidateType === 'NonEU') == null) {
+        if (force || existingSeats.find((r: any) => r.year === year && r.candidateType === 'NonEU') == null) {
           const seatsNonEU = 10 + ((u.id * 7 + year) % 30); // 10–39
           await db.insert(universitySeats).values({ universityId: u.id, year, candidateType: 'NonEU', seats: seatsNonEU });
           insertedSeats += 1;
