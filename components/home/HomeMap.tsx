@@ -15,7 +15,12 @@ type Feature = {
 
 export default function HomeMap() {
   const [selected, setSelected] = useState<{ name: string; center: [number, number] } | null>(null);
-  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 20], zoom: 1 });
+  // Start a bit lower vertically so Europe isn't glued to the bottom on load
+  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 14], zoom: 1 });
+
+  // Desktop-only layout constants (we don't handle mobile/tablet yet)
+  const HEADER_OFFSET = 112; // approx. combined height of the two nav bars
+  const PANEL_GUTTER = 16;   // spacing from viewport edges
 
   const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
@@ -23,16 +28,27 @@ export default function HomeMap() {
   function handleCountryClick(geo: any) {
     const name: string = geo.properties.name;
     let center = geoCentroid(geo) as [number, number];
-    // Shift left a bit so the right-side panel doesn't cover the country
-    center = [center[0] - 8, center[1]];
+    // Responsive nudge so the selected country isn't covered by the right panel
+    // and doesn't sit too close to the bottom on short displays.
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+
+    // Horizontal shift: a bit less on narrower screens, a bit more on wide screens
+    const xShift = vw < 1280 ? 6 : 8; // degrees of longitude
+
+    // Vertical shift: nudge up more on short screens so content isn't glued to the bottom
+    const yShift = vh < 850 ? 8 : 6; // degrees of latitude (move map up -> subtract)
+
+    center = [center[0] - xShift, center[1] - yShift];
     setSelected({ name, center });
-    // Zoom in strongly on selection for clarity
-    setPosition({ center, zoom: 6.2 });
+    // Zoom in strongly on selection for clarity; slightly less aggressive on very short screens
+    const targetZoom = vh < 850 ? 5.8 : 6.2;
+    setPosition({ center, zoom: targetZoom });
   }
 
   function reset() {
     setSelected(null);
-    setPosition({ center: [0, 20], zoom: 1 });
+    setPosition({ center: [0, 14], zoom: 1 });
   }
 
   return (
@@ -122,9 +138,16 @@ export default function HomeMap() {
 
         {/* Right side panel of universities when a country is selected */}
         {selected && cityData.length > 0 && (
-          <div className="pointer-events-auto absolute right-4 top-1/2 z-20 w-[400px] -translate-y-1/2 rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur">
+          <div
+            className="pointer-events-auto absolute right-4 z-20 w-[min(400px,36vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
+            style={{
+              top: HEADER_OFFSET,
+              bottom: PANEL_GUTTER,
+              maxHeight: `calc(100vh - ${HEADER_OFFSET + PANEL_GUTTER}px)`
+            }}
+          >
             <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
-            <div className="space-y-3 max-h-[60vh] overflow-auto pr-1">
+            <div className="space-y-3 max-h-full overflow-auto pr-1">
               {cityData.map((c, i) => (
                 <div key={`${c.city}-${i}`} className="rounded-xl border p-3 hover:bg-gray-50">
                   <div className="flex items-center gap-3">
