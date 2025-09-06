@@ -9,6 +9,7 @@ import {
   universityTestimonials,
   universityMedia,
   universityArticles,
+  universityPages,
 } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -42,15 +43,16 @@ async function getData(slug: string) {
     const uni = uniRows.find((u) => slugify(u.name) === slug);
     if (!uni) return null;
 
-    const [scores, seats, testimonials, media, articles] = await Promise.all([
+    const [scores, seats, testimonials, media, articles, pages] = await Promise.all([
       db.select().from(universityScores).where(eq(universityScores.universityId, uni.id)),
       db.select().from(universitySeats).where(eq(universitySeats.universityId, uni.id)),
       db.select().from(universityTestimonials).where(eq(universityTestimonials.universityId, uni.id)),
       db.select().from(universityMedia).where(eq(universityMedia.universityId, uni.id)),
       db.select().from(universityArticles).where(eq(universityArticles.universityId, uni.id)),
+      db.select().from(universityPages).where(eq(universityPages.universityId, uni.id)),
     ]);
 
-    return { uni, scores, seats, testimonials, media, articles };
+    return { uni, scores, seats, testimonials, media, articles, page: pages[0] ?? null };
   } catch (err) {
     // Graceful fallback if DB tables are not present (e.g., first deploy)
     const { demoUniversities } = await import("@/data/universities");
@@ -96,60 +98,88 @@ async function getData(slug: string) {
     const media = (demo.photos ?? []).slice(0,3).map((url, i) => ({ id: i+1, universityId: 0, type: "image", url, title: "" }));
     const articles = demo.article ? [{ id: 1, universityId: 0, title: demo.article.title, href: "#" }] : [];
 
-    return { uni, scores, seats, testimonials, media, articles };
+    return { uni, scores, seats, testimonials, media, articles, page: null };
   }
 }
 
 function ScoreChart({ data }: { data: { year: number; candidateType: string; minScore: number }[] }) {
   if (!data?.length) return null;
-  const types = Array.from(new Set(data.map(d => d.candidateType)));
-  const years = Array.from(new Set(data.map(d => d.year))).sort((a,b)=>a-b);
+  const types = Array.from(new Set(data.map((d) => d.candidateType)));
+  const years = Array.from(new Set(data.map((d) => d.year))).sort((a, b) => a - b);
   const byType: Record<string, { year: number; minScore: number }[]> = {};
   for (const t of types) byType[t] = [];
   for (const y of years) {
     for (const t of types) {
-      const p = data.find(d => d.year === y && d.candidateType === t);
+      const p = data.find((d) => d.year === y && d.candidateType === t);
       if (p) byType[t].push({ year: y, minScore: p.minScore });
     }
   }
 
-  const w = 520, h = 200, pad = 28;
-  const minYear = years[0], maxYear = years[years.length-1];
-  const scores = data.map(d=>d.minScore);
+  const w = 520;
+  const h = 240;
+  const pad = 36;
+  const minYear = years[0], maxYear = years[years.length - 1];
+  const scores = data.map((d) => d.minScore);
   const minS = Math.min(...scores), maxS = Math.max(...scores);
-  const x = (yr:number)=> pad + ((yr - minYear) / Math.max(1,(maxYear-minYear))) * (w - pad*2);
-  const y = (s:number)=> h - pad - ((s - minS) / Math.max(1,(maxS-minS))) * (h - pad*2);
+  const x = (yr: number) => pad + ((yr - minYear) / Math.max(1, maxYear - minYear)) * (w - pad * 2);
+  const y = (s: number) => h - pad - ((s - minS) / Math.max(1, maxS - minS)) * (h - pad * 2);
   const colors = ["#6C63FF", "#F59E0B", "#10B981", "#EF4444"]; // indigo, amber, emerald, red
+
+  const yTicks = 4;
+  const tickVals = Array.from({ length: yTicks + 1 }, (_, i) => minS + (i * (maxS - minS)) / yTicks);
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto">
-      <rect x={0} y={0} width={w} height={h} rx={16} fill="#F8FAFF" />
-      {/* axes */}
-      <line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#CBD5E1" />
-      <line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#CBD5E1" />
-      {years.map((yr,i)=> (
-        <text key={yr} x={x(yr)} y={h-8} textAnchor="middle" className="fill-gray-500 text-[10px]">{yr}</text>
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        {types.map((t, ti) => (
+          <linearGradient id={`grad-${ti}`} key={t} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={colors[ti % colors.length]} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={colors[ti % colors.length]} stopOpacity="0.02" />
+          </linearGradient>
+        ))}
+      </defs>
+
+      <rect x={0} y={0} width={w} height={h} rx={18} fill="#FFFFFF" />
+      <rect x={1} y={1} width={w - 2} height={h - 2} rx={17} fill="#F8FAFF" />
+
+      {tickVals.map((tv, i) => (
+        <g key={i}>
+          <line x1={pad} y1={y(tv)} x2={w - pad} y2={y(tv)} stroke="#E2E8F0" strokeDasharray="3 4" />
+          <text x={pad - 6} y={y(tv) + 4} textAnchor="end" className="fill-gray-500 text-[10px]">
+            {tv.toFixed(0)}
+          </text>
+        </g>
       ))}
-      {/* series */}
-      {types.map((t, ti)=>{
-        const pts = byType[t]; if (!pts?.length) return null; const color = colors[ti%colors.length];
-        const d = pts.map((p,i)=> `${i?'L':'M'}${x(p.year)},${y(p.minScore)}`).join(' ');
+      <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="#CBD5E1" />
+      {years.map((yr) => (
+        <text key={yr} x={x(yr)} y={h - 10} textAnchor="middle" className="fill-gray-500 text-[10px]">
+          {yr}
+        </text>
+      ))}
+
+      {types.map((t, ti) => {
+        const pts = byType[t];
+        if (!pts?.length) return null;
+        const color = colors[ti % colors.length];
+        const lineD = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.year)},${y(p.minScore)}`).join(' ');
+        const areaD = `${lineD} L ${x(pts[pts.length - 1].year)},${h - pad} L ${x(pts[0].year)},${h - pad} Z`;
         return (
-          <g key={t}>
-            <path d={d} fill="none" stroke={color} strokeWidth={2.5} />
-            {pts.map((p,i)=> (
-              <circle key={i} cx={x(p.year)} cy={y(p.minScore)} r={3.5} fill={color} />
+          <g key={t} filter="url(#glow)">
+            <path d={areaD} fill={`url(#grad-${ti})`} />
+            <path d={lineD} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            {pts.map((p, i) => (
+              <circle key={i} cx={x(p.year)} cy={y(p.minScore)} r={3.2} fill="#fff" stroke={color} strokeWidth={2} />
             ))}
           </g>
         );
       })}
-      {/* legend */}
-      {types.map((t, ti)=> (
-        <g key={t} transform={`translate(${pad + ti*130}, ${pad-10})`}>
-          <rect width={10} height={10} rx={2} fill={colors[ti%colors.length]} />
-          <text x={16} y={9} className="fill-gray-600 text-[11px]">{t}</text>
-        </g>
-      ))}
     </svg>
   );
 }
@@ -157,13 +187,15 @@ function ScoreChart({ data }: { data: { year: number; candidateType: string; min
 export default async function UniversityPage({ params }: { params: { slug: string } }) {
   const data = await getData(params.slug);
   if (!data) notFound();
-  const { uni, scores, seats, testimonials, media, articles } = data;
+  const { uni, scores, seats, testimonials, media, articles, page } = data;
 
   return (
     <section className={`${baloo.variable} mx-auto max-w-6xl p-6`}>
       <div className="flex items-start gap-6">
         {/* Main article area */}
-        <article className="flex-1 rounded-2xl border bg-white p-6 shadow-sm">
+        <article className="relative flex-1 overflow-hidden rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full bg-indigo-200 opacity-30 blur-3xl"></div>
+          <div className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-amber-100 opacity-40 blur-3xl"></div>
           <div className="flex items-center gap-3">
             {uni.logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -180,14 +212,14 @@ export default async function UniversityPage({ params }: { params: { slug: strin
           </div>
 
           <div className="mt-6 prose max-w-none">
-            <h2 className="font-brand text-2xl" style={{fontFamily: "var(--font-baloo)"}}>About the University</h2>
-            <p>
-              This is a placeholder article for {uni.name}. Replace with your rich content.
-              The page is built to support localization, structured data and future expansions (programs, fees, FAQs).
-            </p>
-            <p>
-              Below you can find admission scores over the years, seats availability, student testimonials, media and related articles.
-            </p>
+            {page?.contentHtml ? (
+              <div dangerouslySetInnerHTML={{ __html: page.contentHtml }} />
+            ) : (
+              <>
+                <h2 className="font-brand text-2xl" style={{ fontFamily: "var(--font-baloo)" }}>About the University</h2>
+                <p>This is a placeholder article for {uni.name}. Replace it from the admin editor.</p>
+              </>
+            )}
           </div>
         </article>
 
@@ -225,12 +257,27 @@ export default async function UniversityPage({ params }: { params: { slug: strin
             <div className="rounded-2xl border bg-white p-4 shadow-sm">
               <div className="mb-3 text-sm font-semibold text-indigo-700">Student Testimonials</div>
               <div className="flex flex-col gap-3">
-                {(testimonials ?? []).slice(0,3).map((t:any)=> (
-                  <div key={t.id} className="rounded-xl bg-gray-50 p-3">
-                    <div className="text-sm font-semibold text-gray-800">{t.author}</div>
-                    <div className="text-sm text-gray-700">{t.quote}</div>
-                  </div>
-                ))}
+                {(testimonials ?? []).slice(0,3).map((t:any)=> {
+                  const cats = (t.categories || {}) as Record<string, number>;
+                  const entries = Object.entries(cats);
+                  const avg = entries.length ? entries.reduce((a,[,v])=>a+Number(v||0),0)/entries.length : (t.rating ?? null);
+                  return (
+                    <div key={t.id} className="rounded-xl bg-gradient-to-br from-indigo-50 to-white p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-semibold text-gray-800">{t.author}</div>
+                        {avg && <div className="ml-auto rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">{avg.toFixed(1)}</div>}
+                      </div>
+                      <div className="mt-1 text-sm text-gray-700">{t.quote}</div>
+                      {entries.length>0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {entries.map(([k,v])=> (
+                            <span key={k} className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">{k}: {Number(v).toFixed(1)}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {(!testimonials || testimonials.length===0) && (
                   <div className="text-sm text-gray-500">No testimonials yet.</div>
                 )}

@@ -231,6 +231,7 @@ export const universityTestimonials = pgTable(
     author: varchar("author", { length: 120 }).notNull(),
     quote: text("quote").notNull(),
     rating: doublePrecision("rating"),
+    categories: jsonb("categories"), // { [category]: number }
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({ uniIdx: index("testimonials_university_idx").on(t.universityId) })
@@ -261,4 +262,19 @@ export const universityArticles = pgTable(
     publishedAt: timestamp("published_at").defaultNow().notNull(),
   },
   (t) => ({ uniIdx: index("articles_university_idx").on(t.universityId) })
+);
+
+// Editable page content per university and locale
+export const universityPages = pgTable(
+  "university_pages",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    locale: varchar("locale", { length: 10 }).notNull().default("en"),
+    contentHtml: text("content_html").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    uniLocaleIdx: index("university_pages_uni_locale_idx").on(t.universityId),
+  })
 );
