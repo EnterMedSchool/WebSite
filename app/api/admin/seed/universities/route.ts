@@ -8,8 +8,11 @@ import { and, eq } from "drizzle-orm";
 
 function requireKey(request: Request) {
   const url = new URL(request.url);
-  const key = url.searchParams.get("key");
-  if (!process.env.SEED_SECRET || !key || key !== process.env.SEED_SECRET) {
+  const qp = url.searchParams.get("key");
+  const headerKey = request.headers.get("x-seed-key");
+  const key = (qp ?? headerKey ?? "").trim().replace(/^['"]|['"]$/g, "");
+  const secret = (process.env.SEED_SECRET ?? "").trim().replace(/^['"]|['"]$/g, "");
+  if (!secret || !key || key !== secret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;

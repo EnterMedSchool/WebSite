@@ -15,8 +15,11 @@ function slugify(input: string): string {
 
 function requireKey(request: Request) {
   const url = new URL(request.url);
-  const key = url.searchParams.get("key");
-  if (!process.env.SEED_SECRET || !key || key !== process.env.SEED_SECRET) {
+  const qp = url.searchParams.get("key");
+  const headerKey = request.headers.get("x-seed-key");
+  const key = (qp ?? headerKey ?? "").trim().replace(/^['"]|['"]$/g, "");
+  const secret = (process.env.SEED_SECRET ?? "").trim().replace(/^['"]|['"]$/g, "");
+  if (!secret || !key || key !== secret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
@@ -50,4 +53,3 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 }
-
