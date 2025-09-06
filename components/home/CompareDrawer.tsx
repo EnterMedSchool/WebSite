@@ -29,7 +29,7 @@ function insights(items: Item[]): string {
   return parts.join(' ');
 }
 
-type Series = { uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }> };
+type Series = { uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }>; seats: Array<{ year: number; type: string; seats: number }> };
 
 function buildPaths(series: Series[]): { paths: Array<{ d: string; color: string; uni: string }>; years: number[] } {
   const colors = ["#6C63FF", "#F59E0B", "#10B981", "#EF4444", "#3B82F6", "#A855F7", "#14B8A6", "#6366F1", "#F97316", "#8B5CF6"];
