@@ -84,18 +84,22 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 180, damping: 20 }}
-            className="absolute right-0 top-0 h-full w-[min(720px,96vw)] bg-white shadow-2xl"
+            className="absolute right-0 top-0 h-full w-[min(860px,96vw)] bg-gradient-to-br from-white to-indigo-50 shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b p-4">
-              <div className="text-lg font-semibold">Compare Universities</div>
-              <div className="flex items-center gap-2">
-                <button onClick={onClear} className="rounded-lg bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-200">Clear</button>
-                <button onClick={onClose} className="rounded-lg bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">Close</button>
+            <div className="sticky top-0 z-10 border-b bg-white/70 backdrop-blur p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-lg font-semibold text-indigo-800">Compare Universities</div>
+                <div className="flex items-center gap-2">
+                  <button onClick={onClear} className="rounded-lg bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-200">Clear</button>
+                  <button onClick={onClose} className="rounded-lg bg-indigo-600 px-3 py-1 text-sm font-semibold text-white hover:bg-indigo-700">Close</button>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
+            <div className="h-full overflow-hidden">
+              <div className="h-full overflow-auto p-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {items.map((it) => (
-                <div key={it.uni} className="rounded-xl border p-3">
+                <div key={it.uni} className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 overflow-hidden rounded-full bg-indigo-100">
                       {it.logo ? <img src={it.logo} alt="logo" className="h-full w-full object-cover" /> : null}
@@ -106,17 +110,17 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
                     </div>
                     <button onClick={() => onRemove(it.uni)} className="ml-auto text-xs text-gray-500 hover:underline">Remove</button>
                   </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                  <div className="rounded bg-gray-50 p-2">Rating: {typeof it.rating === 'number' ? it.rating.toFixed(1) : '—'}</div>
-                  <div className="rounded bg-gray-50 p-2">Last Score: {it.lastScore != null ? `${it.lastScore}/100` : '—'}</div>
-                  <div className="rounded bg-gray-50 p-2">Language: {it.language ?? '—'}</div>
-                  <div className="rounded bg-gray-50 p-2">Exam: {it.exam ?? '—'}</div>
-                  <div className="rounded bg-gray-50 p-2">Type: {it.kind ? (it.kind === 'private' ? 'Private' : 'Public') : '—'}</div>
-                </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded bg-gray-50 p-2">Rating: {typeof it.rating === 'number' ? it.rating.toFixed(1) : '—'}</div>
+                    <div className="rounded bg-gray-50 p-2">Last Score: {it.lastScore != null ? `${it.lastScore}/100` : '—'}</div>
+                    <div className="rounded bg-gray-50 p-2">Language: {it.language ?? '—'}</div>
+                    <div className="rounded bg-gray-50 p-2">Exam: {it.exam ?? '—'}</div>
+                    <div className="rounded bg-gray-50 p-2">Type: {it.kind ? (it.kind === 'private' ? 'Private' : 'Public') : '—'}</div>
+                  </div>
                 </div>
               ))}
-            </div>
-            <div className="border-t p-4">
+                </div>
+                <div className="mt-6 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
               <div className="text-sm font-semibold text-indigo-700">Smart insights</div>
               <div className="mt-1 text-sm text-gray-700">{insights(items)}</div>
               {series.length > 0 && (() => {
@@ -164,6 +168,8 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
                 </>
                 );
               })()}
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
