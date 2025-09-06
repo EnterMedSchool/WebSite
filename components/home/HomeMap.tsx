@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,42 +14,83 @@ type Feature = {
 };
 
 export default function HomeMap() {
-  const [selected, setSelected] = useState<{ name: string; center: [number, number] } | null>(null);
-  // Start a bit lower vertically so Europe isn't glued to the bottom on load
-  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 14], zoom: 1 });
+  const [selected, setSelected] = useState<{ name: string; center: [number, number]; baseCenter: [number, number] } | null>(null);
+  // Pull the world closer to the header by default
+  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 4], zoom: 1 });
 
   // Desktop-only layout constants (we don't handle mobile/tablet yet)
-  const HEADER_OFFSET = 112; // approx. combined height of the two nav bars
+  // We'll detect the actual header height at runtime, defaulting to ~112px.
+  const [headerOffset, setHeaderOffset] = useState<number>(112);
   const PANEL_GUTTER = 16;   // spacing from viewport edges
 
   const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
 
-  function handleCountryClick(geo: any) {
-    const name: string = geo.properties.name;
-    let center = geoCentroid(geo) as [number, number];
-    // Responsive nudge so the selected country isn't covered by the right panel
-    // and doesn't sit too close to the bottom on short displays.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const updateHeader = () => {
+      const header = document.querySelector("header");
+      const h = header ? Math.ceil(header.getBoundingClientRect().height) : 112;
+      setHeaderOffset(h);
+    };
+    updateHeader();
+    window.addEventListener("resize", updateHeader);
+    return () => window.removeEventListener("resize", updateHeader);
+  }, []);
+
+  // Compute a center offset that leaves room for the right panel and
+  // adds a vertical margin so selection isn't glued to the bottom.
+  function computeOffsetCenter(baseCenter: [number, number], zoom: number): [number, number] {
     const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
 
-    // Horizontal shift: a bit less on narrower screens, a bit more on wide screens
-    const xShift = vw < 1280 ? 6 : 8; // degrees of longitude
+    const panelWidthPx = Math.min(400, 0.36 * vw); // matches panel's CSS width
+    const panelFrac = panelWidthPx / vw; // portion of the viewport used by panel
 
-    // Vertical shift: nudge up more on short screens so content isn't glued to the bottom
-    const yShift = vh < 850 ? 8 : 6; // degrees of latitude (move map up -> subtract)
+    // Approximate width/height of visible world in degrees under the current zoom.
+    const visibleWidthDeg = 360 / Math.max(zoom, 1);
+    const visibleHeightDeg = 180 / Math.max(zoom, 1);
 
-    center = [center[0] - xShift, center[1] - yShift];
-    setSelected({ name, center });
-    // Zoom in strongly on selection for clarity; slightly less aggressive on very short screens
-    const targetZoom = vh < 850 ? 5.8 : 6.2;
+    // Horizontal shift: move country toward the visual left by the fraction occupied by the panel.
+    // Multiplier tuned so typical zoom keeps points clearly visible without overcompensation.
+    const xShift = Math.max(4, visibleWidthDeg * panelFrac * 0.8);
+
+    // Vertical shift: more on short screens, scaled to visible degrees.
+    const yShiftBase = vh < 850 ? 0.28 : 0.22; // fraction of visible height
+    const yShift = Math.max(4, visibleHeightDeg * yShiftBase);
+
+    return [baseCenter[0] - xShift, baseCenter[1] - yShift];
+  }
+
+  function handleCountryClick(geo: any) {
+    const name: string = geo.properties.name;
+    const baseCenter = geoCentroid(geo) as [number, number];
+    const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+    const targetZoom = vh < 850 ? 5.8 : 6.2; // strong zoom to clarify markers
+    const center = computeOffsetCenter(baseCenter, targetZoom);
+    setSelected({ name, center, baseCenter });
     setPosition({ center, zoom: targetZoom });
   }
 
   function reset() {
     setSelected(null);
-    setPosition({ center: [0, 14], zoom: 1 });
+    setPosition({ center: [0, 4], zoom: 1 });
   }
+
+  // Recompute center on viewport resize so the panel binding stays correct
+  useEffect(() => {
+    function onResize() {
+      if (!selected) return;
+      const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+      const targetZoom = vh < 850 ? 5.8 : 6.2;
+      const center = computeOffsetCenter(selected.baseCenter, targetZoom);
+      setPosition({ center, zoom: targetZoom });
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
+  }, [selected]);
 
   return (
     <div className="relative">
@@ -65,7 +106,7 @@ export default function HomeMap() {
 
         {/* Title removed per latest UX request */}
 
-        <ComposableMap projectionConfig={{ scale: 165 }} style={{ width: "100%", height: "100%" }}>
+        <ComposableMap projectionConfig={{ scale: 175 }} style={{ width: "100%", height: "100%" }}>
           <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={1} maxZoom={8} animate animationDuration={1100} animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}>
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) =>
@@ -141,9 +182,9 @@ export default function HomeMap() {
           <div
             className="pointer-events-auto absolute right-4 z-20 w-[min(400px,36vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
             style={{
-              top: HEADER_OFFSET,
+              top: headerOffset,
               bottom: PANEL_GUTTER,
-              maxHeight: `calc(100vh - ${HEADER_OFFSET + PANEL_GUTTER}px)`
+              maxHeight: `calc(100vh - ${headerOffset + PANEL_GUTTER}px)`
             }}
           >
             <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
