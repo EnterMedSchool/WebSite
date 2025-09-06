@@ -11,7 +11,8 @@ import {
   universityMedia,
   universityArticles,
 } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { universityPages } from "@/drizzle/schema";
 
 function slugify(input: string): string {
   return input
@@ -43,17 +44,17 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     const uni = uniRows.find((u) => slugify(u.name) === slug);
     if (!uni) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const [scores, seats, testimonials, media, articles] = await Promise.all([
+    const [scores, seats, testimonials, media, articles, page] = await Promise.all([
       db.select().from(universityScores).where(eq(universityScores.universityId, uni.id)).then((r) => r.sort((a,b)=>a.year-b.year)),
       db.select().from(universitySeats).where(eq(universitySeats.universityId, uni.id)).then((r) => r.sort((a,b)=>a.year-b.year)),
       db.select().from(universityTestimonials).where(eq(universityTestimonials.universityId, uni.id)).then((r)=>r.slice(-6)),
       db.select().from(universityMedia).where(eq(universityMedia.universityId, uni.id)).then((r)=>r.slice(-8)),
       db.select().from(universityArticles).where(eq(universityArticles.universityId, uni.id)).then((r)=>r.slice(-6)),
+      db.select().from(universityPages).where(eq(universityPages.universityId, uni.id)).then((r)=> r[0] ?? null),
     ]);
 
-    return NextResponse.json({ university: uni, scores, seats, testimonials, media, articles });
+    return NextResponse.json({ university: uni, scores, seats, testimonials, media, articles, page });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 }
-
