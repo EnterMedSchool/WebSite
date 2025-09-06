@@ -23,7 +23,9 @@ export default function HomeMap() {
   const [headerOffset, setHeaderOffset] = useState<number>(112);
   const PANEL_GUTTER = 16;   // spacing from viewport edges
 
+  const countryHasData = useMemo(() => new Set(Object.keys(demoUniversities)), []);
   const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
+  const allCityData = useMemo(() => Object.entries(demoUniversities).flatMap(([country, cities]) => cities.map(c => ({...c, country }))), []);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function HomeMap() {
     const visibleWidthDeg = 360 / Math.max(zoom, 1);
     const visibleHeightDeg = 180 / Math.max(zoom, 1);
 
-    // Horizontal shift: move country toward the visual left by the fraction occupied by the panel.
+    // Horizontal shift: move country toward the visual right by the fraction occupied by the panel (panel is on the left).
     // Multiplier tuned so typical zoom keeps points clearly visible without overcompensation.
     const xShift = Math.max(4, visibleWidthDeg * panelFrac * 0.8);
 
@@ -59,7 +61,7 @@ export default function HomeMap() {
     const yShiftBase = vh < 850 ? 0.28 : 0.22; // fraction of visible height
     const yShift = Math.max(4, visibleHeightDeg * yShiftBase);
 
-    return [baseCenter[0] - xShift, baseCenter[1] - yShift];
+    return [baseCenter[0] + xShift, baseCenter[1] - yShift];
   }
 
   function handleCountryClick(geo: any) {
@@ -92,17 +94,22 @@ export default function HomeMap() {
     }
   }, [selected]);
 
+  // Default selection: Italy on initial mount
+  useEffect(() => {
+    if (selected) return;
+    const baseCenter: [number, number] = [12.567, 41.8719]; // Italy approximate centroid
+    const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+    const targetZoom = vh < 850 ? 5.8 : 6.2;
+    const center = computeOffsetCenter(baseCenter, targetZoom);
+    setSelected({ name: "Italy", baseCenter, center });
+    setPosition({ center, zoom: targetZoom });
+  }, []);
+
   return (
     <div className="relative">
       {/* Hero map */}
       <div className="relative rounded-none border-0 bg-white p-0" style={{ minHeight: "calc(100vh - 120px)" }}>
-        <div className="absolute right-4 top-4 z-10">
-          {selected && (
-            <button onClick={reset} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">
-              Back to world
-            </button>
-          )}
-        </div>
+        {/* No Back to world button per new default UX */}
 
         {/* Title removed per latest UX request */}
 
@@ -110,36 +117,46 @@ export default function HomeMap() {
           <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={1} maxZoom={8} animate animationDuration={1100} animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}>
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) =>
-                geographies.map((geo: any) => (
-                  <Geography
-                    key={(geo as Feature).id}
-                    geography={geo}
-                    onClick={() => handleCountryClick(geo)}
-                    style={{
-                    default: { fill: "#EEF2F7", outline: "none", stroke: "#CBD5E1", strokeWidth: 0.5 },
-                    hover: { fill: "#DDE3F5", outline: "none" },
-                    pressed: { fill: "#C7D2FE", outline: "none" },
-                  }}
-                />
-              ))
+                geographies.map((geo: any) => {
+                  const name = (geo.properties.name as string) || "";
+                  const isSelected = selected?.name === name;
+                  const hasData = countryHasData.has(name);
+                  const fill = isSelected ? "#C7D2FE" : hasData ? "#E6ECFF" : "#EEF2F7";
+                  const hoverFill = isSelected ? "#C7D2FE" : "#DDE3F5";
+                  return (
+                    <Geography
+                      key={(geo as Feature).id}
+                      geography={geo}
+                      onClick={hasData ? () => handleCountryClick(geo) : undefined}
+                      style={{
+                        default: { fill, outline: "none", stroke: "#CBD5E1", strokeWidth: isSelected ? 1 : 0.5, cursor: hasData ? "pointer" : "default" },
+                        hover: { fill: hoverFill, outline: "none", cursor: hasData ? "pointer" : "default" },
+                        pressed: { fill: "#C7D2FE", outline: "none" },
+                      }}
+                    />
+                  );
+                })
               }
             </Geographies>
 
             {/* City markers when a country is selected */}
             <AnimatePresence>
-              {cityData.map((c, idx) => {
+              {/* Render markers for all countries with data; scale up for selected country */}
+              {allCityData.map((c, idx) => {
                 const label = c.city;
                 const rimR = 5.5;
                 const emblemR = 4.0;
                 const isPrivate = c.kind === "private";
                 const accent = isPrivate ? "#F59E0B" : "#6C63FF"; // amber for private, indigo for public
-                const clipId = `logo-${(selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
+                const clipId = `logo-${(c.country || selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
                 const yJitter = 0; // keep precise alignment; jitter removed
+                const isSelectedCountry = selected?.name === c.country;
+                const scale = markerScale * (isSelectedCountry ? 1 : 0.8);
                 return (
                   <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
                     <motion.g
                       initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: markerScale, opacity: 1 }}
+                      animate={{ scale, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 140, damping: 18 }}
                       transform={`translate(0, ${yJitter})`}
@@ -180,7 +197,7 @@ export default function HomeMap() {
         {/* Right side panel of universities when a country is selected */}
         {selected && cityData.length > 0 && (
           <div
-            className="pointer-events-auto absolute right-4 z-20 w-[min(400px,36vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
+            className="pointer-events-auto absolute left-4 z-20 w-[min(400px,36vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
             style={{
               top: headerOffset,
               bottom: PANEL_GUTTER,
