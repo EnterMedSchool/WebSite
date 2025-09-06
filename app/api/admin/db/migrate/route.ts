@@ -1,7 +1,8 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { sql as vpsql } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sql as dsql } from "drizzle-orm";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -28,10 +29,15 @@ export async function GET(request: Request) {
     const executed: string[] = [];
     for (const file of files) {
       const content = await readFile(path.join(folder, file), "utf8");
-      if (content && content.trim().length > 0) {
-        await vpsql.unsafe(content);
-        executed.push(file);
+      if (!content) continue;
+      const parts = content
+        .split(/;\s*\n/g)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      for (const stmt of parts) {
+        await db.execute(dsql.raw(stmt));
       }
+      executed.push(file);
     }
     return NextResponse.json({ ok: true, executed });
   } catch (err: any) {

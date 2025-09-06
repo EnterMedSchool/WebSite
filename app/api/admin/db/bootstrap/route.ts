@@ -1,7 +1,8 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { sql as vpsql } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sql as dsql } from "drizzle-orm";
 
 function requireKey(request: Request) {
   const url = new URL(request.url);
@@ -213,10 +214,15 @@ export async function GET(request: Request) {
   if (forbidden) return forbidden;
 
   try {
-    await vpsql.unsafe(BOOTSTRAP_SQL);
-    return NextResponse.json({ ok: true });
+    const parts = BOOTSTRAP_SQL
+      .split(/;\s*\n/g)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    for (const stmt of parts) {
+      await db.execute(dsql.raw(stmt));
+    }
+    return NextResponse.json({ ok: true, statements: parts.length });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 }
-
