@@ -7,7 +7,6 @@ import {
   universityPages,
   universityTestimonials,
   universityMedia,
-  countries,
 } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { readFile } from "node:fs/promises";
@@ -55,15 +54,23 @@ export async function GET(request: Request) {
       );
     }
 
-    const html = await readFile(process.cwd() + "/universityarticles/pavia.html", "utf8");
+    let html: string;
+    try {
+      html = await readFile(process.cwd() + "/universityarticles/pavia.html", "utf8");
+    } catch {
+      // Fallback content if the HTML file isn't bundled; still seed usable page content
+      html = `<h1>University of Pavia</h1><p>Placeholder page content. You can update it later via the admin page API.</p>`;
+    }
 
     // Upsert simple page content
     const existing = await db
       .select()
       .from(universityPages)
       .where(eq(universityPages.universityId, pavia.id));
+    let pageInserted = false;
     if (existing.length === 0) {
       await db.insert(universityPages).values({ universityId: pavia.id, locale: "en", contentHtml: html });
+      pageInserted = true;
     }
 
     // Add a couple of sample testimonials and media (if none exist)
@@ -71,8 +78,9 @@ export async function GET(request: Request) {
       .select({ id: universityTestimonials.id })
       .from(universityTestimonials)
       .where(eq(universityTestimonials.universityId, pavia.id))).length;
+    let testimonialsInserted = 0;
     if (tCount === 0) {
-      await db.insert(universityTestimonials).values([
+      const res = await db.insert(universityTestimonials).values([
         {
           universityId: pavia.id,
           author: "EMS Student",
@@ -87,15 +95,17 @@ export async function GET(request: Request) {
           rating: 4.6,
           categories: { teaching: 4.4, facilities: 4.3, lifestyle: 4.6 },
         },
-      ]);
+      ]).returning({ id: universityTestimonials.id });
+      testimonialsInserted = res.length;
     }
 
     const mCount = (await db
       .select({ id: universityMedia.id })
       .from(universityMedia)
       .where(eq(universityMedia.universityId, pavia.id))).length;
+    let mediaInserted = 0;
     if (mCount === 0) {
-      await db.insert(universityMedia).values([
+      const res = await db.insert(universityMedia).values([
         {
           universityId: pavia.id,
           type: "image",
@@ -108,10 +118,11 @@ export async function GET(request: Request) {
           url: "https://entermedschool.b-cdn.net/wp-content/uploads/2023/04/photo_2023-04-10_11-18-15-150x150.jpg",
           title: "Student life",
         },
-      ]);
+      ]).returning({ id: universityMedia.id });
+      mediaInserted = res.length;
     }
 
-    return NextResponse.json({ ok: true, university: pavia.name });
+    return NextResponse.json({ ok: true, university: pavia.name, inserted: { page: pageInserted, testimonials: testimonialsInserted, media: mediaInserted } });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
