@@ -5,7 +5,23 @@ import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "re
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import type { CountryCities } from "@/data/universities"; // type-only import
+import UniversitiesPanel from "@/components/home/UniversitiesPanel";
+
+// DB-backed types (match /api/universities response)
+type City = {
+  city: string;
+  lat: number;
+  lng: number;
+  uni: string;
+  kind?: "public" | "private";
+  logo?: string;
+  rating?: number;
+  lastScore?: number;
+  photos?: string[];
+  orgs?: string[];
+  article?: { title: string; href?: string };
+};
+type CountryCities = Record<string, City[]>;
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -34,7 +50,7 @@ export default function HomeMap() {
   , [uniData]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
 
-  // Load data from API (falls back to demo JSON on the server if DB is empty)
+  // Load data from API (DB only; if it fails, show nothing instead of static demo)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -43,9 +59,7 @@ export default function HomeMap() {
         const json = await res.json();
         if (!cancelled) setUniData(json.data as CountryCities);
       } catch {
-        // as a final fallback, lazy import demo JSON in the browser
-        const mod = await import("@/data/universities");
-        if (!cancelled) setUniData(mod.demoUniversities);
+        if (!cancelled) setUniData({});
       }
     })();
     return () => { cancelled = true; };
@@ -227,8 +241,8 @@ export default function HomeMap() {
           </ZoomableGroup>
         </ComposableMap>
 
-        {/* Right side panel of universities when a country is selected */}
-        {selected && cityData.length > 0 && (
+        {/* Right side panel of universities when a country is selected (legacy, disabled) */}
+        {false && selected && cityData.length > 0 && (
           <div
             className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
             style={{
@@ -285,6 +299,9 @@ export default function HomeMap() {
               ))}
             </div>
           </div>
+        )}
+        {selected && cityData.length > 0 && (
+          <UniversitiesPanel selectedName={selected.name} items={cityData as any} />
         )}
       </div>
 
