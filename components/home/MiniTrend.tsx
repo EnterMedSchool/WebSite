@@ -39,10 +39,27 @@ export default function MiniTrend({ uni }: { uni: string }) {
   const x = (i:number)=> P + (i/(Math.max(1, years.length-1)))*(W-2*P);
   const y = (v:number)=> H-P - ((v-min)/(max-min||1))*(H-2*P);
   const palette: Record<string,string> = { NonEU: '#8B5CF6', EU: '#F59E0B', All: '#6C63FF' };
-  const paths = types.map(t => ({ t, d: years.map((yr,i) => {
-    const m = ptsAll[t].find(p=>p.year===yr);
-    return m ? `${i?'L':'M'} ${x(i)},${y(m.score)}` : '';
-  }).filter(Boolean).join(' '), color: palette[t] || '#6C63FF' }));
+  function smoothPath(points: Array<{x:number;y:number}>): string {
+    if (!points.length) return '';
+    let d = `M ${points[0].x},${points[0].y}`;
+    for (let i=1;i<points.length;i++){
+      const prev = points[i-1];
+      const curr = points[i];
+      const midX = (prev.x + curr.x)/2;
+      const midY = (prev.y + curr.y)/2;
+      d += ` Q ${prev.x},${prev.y} ${midX},${midY}`;
+    }
+    const last = points[points.length-1];
+    d += ` T ${last.x},${last.y}`;
+    return d;
+  }
+  const paths = types.map(t => {
+    const pts = years.map((yr,i) => {
+      const m = ptsAll[t].find(p=>p.year===yr);
+      return m ? { x: x(i), y: y(m.score), raw: m.score, year: yr } : null;
+    }).filter(Boolean) as Array<{x:number;y:number;raw:number;year:number}>;
+    return { t, d: smoothPath(pts.map(p=>({x:p.x,y:p.y}))), color: palette[t] || '#6C63FF', end: pts[pts.length-1] };
+  });
 
   return (
     <div className="flex items-center justify-between gap-3">
@@ -54,7 +71,12 @@ export default function MiniTrend({ uni }: { uni: string }) {
           </linearGradient>
         </defs>
         {paths.map((p,i)=> (
-          <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth={2} />
+          <g key={i}>
+            <path d={p.d} fill="none" stroke={p.color} strokeWidth={2} strokeLinecap="round" />
+            {p.end && (
+              <text x={p.end.x + 4} y={p.end.y - 2} className="fill-gray-600 text-[9px]">{p.end.raw.toFixed(0)}</text>
+            )}
+          </g>
         ))}
       </svg>
       <div className="grid w-[132px] grid-rows-2 gap-2">

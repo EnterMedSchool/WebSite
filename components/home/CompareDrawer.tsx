@@ -97,7 +97,64 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
               </div>
             </div>
             <div className="h-full overflow-hidden">
-              <div className="h-full overflow-auto p-4">
+              <div className="h-full overflow-auto p-4 space-y-6">
+                {/* Insights first */}
+                <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+                  <div className="text-sm font-semibold text-indigo-700">Smart insights</div>
+                  <div className="mt-1 text-sm text-gray-700">{insights(items)}</div>
+                  {series.length > 0 && (() => {
+                    const latest: Record<string, { eu?: number; nonEu?: number }> = {};
+                    for (const s of series) {
+                      const y = Math.max(...s.seats.map(p=>p.year));
+                      latest[s.uni] = {
+                        eu: s.seats.find(p=>p.year===y && p.type==='EU')?.seats,
+                        nonEu: s.seats.find(p=>p.year===y && p.type==='NonEU')?.seats,
+                      };
+                    }
+                    return (
+                    <>
+                    <div className="mt-4">
+                      <div className="mb-2 text-sm font-semibold text-gray-700">Admission score trends</div>
+                      <div className="mb-2 flex items-center gap-2 text-xs">
+                        <span className="text-gray-600">Candidate type:</span>
+                        {(['EU','NonEU','All'] as const).map((t)=> (
+                          <button key={t} onClick={()=>setCandType(t)} className={`rounded-full px-2 py-0.5 font-semibold ${candType===t ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t}</button>
+                        ))}
+                      </div>
+                      {(() => {
+                        const { paths, years } = buildPaths(series, candType);
+                        return (
+                          <>
+                            <div className="mb-2 flex flex-wrap gap-3 text-xs">
+                              {paths.map((p, i) => (
+                                <div key={`l-${i}`} className="flex items-center gap-1 text-gray-700">
+                                  <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
+                                  <span className="truncate">{p.uni}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <svg width="100%" viewBox="0 0 640 220" className="rounded-lg bg-gray-50">
+                              <line x1="30" y1="10" x2="30" y2="190" stroke="#CBD5E1" strokeWidth="1" />
+                              <line x1="30" y1="190" x2="610" y2="190" stroke="#CBD5E1" strokeWidth="1" />
+                              {years.map((yr, i) => (
+                                <text key={yr} x={30 + (i/(Math.max(1, years.length-1)))*(610-30)} y="210" fontSize="10" textAnchor="middle" fill="#64748B">{yr}</text>
+                              ))}
+                              {paths.map((p, i) => (
+                                <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                              ))}
+                            </svg>
+                    </div>
+                    <div className="mt-3 text-xs text-gray-700">
+                      {items.map((it) => (
+                        <div key={`seat-${it.uni}`} className="mt-1">{it.uni}: Seats — EU <span className="font-semibold">{latest[it.uni]?.eu ?? '—'}</span>, NonEU <span className="font-semibold">{latest[it.uni]?.nonEu ?? '—'}</span></div>
+                      ))}
+                    </div>
+                    </>
+                    );
+                  })()}
+                </div>
+
+                {/* Cards grid */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {items.map((it) => (
                 <div key={it.uni} className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">

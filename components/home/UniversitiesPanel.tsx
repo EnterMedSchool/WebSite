@@ -58,11 +58,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
 
             {/* Meta grid */}
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <div className="col-span-1 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
-                <div className="font-semibold text-gray-700">Last Score</div>
-                <div className="mt-1 text-gray-800">{c.lastScore != null ? `${c.lastScore}/100` : "—"}</div>
-              </div>
-              <div className="col-span-2 rounded-lg bg-gray-50 p-2">
+              <div className="col-span-3 rounded-lg bg-gray-50 p-2">
                 <div className="mb-1 text-xs font-semibold text-gray-700">Gallery</div>
                 <div className="flex gap-1">
                   {(c.photos ?? []).slice(0, 3).map((src, idx) => (
