@@ -5,18 +5,12 @@ import Milestones from "@/components/home/Milestones";
 import ExamsSection from "@/components/home/ExamsSection";
 import LatestArticles from "@/components/home/LatestArticles";
 import Family from "@/components/home/Family";
-import SearchHero from "@/components/home/SearchHero";
 
 const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
 
 export default function HomePage() {
   return (
     <div className="space-y-12">
-      {/* Search hero above the map */}
-      <section className="mx-auto w-full max-w-6xl px-4">
-        <SearchHero />
-      </section>
-
       {/* Map section */}
       <section id="universities" className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mt-[-0.5rem]">
         <HomeMap />

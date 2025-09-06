@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo } from "react";
 
@@ -25,8 +25,12 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
   }, [filters]);
 
   return (
-    <div className="pointer-events-auto mx-auto w-[min(1100px,96vw)] rounded-2xl bg-white/90 p-3 shadow-xl ring-1 ring-black/5 backdrop-blur">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+    <div className="pointer-events-auto mx-auto w-[min(1100px,96vw)] rounded-3xl bg-white/80 p-5 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl">
+      <div className="mb-2">
+        <h2 className="text-xl font-extrabold tracking-tight text-indigo-800">Where would you like to EnterMedSchool?</h2>
+        <div className="mt-0.5 text-xs font-medium text-indigo-700/80">Showing Medical Courses in English</div>
+      </div>
+      <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-5">
         {/* Query */}
         <input
           value={filters.q}
@@ -68,7 +72,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
           ))}
         </select>
       </div>
-      <div className="mt-2 flex items-center gap-3">
+      <div className="mt-3 flex items-center gap-3">
         <label className="text-sm text-gray-600">Min admission score</label>
         <input
           type="range"
@@ -93,4 +97,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
     </div>
   );
 }
+
+
+
 
