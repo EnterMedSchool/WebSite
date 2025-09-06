@@ -280,3 +280,38 @@ export const universityPages = pgTable(
     uniLocaleIdx: index("university_pages_uni_locale_idx").on(t.universityId),
   })
 );
+
+// Programs (per-university)
+export const universityPrograms = pgTable(
+  "university_programs",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    name: varchar("name", { length: 120 }),
+    language: varchar("language", { length: 24 }).notNull(),
+    admissionExam: varchar("admission_exam", { length: 40 }),
+    tuitionMin: integer("tuition_min"),
+    tuitionMax: integer("tuition_max"),
+    currency: varchar("currency", { length: 8 }),
+    active: boolean("active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ programUniIdx: index("programs_university_idx").on(t.universityId) })
+);
+
+export const programYearStats = pgTable(
+  "program_year_stats",
+  {
+    id: serial("id").primaryKey(),
+    programId: integer("program_id").notNull(),
+    year: integer("year").notNull(),
+    candidateType: varchar("candidate_type", { length: 24 }).notNull(),
+    minScore: doublePrecision("min_score"),
+    seats: integer("seats"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    programIdx: index("program_year_stats_program_idx").on(t.programId),
+    yearIdx: index("program_year_stats_year_idx").on(t.year),
+  })
+);

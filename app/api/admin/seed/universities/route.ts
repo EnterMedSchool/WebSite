@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { countries, universities } from "@/drizzle/schema";
+import { countries, universities, universityPrograms } from "@/drizzle/schema";
 import { demoUniversities } from "@/data/universities";
 import { and, eq } from "drizzle-orm";
 
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
           );
         if (existing.length > 0) continue;
 
-        await db.insert(universities).values({
+        const insertedUni = await db.insert(universities).values({
           countryId,
           city: u.city,
           name: u.uni,
@@ -76,7 +76,19 @@ export async function GET(request: Request) {
           photos: u.photos ? (u.photos as any) : null,
           orgs: u.orgs ? (u.orgs as any) : null,
           article: u.article ? (u.article as any) : null,
-        } as any);
+        } as any).returning({ id: universities.id });
+        // Create a default program row
+        const uniId = insertedUni[0]?.id;
+        if (uniId) {
+          await db.insert(universityPrograms).values({
+            universityId: uniId,
+            name: 'Medicine and Surgery',
+            language: ((u as any).language as string) ?? 'English',
+            admissionExam: ((u as any).exam as string) ?? null,
+            currency: 'EUR',
+            active: true,
+          } as any);
+        }
         createdUniversities++;
       }
     }

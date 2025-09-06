@@ -16,10 +16,10 @@ type City = {
   article?: { title: string; href?: string };
 };
 
-export default function UniversitiesPanel({ selectedName, items }: { selectedName: string; items: City[] }) {
+export default function UniversitiesPanel({ selectedName, items, topOffset = 4, onAddCompare, compareSet }: { selectedName: string; items: City[]; topOffset?: number; onAddCompare?: (item: City & { country?: string }) => void; compareSet?: Set<string> }) {
   const router = useRouter();
   const PANEL_GUTTER = 8;
-  const PANEL_TOP_GAP = 4;
+  const PANEL_TOP_GAP = topOffset;
 
   return (
     <div
@@ -97,10 +97,19 @@ export default function UniversitiesPanel({ selectedName, items }: { selectedNam
                 )}
               </div>
             )}
+
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onAddCompare?.({ ...c, country: selectedName })}
+                className={`rounded-lg px-2 py-1 text-xs font-semibold ${compareSet?.has(c.uni) ? "bg-green-50 text-green-700" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"}`}
+              >
+                {compareSet?.has(c.uni) ? "Added to Compare" : "Add to Compare"}
+              </button>
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-

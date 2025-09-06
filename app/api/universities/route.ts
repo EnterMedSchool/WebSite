@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { countries, universities } from "@/drizzle/schema";
+import { countries, universities, universityPrograms } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 // Types reused by the map UI
@@ -35,17 +35,20 @@ export async function GET() {
         lng: universities.lng,
         uni: universities.name,
         kind: universities.kind,
-        language: universities.language,
-        exam: universities.admissionExam,
         logo: universities.logoUrl,
         rating: universities.rating,
         lastScore: universities.lastScore,
         photos: universities.photos,
         orgs: universities.orgs,
         article: universities.article,
+        progLang: universityPrograms.language,
+        progExam: universityPrograms.admissionExam,
+        uniLang: universities.language,
+        uniExam: universities.admissionExam,
       })
       .from(universities)
-      .leftJoin(countries, eq(universities.countryId, countries.id));
+      .leftJoin(countries, eq(universities.countryId, countries.id))
+      .leftJoin(universityPrograms, eq(universityPrograms.universityId, universities.id));
 
     const data: CountryCities = {};
     for (const r of rows) {
@@ -56,8 +59,8 @@ export async function GET() {
         lng: r.lng as number,
         uni: r.uni,
         kind: (r.kind as any) ?? undefined,
-        language: (r.language as any) ?? undefined,
-        exam: (r.exam as any) ?? undefined,
+        language: ((r.progLang as any) ?? (r.uniLang as any)) ?? undefined,
+        exam: ((r.progExam as any) ?? (r.uniExam as any)) ?? undefined,
         logo: (r.logo as string) ?? undefined,
         rating: (r.rating as number) ?? undefined,
         lastScore: (r.lastScore as number) ?? undefined,

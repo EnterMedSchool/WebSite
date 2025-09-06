@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import UniversitiesPanel from "@/components/home/UniversitiesPanel";
+import CompareFab from "@/components/home/CompareFab";
+import CompareDrawer from "@/components/home/CompareDrawer";
 import MapFiltersBar, { type MapFilters } from "@/components/home/MapFiltersBar";
 
 // DB-backed types (match /api/universities response)
@@ -45,7 +47,7 @@ export default function HomeMap() {
   const PANEL_TOP_GAP = 4;   // small gap under menu
 
   const [uniData, setUniData] = useState<CountryCities | null>(null);
-  const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "", minScore: 0 });
+  const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "" });
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
   // Flatten all cities
@@ -59,7 +61,6 @@ export default function HomeMap() {
       if (filters.country && c.country !== filters.country) return false;
       if (filters.language && (c.language ?? "") !== filters.language) return false;
       if (filters.exam && (c.exam ?? "") !== filters.exam) return false;
-      if (filters.minScore > 0 && (c.lastScore ?? -1) < filters.minScore) return false;
       if (q && !(c.uni.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.country.toLowerCase().includes(q))) return false;
       return true;
     });
@@ -68,6 +69,79 @@ export default function HomeMap() {
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const searchParams = useSearchParams();
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compare, setCompare] = useState<Array<any>>([]);
+  const compareSet = useMemo(() => new Set(compare.map((i) => i.uni)), [compare]);
+
+  // Compare persistence + deep link
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('ems_compare') : null;
+    if (stored) {
+      try { setCompare(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.localStorage.setItem('ems_compare', JSON.stringify(compare));
+    // Deep link param
+    const slugs = compare.map((c) => c.uni.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+    const params = new URLSearchParams(window.location.search);
+    if (slugs.length) params.set('compare', slugs.join(',')); else params.delete('compare');
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : `?`);
+  }, [compare, router]);
+  useEffect(() => {
+    const pre = searchParams?.get('compare');
+    if (pre) {
+      const slugs = pre.split(',').filter(Boolean);
+      const found = allCityDataRaw.filter((c) => slugs.includes(c.uni.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')))
+        .map((c) => ({ uni: c.uni, country: c.country, city: c.city, kind: c.kind, language: (c as any).language, exam: (c as any).exam, rating: c.rating, lastScore: c.lastScore, logo: c.logo }));
+      if (found.length) setCompare(found);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function addToCompare(item: any) {
+    setCompare((arr) => (arr.some((x) => x.uni === item.uni) ? arr : [...arr, { uni: item.uni, country: item.country, city: item.city, kind: item.kind, language: item.language, exam: item.exam, rating: item.rating, lastScore: item.lastScore, logo: item.logo }]));
+  }
+  function removeFromCompare(uni: string) {
+    setCompare((arr) => arr.filter((x) => x.uni !== uni));
+  }
+  function clearCompare() {
+    setCompare([]);
+  }
+
+  // Deep-link: read on first render
+  useEffect(() => {
+    const q = searchParams?.get('q') ?? '';
+    const country = searchParams?.get('country') ?? '';
+    const language = searchParams?.get('language') ?? '';
+    const exam = searchParams?.get('exam') ?? '';
+    setFilters({ q, country, language, exam });
+    if (country) {
+      // try to preselect country view
+      const found = allCityDataRaw.find((c) => c.country === country);
+      if (found) {
+        // approximate center based on first match
+        setSelected({ name: country, center: position.center, baseCenter: position.center });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Deep-link: write on filter change (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (filters.q) params.set('q', filters.q);
+      if (filters.country) params.set('country', filters.country);
+      if (filters.language) params.set('language', filters.language);
+      if (filters.exam) params.set('exam', filters.exam);
+      const qs = params.toString();
+      router.replace(qs ? `?${qs}` : `?`);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [filters, router]);
 
   // Load data from API (DB only; if it fails, show nothing instead of static demo)
   useEffect(() => {
@@ -268,12 +342,12 @@ export default function HomeMap() {
         </div>
 
         {/* Filters bar overlay docked at top-right, shrinks when panel open */}
-        <div className="pointer-events-none absolute right-3 top-3 z-30 sm:right-6 sm:top-5">
+        <div className="pointer-events-none absolute left-3 top-3 z-30">
           <motion.div
             ref={overlayRef}
             className="pointer-events-auto"
             initial={{ opacity: 0, y: -10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: selected ? 0.97 : 1 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 180, damping: 18 }}
           >
             <MapFiltersBar
@@ -283,6 +357,33 @@ export default function HomeMap() {
               languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
               exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
               resultCount={allCityData.length}
+              suggestions={
+                filters.q.trim().length >= 1
+                  ? Array.from(new Set([
+                      ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
+                      ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
+                      ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
+                    ].map((s) => `${s.kind}:${s.label}`)))
+                      .map((key) => {
+                        const [kind, label] = key.split(':');
+                        return { kind: kind as 'uni'|'city'|'country', label, value: label };
+                      })
+                      .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
+                      .slice(0, 12)
+                  : []
+              }
+              onPick={(s) => {
+                if (s.kind === 'country') {
+                  setFilters((f) => ({ ...f, country: s.value }));
+                  setSelected({ name: s.value, center: position.center, baseCenter: position.center });
+                } else if (s.kind === 'uni') {
+                  const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                  try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+                } else {
+                  // city: set text and try finding country
+                  setFilters((f) => ({ ...f, q: s.value }));
+                }
+              }}
             />
           </motion.div>
         </div>
@@ -349,9 +450,13 @@ export default function HomeMap() {
         )}
         {selected && cityData.length > 0 && (
           <div ref={panelRef}>
-            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} />
+            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={140} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
           </div>
         )}
+
+        {/* Compare FAB + Drawer */}
+        <CompareFab count={compare.length} onOpen={() => setCompareOpen(true)} />
+        <CompareDrawer open={compareOpen} items={compare as any} onClose={() => setCompareOpen(false)} onRemove={removeFromCompare} onClear={clearCompare} />
       </div>
 
     </div>
