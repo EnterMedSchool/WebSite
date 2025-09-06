@@ -34,7 +34,6 @@ async function getData(slug: string) {
         kind: universities.kind,
         lat: universities.lat,
         lng: universities.lng,
-        rating: universities.rating,
         logoUrl: universities.logoUrl,
         country: countries.name,
       })
@@ -52,7 +51,12 @@ async function getData(slug: string) {
       db.select().from(universityPages).where(eq(universityPages.universityId, uni.id)),
     ]);
 
-    return { uni, scores, seats, testimonials, media, articles, page: pages[0] ?? null };
+    // Derived rating from testimonials
+    const rated = testimonials.filter((t:any)=> t.rating!=null).map((t:any)=> Number(t.rating));
+    const avgRating = rated.length ? rated.reduce((a:number,b:number)=>a+b,0)/rated.length : undefined;
+
+    const uniWithDerived = { ...uni, rating: avgRating } as any;
+    return { uni: uniWithDerived, scores, seats, testimonials, media, articles, page: pages[0] ?? null };
   } catch (err) {
     // Graceful fallback if DB tables are not present (e.g., first deploy)
     const { demoUniversities } = await import("@/data/universities");
