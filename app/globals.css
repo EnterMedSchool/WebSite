@@ -10,6 +10,30 @@ html, body {
   height: 100%;
 }
 
+/* Hide horizontal overflow introduced by full-width map sections */
+body {
+  overflow-x: hidden;
+}
+
+/* Subtle, rounded scrollbars to fit the vibe */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(99,102,241,0.6) rgba(17,24,39,0.06);
+}
+*::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: rgba(17,24,39,0.06);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(99,102,241,0.6); /* indigo */
+  border-radius: 8px;
+  border: 2px solid rgba(17,24,39,0.06);
+}
+
 /* Brand font helper (Baloo 2 via CSS variable from next/font) */
 .font-brand {
   font-family: var(--font-baloo), ui-sans-serif, system-ui, -apple-system, Segoe UI,

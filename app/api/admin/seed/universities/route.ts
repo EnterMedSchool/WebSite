@@ -68,6 +68,8 @@ export async function GET(request: Request) {
           lat: u.lat,
           lng: u.lng,
           kind: (u.kind as any) ?? null,
+          language: (u as any).language ?? 'English',
+          admissionExam: (u as any).exam ?? null,
           logoUrl: u.logo ?? null,
           rating: u.rating ?? null,
           lastScore: u.lastScore ?? null,

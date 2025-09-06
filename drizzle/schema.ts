@@ -176,6 +176,8 @@ export const universities = pgTable(
     lat: doublePrecision("lat").notNull(),
     lng: doublePrecision("lng").notNull(),
     kind: varchar("kind", { length: 10 }), // public | private
+    language: varchar("language", { length: 24 }), // course language (e.g., English, Italian)
+    admissionExam: varchar("admission_exam", { length: 40 }), // e.g., IMAT, TOLC-MED, UCAT, etc.
     logoUrl: varchar("logo_url", { length: 500 }),
     rating: doublePrecision("rating"),
     lastScore: integer("last_score"),

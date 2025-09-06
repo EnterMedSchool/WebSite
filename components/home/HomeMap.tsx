@@ -143,8 +143,18 @@ export default function HomeMap() {
 
         {/* Title removed per latest UX request */}
 
+        {/* Wrap map to intercept wheel and scroll page instead of zooming */}
+        <div
+          onWheelCapture={(e) => {
+            const target = e.target as HTMLElement;
+            if (panelRef.current && panelRef.current.contains(target)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            window.scrollBy({ top: e.deltaY, behavior: "auto" });
+          }}
+        >
         <ComposableMap projectionConfig={{ scale: 175 }} style={{ width: "100%", height: "100%" }}>
-          <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={1} maxZoom={8} animate animationDuration={1100} animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}>
+          <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={position.zoom} maxZoom={position.zoom} animate animationDuration={1100} animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}>
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) =>
                 geographies.map((geo: any) => {
@@ -236,6 +246,18 @@ export default function HomeMap() {
             </AnimatePresence>
           </ZoomableGroup>
         </ComposableMap>
+        </div>
+
+        {/* Filters bar overlay */}
+        <div className="pointer-events-none absolute left-1/2 top-4 z-30 -translate-x-1/2">
+          <MapFiltersBar
+            filters={filters}
+            onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+            countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
+            languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
+            exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
+          />
+        </div>
 
         {/* Right side panel of universities when a country is selected (legacy, disabled) */}
         {false && selected && cityData.length > 0 && (
@@ -246,6 +268,7 @@ export default function HomeMap() {
               bottom: PANEL_GUTTER,
               maxHeight: `calc(100% - ${PANEL_TOP_GAP + PANEL_GUTTER}px)`
             }}
+            ref={panelRef}
           >
             <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected?.name}</div>
             <div className="space-y-3 max-h-full overflow-auto pr-1">
@@ -297,7 +320,9 @@ export default function HomeMap() {
           </div>
         )}
         {selected && cityData.length > 0 && (
-          <UniversitiesPanel selectedName={selected!.name} items={cityData as any} />
+          <div ref={panelRef}>
+            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} />
+          </div>
         )}
       </div>
 
