@@ -275,14 +275,14 @@ export default function HomeMap() {
                   const isSelected = selected?.name === name;
                   const hasData = countryHasData.has(name);
                   const fill = isSelected ? "#C7D2FE" : hasData ? "#E6ECFF" : "#EEF2F7";
-                  const hoverFill = isSelected ? "#C7D2FE" : "#DDE3F5";
+                  const hoverFill = fill; // disable hover flicker by keeping same fill
                   return (
                     <Geography
                       key={(geo as Feature).id}
                       geography={geo}
                       onClick={hasData ? () => handleCountryClick(geo) : undefined}
                       style={{
-                        default: { fill, outline: "none", stroke: "#CBD5E1", strokeWidth: isSelected ? 1 : 0.5, cursor: hasData ? "pointer" : "default" },
+                        default: { fill, outline: "none", stroke: isSelected ? "#6366F1" : "#CBD5E1", strokeWidth: isSelected ? 1.5 : 0.5, cursor: hasData ? "pointer" : "default" },
                         hover: { fill: hoverFill, outline: "none", cursor: hasData ? "pointer" : "default" },
                         pressed: { fill: "#C7D2FE", outline: "none" },
                       }}
@@ -351,7 +351,14 @@ export default function HomeMap() {
                           <circle r={emblemR} fill={accent} />
                         )}
                       </g>
-
+                      {/* Hover tooltip with quick info */}
+                      {hoveredKey === key && (
+                        <g transform="translate(12, -28)">
+                          <rect x={-6} y={-14} rx={6} ry={6} width={180} height={36} fill="#111827" opacity={0.85} />
+                          <text x={4} y={0} fontSize={10} fontWeight={700} fill="#fff">{c.uni}</text>
+                          <text x={4} y={12} fontSize={9} fill="#e5e7eb">{c.city}{c.kind ? ` • ${c.kind}` : ''}</text>
+                        </g>
+                      )}
                     </motion.g>
                   </Marker>
                 );

@@ -30,7 +30,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
       <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selectedName}</div>
       <div className="space-y-3 max-h-full overflow-auto pr-1">
         {items.map((c, i) => (
-          <div key={`${c.city}-${i}`} className="rounded-xl border p-3 hover:bg-gray-50">
+          <div key={`${c.city}-${i}`} className="group rounded-xl border p-3 hover:bg-gray-50 transition-all">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
                 {c.logo ? (
@@ -50,6 +50,10 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               {typeof c.rating === "number" && (
                 <div className="ml-auto text-sm font-semibold text-gray-700">⭐ {c.rating.toFixed(1)}</div>
               )}
+              {/* Favorite heart (placeholder) */}
+              <button aria-label="Favorite" title="Favorite" className="ml-2 rounded-full bg-gray-100 p-1 text-gray-500 transition-colors hover:bg-pink-50 hover:text-pink-600">
+                ♥
+              </button>
             </div>
 
             {/* Meta grid */}
@@ -75,7 +79,10 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
           </div>
 
             {/* Trend + seats */}
-            <div className="mt-2">
+            <div className="mt-2 cursor-pointer rounded-2xl bg-gray-50 p-2 transition-all hover:ring-2 hover:ring-indigo-200" onClick={() => {
+              const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+              try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+            }}>
               <MiniTrend uni={c.uni} />
             </div>
 
@@ -104,11 +111,11 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               </div>
             )}
 
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => onAddCompare?.({ ...c, country: selectedName })}
-                className={`rounded-lg px-2 py-1 text-xs font-semibold ${compareSet?.has(c.uni) ? "bg-green-50 text-green-700" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"}`}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${compareSet?.has(c.uni) ? "bg-green-600 text-white hover:bg-green-700" : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700"}`}
               >
                 {compareSet?.has(c.uni) ? "Added to Compare" : "Add to Compare"}
               </button>

@@ -39,7 +39,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
   }, []);
 
   return (
-    <div className="pointer-events-auto mx-auto w-[min(520px,42vw)] rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 text-white">
+    <div className="pointer-events-auto mx-auto w-[min(640px,50vw)] rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 text-white">
       <div className="mb-2">
         <h2 className="text-xl font-extrabold tracking-tight">Where would you like to EnterMedSchool?</h2>
         <div className="mt-0.5 text-xs font-medium text-indigo-100/90">Showing Medical Courses in English</div>
@@ -86,7 +86,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         <select
           value={filters.country}
           onChange={(e) => onChange({ country: e.target.value })}
-          className="rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+          className="min-w-[150px] rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
         >
           <option value="">All countries</option>
           {countries.map((c) => (
@@ -97,7 +97,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         <select
           value={filters.language}
           onChange={(e) => onChange({ language: e.target.value })}
-          className="rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+          className="min-w-[150px] rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
         >
           <option value="">All languages</option>
           {languages.map((l) => (
@@ -108,7 +108,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         <select
           value={filters.exam}
           onChange={(e) => onChange({ exam: e.target.value })}
-          className="rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+          className="min-w-[150px] rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
         >
           <option value="">All exams</option>
           {exams.map((x) => (

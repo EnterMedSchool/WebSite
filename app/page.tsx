@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <div className="space-y-12">
       {/* Map section */}
-      <section id="universities" className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mt-[-8px]">
+      <section id="universities" className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mt-[-16px]">
         <HomeMap />
       </section>
 

@@ -33,7 +33,7 @@ export default function MiniTrend({ uni }: { uni: string }) {
 
   const types = Object.keys(ptsAll);
   if (types.length === 0) return null;
-  const W = 200, H = 56, P = 8;
+  const W = 260, H = 82, P = 10;
   const years = Array.from(new Set(types.flatMap(t=> ptsAll[t].map(p=>p.year)))).sort((a,b)=>a-b);
   const min = Math.min(...types.flatMap(t=> ptsAll[t].map(p=>p.score)), 0), max = Math.max(...types.flatMap(t=> ptsAll[t].map(p=>p.score)), 100);
   const x = (i:number)=> P + (i/(Math.max(1, years.length-1)))*(W-2*P);
