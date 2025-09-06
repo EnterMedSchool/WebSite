@@ -106,20 +106,30 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
                     </div>
                     <button onClick={() => onRemove(it.uni)} className="ml-auto text-xs text-gray-500 hover:underline">Remove</button>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded bg-gray-50 p-2">Rating: {typeof it.rating === 'number' ? it.rating.toFixed(1) : '—'}</div>
-                    <div className="rounded bg-gray-50 p-2">Last Score: {it.lastScore != null ? `${it.lastScore}/100` : '—'}</div>
-                    <div className="rounded bg-gray-50 p-2">Language: {it.language ?? '—'}</div>
-                    <div className="rounded bg-gray-50 p-2">Exam: {it.exam ?? '—'}</div>
-                    <div className="rounded bg-gray-50 p-2">Type: {it.kind ? (it.kind === 'private' ? 'Private' : 'Public') : '—'}</div>
-                  </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded bg-gray-50 p-2">Rating: {typeof it.rating === 'number' ? it.rating.toFixed(1) : '—'}</div>
+                  <div className="rounded bg-gray-50 p-2">Last Score: {it.lastScore != null ? `${it.lastScore}/100` : '—'}</div>
+                  <div className="rounded bg-gray-50 p-2">Language: {it.language ?? '—'}</div>
+                  <div className="rounded bg-gray-50 p-2">Exam: {it.exam ?? '—'}</div>
+                  <div className="rounded bg-gray-50 p-2">Type: {it.kind ? (it.kind === 'private' ? 'Private' : 'Public') : '—'}</div>
+                </div>
                 </div>
               ))}
             </div>
             <div className="border-t p-4">
               <div className="text-sm font-semibold text-indigo-700">Smart insights</div>
               <div className="mt-1 text-sm text-gray-700">{insights(items)}</div>
-              {series.length > 0 && (
+              {series.length > 0 && (() => {
+                const latest: Record<string, { eu?: number; nonEu?: number }> = {};
+                for (const s of series) {
+                  const y = Math.max(...s.seats.map(p=>p.year));
+                  latest[s.uni] = {
+                    eu: s.seats.find(p=>p.year===y && p.type==='EU')?.seats,
+                    nonEu: s.seats.find(p=>p.year===y && p.type==='NonEU')?.seats,
+                  };
+                }
+                return (
+                <>
                 <div className="mt-4">
                   <div className="mb-2 text-sm font-semibold text-gray-700">Admission score trends (NonEU/overall)</div>
                   {(() => {
@@ -146,7 +156,14 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
                     );
                   })()}
                 </div>
-              )}
+                <div className="mt-3 text-xs text-gray-700">
+                  {items.map((it) => (
+                    <div key={`seat-${it.uni}`} className="mt-1">{it.uni}: Seats — EU <span className="font-semibold">{latest[it.uni]?.eu ?? '—'}</span>, NonEU <span className="font-semibold">{latest[it.uni]?.nonEu ?? '—'}</span></div>
+                  ))}
+                </div>
+                </>
+                );
+              })()}
             </div>
           </motion.div>
         </motion.div>

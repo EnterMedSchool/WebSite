@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import MiniTrend from "@/components/home/MiniTrend";
 
 type City = {
   city: string;
@@ -71,6 +72,11 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
                   )}
                 </div>
               </div>
+          </div>
+
+            {/* Trend + seats */}
+            <div className="mt-2">
+              <MiniTrend uni={c.uni} />
             </div>
 
             {/* Orgs + article */}

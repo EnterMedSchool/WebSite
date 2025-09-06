@@ -4,7 +4,7 @@ export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { countries, universities, universityScores } from "@/drizzle/schema";
+import { countries, universities, universityScores, universitySeats } from "@/drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 
 function slugify(input: string): string {
@@ -41,15 +41,23 @@ export async function GET(request: Request) {
       .select()
       .from(universityScores)
       .where(inArray(universityScores.universityId, ids));
+    const seatRows = await db
+      .select()
+      .from(universitySeats)
+      .where(inArray(universitySeats.universityId, ids));
 
-    const series: Array<{ uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }> }> = [];
+    const series: Array<{ uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }>; seats: Array<{ year: number; type: string; seats: number }> }> = [];
     for (const id of ids) {
       const pts = scoreRows
         .filter((r) => r.universityId === id)
         .map((r) => ({ year: r.year, type: r.candidateType, score: r.minScore as number }))
         .sort((a, b) => a.year - b.year);
+      const se = seatRows
+        .filter((r) => r.universityId === id)
+        .map((r) => ({ year: r.year, type: r.candidateType, seats: r.seats as number }))
+        .sort((a, b) => a.year - b.year);
       const info = nameById.get(id)!;
-      series.push({ uni: info.name, country: info.country, points: pts });
+      series.push({ uni: info.name, country: info.country, points: pts, seats: se });
     }
 
     return NextResponse.json({ series });
@@ -57,4 +65,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 }
-
