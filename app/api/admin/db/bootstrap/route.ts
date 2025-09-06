@@ -139,8 +139,6 @@ CREATE TABLE IF NOT EXISTS "universities" (
   "lng" double precision NOT NULL,
   "kind" varchar(10),
   "logo_url" varchar(500),
-  "rating" double precision,
-  "last_score" integer,
   "photos" jsonb,
   "orgs" jsonb,
   "article" jsonb,

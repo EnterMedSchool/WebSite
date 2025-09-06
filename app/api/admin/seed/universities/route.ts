@@ -71,8 +71,6 @@ export async function GET(request: Request) {
           language: (u as any).language ?? 'English',
           admissionExam: (u as any).exam ?? null,
           logoUrl: u.logo ?? null,
-          rating: u.rating ?? null,
-          lastScore: u.lastScore ?? null,
           photos: u.photos ? (u.photos as any) : null,
           orgs: u.orgs ? (u.orgs as any) : null,
           article: u.article ? (u.article as any) : null,

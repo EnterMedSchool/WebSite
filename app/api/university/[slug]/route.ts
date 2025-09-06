@@ -36,7 +36,6 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
         kind: universities.kind,
         lat: universities.lat,
         lng: universities.lng,
-        rating: universities.rating,
         logoUrl: universities.logoUrl,
         country: countries.name,
       })
@@ -55,7 +54,14 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       db.select().from(universityPages).where(eq(universityPages.universityId, uni.id)).then((r)=> r[0] ?? null),
     ]);
 
-    return NextResponse.json({ university: uni, scores, seats, testimonials, media, articles, page });
+    // Derived rating: average of testimonials
+    const avgRating = testimonials.length ? (testimonials.map(t=> Number(t.rating || 0)).filter(n=>!isNaN(n)).reduce((a,b)=>a+b,0) / (testimonials.filter(t=> t.rating!=null).length || 1)) : undefined;
+    // Derived lastScore: latest year pref NonEU > EU > Any
+    const rank = (t: string) => t === 'NonEU' ? 2 : t === 'EU' ? 1 : 0;
+    const best = [...scores].sort((a,b)=> b.year - a.year || rank(b.candidateType as any) - rank(a.candidateType as any))[0];
+    const lastScore = best ? Number(best.minScore) : undefined;
+
+    return NextResponse.json({ university: { ...uni, rating: avgRating, lastScore }, scores, seats, testimonials, media, articles, page });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }

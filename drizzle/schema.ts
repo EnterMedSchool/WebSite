@@ -179,8 +179,6 @@ export const universities = pgTable(
     language: varchar("language", { length: 24 }), // course language (e.g., English, Italian)
     admissionExam: varchar("admission_exam", { length: 40 }), // e.g., IMAT, TOLC-MED, UCAT, etc.
     logoUrl: varchar("logo_url", { length: 500 }),
-    rating: doublePrecision("rating"),
-    lastScore: integer("last_score"),
     photos: jsonb("photos"), // string[]
     orgs: jsonb("orgs"), // string[]
     article: jsonb("article"), // { title, href? }
