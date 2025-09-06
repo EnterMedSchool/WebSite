@@ -251,7 +251,7 @@ export default function HomeMap() {
               maxHeight: `calc(100% - ${PANEL_TOP_GAP + PANEL_GUTTER}px)`
             }}
           >
-            <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
+            <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected?.name}</div>
             <div className="space-y-3 max-h-full overflow-auto pr-1">
               {cityData.map((c, i) => (
                 <div key={`${c.city}-${i}`} className="rounded-xl border p-3 hover:bg-gray-50">
@@ -301,7 +301,7 @@ export default function HomeMap() {
           </div>
         )}
         {selected && cityData.length > 0 && (
-          <UniversitiesPanel selectedName={selected.name} items={cityData as any} />
+          <UniversitiesPanel selectedName={selected!.name} items={cityData as any} />
         )}
       </div>
 
