@@ -189,3 +189,76 @@ export const universities = pgTable(
     cityIdx: index("universities_city_idx").on(t.city),
   })
 );
+
+// Per-year minimum admission scores by candidate type
+export const universityScores = pgTable(
+  "university_scores",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    year: integer("year").notNull(),
+    candidateType: varchar("candidate_type", { length: 24 }).notNull(), // e.g., EU, NonEU, MarcoPolo
+    minScore: doublePrecision("min_score").notNull(),
+  },
+  (t) => ({
+    uniIdx: index("scores_university_idx").on(t.universityId),
+    yearIdx: index("scores_year_idx").on(t.year),
+  })
+);
+
+// Per-year seat counts by candidate type
+export const universitySeats = pgTable(
+  "university_seats",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    year: integer("year").notNull(),
+    candidateType: varchar("candidate_type", { length: 24 }).notNull(),
+    seats: integer("seats").notNull(),
+  },
+  (t) => ({
+    uniIdx: index("seats_university_idx").on(t.universityId),
+    yearIdx: index("seats_year_idx").on(t.year),
+  })
+);
+
+// Student testimonials / reviews
+export const universityTestimonials = pgTable(
+  "university_testimonials",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    author: varchar("author", { length: 120 }).notNull(),
+    quote: text("quote").notNull(),
+    rating: doublePrecision("rating"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ uniIdx: index("testimonials_university_idx").on(t.universityId) })
+);
+
+// Latest media (images/videos) for a university
+export const universityMedia = pgTable(
+  "university_media",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    type: varchar("type", { length: 20 }).notNull(), // image | video
+    url: varchar("url", { length: 500 }).notNull(),
+    title: varchar("title", { length: 200 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ uniIdx: index("media_university_idx").on(t.universityId) })
+);
+
+// Latest articles (simple links) related to a university
+export const universityArticles = pgTable(
+  "university_articles",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    href: varchar("href", { length: 500 }).notNull(),
+    publishedAt: timestamp("published_at").defaultNow().notNull(),
+  },
+  (t) => ({ uniIdx: index("articles_university_idx").on(t.universityId) })
+);

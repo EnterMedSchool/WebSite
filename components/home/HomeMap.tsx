@@ -213,7 +213,7 @@ export default function HomeMap() {
                       {hoveredKey === key && (
                         <g transform="translate(10, -22)" style={{ cursor: "pointer" }} onClick={() => {
                           const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-                          try { router.push(`/universities/${encodeURIComponent(slug)}`); } catch {}
+                          try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
                         }}>
                           <rect x={-4} y={-12} rx={6} ry={6} width={92} height={24} fill="#6C63FF" opacity={0.95} />
                           <text x={42} y={4} textAnchor="middle" fontSize={10} fontWeight={600} fill="#fff">Learn more?</text>
