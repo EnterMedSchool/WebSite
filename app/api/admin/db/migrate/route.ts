@@ -1,8 +1,9 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { migrate } from "drizzle-orm/vercel-postgres/migrator";
+import { sql as vpsql } from "@/lib/db";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 
 function requireKey(request: Request) {
   const url = new URL(request.url);
@@ -21,11 +22,19 @@ export async function GET(request: Request) {
   if (forbidden) return forbidden;
 
   try {
-    // Apply SQL migrations under drizzle/migrations
-    await migrate(db, { migrationsFolder: "drizzle/migrations" });
-    return NextResponse.json({ ok: true });
+    // Read and execute all .sql files under drizzle/migrations (sorted)
+    const folder = path.join(process.cwd(), "drizzle", "migrations");
+    const files = (await readdir(folder)).filter((f) => f.endsWith(".sql")).sort();
+    const executed: string[] = [];
+    for (const file of files) {
+      const content = await readFile(path.join(folder, file), "utf8");
+      if (content && content.trim().length > 0) {
+        await vpsql.unsafe(content);
+        executed.push(file);
+      }
+    }
+    return NextResponse.json({ ok: true, executed });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 }
-
