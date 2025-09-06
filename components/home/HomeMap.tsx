@@ -188,6 +188,7 @@ export default function HomeMap() {
                     <motion.g
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale, opacity: 1 }}
+                      whileHover={{ scale: scale * 1.35 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 140, damping: 18 }}
                       transform={`translate(0, ${yJitter})`}
@@ -196,6 +197,11 @@ export default function HomeMap() {
                         setHoveredKey(key);
                       }}
                       onMouseLeave={() => setHoveredKey((k) => (k === key ? null : k))}
+                      onClick={() => {
+                        const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                        try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+                      }}
+                      style={{ cursor: "pointer" }}
                     >
                       {/* Emblem-only dot (logo inside if available) */}
                       <g>
@@ -223,16 +229,6 @@ export default function HomeMap() {
                         )}
                       </g>
 
-                      {/* Hover tooltip button */}
-                      {hoveredKey === key && (
-                        <g transform="translate(10, -22)" style={{ cursor: "pointer" }} onClick={() => {
-                          const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-                          try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
-                        }}>
-                          <rect x={-4} y={-12} rx={6} ry={6} width={92} height={24} fill="#6C63FF" opacity={0.95} />
-                          <text x={42} y={4} textAnchor="middle" fontSize={10} fontWeight={600} fill="#fff">Learn more?</text>
-                        </g>
-                      )}
                     </motion.g>
                   </Marker>
                 );
