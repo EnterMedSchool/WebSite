@@ -22,10 +22,12 @@ export default function HomeMap() {
 
   function handleCountryClick(geo: any) {
     const name: string = geo.properties.name;
-    const center = geoCentroid(geo) as [number, number];
+    let center = geoCentroid(geo) as [number, number];
+    // Shift left a bit so the right-side panel doesn't cover the country
+    center = [center[0] - 8, center[1]];
     setSelected({ name, center });
     // Zoom in strongly on selection for clarity
-    setPosition({ center, zoom: 5.5 });
+    setPosition({ center, zoom: 6.2 });
   }
 
   function reset() {
@@ -48,7 +50,7 @@ export default function HomeMap() {
         {/* Title removed per latest UX request */}
 
         <ComposableMap projectionConfig={{ scale: 165 }} style={{ width: "100%", height: "100%" }}>
-          <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={1} maxZoom={8} animate animationDuration={900}>
+          <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={1} maxZoom={8} animate animationDuration={1100} animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}>
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) =>
                 geographies.map((geo: any) => (
@@ -70,11 +72,6 @@ export default function HomeMap() {
             <AnimatePresence>
               {cityData.map((c, idx) => {
                 const label = c.city;
-                const w = Math.max(48, 10 + label.length * 6.5);
-                const h = 18;
-                const pillX = 6; // tighter offset to right of emblem
-                const textX = pillX + w / 2 + (c.kind === "private" ? 6 : 0);
-                const textY = 4; // optical centering
                 const rimR = 5.5;
                 const emblemR = 4.0;
                 const isPrivate = c.kind === "private";
@@ -90,7 +87,7 @@ export default function HomeMap() {
                       transition={{ type: "spring", stiffness: 140, damping: 18 }}
                       transform={`translate(0, ${yJitter})`}
                     >
-                      {/* Emblem circle with white rim or logo masked in a circle */}
+                      {/* Emblem-only dot (logo inside if available) */}
                       <g>
                         <circle r={rimR} fill="#ffffff" />
                         {c.logo ? (
@@ -114,16 +111,6 @@ export default function HomeMap() {
                         ) : (
                           <circle r={emblemR} fill={accent} />
                         )}
-                      </g>
-                      {/* Label pill */}
-                      <g>
-                        <rect x={pillX} y={-h / 2} rx={12} ry={12} width={w + (isPrivate ? 12 : 0)} height={h} fill="#ffffff" stroke="#E5E7EB" />
-                        {isPrivate && (
-                          <rect x={pillX + 6} y={-6} rx={3} ry={3} width={10} height={12} fill={accent} />
-                        )}
-                        <text x={textX} y={textY} textAnchor="middle" fontSize={10} fill={isPrivate ? "#B45309" : "#4F46E5"} fontWeight={700}>
-                          {label}
-                        </text>
                       </g>
                     </motion.g>
                   </Marker>
