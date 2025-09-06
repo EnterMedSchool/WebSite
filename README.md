@@ -11,7 +11,6 @@ What you get:
 - Example dynamic pages (`/course/[slug]`, `/quiz/[id]`)
 - Example API routes (`/api/health`, `/api/quiz/[id]`)
 - Optional database via Vercel Postgres + Drizzle ORM (scaffolded)
- - Admin + Posts (blog): create posts via `/admin`, public at `/blog`
 
 ### Getting Started
 
@@ -51,8 +50,7 @@ Open http://localhost:3000 and test:
 - Home page links
 - `/dashboard` (redirects to sign-in if not authenticated)
 - `/api/health` returns JSON
- - `/blog` and `/blog/[slug]` for posts
- - `/admin` requires sign-in and `ADMIN_USERS`
+- `/blog` and `/blog/[slug]` for posts
 
 ### Deploying to Vercel
 
@@ -89,15 +87,6 @@ Schema lives in `drizzle/schema.ts`. Database client lives in `lib/db.ts`.
 
 Recommended: use Vercel KV (Upstash) later for presence/ephemeral chat state, and Vercel Cron for scheduled jobs.
 
-## Admin + Posts
+## Blog
 
-1) Set `ADMIN_USERS` env (comma-separated usernames). Example: `ADMIN_USERS=ari`
-
-2) Sign in with the Credentials provider using that username.
-
-3) Initialize tables once (if not using Drizzle CLI): send a POST request to `/api/admin/init` while signed in as admin.
-   - Example using curl: `curl -X POST https://<your-domain>/api/admin/init`
-
-4) Visit `/admin` to list posts and `/admin/posts/new` to create.
-
-5) Public blog lives at `/blog` and `/blog/[slug]`.
+Public blog lives at `/blog` and `/blog/[slug]`. Admin features for managing posts have been removed; manage content via code or your preferred workflow.

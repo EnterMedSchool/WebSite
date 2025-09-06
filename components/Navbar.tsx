@@ -3,14 +3,13 @@ import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
-import { isAdminSession } from "@/lib/authz";
 import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
 
 export default async function Navbar() {
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
-  const isAdmin = isAdminSession(session);
+  // Admin features removed; no admin link or checks
 
   const primary = [
     { href: "/#universities", label: "Universities" },
@@ -44,11 +43,7 @@ export default async function Navbar() {
                 {item.label}
               </Link>
             ))}
-            {isAdmin && (
-              <Link href="/admin" className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white">
-                Admin
-              </Link>
-            )}
+            {/* Admin features removed */}
           </nav>
 
           <div className="flex items-center gap-3">
