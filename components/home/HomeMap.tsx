@@ -227,7 +227,7 @@ export default function HomeMap() {
         {/* Right side panel of universities when a country is selected */}
         {selected && cityData.length > 0 && (
           <div
-            className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
+            className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
             style={{
               top: PANEL_TOP_GAP,
               bottom: PANEL_GUTTER,
