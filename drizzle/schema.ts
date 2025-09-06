@@ -8,6 +8,7 @@ import {
   timestamp,
   jsonb,
   index,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 
 // Core domain tables (minimal starting point)
@@ -149,4 +150,42 @@ export const posts = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => ({ slugIdx: index("posts_slug_idx").on(t.slug) })
+);
+
+// University data (for map and elsewhere)
+export const countries = pgTable(
+  "countries",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 120 }).notNull().unique(),
+    isoA3: varchar("iso_a3", { length: 3 }),
+    centerLat: doublePrecision("center_lat"),
+    centerLng: doublePrecision("center_lng"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ nameIdx: index("countries_name_idx").on(t.name) })
+);
+
+export const universities = pgTable(
+  "universities",
+  {
+    id: serial("id").primaryKey(),
+    countryId: integer("country_id").notNull(),
+    city: varchar("city", { length: 120 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    lat: doublePrecision("lat").notNull(),
+    lng: doublePrecision("lng").notNull(),
+    kind: varchar("kind", { length: 10 }), // public | private
+    logoUrl: varchar("logo_url", { length: 500 }),
+    rating: doublePrecision("rating"),
+    lastScore: integer("last_score"),
+    photos: jsonb("photos"), // string[]
+    orgs: jsonb("orgs"), // string[]
+    article: jsonb("article"), // { title, href? }
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    countryIdx: index("universities_country_idx").on(t.countryId),
+    cityIdx: index("universities_city_idx").on(t.city),
+  })
 );

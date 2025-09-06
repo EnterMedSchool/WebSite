@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
-import { demoUniversities } from "@/data/universities";
+import { useRouter } from "next/navigation";
+import type { CountryCities } from "@/data/universities"; // type-only import
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -14,6 +15,7 @@ type Feature = {
 };
 
 export default function HomeMap() {
+  const router = useRouter();
   const [selected, setSelected] = useState<{ name: string; center: [number, number]; baseCenter: [number, number] } | null>(null);
   // Pull the world closer to the header by default
   const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 4], zoom: 1 });
@@ -21,12 +23,34 @@ export default function HomeMap() {
   // Desktop-only layout constants (we don't handle mobile/tablet yet)
   // We'll detect the actual header height at runtime, defaulting to ~112px.
   const [headerOffset, setHeaderOffset] = useState<number>(112);
-  const PANEL_GUTTER = 16;   // spacing from viewport edges
+  const PANEL_GUTTER = 8;    // spacing from viewport bottom
+  const PANEL_TOP_GAP = 8;   // small gap under menu
 
-  const countryHasData = useMemo(() => new Set(Object.keys(demoUniversities)), []);
-  const cityData = useMemo(() => (selected ? demoUniversities[selected.name] ?? [] : []), [selected]);
-  const allCityData = useMemo(() => Object.entries(demoUniversities).flatMap(([country, cities]) => cities.map(c => ({...c, country }))), []);
+  const [uniData, setUniData] = useState<CountryCities | null>(null);
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
+  const cityData = useMemo(() => (selected && uniData ? uniData[selected.name] ?? [] : []), [selected, uniData]);
+  const allCityData = useMemo(() =>
+    uniData ? Object.entries(uniData).flatMap(([country, cities]) => cities.map((c) => ({ ...c, country }))) : []
+  , [uniData]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
+
+  // Load data from API (falls back to demo JSON on the server if DB is empty)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/universities", { cache: "no-store" });
+        const json = await res.json();
+        if (!cancelled) setUniData(json.data as CountryCities);
+      } catch {
+        // as a final fallback, lazy import demo JSON in the browser
+        const mod = await import("@/data/universities");
+        if (!cancelled) setUniData(mod.demoUniversities);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -46,7 +70,7 @@ export default function HomeMap() {
     const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
 
-    const panelWidthPx = Math.min(400, 0.36 * vw); // matches panel's CSS width
+    const panelWidthPx = Math.min(520, 0.42 * vw); // matches panel's CSS width
     const panelFrac = panelWidthPx / vw; // portion of the viewport used by panel
 
     // Approximate width/height of visible world in degrees under the current zoom.
@@ -54,8 +78,8 @@ export default function HomeMap() {
     const visibleHeightDeg = 180 / Math.max(zoom, 1);
 
     // Horizontal shift: move country toward the visual right by the fraction occupied by the panel (panel is on the left).
-    // Multiplier tuned so typical zoom keeps points clearly visible without overcompensation.
-    const xShift = Math.max(4, visibleWidthDeg * panelFrac * 0.8);
+    // Slightly stronger multiplier so the panel never overlaps main content.
+    const xShift = Math.max(6, visibleWidthDeg * panelFrac * 1.05);
 
     // Vertical shift: more on short screens, scaled to visible degrees.
     const yShiftBase = vh < 850 ? 0.28 : 0.22; // fraction of visible height
@@ -152,6 +176,7 @@ export default function HomeMap() {
                 const yJitter = 0; // keep precise alignment; jitter removed
                 const isSelectedCountry = selected?.name === c.country;
                 const scale = markerScale * (isSelectedCountry ? 1 : 0.8);
+                const key = `${c.country}-${c.city}-${c.uni}`;
                 return (
                   <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
                     <motion.g
@@ -160,6 +185,11 @@ export default function HomeMap() {
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 140, damping: 18 }}
                       transform={`translate(0, ${yJitter})`}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as SVGGElement).style.zIndex = "10";
+                        setHoveredKey(key);
+                      }}
+                      onMouseLeave={() => setHoveredKey((k) => (k === key ? null : k))}
                     >
                       {/* Emblem-only dot (logo inside if available) */}
                       <g>
@@ -186,6 +216,17 @@ export default function HomeMap() {
                           <circle r={emblemR} fill={accent} />
                         )}
                       </g>
+
+                      {/* Hover tooltip button */}
+                      {hoveredKey === key && (
+                        <g transform="translate(10, -22)" style={{ cursor: "pointer" }} onClick={() => {
+                          const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                          try { router.push(`/universities/${encodeURIComponent(slug)}`); } catch {}
+                        }}>
+                          <rect x={-4} y={-12} rx={6} ry={6} width={92} height={24} fill="#6C63FF" opacity={0.95} />
+                          <text x={42} y={4} textAnchor="middle" fontSize={10} fontWeight={600} fill="#fff">Learn more?</text>
+                        </g>
+                      )}
                     </motion.g>
                   </Marker>
                 );
@@ -197,9 +238,9 @@ export default function HomeMap() {
         {/* Right side panel of universities when a country is selected */}
         {selected && cityData.length > 0 && (
           <div
-            className="pointer-events-auto absolute left-4 z-20 w-[min(400px,36vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
+            className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
             style={{
-              top: headerOffset,
+              top: headerOffset + PANEL_TOP_GAP,
               bottom: PANEL_GUTTER,
               maxHeight: `calc(100vh - ${headerOffset + PANEL_GUTTER}px)`
             }}
