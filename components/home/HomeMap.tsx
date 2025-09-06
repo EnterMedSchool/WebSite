@@ -69,7 +69,8 @@ export default function HomeMap() {
     // Horizontal shift: align the country roughly with the center of the
     // remaining (non-panel) viewport: ~panelFrac/2 of visible degrees.
     // Add a small minimum to keep it clear on very wide screens.
-    const xShift = Math.max(6, visibleWidthDeg * panelFrac * 0.5 + 1);
+    // Nudge further right so Italy clears the left panel comfortably
+    const xShift = Math.max(8, visibleWidthDeg * panelFrac * 0.70 + 2);
 
     // Vertical shift: slightly gentler so the selection isn't too high.
     const yShiftBase = vh < 850 ? 0.20 : 0.18; // fraction of visible height
