@@ -55,7 +55,7 @@ export default function HomeMap() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/universities", { cache: "no-store" });
+        const res = await fetch(`/api/universities?ts=${Date.now()}` , { cache: "no-store" });
         const json = await res.json();
         if (!cancelled) setUniData(json.data as CountryCities);
       } catch {

@@ -19,6 +19,9 @@ export type City = {
 };
 export type CountryCities = Record<string, City[]>;
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     // Join universities with countries to get country names
@@ -58,11 +61,22 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (err) {
     // Fallback to demo JSON if DB is not configured
     const { demoUniversities } = await import("@/data/universities");
-    return NextResponse.json({ data: demoUniversities });
+    return NextResponse.json({ data: demoUniversities }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   }
 }
-
