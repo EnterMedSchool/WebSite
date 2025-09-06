@@ -66,12 +66,13 @@ export default function HomeMap() {
     const visibleWidthDeg = 360 / Math.max(zoom, 1);
     const visibleHeightDeg = 180 / Math.max(zoom, 1);
 
-    // Horizontal shift: move country toward the visual right by the fraction occupied by the panel (panel is on the left).
-    // Stronger multiplier + base to ensure the focus country fully clears the panel.
-    const xShift = Math.max(10, visibleWidthDeg * panelFrac * 1.25 + 4);
+    // Horizontal shift: align the country roughly with the center of the
+    // remaining (non-panel) viewport: ~panelFrac/2 of visible degrees.
+    // Add a small minimum to keep it clear on very wide screens.
+    const xShift = Math.max(6, visibleWidthDeg * panelFrac * 0.5 + 1);
 
-    // Vertical shift: more on short screens, scaled to visible degrees.
-    const yShiftBase = vh < 850 ? 0.28 : 0.22; // fraction of visible height
+    // Vertical shift: slightly gentler so the selection isn't too high.
+    const yShiftBase = vh < 850 ? 0.20 : 0.18; // fraction of visible height
     const yShift = Math.max(4, visibleHeightDeg * yShiftBase);
 
     return [baseCenter[0] + xShift, baseCenter[1] - yShift];
@@ -81,7 +82,7 @@ export default function HomeMap() {
     const name: string = geo.properties.name;
     const baseCenter = geoCentroid(geo) as [number, number];
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-    const targetZoom = vh < 850 ? 5.8 : 6.2; // strong zoom to clarify markers
+    const targetZoom = vh < 850 ? 5.0 : 5.2; // moderate zoom so Italy is fully visible
     const center = computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name, center, baseCenter });
     setPosition({ center, zoom: targetZoom });
@@ -97,7 +98,7 @@ export default function HomeMap() {
     function onResize() {
       if (!selected) return;
       const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-      const targetZoom = vh < 850 ? 5.8 : 6.2;
+      const targetZoom = vh < 850 ? 5.0 : 5.2;
       const center = computeOffsetCenter(selected.baseCenter, targetZoom);
       setPosition({ center, zoom: targetZoom });
     }
@@ -112,7 +113,7 @@ export default function HomeMap() {
     if (selected) return;
     const baseCenter: [number, number] = [12.567, 41.8719]; // Italy approximate centroid
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-    const targetZoom = vh < 850 ? 5.8 : 6.2;
+    const targetZoom = vh < 850 ? 5.0 : 5.2;
     const center = computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name: "Italy", baseCenter, center });
     setPosition({ center, zoom: targetZoom });
