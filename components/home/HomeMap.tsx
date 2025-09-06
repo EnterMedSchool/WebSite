@@ -89,7 +89,7 @@ export default function HomeMap() {
     const params = new URLSearchParams(window.location.search);
     if (slugs.length) params.set('compare', slugs.join(',')); else params.delete('compare');
     const qs = params.toString();
-    router.replace(qs ? `?${qs}` : `?`);
+    router.replace(qs ? `?${qs}` : `?`, { scroll: false });
   }, [compare, router]);
   useEffect(() => {
     const pre = searchParams?.get('compare');
@@ -158,7 +158,7 @@ export default function HomeMap() {
       if (filters.language) params.set('language', filters.language);
       if (filters.exam) params.set('exam', filters.exam);
       const qs = params.toString();
-      router.replace(qs ? `?${qs}` : `?`);
+      router.replace(qs ? `?${qs}` : `?`, { scroll: false });
     }, 300);
     return () => clearTimeout(t);
   }, [filters, router]);

@@ -31,7 +31,7 @@ function insights(items: Item[]): string {
 
 type Series = { uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }>; seats: Array<{ year: number; type: string; seats: number }> };
 
-function buildPaths(series: Series[]): { paths: Array<{ d: string; color: string; uni: string }>; years: number[] } {
+function buildPaths(series: Series[], cand: string): { paths: Array<{ d: string; color: string; uni: string }>; years: number[] } {
   const colors = ["#6C63FF", "#F59E0B", "#10B981", "#EF4444", "#3B82F6", "#A855F7", "#14B8A6", "#6366F1", "#F97316", "#8B5CF6"];
   const allYears = Array.from(new Set(series.flatMap((s) => s.points.map((p) => p.year)))).sort((a,b)=>a-b);
   const maxScore = Math.max(100, ...series.flatMap(s => s.points.map(p => p.score || 0)));
@@ -48,7 +48,7 @@ function buildPaths(series: Series[]): { paths: Array<{ d: string; color: string
   };
   const paths = series.map((s, i) => {
     const pts = allYears.map((yr) => {
-      const m = s.points.find((p) => p.year === yr && (p.type === 'NonEU' || p.type === 'All')) || s.points.find(p => p.year === yr) || null;
+      const m = s.points.find((p) => p.year === yr && (cand === 'All' ? (p.type === 'All' || p.type == null) : p.type === cand)) || null;
       return m ? { x: x(yr), y: y(m.score) } : null;
     });
     const d = pts.reduce((acc, p, idx) => {
@@ -62,6 +62,7 @@ function buildPaths(series: Series[]): { paths: Array<{ d: string; color: string
 
 export default function CompareDrawer({ open, items, onClose, onRemove, onClear }: { open: boolean; items: Item[]; onClose: () => void; onRemove: (uni: string) => void; onClear: () => void; }) {
   const [series, setSeries] = useState<Series[]>([]);
+  const [candType, setCandType] = useState<'EU'|'NonEU'|'All'>('NonEU');
   const slugs = useMemo(() => items.map(i => i.uni.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')).join(','), [items]);
   useEffect(() => {
     if (!open || items.length === 0) { setSeries([]); return; }
@@ -136,8 +137,14 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
                 <>
                 <div className="mt-4">
                   <div className="mb-2 text-sm font-semibold text-gray-700">Admission score trends (NonEU/overall)</div>
+                  <div className="mb-2 flex items-center gap-2 text-xs">
+                    <span className="text-gray-600">Candidate type:</span>
+                    {(['EU','NonEU','All'] as const).map((t)=> (
+                      <button key={t} onClick={()=>setCandType(t)} className={`rounded-full px-2 py-0.5 font-semibold ${candType===t ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t}</button>
+                    ))}
+                  </div>
                   {(() => {
-                    const { paths, years } = buildPaths(series);
+                    const { paths, years } = buildPaths(series, candType);
                     return (
                       <svg width="100%" viewBox="0 0 640 200" className="rounded-lg bg-gray-50">
                         {/* Axes */}

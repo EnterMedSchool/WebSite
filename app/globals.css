@@ -4,6 +4,9 @@
 
 :root {
   --bg: 248 248 248;
+  --surface: 255 255 255;
+  --text: 17 24 39;
+  --muted: 100 116 139;
 }
 
 html, body {
@@ -40,3 +43,13 @@ body {
     Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, Apple Color Emoji,
     Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
 }
+
+/* Dark mode tokens (opt-in via class="dark" on <html>) */
+.dark {
+  --bg: 15 23 42; /* slate-900 */
+  --surface: 2 6 23; /* near black */
+  --text: 226 232 240; /* slate-200 */
+  --muted: 148 163 184; /* slate-400 */
+}
+
+body { color: rgb(var(--text)); background: rgb(var(--bg)); }
