@@ -244,7 +244,7 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 type Item = {
   uni: string;
@@ -317,15 +317,12 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
     })();
   }, [open, slugs, items.length]);
 
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div className="fixed inset-0 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+  return open ? (
+        <motion.div className="fixed inset-0 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="absolute inset-0 bg-black/30" onClick={onClose} />
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 180, damping: 20 }}
             className="absolute right-0 top-0 h-full w-[min(860px,96vw)] bg-gradient-to-br from-white to-indigo-50 shadow-2xl"
           >
@@ -419,7 +416,5 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
             </div>
           </motion.div>
         </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  ) : null;
 }
