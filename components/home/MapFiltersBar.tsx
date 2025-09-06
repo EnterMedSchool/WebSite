@@ -16,16 +16,17 @@ type Props = {
   countries: string[];
   languages: string[];
   exams: string[];
+  resultCount?: number;
 };
 
-export default function MapFiltersBar({ filters, onChange, countries, languages, exams }: Props) {
+export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount }: Props) {
   const hasFilters = useMemo(() => {
     const { q, country, language, exam, minScore } = filters;
     return !!q || !!country || !!language || !!exam || minScore > 0;
   }, [filters]);
 
   return (
-    <div className="pointer-events-auto mx-auto w-[min(1100px,96vw)] rounded-3xl bg-white/80 p-5 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl">
+    <div className="pointer-events-auto mx-auto w-[min(760px,94vw)] rounded-3xl bg-white/80 p-5 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl">
       <div className="mb-2">
         <h2 className="text-xl font-extrabold tracking-tight text-indigo-800">Where would you like to EnterMedSchool?</h2>
         <div className="mt-0.5 text-xs font-medium text-indigo-700/80">Showing Medical Courses in English</div>
@@ -84,6 +85,9 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
           className="flex-1"
         />
         <div className="w-10 text-right text-sm text-gray-700">{filters.minScore}</div>
+        {typeof resultCount === 'number' && (
+          <div className="ml-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{resultCount} results</div>
+        )}
         {hasFilters && (
           <button
             type="button"

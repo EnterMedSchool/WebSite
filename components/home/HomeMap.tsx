@@ -67,6 +67,7 @@ export default function HomeMap() {
   const cityData = useMemo(() => (selected ? allCityData.filter((c) => c.country === selected.name) : []), [selected, allCityData]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
 
   // Load data from API (DB only; if it fails, show nothing instead of static demo)
   useEffect(() => {
@@ -165,7 +166,7 @@ export default function HomeMap() {
         <div
           onWheelCapture={(e) => {
             const target = e.target as HTMLElement;
-            if (panelRef.current && panelRef.current.contains(target)) return;
+            if ((panelRef.current && panelRef.current.contains(target)) || (overlayRef.current && overlayRef.current.contains(target))) return;
             e.preventDefault();
             e.stopPropagation();
             window.scrollBy({ top: e.deltaY, behavior: "auto" });
@@ -266,15 +267,24 @@ export default function HomeMap() {
         </ComposableMap>
         </div>
 
-        {/* Filters bar overlay */}
-        <div className="pointer-events-none absolute left-1/2 top-4 z-30 -translate-x-1/2">
-          <MapFiltersBar
-            filters={filters}
-            onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
-            countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
-            languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
-            exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-          />
+        {/* Filters bar overlay docked at top-right, shrinks when panel open */}
+        <div className="pointer-events-none absolute right-3 top-3 z-30 sm:right-6 sm:top-5">
+          <motion.div
+            ref={overlayRef}
+            className="pointer-events-auto"
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: selected ? 0.97 : 1 }}
+            transition={{ type: "spring", stiffness: 180, damping: 18 }}
+          >
+            <MapFiltersBar
+              filters={filters}
+              onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+              countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
+              languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
+              exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
+              resultCount={allCityData.length}
+            />
+          </motion.div>
         </div>
 
         {/* Right side panel of universities when a country is selected (legacy, disabled) */}
