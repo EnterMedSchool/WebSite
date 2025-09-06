@@ -21,10 +21,9 @@ export default function HomeMap() {
   const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 4], zoom: 1 });
 
   // Desktop-only layout constants (we don't handle mobile/tablet yet)
-  // We'll detect the actual header height at runtime, defaulting to ~112px.
-  const [headerOffset, setHeaderOffset] = useState<number>(112);
-  const PANEL_GUTTER = 8;    // spacing from viewport bottom
-  const PANEL_TOP_GAP = 8;   // small gap under menu
+  // Keep panel tightly under the menu inside the map container.
+  const PANEL_GUTTER = 8;    // spacing from container bottom
+  const PANEL_TOP_GAP = 4;   // small gap under menu
 
   const [uniData, setUniData] = useState<CountryCities | null>(null);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
@@ -52,17 +51,7 @@ export default function HomeMap() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const updateHeader = () => {
-      const header = document.querySelector("header");
-      const h = header ? Math.ceil(header.getBoundingClientRect().height) : 112;
-      setHeaderOffset(h);
-    };
-    updateHeader();
-    window.addEventListener("resize", updateHeader);
-    return () => window.removeEventListener("resize", updateHeader);
-  }, []);
+  // No header measurement needed; panel is anchored inside the map container.
 
   // Compute a center offset that leaves room for the right panel and
   // adds a vertical margin so selection isn't glued to the bottom.
@@ -78,8 +67,8 @@ export default function HomeMap() {
     const visibleHeightDeg = 180 / Math.max(zoom, 1);
 
     // Horizontal shift: move country toward the visual right by the fraction occupied by the panel (panel is on the left).
-    // Slightly stronger multiplier so the panel never overlaps main content.
-    const xShift = Math.max(6, visibleWidthDeg * panelFrac * 1.05);
+    // Stronger multiplier + base to ensure the focus country fully clears the panel.
+    const xShift = Math.max(10, visibleWidthDeg * panelFrac * 1.25 + 4);
 
     // Vertical shift: more on short screens, scaled to visible degrees.
     const yShiftBase = vh < 850 ? 0.28 : 0.22; // fraction of visible height
@@ -240,9 +229,9 @@ export default function HomeMap() {
           <div
             className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur"
             style={{
-              top: headerOffset + PANEL_TOP_GAP,
+              top: PANEL_TOP_GAP,
               bottom: PANEL_GUTTER,
-              maxHeight: `calc(100vh - ${headerOffset + PANEL_GUTTER}px)`
+              maxHeight: `calc(100% - ${PANEL_TOP_GAP + PANEL_GUTTER}px)`
             }}
           >
             <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected.name}</div>
