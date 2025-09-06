@@ -10,6 +10,8 @@ export type City = {
   lng: number;
   uni: string;
   kind?: "public" | "private";
+  language?: string;
+  exam?: string;
   logo?: string;
   rating?: number;
   lastScore?: number;

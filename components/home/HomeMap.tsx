@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import UniversitiesPanel from "@/components/home/UniversitiesPanel";
+import MapFiltersBar, { type MapFilters } from "@/components/home/MapFiltersBar";
 
 // DB-backed types (match /api/universities response)
 type City = {
@@ -14,6 +15,8 @@ type City = {
   lng: number;
   uni: string;
   kind?: "public" | "private";
+  language?: string;
+  exam?: string;
   logo?: string;
   rating?: number;
   lastScore?: number;
@@ -42,13 +45,28 @@ export default function HomeMap() {
   const PANEL_TOP_GAP = 4;   // small gap under menu
 
   const [uniData, setUniData] = useState<CountryCities | null>(null);
+  const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "", minScore: 0 });
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
-  const cityData = useMemo(() => (selected && uniData ? uniData[selected.name] ?? [] : []), [selected, uniData]);
-  const allCityData = useMemo(() =>
+  // Flatten all cities
+  const allCityDataRaw = useMemo(() =>
     uniData ? Object.entries(uniData).flatMap(([country, cities]) => cities.map((c) => ({ ...c, country }))) : []
   , [uniData]);
+  // Apply filters
+  const allCityData = useMemo(() => {
+    const q = filters.q.trim().toLowerCase();
+    return allCityDataRaw.filter((c) => {
+      if (filters.country && c.country !== filters.country) return false;
+      if (filters.language && (c.language ?? "") !== filters.language) return false;
+      if (filters.exam && (c.exam ?? "") !== filters.exam) return false;
+      if (filters.minScore > 0 && (c.lastScore ?? -1) < filters.minScore) return false;
+      if (q && !(c.uni.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.country.toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [allCityDataRaw, filters]);
+  const cityData = useMemo(() => (selected ? allCityData.filter((c) => c.country === selected.name) : []), [selected, allCityData]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Load data from API (DB only; if it fails, show nothing instead of static demo)
   useEffect(() => {
