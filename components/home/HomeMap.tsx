@@ -69,6 +69,7 @@ export default function HomeMap() {
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const [panelOffset, setPanelOffset] = useState(140);
   const searchParams = useSearchParams();
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<Array<any>>([]);
@@ -102,7 +103,11 @@ export default function HomeMap() {
   }, []);
 
   function addToCompare(item: any) {
-    setCompare((arr) => (arr.some((x) => x.uni === item.uni) ? arr : [...arr, { uni: item.uni, country: item.country, city: item.city, kind: item.kind, language: item.language, exam: item.exam, rating: item.rating, lastScore: item.lastScore, logo: item.logo }]));
+    setCompare((arr) => {
+      if (arr.some((x) => x.uni === item.uni)) return arr;
+      if (arr.length >= 10) { try { alert('You can compare up to 10 universities at a time.'); } catch {} return arr; }
+      return [...arr, { uni: item.uni, country: item.country, city: item.city, kind: item.kind, language: item.language, exam: item.exam, rating: item.rating, lastScore: item.lastScore, logo: item.logo }];
+    });
   }
   function removeFromCompare(uni: string) {
     setCompare((arr) => arr.filter((x) => x.uni !== uni));
@@ -127,6 +132,21 @@ export default function HomeMap() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Measure overlay height to place the left panel just beneath it
+  useEffect(() => {
+    function measure() {
+      const h = overlayRef.current?.offsetHeight ?? 120;
+      setPanelOffset(Math.min(220, Math.max(100, h + 16)));
+    }
+    measure();
+    if (typeof window !== 'undefined') {
+      const ro = new ResizeObserver(measure);
+      if (overlayRef.current) ro.observe(overlayRef.current);
+      window.addEventListener('resize', measure);
+      return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
+    }
   }, []);
 
   // Deep-link: write on filter change (debounced)
@@ -450,7 +470,7 @@ export default function HomeMap() {
         )}
         {selected && cityData.length > 0 && (
           <div ref={panelRef}>
-            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={140} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
+            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={panelOffset} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
           </div>
         )}
 

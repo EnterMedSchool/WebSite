@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 
 type Item = {
   uni: string;
@@ -28,7 +29,51 @@ function insights(items: Item[]): string {
   return parts.join(' ');
 }
 
+type Series = { uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }> };
+
+function buildPaths(series: Series[]): { paths: Array<{ d: string; color: string; uni: string }>; years: number[] } {
+  const colors = ["#6C63FF", "#F59E0B", "#10B981", "#EF4444", "#3B82F6", "#A855F7", "#14B8A6", "#6366F1", "#F97316", "#8B5CF6"];
+  const allYears = Array.from(new Set(series.flatMap((s) => s.points.map((p) => p.year)))).sort((a,b)=>a-b);
+  const maxScore = Math.max(100, ...series.flatMap(s => s.points.map(p => p.score || 0)));
+  const minScore = Math.min(0, ...series.flatMap(s => s.points.map(p => p.score || 0)));
+  const W = 640, H = 180, P = 30;
+  const x = (year: number) => {
+    const idx = allYears.indexOf(year);
+    const span = Math.max(1, allYears.length - 1);
+    return P + (idx / span) * (W - 2*P);
+  };
+  const y = (score: number) => {
+    const t = (score - minScore) / (maxScore - minScore || 1);
+    return H - P - t * (H - 2*P);
+  };
+  const paths = series.map((s, i) => {
+    const pts = allYears.map((yr) => {
+      const m = s.points.find((p) => p.year === yr && (p.type === 'NonEU' || p.type === 'All')) || s.points.find(p => p.year === yr) || null;
+      return m ? { x: x(yr), y: y(m.score) } : null;
+    });
+    const d = pts.reduce((acc, p, idx) => {
+      if (!p) return acc;
+      return acc + (idx === 0 ? `M ${p.x},${p.y}` : ` L ${p.x},${p.y}`);
+    }, "");
+    return { d, color: colors[i % colors.length], uni: s.uni };
+  });
+  return { paths, years: allYears };
+}
+
 export default function CompareDrawer({ open, items, onClose, onRemove, onClear }: { open: boolean; items: Item[]; onClose: () => void; onRemove: (uni: string) => void; onClear: () => void; }) {
+  const [series, setSeries] = useState<Series[]>([]);
+  const slugs = useMemo(() => items.map(i => i.uni.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')).join(','), [items]);
+  useEffect(() => {
+    if (!open || items.length === 0) { setSeries([]); return; }
+    (async () => {
+      try {
+        const res = await fetch(`/api/compare/scores?unis=${encodeURIComponent(slugs)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        setSeries(json.series || []);
+      } catch {}
+    })();
+  }, [open, slugs, items.length]);
   return (
     <AnimatePresence>
       {open && (
@@ -74,6 +119,34 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
             <div className="border-t p-4">
               <div className="text-sm font-semibold text-indigo-700">Smart insights</div>
               <div className="mt-1 text-sm text-gray-700">{insights(items)}</div>
+              {series.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-2 text-sm font-semibold text-gray-700">Admission score trends (NonEU/overall)</div>
+                  {(() => {
+                    const { paths, years } = buildPaths(series);
+                    return (
+                      <svg width="100%" viewBox="0 0 640 200" className="rounded-lg bg-gray-50">
+                        {/* Axes */}
+                        <line x1="30" y1="10" x2="30" y2="170" stroke="#CBD5E1" strokeWidth="1" />
+                        <line x1="30" y1="170" x2="610" y2="170" stroke="#CBD5E1" strokeWidth="1" />
+                        {years.map((yr, i) => (
+                          <text key={yr} x={30 + (i/(Math.max(1, years.length-1)))*(610-30)} y="190" fontSize="10" textAnchor="middle" fill="#64748B">{yr}</text>
+                        ))}
+                        {paths.map((p, i) => (
+                          <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth="2.5" />
+                        ))}
+                        {/* Legend */}
+                        {paths.map((p, i) => (
+                          <g key={`leg-${i}`} transform={`translate(${40 + i*120}, 16)`}>
+                            <rect width="10" height="10" fill={p.color} rx="2" />
+                            <text x="14" y="10" fontSize="10" fill="#334155">{p.uni}</text>
+                          </g>
+                        ))}
+                      </svg>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>
@@ -81,4 +154,3 @@ export default function CompareDrawer({ open, items, onClose, onRemove, onClear 
     </AnimatePresence>
   );
 }
-
