@@ -200,19 +200,8 @@ export default function HomeMap() {
     }
   }, []);
 
-  // Initial mobile focus: zoom in over Italy without opening results
+  // Initial mobile focus will be snapped to Italy centroid once geographies are available
   const initApplied = useRef(false);
-  useEffect(() => {
-    if (!isSmall || initApplied.current || selected) return;
-    // Nudge a bit west so Italy appears perfectly centered under our projection
-    const italy: [number, number] = [10.8, 42.7];
-    setPosition({ center: italy, zoom: 6.9 });
-    setSelected({ name: 'Italy', center: italy, baseCenter: italy });
-    initApplied.current = true;
-    // Do not open sheet here; sheetOpen remains false
-    // Users can pan/zoom or hit View universities to see results
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSmall]);
 
   // Compute a center offset that leaves room for the right panel and
   // adds a vertical margin so selection isn't glued to the bottom.
@@ -313,8 +302,23 @@ export default function HomeMap() {
             animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}
           >
             <Geographies geography={GEO_URL}>
-              {({ geographies }: { geographies: any[] }) =>
-                geographies.map((geo: any) => {
+              {({ geographies }: { geographies: any[] }) => {
+                // On small screens, snap to Italy's precise centroid once, so it matches the post-click position
+                if (isSmall && !initApplied.current && !selected && geographies?.length) {
+                  const italyGeo = geographies.find((g: any) => (g.properties?.name as string) === 'Italy');
+                  if (italyGeo) {
+                    const base = geoCentroid(italyGeo) as [number, number];
+                    // schedule on next frame to avoid state updates during render
+                    if (typeof window !== 'undefined') {
+                      requestAnimationFrame(() => {
+                        setSelected({ name: 'Italy', center: base, baseCenter: base });
+                        setPosition({ center: base, zoom: 6.9 });
+                        initApplied.current = true;
+                      });
+                    }
+                  }
+                }
+                return geographies.map((geo: any) => {
                   const name = (geo.properties.name as string) || "";
                   const isSelected = selected?.name === name;
                   const hasData = countryHasData.has(name);
@@ -338,7 +342,7 @@ export default function HomeMap() {
                     />
                   );
                 })
-              }
+              }}
             </Geographies>
 
             {/* City markers when a country is selected */}
