@@ -204,8 +204,9 @@ export default function HomeMap() {
   const initApplied = useRef(false);
   useEffect(() => {
     if (!isSmall || initApplied.current || selected) return;
-    const italy: [number, number] = [12.5, 42.7];
-    setPosition({ center: italy, zoom: 6.8 });
+    // Nudge a bit west so Italy appears perfectly centered under our projection
+    const italy: [number, number] = [10.8, 42.7];
+    setPosition({ center: italy, zoom: 6.9 });
     setSelected({ name: 'Italy', center: italy, baseCenter: italy });
     initApplied.current = true;
     // Do not open sheet here; sheetOpen remains false
