@@ -2,6 +2,19 @@
 
 import { useMemo, useState } from "react";
 
+const TREND_COLORS = [
+  "#6C63FF",
+  "#F59E0B",
+  "#10B981",
+  "#EF4444",
+  "#3B82F6",
+  "#A855F7",
+  "#14B8A6",
+  "#6366F1",
+  "#F97316",
+  "#8B5CF6",
+];
+
 export type TrendPoint = { year: number; type: string; score: number };
 export type TrendSeries = { uni: string; points: TrendPoint[] };
 
@@ -16,8 +29,6 @@ export function TrendChart({
   compact?: boolean;
   className?: string;
 }) {
-  const colors = ["#6C63FF", "#F59E0B", "#10B981", "#EF4444", "#3B82F6", "#A855F7", "#14B8A6", "#6366F1", "#F97316", "#8B5CF6"];
-
   const years = useMemo(
     () => Array.from(new Set(series.flatMap((s) => s.points.map((p) => p.year)))).sort((a, b) => a - b),
     [series]
@@ -37,9 +48,12 @@ export function TrendChart({
         }
         return { year: yr, value: v };
       });
-      return { uni: s.uni, color: colors[i % colors.length], points: pts };
+      return { uni: s.uni, color: TREND_COLORS[i % TREND_COLORS.length], points: pts };
     });
   }, [series, years, mode]);
+
+  // Hover index state must be declared before any early returns
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   const flat = values.flatMap((v) => v.points.map((p) => p.value).filter((n): n is number => n != null));
   const hasData = years.length > 0 && flat.length > 0;
@@ -61,8 +75,6 @@ export function TrendChart({
   const innerH = H - 2 * P;
   const x = (i: number) => P + (i / Math.max(1, years.length - 1)) * innerW;
   const y = (v: number) => H - P - ((v - minScore) / (maxScore - minScore || 1)) * innerH;
-
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   function pathFor(points: Array<{ value: number | null }>) {
     let d = "";
@@ -147,4 +159,3 @@ export function TrendChart({
 }
 
 export default TrendChart;
-
