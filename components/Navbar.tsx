@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -12,6 +13,9 @@ import { eq } from "drizzle-orm";
 import { xpToNext, GOAL_XP, MAX_LEVEL, levelFromXp } from "@/lib/xp";
 
 export default async function Navbar() {
+  // Ensure this server component is always dynamic (no caching),
+  // so session/xp reflect the current user state after login/logout.
+  noStore();
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
   let levelInfo: { level: number; xp: number; pct: number; inLevel: number; span: number; nextLevel: number; isMax: boolean } | null = null;

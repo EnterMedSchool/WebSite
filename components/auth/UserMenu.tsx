@@ -22,6 +22,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   const [dispIn, setDispIn] = useState<number>(xpInLevel ?? 0);
   const [dispSpan, setDispSpan] = useState<number>(xpSpan ?? 0);
   const [burst, setBurst] = useState<number>(0);
+  const [lvPulse, setLvPulse] = useState<number>(0);
   const ref = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -43,10 +44,13 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
 
   // Keep display in sync when props change (e.g., on navigation)
   useEffect(() => {
-    setDispLevel(level ?? 1);
+    const prev = dispLevel;
+    const next = level ?? 1;
+    setDispLevel(next);
     setDispPct(Math.max(0, Math.min(100, xpPct ?? 0)));
     setDispIn(xpInLevel ?? 0);
     setDispSpan(xpSpan ?? 0);
+    if (next > prev) { setLvPulse((n)=>n+1); setTimeout(()=> setLvPulse((n)=>n-1), 800); }
   }, [level, xpPct, xpInLevel, xpSpan]);
 
   // XP award animation listener
@@ -128,8 +132,8 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
         <div className="max-w-[180px] truncate text-sm font-semibold text-white/95 sm:max-w-[220px]">
           {name ?? "You"}
         </div>
-        <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm">
-          Lv {level ?? 1}
+        <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse>0? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
+          Lv {dispLevel}
         </span>
         <div ref={barRef} className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
           <div
