@@ -58,7 +58,7 @@ export default function LatestLessons() {
           <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
         </button>
 
-        <div ref={scrollerRef} className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-6">
+        <div ref={scrollerRef} className="hide-scrollbar -mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-6">
           {data.map((l) => (
             <motion.article
               key={l.id}

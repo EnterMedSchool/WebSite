@@ -27,6 +27,10 @@ html, body {
 .animate-float-slow { animation: floatSlow 7s ease-in-out infinite; }
 .animate-twinkle { animation: twinkle 2.4s ease-in-out infinite; }
 
+/* Hide native scrollbars for custom progress UI */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 :root {
   --bg: 248 248 248;
   --surface: 255 255 255;
