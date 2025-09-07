@@ -268,7 +268,7 @@ export default function HomeMap() {
   return (
     <div className="relative">
       {/* Hero map */}
-      <div className="relative rounded-none border-0 bg-white p-0" style={{ minHeight: "calc(100vh - 120px)" }}>
+      <div className="relative rounded-none border-0 p-0 overflow-hidden" style={{ minHeight: "calc(100vh - 120px)" }}>
         {/* No Back to world button per new default UX */}
 
         {/* Title removed per latest UX request */}
@@ -391,56 +391,15 @@ export default function HomeMap() {
         </div>
 
         {/* Filters bar overlay docked at top-right, shrinks when panel open */}
-        {!isSmall && (
-          <div className="pointer-events-none absolute left-3 top-3 z-30">
-            <motion.div
-              ref={overlayRef}
-              className="pointer-events-auto"
-              initial={{ opacity: 0, y: -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 180, damping: 18 }}
-            >
-              <MapFiltersBar
-                filters={filters}
-                onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
-                countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
-                languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
-                exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-                resultCount={allCityData.length}
-                suggestions={
-                  filters.q.trim().length >= 1
-                    ? Array.from(new Set([
-                        ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
-                        ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
-                        ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
-                      ].map((s) => `${s.kind}:${s.label}`)))
-                        .map((key) => {
-                          const [kind, label] = key.split(':');
-                          return { kind: kind as 'uni'|'city'|'country', label, value: label };
-                        })
-                        .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
-                        .slice(0, 12)
-                    : []
-                }
-                onPick={(s) => {
-                  if (s.kind === 'country') {
-                    setFilters((f) => ({ ...f, country: s.value }));
-                    setSelected({ name: s.value, center: position.center, baseCenter: position.center });
-                  } else if (s.kind === 'uni') {
-                    const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
-                  } else {
-                    setFilters((f) => ({ ...f, q: s.value }));
-                  }
-                }}
-              />
-            </motion.div>
-          </div>
-        )}
-
-        {/* Mobile inline filters under map */}
-        {isSmall && (
-          <div className="px-3 pt-3">
+        {/* Filters overlay: top-left on desktop, bottom-center on small screens */}
+        <div className={isSmall ? "pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center" : "pointer-events-none absolute left-3 top-3 z-30"}>
+          <motion.div
+            ref={overlayRef}
+            className={isSmall ? "pointer-events-auto w-[min(92vw,560px)]" : "pointer-events-auto"}
+            initial={{ opacity: 0, y: isSmall ? 10 : -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 180, damping: 18 }}
+          >
             <MapFiltersBar
               filters={filters}
               onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
@@ -475,8 +434,11 @@ export default function HomeMap() {
                 }
               }}
             />
-          </div>
-        )}
+          </motion.div>
+        </div>
+
+        {/* Mobile inline filters under map */}
+        {/* (Inline mobile filters removed; filters now hover over the map at bottom-center) */}
 
         {/* Right side panel of universities when a country is selected (legacy, disabled) */}
         {false && selected && cityData.length > 0 && (
