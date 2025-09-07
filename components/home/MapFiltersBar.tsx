@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
 
@@ -44,78 +44,84 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         <h2 className="text-xl font-extrabold tracking-tight">Where would you like to EnterMedSchool?</h2>
         <div className="mt-0.5 text-xs font-medium text-indigo-100/90">Showing Medical Courses in English</div>
       </div>
-      <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-5 relative" ref={boxRef}>
-        {/* Query */}
-        <input
-          value={filters.q}
-          onChange={(e) => {
-            onChange({ q: e.target.value });
-            setOpen(e.target.value.trim().length >= 2);
-            setActive(0);
-          }}
-          onKeyDown={(e) => {
-            if (!open) return;
-            if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, Math.max(0, suggestions.length - 1))); }
-            if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
-            if (e.key === "Enter" && suggestions[active]) { e.preventDefault(); onPick?.(suggestions[active]); setOpen(false); }
-            if (e.key === "Escape") setOpen(false);
-          }}
-          placeholder="Search university or city…"
-          className="col-span-2 rounded-xl border border-white/20 bg-white/95 px-3 py-1.5 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-violet-300 focus:outline-none"
-        />
-        {/* Suggestions dropdown */}
-        {open && suggestions.length > 0 && (
-          <div className="absolute z-50 mt-[42px] w-[min(520px,42vw)] overflow-hidden rounded-xl border border-white/30 bg-white/95 shadow-2xl backdrop-blur-sm">
-            {suggestions.slice(0, 8).map((s, i) => (
-              <button
-                key={`${s.kind}-${s.value}-${i}`}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { onPick?.(s); setOpen(false); }}
-                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${i === active ? "bg-indigo-50" : "hover:bg-gray-50"}`}
-              >
-                <span>
-                  <span className="mr-2 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-800">{s.kind}</span>
-                  {s.label}
-                </span>
-              </button>
+
+      {/* Two-line layout: first search, then dropdowns */}
+      <div className="mt-2 space-y-2" ref={boxRef}>
+        {/* Search row */}
+        <div className="relative">
+          <input
+            value={filters.q}
+            onChange={(e) => {
+              onChange({ q: e.target.value });
+              setOpen(e.target.value.trim().length >= 2);
+              setActive(0);
+            }}
+            onFocus={() => setOpen((filters.q ?? '').trim().length >= 2)}
+            onKeyDown={(e) => {
+              if (!open) return;
+              if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, Math.max(0, suggestions.length - 1))); }
+              if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
+              if (e.key === "Enter" && suggestions[active]) { e.preventDefault(); onPick?.(suggestions[active]); setOpen(false); }
+              if (e.key === "Escape") setOpen(false);
+            }}
+            placeholder="Search university or city."
+            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-violet-300 focus:outline-none"
+          />
+          {open && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-white/30 bg-white/95 shadow-2xl backdrop-blur-sm">
+              {suggestions.slice(0, 8).map((s, i) => (
+                <button
+                  key={`${s.kind}-${s.value}-${i}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { onPick?.(s); setOpen(false); }}
+                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${i === active ? "bg-indigo-50" : "hover:bg-gray-50"}`}
+                >
+                  <span>
+                    <span className="mr-2 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-800">{s.kind}</span>
+                    {s.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Dropdown row */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <select
+            value={filters.country}
+            onChange={(e) => onChange({ country: e.target.value })}
+            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+          >
+            <option value="">All countries</option>
+            {countries.map((c) => (
+              <option key={c} value={c}>{c}</option>
             ))}
-          </div>
-        )}
-        {/* Country */}
-        <select
-          value={filters.country}
-          onChange={(e) => onChange({ country: e.target.value })}
-          className="min-w-[130px] whitespace-nowrap rounded-xl border border-white/20 bg-white/95 px-3 py-1.5 text-sm text-gray-900 shadow-sm"
-        >
-          <option value="">All countries</option>
-          {countries.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        {/* Language */}
-        <select
-          value={filters.language}
-          onChange={(e) => onChange({ language: e.target.value })}
-          className="min-w-[130px] whitespace-nowrap rounded-xl border border-white/20 bg-white/95 px-3 py-1.5 text-sm text-gray-900 shadow-sm"
-        >
-          <option value="">All languages</option>
-          {languages.map((l) => (
-            <option key={l} value={l}>{l}</option>
-          ))}
-        </select>
-        {/* Exam */}
-        <select
-          value={filters.exam}
-          onChange={(e) => onChange({ exam: e.target.value })}
-          className="min-w-[130px] whitespace-nowrap rounded-xl border border-white/20 bg-white/95 px-3 py-1.5 text-sm text-gray-900 shadow-sm"
-        >
-          <option value="">All exams</option>
-          {exams.map((x) => (
-            <option key={x} value={x}>{x}</option>
-          ))}
-        </select>
+          </select>
+          <select
+            value={filters.language}
+            onChange={(e) => onChange({ language: e.target.value })}
+            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+          >
+            <option value="">All languages</option>
+            {languages.map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+          <select
+            value={filters.exam}
+            onChange={(e) => onChange({ exam: e.target.value })}
+            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+          >
+            <option value="">All exams</option>
+            {exams.map((x) => (
+              <option key={x} value={x}>{x}</option>
+            ))}
+          </select>
+        </div>
       </div>
+
       <div className="mt-3 flex items-center gap-3">
         {typeof resultCount === 'number' && (
           <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">{resultCount} results</div>
@@ -133,7 +139,4 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
     </div>
   );
 }
-
-
-
 
