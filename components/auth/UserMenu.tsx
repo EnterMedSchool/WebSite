@@ -16,7 +16,13 @@ type Props = {
 
 export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInLevel, xpSpan }: Props) {
   const [open, setOpen] = useState(false);
+  const [dispLevel, setDispLevel] = useState<number>(level ?? 1);
+  const [dispPct, setDispPct] = useState<number>(Math.max(0, Math.min(100, xpPct ?? 0)));
+  const [dispIn, setDispIn] = useState<number>(xpInLevel ?? 0);
+  const [dispSpan, setDispSpan] = useState<number>(xpSpan ?? 0);
+  const [burst, setBurst] = useState<number>(0);
   const ref = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -33,6 +39,62 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
       document.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  // Keep display in sync when props change (e.g., on navigation)
+  useEffect(() => {
+    setDispLevel(level ?? 1);
+    setDispPct(Math.max(0, Math.min(100, xpPct ?? 0)));
+    setDispIn(xpInLevel ?? 0);
+    setDispSpan(xpSpan ?? 0);
+  }, [level, xpPct, xpInLevel, xpSpan]);
+
+  // XP award animation listener
+  useEffect(() => {
+    function onAward(e: any) {
+      const detail = e?.detail ?? {};
+      const amount: number = Number(detail.amount || 0);
+      const from = detail.from as { x: number; y: number } | undefined;
+      const newLevel: number | undefined = detail.newLevel;
+      const newPct: number | undefined = detail.newPct;
+      const newIn: number | undefined = detail.newInLevel;
+      const newSpan: number | undefined = detail.newSpan;
+      const levelUp: boolean = typeof detail.levelUp === 'boolean' ? detail.levelUp : (typeof newLevel === 'number' && newLevel > dispLevel);
+
+      const target = barRef.current?.getBoundingClientRect();
+      if (from && target) {
+        const bubble = document.createElement('div');
+        bubble.textContent = `+${amount} XP`;
+        bubble.style.position = 'fixed';
+        bubble.style.left = `${from.x - 20}px`;
+        bubble.style.top = `${from.y - 10}px`;
+        bubble.style.zIndex = '9999';
+        bubble.style.padding = '4px 8px';
+        bubble.style.borderRadius = '9999px';
+        bubble.style.background = 'linear-gradient(90deg,#34d399,#67e8f9)';
+        bubble.style.color = '#082f49';
+        bubble.style.fontWeight = '700';
+        bubble.style.fontSize = '12px';
+        bubble.style.boxShadow = '0 6px 20px rgba(0,0,0,.18)';
+        document.body.appendChild(bubble);
+        const anim = bubble.animate([
+          { transform: 'translate(0,0) scale(1)', opacity: 1 },
+          { transform: `translate(${target.left + target.width/2 - from.x}px, ${target.top + target.height/2 - from.y}px) scale(.6)`, opacity: 0.1 }
+        ], { duration: 800, easing: 'cubic-bezier(.22,1,.36,1)' });
+        anim.onfinish = () => bubble.remove();
+      }
+
+      if (typeof newPct === 'number') setDispPct(Math.max(0, Math.min(100, newPct)));
+      if (typeof newIn === 'number') setDispIn(newIn);
+      if (typeof newSpan === 'number') setDispSpan(newSpan);
+      if (typeof newLevel === 'number') setDispLevel(newLevel);
+      if (levelUp) {
+        setBurst((b) => b + 1);
+        setTimeout(() => setBurst((b) => b - 1), 1400);
+      }
+    }
+    window.addEventListener('xp:awarded' as any, onAward as any);
+    return () => window.removeEventListener('xp:awarded' as any, onAward as any);
+  }, [dispLevel]);
 
   if (!isAuthed) {
     return (
@@ -68,17 +130,35 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
         <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm">
           Lv {level ?? 1}
         </span>
-        <div className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
+        <div ref={barRef} className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out"
-            style={{ width: `${Math.max(0, Math.min(100, xpPct ?? 0))}%` }}
+            style={{ width: `${dispPct}%` }}
           />
           <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
         </div>
         <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
-          {xpSpan && xpSpan > 1 ? `${xpInLevel ?? 0}/${xpSpan} XP` : 'MAX'}
+          {dispSpan && dispSpan > 1 ? `${dispIn}/${dispSpan} XP` : 'MAX'}
         </span>
       </div>
+
+      {/* lightweight confetti burst */}
+      {burst > 0 && (
+        <div className="pointer-events-none absolute -top-2 right-28 z-[60] h-0 w-0">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <span key={i} className="absolute h-1 w-2 rounded-sm" style={{
+              left: `${(i%8)*6}px`,
+              top: `${Math.floor(i/8)*-4}px`,
+              background: ['#fde047','#34d399','#60a5fa','#fca5a5'][i%4],
+              transform: `rotate(${(i*37)%360}deg)`,
+              animation: `fall ${600 + (i%5)*80}ms ease-out forwards`
+            }} />
+          ))}
+          <style jsx>{`
+            @keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } }
+          `}</style>
+        </div>
+      )}
 
       {/* Avatar trigger */}
       <button
@@ -140,4 +220,3 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
     </div>
   );
 }
-

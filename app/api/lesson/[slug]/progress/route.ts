@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { levelFromXp, MAX_LEVEL } from "@/lib/xp";
+import { levelFromXp, MAX_LEVEL, GOAL_XP } from "@/lib/xp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +51,9 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
               ON CONFLICT (user_id, lesson_id) DO UPDATE SET completed=${completed}`;
 
     // Award XP once on first completion
+    let awardedXp = 0;
+    let newXp = null as null | number;
+    let newLevel = null as null | number;
     if (completed) {
       // Award XP only once per lesson per user based on xp_awarded marker
       const awarded = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND subject_type='lesson' AND subject_id=${lesson.id} AND action='xp_awarded' LIMIT 1`;
@@ -69,6 +72,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
         const nextXp = currXp + add;
         const newLevel = levelFromXp(nextXp);
         await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
+        awardedXp = add; newXp = nextXp;
         // Optional: log level up event
         if (newLevel > currLevel && newLevel <= MAX_LEVEL) {
           try {
@@ -83,7 +87,22 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
         } catch {}
       }
     }
-    return NextResponse.json({ ok: true });
+    if (newXp == null) {
+      const ur2 = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
+      newXp = Number(ur2.rows[0]?.xp || 0);
+      newLevel = Number(ur2.rows[0]?.level || 1);
+    } else {
+      // we already set newLevel above
+      const ur2 = await sql`SELECT level FROM users WHERE id=${userId} LIMIT 1`;
+      newLevel = Number(ur2.rows[0]?.level || newLevel || 1);
+    }
+    const lvl = Math.min(Math.max(Number(newLevel || 1), 1), MAX_LEVEL);
+    const start = GOAL_XP[lvl - 1] ?? 0;
+    const nextGoal = GOAL_XP[Math.min(GOAL_XP.length - 1, lvl)] ?? start + 1;
+    const span = Math.max(1, nextGoal - start);
+    const inLevel = Math.max(0, Math.min(span, Number(newXp || 0) - start));
+    const pct = Math.round((inLevel / span) * 100);
+    return NextResponse.json({ ok: true, awardedXp, newXp, newLevel: lvl, inLevel, span, pct });
   } catch (err: any) {
     console.error('progress POST failed', err);
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });

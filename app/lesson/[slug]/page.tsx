@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -24,6 +24,7 @@ export default function LessonPage() {
   const [picked, setPicked] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [isSavingComplete, setIsSavingComplete] = useState(false);
+  const completeBtnRef = useRef<HTMLButtonElement | null>(null);
   const [nav, setNav] = useState<{ prev: {slug:string,title:string}|null, next: {slug:string,title:string}|null } | null>(null);
   const [courseProg, setCourseProg] = useState<{ total:number; completed:number; pct:number } | null>(null);
   const q = qs[idx];
@@ -86,6 +87,7 @@ export default function LessonPage() {
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
             <button
+              ref={completeBtnRef}
               onClick={async ()=>{
                 if (!isAuthed) return;
                 const target = !isComplete;
@@ -102,6 +104,7 @@ export default function LessonPage() {
                 });
                 try {
                   const res = await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ completed: target }) });
+                  const payload = await res.json().catch(()=>({}));
                   if (!res.ok) {
                     setIsComplete(!target);
                     // revert optimistic progress update
@@ -112,7 +115,17 @@ export default function LessonPage() {
                       const pct = p.total ? Math.round((completed / p.total) * 100) : 0;
                       return { ...p, completed, pct };
                     });
-                    console.warn('Failed to update completion', await res.text());
+                    console.warn('Failed to update completion', payload);
+                  }
+                  // Animate XP if server actually awarded some
+                  if (payload?.awardedXp && Number(payload.awardedXp) > 0) {
+                    const rect = (completeBtnRef as any)?.current?.getBoundingClientRect?.() || { left: window.innerWidth - 80, top: 12, width: 40, height: 24 };
+                    const from = { x: rect.left + rect.width/2, y: rect.top };
+                    const newLevel: number = Number(payload.newLevel || 1);
+                    const pct: number = Number(payload.pct || 0);
+                    const inLevel: number = Number(payload.inLevel || 0);
+                    const span: number = Number(payload.span || 1);
+                    window.dispatchEvent(new CustomEvent('xp:awarded', { detail: { amount: Number(payload.awardedXp), from, newLevel, newPct: pct, newInLevel: inLevel, newSpan: span } }));
                   }
                 } catch (e) {
                   setIsComplete(!target);

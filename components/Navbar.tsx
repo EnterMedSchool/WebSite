@@ -57,25 +57,23 @@ export default async function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 shadow-sm">
-      {/* Top (blue) bar */}
-      <div className="w-full bg-[#6C63FF] text-white">
-        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+    <header className="sticky top-0 z-50">
+      {/* Single condensed gradient bar */}
+      <div className="w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_10px_30px_rgba(99,102,241,0.35)]">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2">
             <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <nav className="hidden items-center gap-10 md:flex">
+          <nav className="hidden items-center gap-8 md:flex">
             {/* Universities mega menu trigger */}
             <UniversitiesMenu />
-            {/* Other primary items */}
-            {primary.slice(1).map((item) => (
-              <Link key={item.label} href={item.href} className="text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white">
+            {[...primary.slice(1), ...secondary].map((item) => (
+              <Link key={item.label} href={item.href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">
                 {item.label}
               </Link>
             ))}
-            {/* Admin features removed */}
           </nav>
 
           <div className="flex items-center gap-3">
@@ -89,21 +87,6 @@ export default async function Navbar() {
               xpSpan={levelInfo?.span}
             />
           </div>
-        </div>
-      </div>
-
-      {/* Secondary (white) bar */}
-      <div className="w-full border-b bg-white">
-        <div className="mx-auto hidden max-w-6xl items-center justify-center gap-10 px-4 py-3 sm:flex">
-          {secondary.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="text-sm font-semibold uppercase tracking-wide text-indigo-600 hover:text-indigo-700"
-            >
-              {item.label}
-            </Link>
-          ))}
         </div>
       </div>
     </header>
