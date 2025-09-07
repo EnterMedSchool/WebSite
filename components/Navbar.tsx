@@ -19,18 +19,20 @@ export default async function Navbar() {
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
   let levelInfo: { level: number; xp: number; pct: number; inLevel: number; span: number; nextLevel: number; isMax: boolean } | null = null;
-  const sessUserId = Number(((session as any)?.userId) ?? 0);
-  if (sessUserId || session?.user?.email) {
+  // Prefer email lookup (more stable), then fallback to numeric userId
+  const sessUserIdRaw = Number(((session as any)?.userId) ?? 0);
+  const sessEmail = (session?.user?.email || "").toString().toLowerCase().trim();
+  const sessUserId = (Number.isSafeInteger(sessUserIdRaw) && sessUserIdRaw > 0 && sessUserIdRaw <= 2147483647) ? sessUserIdRaw : 0;
+  if (sessUserId || sessEmail) {
     try {
       let row: any | undefined;
-      if (sessUserId) {
-        const r = await sql`SELECT xp, level, email FROM users WHERE id=${sessUserId} LIMIT 1`;
-        row = r.rows[0];
+      if (sessEmail) {
+        const rEmail = await sql`SELECT xp, level FROM users WHERE lower(email)=${sessEmail} LIMIT 1`;
+        row = rEmail.rows[0];
       }
-      if (!row && session?.user?.email) {
-        const email = String(session.user.email).toLowerCase();
-        const r2 = await sql`SELECT xp, level FROM users WHERE lower(email)=${email} LIMIT 1`;
-        row = r2.rows[0];
+      if (!row && sessUserId) {
+        const rId = await sql`SELECT xp, level FROM users WHERE id=${sessUserId} LIMIT 1`;
+        row = rId.rows[0];
       }
       if (!row) throw new Error('user not found');
       const xp = Number(row?.xp ?? 0);
