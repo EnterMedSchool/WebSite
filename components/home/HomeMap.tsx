@@ -285,7 +285,7 @@ export default function HomeMap() {
   return (
     <div className="relative">
       {/* Hero map */}
-      <div className="relative rounded-none border-0 p-0 overflow-hidden" style={{ minHeight: "calc(100svh - 120px)" }}>
+      <div className="relative rounded-none border-0 p-0 overflow-hidden" style={{ height: "calc(100svh - 120px)" }}>
         {/* No Back to world button per new default UX */}
 
         {/* Title removed per latest UX request */}
