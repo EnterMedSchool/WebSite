@@ -17,6 +17,7 @@ type Props = {
 
 export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInLevel, xpSpan, isMax }: Props) {
   const [open, setOpen] = useState(false);
+  const [xpOpen, setXpOpen] = useState(false);
   const [dispLevel, setDispLevel] = useState<number>(level ?? 1);
   const [dispPct, setDispPct] = useState<number>(Math.max(0, Math.min(100, xpPct ?? 0)));
   const [dispIn, setDispIn] = useState<number>(xpInLevel ?? 0);
@@ -124,14 +125,13 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
 
   return (
     <div ref={ref} className="relative flex items-center gap-3">
-      {/* Compact profile/XP strip (glass pill) */}
-      <div
-        className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur sm:flex"
+      {/* Compact XP strip (clickable for popup) */}
+      <button
+        type="button"
+        onClick={() => setXpOpen(v=>!v)}
+        className="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur sm:flex"
         title={`Lv ${level ?? 1} • ${Math.max(0, Math.min(100, xpPct ?? 0))}% to next`}
       >
-        <div className="max-w-[180px] truncate text-sm font-semibold text-white/95 sm:max-w-[220px]">
-          {name ?? "You"}
-        </div>
         <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse>0? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
           Lv {dispLevel}
         </span>
@@ -145,7 +145,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
         <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
           {isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}
         </span>
-      </div>
+      </button>
 
       {/* lightweight confetti burst */}
       {burst > 0 && (
@@ -222,6 +222,58 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </div>
         </div>
       )}
+
+      {/* XP popup */}
+      {xpOpen && (
+        <div className="absolute right-16 top-[calc(100%+8px)] z-50 w-[360px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
+          <div className="p-4">
+            <div className="mb-2 text-sm font-bold text-indigo-700">Your Progress</div>
+            <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax? ' (MAX)' : ''} • {dispSpan>0? `${dispIn}/${dispSpan} XP to next` : ''}</div>
+            <div className="mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
+            <RecentXpList />
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-xl border p-3">
+                <div className="font-semibold text-gray-900">Achievements</div>
+                <div className="mt-1 text-gray-600">• First Steps (soon)</div>
+                <div className="text-gray-600">• Quiz Whiz (soon)</div>
+              </div>
+              <div className="rounded-xl border p-3">
+                <div className="font-semibold text-gray-900">Daily Streak</div>
+                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">—</span> days (soon)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function RecentXpList() {
+  const [rows, setRows] = useState<{ when: string; what: string; amount: number }[] | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/me/xp');
+        if (!r.ok) { setRows([]); return; }
+        const j = await r.json();
+        setRows((j?.recent || []).slice(0, 6));
+        const streakEl = document.getElementById('streak-days');
+        if (streakEl && j?.streakDays != null) streakEl.textContent = String(j.streakDays);
+      } catch { setRows([]); }
+    })();
+  }, []);
+  if (!rows) return <div className="h-10 animate-pulse rounded bg-gray-100" />;
+  if (rows.length === 0) return <div className="text-xs text-gray-600">No XP yet. Complete a lesson to earn some!</div>;
+  return (
+    <ul className="space-y-1">
+      {rows.map((r, i) => (
+        <li key={i} className="flex items-center justify-between text-xs text-gray-800">
+          <span className="truncate pr-2">{r.what}</span>
+          <span className="text-gray-500">{r.when}</span>
+          <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">+{r.amount}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

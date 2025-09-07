@@ -69,13 +69,13 @@ export default async function Navbar() {
     <header className="sticky top-0 z-50">
       {/* Single condensed gradient bar */}
       <div className="w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_10px_30px_rgba(99,102,241,0.35)]">
-        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-4 px-4 py-2.5">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav className="hidden md:flex items-center justify-center gap-6 overflow-hidden">
             <UniversitiesMenu />
             <Link href={primary[1].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
             <Link href={primary[2].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>
@@ -83,7 +83,7 @@ export default async function Navbar() {
             <ResourcesMenu />
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-end shrink-0">
             <UserMenu
               isAuthed={!!session}
               name={session?.user?.name ?? undefined}
