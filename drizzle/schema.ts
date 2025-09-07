@@ -31,6 +31,9 @@ export const courses = pgTable(
     slug: varchar("slug", { length: 120 }).notNull().unique(),
     title: varchar("title", { length: 200 }).notNull(),
     description: text("description"),
+    rankKey: varchar("rank_key", { length: 32 }),
+    visibility: varchar("visibility", { length: 16 }).default("public"),
+    meta: jsonb("meta"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({ slugIdx: index("courses_slug_idx").on(t.slug) })
@@ -45,6 +48,11 @@ export const lessons = pgTable(
     title: varchar("title", { length: 200 }).notNull(),
     body: text("body"),
     position: integer("position").default(0).notNull(),
+    rankKey: varchar("rank_key", { length: 32 }),
+    visibility: varchar("visibility", { length: 16 }).default("public"),
+    sectionId: integer("section_id"),
+    durationMin: integer("duration_min"),
+    meta: jsonb("meta"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({ courseIdx: index("lessons_course_idx").on(t.courseId) })
@@ -57,6 +65,11 @@ export const questions = pgTable(
     lessonId: integer("lesson_id").notNull(),
     prompt: text("prompt").notNull(),
     explanation: text("explanation"),
+    rankKey: varchar("rank_key", { length: 32 }),
+    difficulty: varchar("difficulty", { length: 10 }),
+    tags: jsonb("tags"),
+    version: integer("version").default(1),
+    meta: jsonb("meta"),
   },
   (t) => ({ lessonIdx: index("questions_lesson_idx").on(t.lessonId) })
 );
@@ -101,6 +114,82 @@ export const attemptAnswers = pgTable(
     attemptIdx: index("answers_attempt_idx").on(t.attemptId),
     questionIdx: index("answers_question_idx").on(t.questionId),
   })
+);
+
+// New LMS tables
+export const courseSections = pgTable(
+  "course_sections",
+  {
+    id: serial("id").primaryKey(),
+    courseId: integer("course_id").notNull(),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    rankKey: varchar("rank_key", { length: 32 }),
+  },
+  (t) => ({ courseIdx: index("course_sections_course_idx").on(t.courseId) })
+);
+
+export const lessonBlocks = pgTable(
+  "lesson_blocks",
+  {
+    id: serial("id").primaryKey(),
+    lessonId: integer("lesson_id").notNull(),
+    kind: varchar("kind", { length: 20 }).notNull(),
+    content: text("content"),
+    rankKey: varchar("rank_key", { length: 32 }),
+  },
+  (t) => ({ lessonIdx: index("lesson_blocks_lesson_idx").on(t.lessonId) })
+);
+
+export const lessonPrerequisites = pgTable(
+  "lesson_prerequisites",
+  {
+    lessonId: integer("lesson_id").notNull(),
+    requiresLessonId: integer("requires_lesson_id").notNull(),
+  },
+  (t) => ({ lessonIdx: index("lesson_prereq_lesson_idx").on(t.lessonId) })
+);
+
+export const userLessonProgress = pgTable(
+  "user_lesson_progress",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    lessonId: integer("lesson_id").notNull(),
+    progress: integer("progress").default(0),
+    completed: boolean("completed").default(false),
+    lastViewedAt: timestamp("last_viewed_at").defaultNow(),
+    timeSpentSec: integer("time_spent_sec").default(0),
+  },
+  (t) => ({
+    ulpUserIdx: index("ulp_user_idx").on(t.userId),
+    ulpLessonIdx: index("ulp_lesson_idx").on(t.lessonId),
+  })
+);
+
+export const userCourseProgress = pgTable(
+  "user_course_progress",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    courseId: integer("course_id").notNull(),
+    progress: integer("progress").default(0),
+    completed: boolean("completed").default(false),
+  }
+);
+
+export const lmsEvents = pgTable(
+  "lms_events",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id"),
+    subjectType: varchar("subject_type", { length: 20 }).notNull(),
+    subjectId: integer("subject_id").notNull(),
+    action: varchar("action", { length: 20 }).notNull(),
+    payload: jsonb("payload"),
+    createdAt: timestamp("created_at").defaultNow(),
+    processedAt: timestamp("processed_at"),
+  }
 );
 
 export const notifications = pgTable(

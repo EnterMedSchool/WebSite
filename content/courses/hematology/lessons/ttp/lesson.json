@@ -1,0 +1,12 @@
+{
+  "slug": "ttp",
+  "title": "Thrombotic Thrombocytopenic Purpura (TTP)",
+  "courseSlug": "hematology",
+  "section": "disorders",
+  "rank": "m2",
+  "visibility": "public",
+  "video": { "src": "", "poster": "" },
+  "notes": "notes.md",
+  "tips": ["Think of TTP in microangiopathic hemolytic anemia + thrombocytopenia."]
+}
+

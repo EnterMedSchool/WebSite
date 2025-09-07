@@ -1,0 +1,9 @@
+{
+  "slug": "hematology",
+  "title": "Hematology",
+  "description": "Blood, coagulation and disorders. Learn core concepts with quick mini‑lessons and practice questions.",
+  "visibility": "public",
+  "rank": "m",
+  "sections": ["fundamentals", "disorders"]
+}
+

@@ -1,0 +1,16 @@
+[
+  {
+    "slug": "ttp-q1",
+    "prompt": "Which therapy is first‑line in TTP?",
+    "choices": [
+      { "text": "Fresh frozen plasma exchange", "correct": true },
+      { "text": "Platelet transfusion for all" },
+      { "text": "Immediate splenectomy" },
+      { "text": "No treatment required" }
+    ],
+    "explanation": "Plasma exchange removes inhibitory antibodies and replenishes ADAMTS13.",
+    "tags": ["management"],
+    "difficulty": "easy",
+    "rank": "a"
+  }
+]

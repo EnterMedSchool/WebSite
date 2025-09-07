@@ -1,0 +1,31 @@
+[
+  {
+    "slug": "dic-q1",
+    "prompt": "In DIC, which lab pattern is most typical?",
+    "choices": [
+      { "text": "High fibrinogen, high platelets" },
+      { "text": "Low fibrinogen, low platelets", "correct": true },
+      { "text": "Normal D-dimer" },
+      { "text": "Isolated prolonged aPTT" }
+    ],
+    "explanation": "Consumption of clotting factors and platelets results in low fibrinogen and thrombocytopenia; fibrinolysis increases D‑dimer.
+    ",
+    "tags": ["coag"],
+    "difficulty": "easy",
+    "rank": "a"
+  },
+  {
+    "slug": "dic-q2",
+    "prompt": "Most important initial step in managing DIC is:",
+    "choices": [
+      { "text": "Immediate heparin in all cases" },
+      { "text": "Treat the underlying cause", "correct": true },
+      { "text": "Stop all anticoagulation" },
+      { "text": "Transfuse platelets to >300k in all" }
+    ],
+    "explanation": "DIC is secondary to another condition (e.g., sepsis, trauma); addressing the cause is paramount.",
+    "tags": ["management"],
+    "difficulty": "easy",
+    "rank": "b"
+  }
+]

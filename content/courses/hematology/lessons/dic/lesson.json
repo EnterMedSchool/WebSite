@@ -1,0 +1,12 @@
+{
+  "slug": "dic",
+  "title": "Disseminated Intravascular Coagulation (DIC)",
+  "courseSlug": "hematology",
+  "section": "disorders",
+  "rank": "m1",
+  "visibility": "loggedIn",
+  "video": { "src": "", "poster": "" },
+  "notes": "notes.md",
+  "tips": ["Always treat the underlying cause.", "Think of DIC in sepsis with bleeding + thrombosis."]
+}
+
