@@ -14,10 +14,18 @@ export default async function Navbar() {
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
   let levelInfo: { level: number; xp: number; pct: number; inLevel: number; span: number; nextLevel: number } | null = null;
-  if (session?.userId) {
+  const sessUserId = Number(((session as any)?.userId) ?? 0);
+  if (sessUserId || session?.user?.email) {
     try {
-      const uid = Number((session as any).userId);
-      const row = (await db.select().from(users).where(eq(users.id, uid)).limit(1))[0] as any;
+      let row: any | undefined;
+      if (sessUserId) {
+        row = (await db.select().from(users).where(eq(users.id, sessUserId)).limit(1))[0] as any;
+      }
+      if (!row && session?.user?.email) {
+        const email = String(session.user.email).toLowerCase();
+        row = (await db.select().from(users).where(eq(users.email as any, email)).limit(1))[0] as any;
+      }
+      if (!row) throw new Error('user not found');
       const xp = Number(row?.xp ?? 0);
       const level = Math.max(1, Math.min(Number(row?.level ?? 1), MAX_LEVEL));
       const effLevel = Math.min(levelFromXp(xp), MAX_LEVEL);
