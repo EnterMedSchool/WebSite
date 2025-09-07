@@ -230,15 +230,19 @@ export default function HomeMap() {
     return [baseCenter[0] - xShift, baseCenter[1] - yShift];
   }
 
-  function handleCountryClick(geo: any) {
+  function focusCountry(geo: any, openSheet: boolean) {
     const name: string = geo.properties.name;
     const baseCenter = geoCentroid(geo) as [number, number];
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-    const targetZoom = isSmall ? 6.5 : (vh < 850 ? 5.0 : 5.2); // much closer on small screens
+    const targetZoom = isSmall ? 6.9 : (vh < 850 ? 5.0 : 5.2);
     const center = isSmall ? baseCenter : computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name, center, baseCenter });
     setPosition({ center, zoom: targetZoom });
-    if (isSmall) { setSheetCustomItems(null); setSheetOpen(true); }
+    if (isSmall && openSheet) { setSheetCustomItems(null); setSheetOpen(true); }
+  }
+
+  function handleCountryClick(geo: any) {
+    focusCountry(geo, true);
   }
 
   function reset() {
@@ -307,14 +311,11 @@ export default function HomeMap() {
                 if (isSmall && !initApplied.current && !selected && geographies?.length) {
                   const italyGeo = geographies.find((g: any) => (g.properties?.name as string) === 'Italy');
                   if (italyGeo) {
-                    const base = geoCentroid(italyGeo) as [number, number];
-                    // slightly stronger westward nudge to align visually on mobile
-                    const initial: [number, number] = [base[0] - 2.0, base[1]];
                     // schedule on next frame to avoid state updates during render
                     if (typeof window !== 'undefined') {
                       requestAnimationFrame(() => {
-                        setSelected({ name: 'Italy', center: initial, baseCenter: base });
-                        setPosition({ center: initial, zoom: 6.9 });
+                        // Reuse the exact same centering logic as taps (but don't open the sheet)
+                        focusCountry(italyGeo, false);
                         initApplied.current = true;
                       });
                     }
