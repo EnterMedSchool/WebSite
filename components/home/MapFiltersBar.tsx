@@ -68,7 +68,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
             className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-violet-300 focus:outline-none"
           />
           {open && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-white/30 bg-white/95 shadow-2xl backdrop-blur-sm">
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-white/30 bg-white/95 text-gray-900 shadow-2xl backdrop-blur-sm">
               {suggestions.slice(0, 8).map((s, i) => (
                 <button
                   key={`${s.kind}-${s.value}-${i}`}
@@ -79,7 +79,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
                 >
                   <span>
                     <span className="mr-2 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-indigo-800">{s.kind}</span>
-                    {s.label}
+                    <span className="text-gray-900">{s.label}</span>
                   </span>
                 </button>
               ))}
@@ -139,4 +139,3 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
     </div>
   );
 }
-

@@ -138,8 +138,9 @@ export default function HomeMap() {
   // Measure overlay height to place the left panel just beneath it
   useEffect(() => {
     function measure() {
-      const h = overlayRef.current?.offsetHeight ?? 120;
-      setPanelOffset(Math.min(220, Math.max(100, h + 16)));
+      const h = overlayRef.current?.offsetHeight ?? 140;
+      // Account for the new two-row filter panel; add extra breathing room
+      setPanelOffset(Math.min(280, Math.max(140, h + 32)));
     }
     measure();
     if (typeof window !== 'undefined') {
