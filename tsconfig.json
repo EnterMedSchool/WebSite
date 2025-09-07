@@ -27,6 +27,8 @@
   ],
   "exclude": [
     "node_modules",
-    "drizzle.config.ts" // exclude CLI-only config from Next typecheck
+    "drizzle.config.ts", // exclude CLI-only config from Next typecheck
+    "VirtualLibrary",
+    "VirtualLibrary/**"
   ]
 }
