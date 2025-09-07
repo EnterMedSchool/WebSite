@@ -8,28 +8,13 @@ type Props = {
   isAuthed: boolean;
   name?: string | null;
   imageUrl?: string | null;
+  level?: number | null;
+  xpPct?: number | null; // 0..100 within current level
+  xpInLevel?: number | null;
+  xpSpan?: number | null;
 };
 
-// Simple inline icons (no extra deps)
-const IconChat = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-    <path d="M12 3c4.97 0 9 3.582 9 8 0 4.418-4.03 8-9 8-.969 0-1.904-.123-2.785-.352-.258-.068-.526-.102-.795-.102H6.5l-2.42 1.813A.75.75 0 0 1 3 20.75v-3.527c0-.269-.034-.537-.102-.795A8.18 8.18 0 0 1 3 11c0-4.418 4.03-8 9-8z"/>
-  </svg>
-);
-
-const IconCalendar = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-    <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1.25A2.75 2.75 0 0 1 22 6.75v12.5A2.75 2.75 0 0 1 19.25 22H4.75A2.75 2.75 0 0 1 2 19.25V6.75A2.75 2.75 0 0 1 4.75 4H6V3a1 1 0 0 1 1-1zm12 8H5v9.25c0 .69.56 1.25 1.25 1.25h13.5c.69 0 1.25-.56 1.25-1.25V10zM6 8h12V6.75c0-.69-.56-1.25-1.25-1.25H4.75C4.06 5.5 3.5 6.06 3.5 6.75V8H6z"/>
-  </svg>
-);
-
-const IconBell = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-    <path d="M12 2a6 6 0 0 0-6 6v3.586l-1.707 1.707A1 1 0 0 0 5 15h14a1 1 0 0 0 .707-1.707L18 11.586V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.995-2.824L15 19h-6a3 3 0 0 0 2.824 2.995L12 22z"/>
-  </svg>
-);
-
-export default function UserMenu({ isAuthed, name, imageUrl }: Props) {
+export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInLevel, xpSpan }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -51,37 +36,34 @@ export default function UserMenu({ isAuthed, name, imageUrl }: Props) {
 
   if (!isAuthed) {
     return (
-      <button
-        onClick={() => signIn()}
-        className="rounded border border-white/60 bg-white px-3 py-1.5 text-sm text-indigo-600 hover:bg-white/90"
-      >
-        Sign in
-      </button>
+      <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-white/70 sm:flex">
+          <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">Lv –</span>
+          <div className="relative h-2 w-28 overflow-hidden rounded-full bg-white/10">
+            <div className="absolute inset-y-0 left-0 w-0 bg-white/40" />
+          </div>
+        </div>
+        <button
+          onClick={() => signIn()}
+          className="rounded border border-white/60 bg-white px-3 py-1.5 text-sm text-indigo-600 hover:bg-white/90"
+        >
+          Sign in
+        </button>
+      </div>
     );
   }
 
   return (
-    <div ref={ref} className="relative flex items-center gap-2 sm:gap-3">
-      {/* Icon buttons (non-functional for now) */}
-      <button
-        aria-label="Chat"
-        className="rounded-full p-2 text-white/90 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/60"
-      >
-        <IconChat className="h-5 w-5" />
-      </button>
-      <button
-        aria-label="Study"
-        className="rounded-full p-2 text-white/90 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/60"
-      >
-        <IconCalendar className="h-5 w-5" />
-      </button>
-      <button
-        aria-label="Notifications"
-        className="relative rounded-full p-2 text-white/90 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/60"
-      >
-        <IconBell className="h-5 w-5" />
-        <span className="absolute right-1 top-1 inline-block h-2 w-2 rounded-full bg-rose-300"></span>
-      </button>
+    <div ref={ref} className="relative flex items-center gap-3">
+      {/* Compact profile/XP strip */}
+      <div className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 sm:flex" title={`Lv ${level ?? 1} • ${Math.max(0, Math.min(100, xpPct ?? 0))}% to next`}>
+        <div className="text-sm font-semibold text-white/95 max-w-[160px] truncate">{name ?? 'You'}</div>
+        <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">Lv {level ?? 1}</span>
+        <div className="relative h-2 w-28 overflow-hidden rounded-full bg-white/20">
+          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-300 to-emerald-200" style={{ width: `${Math.max(0, Math.min(100, xpPct ?? 0))}%` }} />
+        </div>
+        <span className="ml-1 text-[10px] text-white/80">{(xpInLevel ?? 0)}/{(xpSpan ?? 0)} XP</span>
+      </div>
 
       {/* Avatar trigger */}
       <button
@@ -143,4 +125,3 @@ export default function UserMenu({ isAuthed, name, imageUrl }: Props) {
     </div>
   );
 }
-

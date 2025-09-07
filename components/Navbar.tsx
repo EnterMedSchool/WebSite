@@ -5,10 +5,34 @@ import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
 import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
+import { db } from "@/lib/db";
+import { users } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
+import { xpToNext, GOAL_XP, MAX_LEVEL, levelFromXp } from "@/lib/xp";
 
 export default async function Navbar() {
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
+  let levelInfo: { level: number; xp: number; pct: number; inLevel: number; span: number; nextLevel: number } | null = null;
+  if (session?.userId) {
+    try {
+      const uid = Number((session as any).userId);
+      const row = (await db.select().from(users).where(eq(users.id, uid)).limit(1))[0] as any;
+      const xp = Number(row?.xp ?? 0);
+      const level = Math.max(1, Math.min(Number(row?.level ?? 1), MAX_LEVEL));
+      const effLevel = Math.min(levelFromXp(xp), MAX_LEVEL);
+      if (effLevel >= MAX_LEVEL) {
+        levelInfo = { level: MAX_LEVEL, xp, pct: 100, inLevel: 0, span: 1, nextLevel: MAX_LEVEL };
+      } else {
+        const { toNext, nextLevelGoal } = xpToNext(xp);
+        const start = GOAL_XP[effLevel - 1];
+        const span = Math.max(1, nextLevelGoal - start);
+        const inLevel = Math.max(0, Math.min(span, span - toNext));
+        const pct = Math.round((inLevel / span) * 100);
+        levelInfo = { level: effLevel, xp, pct, inLevel, span, nextLevel: effLevel + 1 };
+      }
+    } catch {}
+  }
   // Admin features removed; no admin link or checks
 
   const primary = [
@@ -47,7 +71,15 @@ export default async function Navbar() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <UserMenu isAuthed={!!session} name={session?.user?.name ?? undefined} imageUrl={(session as any)?.user?.image ?? undefined} />
+            <UserMenu
+              isAuthed={!!session}
+              name={session?.user?.name ?? undefined}
+              imageUrl={(session as any)?.user?.image ?? undefined}
+              level={levelInfo?.level}
+              xpPct={levelInfo?.pct}
+              xpInLevel={levelInfo?.inLevel}
+              xpSpan={levelInfo?.span}
+            />
           </div>
         </div>
       </div>
