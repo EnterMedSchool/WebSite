@@ -17,6 +17,10 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 80 }).notNull().unique(),
   name: varchar("name", { length: 120 }),
+  email: varchar("email", { length: 255 }),
+  emailVerified: timestamp("email_verified"),
+  image: varchar("image", { length: 500 }),
+  passwordHash: varchar("password_hash", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
