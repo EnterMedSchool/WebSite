@@ -272,7 +272,7 @@ export default function HomeMap() {
   return (
     <div className="relative">
       {/* Hero map */}
-      <div className="relative rounded-none border-0 p-0 overflow-hidden" style={{ minHeight: "calc(100vh - 120px)" }}>
+      <div className="relative rounded-none border-0 p-0 overflow-hidden" style={{ minHeight: "calc(100svh - 120px)" }}>
         {/* No Back to world button per new default UX */}
 
         {/* Title removed per latest UX request */}
@@ -412,13 +412,17 @@ export default function HomeMap() {
 
         {/* Filters bar overlay docked at top-right, shrinks when panel open */}
         {/* Filters overlay: top-left on desktop, bottom-center on small screens */}
-        <div className={isSmall ? "pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center" : "pointer-events-none absolute left-3 top-3 z-30"}>
+        <div
+          className={isSmall ? "pointer-events-none absolute inset-x-0 z-30 flex justify-center" : "pointer-events-none absolute left-3 top-3 z-30"}
+          style={isSmall ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" } : undefined}
+        >
           <motion.div
             ref={overlayRef}
-            className={isSmall ? "pointer-events-auto w-[min(96vw,560px)]" : "pointer-events-auto"}
+            className={isSmall ? "pointer-events-auto" : "pointer-events-auto"}
             initial={{ opacity: 0, y: isSmall ? 10 : -10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 180, damping: 18 }}
+            style={isSmall ? { width: "min(calc(100vw - 24px), 560px)" } : undefined}
           >
             <MapFiltersBar
               filters={filters}
@@ -475,8 +479,8 @@ export default function HomeMap() {
         {/* Soft top/bottom gradient to blend edges on mobile */}
         {isSmall && (
           <>
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" />
           </>
         )}
 

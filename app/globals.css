@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent accidental horizontal scroll on small screens */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Helpful for iOS safe areas when we position floating UI */
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+}
+
 :root {
   --bg: 248 248 248;
   --surface: 255 255 255;
