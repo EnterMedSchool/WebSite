@@ -10,10 +10,9 @@ import { eq, inArray } from "drizzle-orm";
 function slugify(input: string): string {
   return input
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 export async function GET(req: Request) {
@@ -75,4 +74,3 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ series });
 }
-
