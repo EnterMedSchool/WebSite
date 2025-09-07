@@ -64,8 +64,7 @@ export default function LessonPage() {
               <motion.div key={b.id} className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5" initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i*0.03 }}>
                 {b.kind==='video' ? (
                   // eslint-disable-next-line jsx-a11y/media-has-caption
-                  <video src={JSON.parse(b.content||'{}').src || ''} poster={JSON.parse(b.content||'{}').poster || ''} className="w-full rounded-xl ring-1 ring-black/10" controls/>
-                  </video>
+                  <video src={JSON.parse(b.content||'{}').src || ''} poster={JSON.parse(b.content||'{}').poster || ''} className="w-full rounded-xl ring-1 ring-black/10" controls />
                 ) : b.kind==='note' ? (
                   <article className="prose prose-indigo max-w-none text-sm">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.content}</ReactMarkdown>
