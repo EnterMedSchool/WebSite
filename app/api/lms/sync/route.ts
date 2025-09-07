@@ -80,44 +80,65 @@ async function ensureQuestions(lessonId: number, lessonDir: string) {
   return { created, updated };
 }
 
-export async function POST(req: Request) {
-  const url = new URL(req.url);
-  const key = url.searchParams.get('key') || req.headers.get('x-admin-key') || '';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+async function runSync(keyFromReq: string | null) {
+  const key = keyFromReq || "";
   const secret = (process.env.SEED_SECRET || process.env.ADMIN_SECRET || '').trim();
-  if (!secret || key !== secret) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!secret) return { status: 500, body: { error: 'Missing SEED_SECRET/ADMIN_SECRET on server' } };
+  if (key !== secret) return { status: 403, body: { error: 'Forbidden' } };
 
   const root = contentRoot();
-  if (!fs.existsSync(root)) return NextResponse.json({ error: 'No content directory' }, { status: 500 });
+  if (!fs.existsSync(root)) return { status: 500, body: { error: `No content directory at ${root}` } };
 
   const report: any = { courses: [], lessons: [], questions: [] };
-  const coursesDirs = fs.readdirSync(root);
-  for (const cdir of coursesDirs) {
-    const cPath = path.join(root, cdir);
-    if (!fs.statSync(cPath).isDirectory()) continue;
-    const courseJsonPath = path.join(cPath, 'course.json');
-    if (!fs.existsSync(courseJsonPath)) continue;
-    const cjson = JSON.parse(fs.readFileSync(courseJsonPath, 'utf8'));
-    const courseId = await ensureCourse(cjson);
-    report.courses.push({ slug: cjson.slug, id: courseId });
+  try {
+    const coursesDirs = fs.readdirSync(root);
+    for (const cdir of coursesDirs) {
+      const cPath = path.join(root, cdir);
+      if (!fs.statSync(cPath).isDirectory()) continue;
+      const courseJsonPath = path.join(cPath, 'course.json');
+      if (!fs.existsSync(courseJsonPath)) continue;
+      const cjson = JSON.parse(fs.readFileSync(courseJsonPath, 'utf8'));
+      const courseId = await ensureCourse(cjson);
+      report.courses.push({ slug: cjson.slug, id: courseId });
 
-    const lessonsRoot = path.join(cPath, 'lessons');
-    if (!fs.existsSync(lessonsRoot)) continue;
-    const lessonsDirs = fs.readdirSync(lessonsRoot);
-    for (const ldir of lessonsDirs) {
-      const lPath = path.join(lessonsRoot, ldir);
-      if (!fs.statSync(lPath).isDirectory()) continue;
-      const ljsonPath = path.join(lPath, 'lesson.json');
-      if (!fs.existsSync(ljsonPath)) continue;
-      const ljson = JSON.parse(fs.readFileSync(ljsonPath, 'utf8'));
-      const sectionId = ljson.section ? await ensureSection(courseId, ljson.section) : null;
-      const lessonId = await ensureLesson(courseId, ljson, sectionId);
-      await ensureBlocks(lessonId, lPath, ljson);
-      const qres = await ensureQuestions(lessonId, lPath);
-      report.lessons.push({ slug: ljson.slug, id: lessonId });
-      report.questions.push({ lesson: ljson.slug, ...qres });
+      const lessonsRoot = path.join(cPath, 'lessons');
+      if (!fs.existsSync(lessonsRoot)) continue;
+      const lessonsDirs = fs.readdirSync(lessonsRoot);
+      for (const ldir of lessonsDirs) {
+        const lPath = path.join(lessonsRoot, ldir);
+        if (!fs.statSync(lPath).isDirectory()) continue;
+        const ljsonPath = path.join(lPath, 'lesson.json');
+        if (!fs.existsSync(ljsonPath)) continue;
+        const ljson = JSON.parse(fs.readFileSync(ljsonPath, 'utf8'));
+        const sectionId = ljson.section ? await ensureSection(courseId, ljson.section) : null;
+        const lessonId = await ensureLesson(courseId, ljson, sectionId);
+        await ensureBlocks(lessonId, lPath, ljson);
+        const qres = await ensureQuestions(lessonId, lPath);
+        report.lessons.push({ slug: ljson.slug, id: lessonId });
+        report.questions.push({ lesson: ljson.slug, ...qres });
+      }
     }
+    return { status: 200, body: { ok: true, report } };
+  } catch (e:any) {
+    return { status: 500, body: { error: String(e?.message || e) } };
   }
-
-  return NextResponse.json({ ok: true, report });
 }
 
+export async function POST(req: Request) {
+  const url = new URL(req.url);
+  const key = url.searchParams.get('key') || req.headers.get('x-admin-key');
+  const { status, body } = await runSync(key);
+  return NextResponse.json(body, { status });
+}
+
+// Allow GET for convenience (preview environments)
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const key = url.searchParams.get('key') || req.headers.get('x-admin-key');
+  const { status, body } = await runSync(key);
+  return NextResponse.json(body, { status });
+}

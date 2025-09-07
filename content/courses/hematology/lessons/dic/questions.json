@@ -8,8 +8,7 @@
       { "text": "Normal D-dimer" },
       { "text": "Isolated prolonged aPTT" }
     ],
-    "explanation": "Consumption of clotting factors and platelets results in low fibrinogen and thrombocytopenia; fibrinolysis increases D‑dimer.
-    ",
+    "explanation": "Consumption of clotting factors and platelets results in low fibrinogen and thrombocytopenia; fibrinolysis increases D‑dimer.",
     "tags": ["coag"],
     "difficulty": "easy",
     "rank": "a"
