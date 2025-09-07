@@ -292,6 +292,7 @@ export default function HomeMap() {
 
         {/* Wrap map to intercept wheel and scroll page instead of zooming */}
         <div
+          className="relative h-full"
           onWheelCapture={(e) => {
             const target = e.target as HTMLElement;
             if ((panelRef.current && panelRef.current.contains(target)) || (overlayRef.current && overlayRef.current.contains(target))) return;
@@ -427,7 +428,7 @@ export default function HomeMap() {
         {/* Filters overlay: top-left on desktop, bottom-center on small screens */}
         <div
           className={isSmall ? "pointer-events-none absolute inset-x-0 z-30 flex justify-center" : "pointer-events-none absolute left-3 top-3 z-30"}
-          style={isSmall ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" } : undefined}
+          style={isSmall ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)" } : undefined}
         >
           <motion.div
             ref={overlayRef}
