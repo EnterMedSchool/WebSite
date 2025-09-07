@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { courses, lessons, questions, choices, courseSections, lessonBlocks } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -69,7 +69,7 @@ async function ensureQuestions(lessonId: number, lessonDir: string) {
     if (existing) {
       await db.update(questions).set({ explanation: q.explanation ?? existing.explanation, rankKey: q.rank ?? existing.rankKey, difficulty: q.difficulty ?? existing.difficulty, meta: null }).where(eq(questions.id, existing.id));
       qId = existing.id; updated++;
-      await db.execute({ sql: `DELETE FROM choices WHERE question_id = $1`, params: [qId] } as any);
+      await (sql as any)`DELETE FROM choices WHERE question_id = ${qId}`;
     } else {
       const ins = await db.insert(questions).values({ lessonId, prompt: q.prompt, explanation: q.explanation ?? null, rankKey: q.rank ?? null, difficulty: q.difficulty ?? null }).returning({ id: questions.id });
       qId = ins[0].id; created++;
