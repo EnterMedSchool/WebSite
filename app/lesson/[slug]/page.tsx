@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
@@ -23,12 +24,13 @@ export default function LessonPage() {
   const [picked, setPicked] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [isSavingComplete, setIsSavingComplete] = useState(false);
+  const [nav, setNav] = useState<{ prev: {slug:string,title:string}|null, next: {slug:string,title:string}|null } | null>(null);
   const q = qs[idx];
 
   // Load lesson
   useEffect(() => { (async () => {
     const res = await fetch(`/api/lesson/${slug}`); const j = await res.json();
-    setLesson(j.lesson); setBlocks(j.blocks);
+    setLesson(j.lesson); setBlocks(j.blocks); setNav(j.nav || null);
   })(); }, [slug]);
 
   // Load questions on opening practice
@@ -64,6 +66,10 @@ export default function LessonPage() {
               {(['learn','practice','notes'] as const).map(t => (
                 <button key={t} onClick={()=>setTab(t)} className={`rounded-full px-3 py-1 text-xs font-semibold ${tab===t? 'bg-white text-indigo-700':'bg-white/15 text-white hover:bg-white/25'}`}>{t}</button>
               ))}
+            </div>
+            {/* Lesson progress bar (completed-based) */}
+            <div className={`mt-3 h-2 w-64 rounded-full ${isAuthed? 'bg-white/30' : 'bg-white/20'}`} title={isAuthed? (isComplete? 'Completed' : 'Not completed') : 'Sign in to track progress'}>
+              <div className={`h-2 rounded-full bg-emerald-300 transition-all`} style={{ width: isComplete ? '100%' : '0%' , opacity: isAuthed ? 1 : 0.5 }} />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -162,6 +168,24 @@ export default function LessonPage() {
             ))}
           </div>
         )}
+
+        {/* Prev/Next navigation */}
+        <div className="mt-8 flex items-center justify-between">
+          <div>
+            {nav?.prev ? (
+              <Link href={`/lesson/${nav.prev.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50">
+                ← Previous: {nav.prev.title}
+              </Link>
+            ) : <span />}
+          </div>
+          <div>
+            {nav?.next ? (
+              <Link href={`/lesson/${nav.next.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50">
+                Next: {nav.next.title} →
+              </Link>
+            ) : <span />}
+          </div>
+        </div>
       </div>
     </div>
   );
