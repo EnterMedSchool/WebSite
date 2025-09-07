@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { lessons, userLessonProgress, lmsEvents } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { sql } from "@/lib/db";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
   const body = await req.json().catch(()=>({}));
@@ -9,17 +11,12 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
   const completed = !!body.completed || progress === 100;
   // MVP: no auth hook — we can use 0 as demo user or anonymous
   const userId = 0;
-  const lesson = (await db.select().from(lessons).where(eq(lessons.slug, params.slug)))[0];
+  const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
+  const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const existing = (await db.select().from(userLessonProgress).where(and(eq(userLessonProgress.userId, userId), eq(userLessonProgress.lessonId, lesson.id))))[0];
-  if (existing) {
-    await db.update(userLessonProgress).set({ progress, completed, lastViewedAt: new Date() }).where(eq(userLessonProgress.id, existing.id));
-  } else {
-    await db.insert(userLessonProgress).values({ userId, lessonId: lesson.id, progress, completed });
-  }
-  if (completed) {
-    await db.insert(lmsEvents).values({ userId, subjectType: 'lesson', subjectId: lesson.id, action: 'completed', payload: { progress } });
-  }
+  await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed)
+            VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})
+            ON CONFLICT (user_id, lesson_id) DO UPDATE SET progress=${progress}, completed=${completed}, last_viewed_at=now()`;
+  if (completed) { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload) VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({progress})}::jsonb)`; }
   return NextResponse.json({ ok: true });
 }
-

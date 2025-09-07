@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { courses, lessons } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { sql } from "@/lib/db";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function slugify(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
 
 export async function GET(_req: Request, { params }: { params: { slug: string } }) {
   const slug = params.slug;
-  const course = (await db.select().from(courses).where(eq(courses.slug, slug)))[0];
+  const cr = await sql`SELECT id, slug, title, description FROM courses WHERE slug=${slug} LIMIT 1`;
+  const course = cr.rows[0];
   if (!course) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const list = await db.select().from(lessons).where(eq(lessons.courseId, course.id));
-  list.sort((a:any,b:any)=> (a.rankKey||'') < (b.rankKey||'') ? -1 : 1);
-  return NextResponse.json({ course, lessons: list });
+  const lr = await sql`SELECT id, slug, title FROM lessons WHERE course_id=${course.id}`;
+  return NextResponse.json({ course, lessons: lr.rows });
 }
-
