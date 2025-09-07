@@ -308,8 +308,8 @@ export default function HomeMap() {
                   const italyGeo = geographies.find((g: any) => (g.properties?.name as string) === 'Italy');
                   if (italyGeo) {
                     const base = geoCentroid(italyGeo) as [number, number];
-                    // small westward nudge to align visually on mobile
-                    const initial: [number, number] = [base[0] - 1.0, base[1]];
+                    // slightly stronger westward nudge to align visually on mobile
+                    const initial: [number, number] = [base[0] - 2.0, base[1]];
                     // schedule on next frame to avoid state updates during render
                     if (typeof window !== 'undefined') {
                       requestAnimationFrame(() => {
