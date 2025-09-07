@@ -16,52 +16,63 @@ function slugify(input: string): string {
     .replace(/-+/g, "-");
 }
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const list = (url.searchParams.get("unis") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (list.length === 0) return NextResponse.json({ series: [] });
-  try {
-    // Fetch all universities and map slug -> id
-    const rows = await db
-      .select({ id: universities.id, name: universities.name, country: countries.name })
-      .from(universities)
-      .leftJoin(countries, eq(universities.countryId, countries.id));
-    const bySlug = new Map<string, { id: number; name: string; country: string | null }>();
-    for (const r of rows) bySlug.set(slugify(r.name), { id: r.id, name: r.name, country: (r.country as any) ?? null });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const raw = searchParams.get("unis") || "";
+  const slugs = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-    const ids: number[] = [];
-    const nameById = new Map<number, { name: string; country: string | null }>();
-    for (const s of list) {
-      const entry = bySlug.get(s);
-      if (entry) { ids.push(entry.id); nameById.set(entry.id, { name: entry.name, country: entry.country }); }
-    }
-    if (ids.length === 0) return NextResponse.json({ series: [] });
-
-    const scoreRows = await db
-      .select()
-      .from(universityScores)
-      .where(inArray(universityScores.universityId, ids));
-    const seatRows = await db
-      .select()
-      .from(universitySeats)
-      .where(inArray(universitySeats.universityId, ids));
-
-    const series: Array<{ uni: string; country: string | null; points: Array<{ year: number; type: string; score: number }>; seats: Array<{ year: number; type: string; seats: number }> }> = [];
-    for (const id of ids) {
-      const pts = scoreRows
-        .filter((r) => r.universityId === id)
-        .map((r) => ({ year: r.year, type: r.candidateType, score: r.minScore as number }))
-        .sort((a, b) => a.year - b.year);
-      const se = seatRows
-        .filter((r) => r.universityId === id)
-        .map((r) => ({ year: r.year, type: r.candidateType, seats: r.seats as number }))
-        .sort((a, b) => a.year - b.year);
-      const info = nameById.get(id)!;
-      series.push({ uni: info.name, country: info.country, points: pts, seats: se });
-    }
-
-    return NextResponse.json({ series });
-  } catch (err: any) {
-    return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
+  if (slugs.length === 0) {
+    return NextResponse.json({ series: [] });
   }
+
+  // Load all universities and map by slug
+  const uniRows = await db
+    .select({ id: universities.id, name: universities.name, country: countries.name })
+    .from(universities)
+    .leftJoin(countries, eq(universities.countryId, countries.id));
+
+  const bySlug = new Map<string, { id: number; name: string; country: string | null }>();
+  for (const u of uniRows) bySlug.set(slugify(u.name), { id: u.id, name: u.name, country: u.country ?? null });
+
+  const selected = slugs
+    .map((s) => ({ slug: s, uni: bySlug.get(s) }))
+    .filter((x): x is { slug: string; uni: { id: number; name: string; country: string | null } } => !!x.uni);
+
+  if (selected.length === 0) {
+    return NextResponse.json({ series: [] });
+  }
+
+  const ids = selected.map((x) => x.uni.id);
+  const [scoresAll, seatsAll] = await Promise.all([
+    db
+      .select({ universityId: universityScores.universityId, year: universityScores.year, candidateType: universityScores.candidateType, minScore: universityScores.minScore })
+      .from(universityScores)
+      .where(inArray(universityScores.universityId, ids)),
+    db
+      .select({ universityId: universitySeats.universityId, year: universitySeats.year, candidateType: universitySeats.candidateType, seats: universitySeats.seats })
+      .from(universitySeats)
+      .where(inArray(universitySeats.universityId, ids)),
+  ]);
+
+  const scoresByUni = new Map<number, typeof scoresAll>();
+  const seatsByUni = new Map<number, typeof seatsAll>();
+  for (const r of scoresAll) (scoresByUni.get(r.universityId) || scoresByUni.set(r.universityId, []).get(r.universityId)!).push(r);
+  for (const r of seatsAll) (seatsByUni.get(r.universityId) || seatsByUni.set(r.universityId, []).get(r.universityId)!).push(r);
+
+  const series = selected.map(({ uni }) => {
+    const s = (scoresByUni.get(uni.id) || []).sort((a, b) => a.year - b.year);
+    const t = (seatsByUni.get(uni.id) || []).sort((a, b) => a.year - b.year);
+    return {
+      uni: uni.name,
+      country: uni.country,
+      points: s.map((r) => ({ year: r.year, type: r.candidateType, score: Number(r.minScore) })),
+      seats: t.map((r) => ({ year: r.year, type: r.candidateType, seats: Number(r.seats) })),
+    };
+  });
+
+  return NextResponse.json({ series });
 }
+
