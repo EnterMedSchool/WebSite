@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import UniversitiesPanel from "@/components/home/UniversitiesPanel";
 import UniversitiesListMobile from "@/components/home/UniversitiesListMobile";
 import BottomSheet from "@/components/ui/BottomSheet";
-import MapCoachOverlay from "@/components/home/MapCoachOverlay";
 import CompareFab from "@/components/home/CompareFab";
 import CompareDrawer from "@/components/home/CompareDrawer";
 import MapFiltersBar, { type MapFilters } from "@/components/home/MapFiltersBar";
@@ -80,8 +79,6 @@ export default function HomeMap() {
   const compareSet = useMemo(() => new Set(compare.map((i) => i.uni)), [compare]);
   // Mobile results control
   const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
-  const [coachVisible, setCoachVisible] = useState(false);
-  const geosRef = useRef<any[] | null>(null);
   const [isSmall, setIsSmall] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -297,6 +294,7 @@ export default function HomeMap() {
             e.stopPropagation();
             window.scrollBy({ top: e.deltaY, behavior: "auto" });
           }}
+          
         >
         <ComposableMap projectionConfig={{ scale: 175 }} style={{ width: "100%", height: "100%" }}>
           <ZoomableGroup
@@ -310,7 +308,6 @@ export default function HomeMap() {
           >
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) => {
-                geosRef.current = geographies;
                 // On small screens, snap to Italy's precise centroid once, so it matches the post-click position
                 if (isSmall && !initApplied.current && !selected && geographies?.length) {
                   const italyGeo = geographies.find((g: any) => (g.properties?.name as string) === 'Italy');
@@ -321,8 +318,6 @@ export default function HomeMap() {
                         // Reuse the exact same centering logic as taps (but don't open the sheet)
                         focusCountry(italyGeo, false);
                         initApplied.current = true;
-                        // show coach overlay only once per device
-                        try { if (localStorage.getItem('ems_map_coach_seen_v1') !== '1') setCoachVisible(true); } catch {}
                       });
                     }
                   }
@@ -582,21 +577,6 @@ export default function HomeMap() {
           >
             <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityData) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
           </BottomSheet>
-        )}
-        {/* Coaching overlay (mobile only, first load) */}
-        {isSmall && (
-          <MapCoachOverlay
-            visible={coachVisible}
-            onFinish={() => { setCoachVisible(false); try { localStorage.setItem('ems_map_coach_seen_v1', '1'); } catch {} }}
-            actions={{
-              zoomIn: () => setPosition((p)=> ({ center: p.center, zoom: Math.min(8, (p.zoom||1) + 1.0) })),
-              panLeft: () => setPosition((p)=> ({ center: [p.center[0] - 3, p.center[1]], zoom: p.zoom })),
-              tapItaly: () => {
-                const g = geosRef.current?.find((x:any)=> x.properties?.name === 'Italy');
-                if (g) focusCountry(g, false);
-              },
-            }}
-          />
         )}
         {(!isSmall && selected && cityData.length>0) && (
           <div ref={panelRef}>

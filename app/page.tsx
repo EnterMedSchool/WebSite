@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import LearnAbout from "@/components/home/LearnAbout";
+import LatestLessons from "@/components/home/LatestLessons";
 import HowItWorks from "@/components/home/HowItWorks";
 import Milestones from "@/components/home/Milestones";
 import ExamsSection from "@/components/home/ExamsSection";
@@ -19,6 +20,7 @@ export default function HomePage() {
       {/* Under-map framework */}
       <section className="mx-auto w-full max-w-6xl px-4">
         <LearnAbout />
+        <LatestLessons />
         <HowItWorks />
         <Milestones />
         <ExamsSection />
