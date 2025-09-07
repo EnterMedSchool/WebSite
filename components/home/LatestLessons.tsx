@@ -20,7 +20,7 @@ const MOCK: Lesson[] = [
 export default function LatestLessons() {
   const data = MOCK;
   return (
-    <section className="my-10">
+    <section id="lessons" className="my-10">
       <div className="mb-3 flex items-end justify-between">
         <h3 className="text-xl font-bold tracking-tight">Latest mini‑lessons</h3>
         <a href="#" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View all</a>
@@ -60,4 +60,3 @@ export default function LatestLessons() {
     </section>
   );
 }
-

@@ -13,6 +13,20 @@ html, body {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
 }
 
+@keyframes floatSlow {
+  0% { transform: translateY(0px) translateX(0px); opacity: .8; }
+  50% { transform: translateY(-8px) translateX(4px); opacity: 1; }
+  100% { transform: translateY(0px) translateX(0px); opacity: .8; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: .35; }
+  50% { opacity: .8; }
+}
+
+.animate-float-slow { animation: floatSlow 7s ease-in-out infinite; }
+.animate-twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+
 :root {
   --bg: 248 248 248;
   --surface: 255 255 255;
