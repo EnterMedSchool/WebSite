@@ -37,20 +37,20 @@ export default function LessonPage() {
   // Track lightweight progress (only when authenticated)
   useEffect(() => {
     if (!isAuthed) return;
-    fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: tab==='learn'? 40: (tab==='practice'? 70: 30) }), headers:{'Content-Type':'application/json'} });
+    fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: tab==='learn'? 40: (tab==='practice'? 70: 30) }), headers:{'Content-Type':'application/json'}, credentials:'include' });
   }, [slug, tab, isAuthed]);
 
   // Load completion status
   useEffect(() => { (async () => {
     if (!isAuthed) { setIsComplete(false); return; }
-    try { const r = await fetch(`/api/lesson/${slug}/progress`); const j = await r.json(); setIsComplete(!!j.completed); } catch {}
+    try { const r = await fetch(`/api/lesson/${slug}/progress`, { credentials:'include' }); const j = await r.json(); setIsComplete(!!j.completed); } catch {}
   })(); }, [slug, isAuthed]);
 
   const progressPct = useMemo(() => qs.length ? Math.round(((idx) / qs.length) * 100) : 0, [idx, qs.length]);
 
   function next() {
     if (idx < qs.length-1) { setIdx(idx+1); setPicked(null); }
-    else { if (isAuthed) fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: 100, completed: true }), headers:{'Content-Type':'application/json'} }); }
+    else { if (isAuthed) fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: 100, completed: true }), headers:{'Content-Type':'application/json'}, credentials:'include' }); }
   }
 
   return (
@@ -69,7 +69,7 @@ export default function LessonPage() {
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
             <button
-              onClick={async ()=>{ if (!isAuthed) return; try { setIsSavingComplete(true); const target = !isComplete; setIsComplete(target); await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ completed: target }) }); } finally { setIsSavingComplete(false); } }}
+              onClick={async ()=>{ if (!isAuthed) return; try { setIsSavingComplete(true); const target = !isComplete; setIsComplete(target); await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ completed: target }) }); } finally { setIsSavingComplete(false); } }}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${isComplete? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-white text-indigo-700 hover:bg-indigo-50'} ${(!isAuthed || isSavingComplete)? 'opacity-60 cursor-not-allowed' : ''}`}
               disabled={!isAuthed || isSavingComplete}
               title={isAuthed ? undefined : 'Sign in to track progress'}

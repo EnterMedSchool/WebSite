@@ -9,7 +9,8 @@ export const revalidate = 0;
 
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
   const body = await req.json().catch(()=>({}));
-  const progress = Math.max(0, Math.min(100, Number(body.progress || 0)));
+  const hasProgress = Object.prototype.hasOwnProperty.call(body, "progress");
+  const progress = hasProgress ? Math.max(0, Math.min(100, Number(body.progress))) : 0;
   const hasCompleted = Object.prototype.hasOwnProperty.call(body, "completed");
   // Resolve user id from session (fallback to 0 if not authenticated)
   const session = await getServerSession(authOptions as any);
@@ -26,9 +27,10 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const existing = await sql`SELECT completed FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id=${lesson.id} LIMIT 1`;
     completed = existing.rows.length ? !!existing.rows[0].completed : progress === 100;
   }
+  // Insert or update. On conflict, only update 'completed' to avoid clobbering progress/last_viewed_at when toggling.
   await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed)
             VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})
-            ON CONFLICT (user_id, lesson_id) DO UPDATE SET progress=${progress}, completed=${completed}, last_viewed_at=now()`;
+            ON CONFLICT (user_id, lesson_id) DO UPDATE SET completed=${completed}`;
   if (completed) { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload) VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({progress})}::jsonb)`; }
   return NextResponse.json({ ok: true });
 }
