@@ -25,12 +25,13 @@ export default function LessonPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [isSavingComplete, setIsSavingComplete] = useState(false);
   const [nav, setNav] = useState<{ prev: {slug:string,title:string}|null, next: {slug:string,title:string}|null } | null>(null);
+  const [courseProg, setCourseProg] = useState<{ total:number; completed:number; pct:number } | null>(null);
   const q = qs[idx];
 
   // Load lesson
   useEffect(() => { (async () => {
     const res = await fetch(`/api/lesson/${slug}`); const j = await res.json();
-    setLesson(j.lesson); setBlocks(j.blocks); setNav(j.nav || null);
+    setLesson(j.lesson); setBlocks(j.blocks); setNav(j.nav || null); setCourseProg(j.courseProgress || null);
   })(); }, [slug]);
 
   // Load questions on opening practice
@@ -67,9 +68,19 @@ export default function LessonPage() {
                 <button key={t} onClick={()=>setTab(t)} className={`rounded-full px-3 py-1 text-xs font-semibold ${tab===t? 'bg-white text-indigo-700':'bg-white/15 text-white hover:bg-white/25'}`}>{t}</button>
               ))}
             </div>
-            {/* Lesson progress bar (completed-based) */}
-            <div className={`mt-3 h-2 w-64 rounded-full ${isAuthed? 'bg-white/30' : 'bg-white/20'}`} title={isAuthed? (isComplete? 'Completed' : 'Not completed') : 'Sign in to track progress'}>
-              <div className={`h-2 rounded-full bg-emerald-300 transition-all`} style={{ width: isComplete ? '100%' : '0%' , opacity: isAuthed ? 1 : 0.5 }} />
+            {/* Course progress bar */}
+            <div className="mt-3 w-full max-w-md">
+              <div className={`relative h-3 overflow-hidden rounded-full ${isAuthed? 'bg-white/20' : 'bg-white/10'}`} title={isAuthed? `${courseProg?.completed ?? 0}/${courseProg?.total ?? 0} lessons (${courseProg?.pct ?? 0}%)` : 'Sign in to track course progress'}>
+                <div className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-300 to-emerald-200 transition-all`}
+                     style={{ width: `${isAuthed ? (courseProg?.pct ?? 0) : 0}%`, opacity: isAuthed ? 1 : 0.5 }} />
+              </div>
+              <div className={`mt-1 text-xs font-medium ${isAuthed? 'text-white/90' : 'text-white/60'}`}>
+                {isAuthed ? (
+                  <span>{courseProg?.completed ?? 0}/{courseProg?.total ?? 0} lessons · {courseProg?.pct ?? 0}%</span>
+                ) : (
+                  <span>Sign in to track course progress</span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -78,17 +89,40 @@ export default function LessonPage() {
               onClick={async ()=>{
                 if (!isAuthed) return;
                 const target = !isComplete;
+                const wasComplete = isComplete;
                 setIsSavingComplete(true);
                 setIsComplete(target);
+                // Optimistically update course progress counts
+                setCourseProg((p)=>{
+                  if (!p) return p;
+                  if (wasComplete === target) return p;
+                  const completed = Math.max(0, Math.min(p.total, p.completed + (target? 1 : -1)));
+                  const pct = p.total ? Math.round((completed / p.total) * 100) : 0;
+                  return { ...p, completed, pct };
+                });
                 try {
                   const res = await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ completed: target }) });
                   if (!res.ok) {
                     setIsComplete(!target);
-                    // Optionally surface a toast; for now console
+                    // revert optimistic progress update
+                    setCourseProg((p)=>{
+                      if (!p) return p;
+                      if (wasComplete === target) return p;
+                      const completed = Math.max(0, Math.min(p.total, p.completed + (target? -1 : 1)));
+                      const pct = p.total ? Math.round((completed / p.total) * 100) : 0;
+                      return { ...p, completed, pct };
+                    });
                     console.warn('Failed to update completion', await res.text());
                   }
                 } catch (e) {
                   setIsComplete(!target);
+                  setCourseProg((p)=>{
+                    if (!p) return p;
+                    if (wasComplete === target) return p;
+                    const completed = Math.max(0, Math.min(p.total, p.completed + (target? -1 : 1)));
+                    const pct = p.total ? Math.round((completed / p.total) * 100) : 0;
+                    return { ...p, completed, pct };
+                  });
                 } finally {
                   setIsSavingComplete(false);
                 }
