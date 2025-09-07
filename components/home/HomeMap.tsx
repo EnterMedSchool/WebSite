@@ -39,7 +39,8 @@ export default function HomeMap() {
   const router = useRouter();
   const [selected, setSelected] = useState<{ name: string; center: [number, number]; baseCenter: [number, number] } | null>(null);
   // Pull the world closer to the header by default
-  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 4], zoom: 1 });
+  // Start 50% closer than before (zoom 1.5 instead of 1)
+  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 4], zoom: 1.5 });
 
   // Desktop-only layout constants (we don't handle mobile/tablet yet)
   // Keep panel tightly under the menu inside the map container.
