@@ -5,11 +5,14 @@ import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 type Block = { id:number; kind:string; content:string };
 type Lesson = { id:number; slug:string; title:string };
 
 export default function LessonPage() {
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   const { slug: rawSlug } = useParams();
   const slug = String(rawSlug || '');
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -31,17 +34,23 @@ export default function LessonPage() {
   // Load questions on opening practice
   useEffect(() => { if (tab==='practice') (async () => { const r=await fetch(`/api/lesson/${slug}/questions`); const j=await r.json(); setQs(j.questions || []); setIdx(0); setPicked(null); })(); }, [slug, tab]);
 
-  // Track lightweight progress
-  useEffect(() => { fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: tab==='learn'? 40: (tab==='practice'? 70: 30) }), headers:{'Content-Type':'application/json'} }); }, [slug, tab]);
+  // Track lightweight progress (only when authenticated)
+  useEffect(() => {
+    if (!isAuthed) return;
+    fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: tab==='learn'? 40: (tab==='practice'? 70: 30) }), headers:{'Content-Type':'application/json'} });
+  }, [slug, tab, isAuthed]);
 
   // Load completion status
-  useEffect(() => { (async () => { try { const r = await fetch(`/api/lesson/${slug}/progress`); const j = await r.json(); setIsComplete(!!j.completed); } catch {} })(); }, [slug]);
+  useEffect(() => { (async () => {
+    if (!isAuthed) { setIsComplete(false); return; }
+    try { const r = await fetch(`/api/lesson/${slug}/progress`); const j = await r.json(); setIsComplete(!!j.completed); } catch {}
+  })(); }, [slug, isAuthed]);
 
   const progressPct = useMemo(() => qs.length ? Math.round(((idx) / qs.length) * 100) : 0, [idx, qs.length]);
 
   function next() {
     if (idx < qs.length-1) { setIdx(idx+1); setPicked(null); }
-    else { fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: 100, completed: true }), headers:{'Content-Type':'application/json'} }); }
+    else { if (isAuthed) fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: 100, completed: true }), headers:{'Content-Type':'application/json'} }); }
   }
 
   return (
@@ -60,9 +69,10 @@ export default function LessonPage() {
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
             <button
-              onClick={async ()=>{ try { setIsSavingComplete(true); const target = !isComplete; setIsComplete(target); await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ completed: target }) }); } finally { setIsSavingComplete(false); } }}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${isComplete? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-white text-indigo-700 hover:bg-indigo-50'}`}
-              disabled={isSavingComplete}
+              onClick={async ()=>{ if (!isAuthed) return; try { setIsSavingComplete(true); const target = !isComplete; setIsComplete(target); await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ completed: target }) }); } finally { setIsSavingComplete(false); } }}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${isComplete? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-white text-indigo-700 hover:bg-indigo-50'} ${(!isAuthed || isSavingComplete)? 'opacity-60 cursor-not-allowed' : ''}`}
+              disabled={!isAuthed || isSavingComplete}
+              title={isAuthed ? undefined : 'Sign in to track progress'}
             >
               {isComplete? 'Mark as incomplete' : 'Mark as complete'}
             </button>

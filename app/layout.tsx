@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Baloo_2, Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "WebSite",
@@ -15,8 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
-        <Navbar />
-        <main className="mx-auto max-w-6xl p-6">{children}</main>
+        <Providers>
+          <Navbar />
+          <main className="mx-auto max-w-6xl p-6">{children}</main>
+        </Providers>
       </body>
     </html>
   );

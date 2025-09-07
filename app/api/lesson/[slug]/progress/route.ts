@@ -14,6 +14,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
   // Resolve user id from session (fallback to 0 if not authenticated)
   const session = await getServerSession(authOptions as any);
   const userId = session && (session as any).userId ? Number((session as any).userId) : 0;
+  if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -36,6 +37,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   // Resolve user id from session (fallback to 0 if not authenticated)
   const session = await getServerSession(authOptions as any);
   const userId = session && (session as any).userId ? Number((session as any).userId) : 0;
+  if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
 
   const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
