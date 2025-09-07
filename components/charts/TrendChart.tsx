@@ -29,10 +29,17 @@ export function TrendChart({
   compact?: boolean;
   className?: string;
 }) {
-  const years = useMemo(
-    () => Array.from(new Set(series.flatMap((s) => s.points.map((p) => p.year)))).sort((a, b) => a - b),
-    [series]
-  );
+  const years = useMemo(() => {
+    const set = new Set<number>();
+    for (const s of series) {
+      for (const p of s.points) {
+        if (mode === "EU" && p.type === "EU") set.add(p.year);
+        else if (mode === "NonEU" && p.type === "NonEU") set.add(p.year);
+        else if (mode === "All" && (p.type === "EU" || p.type === "NonEU")) set.add(p.year);
+      }
+    }
+    return Array.from(set).sort((a, b) => a - b);
+  }, [series, mode]);
 
   const values = useMemo(() => {
     return series.map((s, i) => {
