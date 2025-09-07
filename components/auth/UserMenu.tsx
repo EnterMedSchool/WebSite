@@ -37,15 +37,17 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   if (!isAuthed) {
     return (
       <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-white/70 sm:flex">
-          <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">Lv –</span>
-          <div className="relative h-2 w-28 overflow-hidden rounded-full bg-white/10">
+        {/* Ghosted XP pill */}
+        <div className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/70 shadow-sm backdrop-blur sm:flex">
+          <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/20 px-2 text-[11px] font-semibold">Lv –</span>
+          <div className="relative h-2 w-32 overflow-hidden rounded-full bg-white/15">
             <div className="absolute inset-y-0 left-0 w-0 bg-white/40" />
           </div>
+          <span className="text-[10px] text-white/70">0/0 XP</span>
         </div>
         <button
           onClick={() => signIn()}
-          className="rounded border border-white/60 bg-white px-3 py-1.5 text-sm text-indigo-600 hover:bg-white/90"
+          className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90"
         >
           Sign in
         </button>
@@ -55,14 +57,27 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
 
   return (
     <div ref={ref} className="relative flex items-center gap-3">
-      {/* Compact profile/XP strip */}
-      <div className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 sm:flex" title={`Lv ${level ?? 1} • ${Math.max(0, Math.min(100, xpPct ?? 0))}% to next`}>
-        <div className="text-sm font-semibold text-white/95 max-w-[160px] truncate">{name ?? 'You'}</div>
-        <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">Lv {level ?? 1}</span>
-        <div className="relative h-2 w-28 overflow-hidden rounded-full bg-white/20">
-          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-300 to-emerald-200" style={{ width: `${Math.max(0, Math.min(100, xpPct ?? 0))}%` }} />
+      {/* Compact profile/XP strip (glass pill) */}
+      <div
+        className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur sm:flex"
+        title={`Lv ${level ?? 1} • ${Math.max(0, Math.min(100, xpPct ?? 0))}% to next`}
+      >
+        <div className="max-w-[180px] truncate text-sm font-semibold text-white/95 sm:max-w-[220px]">
+          {name ?? "You"}
         </div>
-        <span className="ml-1 text-[10px] text-white/80">{(xpInLevel ?? 0)}/{(xpSpan ?? 0)} XP</span>
+        <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm">
+          Lv {level ?? 1}
+        </span>
+        <div className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out"
+            style={{ width: `${Math.max(0, Math.min(100, xpPct ?? 0))}%` }}
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
+        </div>
+        <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
+          {xpSpan && xpSpan > 1 ? `${xpInLevel ?? 0}/${xpSpan} XP` : 'MAX'}
+        </span>
       </div>
 
       {/* Avatar trigger */}
@@ -125,3 +140,4 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
     </div>
   );
 }
+
