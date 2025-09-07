@@ -40,7 +40,8 @@ async function ensureLesson(courseId: number, lessonJson: any, sectionId?: numbe
 async function ensureBlocks(lessonId: number, lessonDir: string, lessonJson: any) {
   // Clear and insert blocks ordered (video, notes, tips)
   // For MVP, we just insert a single HTML/video block and optional notes path
-  await db.execute({ sql: `DELETE FROM lesson_blocks WHERE lesson_id = $1`, params: [lessonId] } as any);
+  // Use raw SQL helper rather than db.execute with a plain object (drizzle expects a SQL object)
+  await (sql as any)`DELETE FROM lesson_blocks WHERE lesson_id = ${lessonId}`;
   const items: Array<{ kind: string; content: string; rank: string }> = [];
   if (lessonJson.video && (lessonJson.video.src || lessonJson.video.poster)) {
     items.push({ kind: 'video', content: JSON.stringify(lessonJson.video), rank: 'a' });
