@@ -6,6 +6,8 @@ import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import UniversitiesPanel from "@/components/home/UniversitiesPanel";
+import UniversitiesListMobile from "@/components/home/UniversitiesListMobile";
+import BottomSheet from "@/components/ui/BottomSheet";
 import CompareFab from "@/components/home/CompareFab";
 import CompareDrawer from "@/components/home/CompareDrawer";
 import MapFiltersBar, { type MapFilters } from "@/components/home/MapFiltersBar";
@@ -75,6 +77,7 @@ export default function HomeMap() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<Array<any>>([]);
   const compareSet = useMemo(() => new Set(compare.map((i) => i.uni)), [compare]);
+  const [isSmall, setIsSmall] = useState(false);
 
   // Compare persistence + deep link
   useEffect(() => {
@@ -181,6 +184,18 @@ export default function HomeMap() {
   }, []);
 
   // No header measurement needed; panel is anchored inside the map container.
+  // Detect small screens (sm/md) for sheet behavior
+  useEffect(() => {
+    function check() {
+      const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
+      setIsSmall(w < 1024); // match < lg
+    }
+    check();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', check);
+      return () => window.removeEventListener('resize', check);
+    }
+  }, []);
 
   // Compute a center offset that leaves room for the right panel and
   // adds a vertical margin so selection isn't glued to the bottom.
@@ -483,9 +498,15 @@ export default function HomeMap() {
           </div>
         )}
         {selected && cityData.length > 0 && (
-          <div ref={panelRef}>
-            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={panelOffset} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
-          </div>
+          isSmall ? (
+            <BottomSheet open={true} onClose={() => setSelected(null)} title={selected!.name} height="70vh">
+              <UniversitiesListMobile selectedName={selected!.name} items={cityData as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
+            </BottomSheet>
+          ) : (
+            <div ref={panelRef}>
+              <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={panelOffset} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
+            </div>
+          )
         )}
 
         {/* Compare FAB + Drawer */}
