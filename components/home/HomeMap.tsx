@@ -275,16 +275,21 @@ export default function HomeMap() {
                   const isSelected = selected?.name === name;
                   const hasData = countryHasData.has(name);
                   const fill = isSelected ? "#C7D2FE" : hasData ? "#E6ECFF" : "#EEF2F7";
-                  const hoverFill = fill; // disable hover flicker by keeping same fill
+                  // Keep the same fill on hover to remove the hover reaction
+                  const hoverFill = fill;
+                  // Subtler border; keep the same stroke on hover so it doesn't disappear when selected
+                  const strokeColor = isSelected ? "#6366F1" : "#CBD5E1";
+                  const strokeW = isSelected ? 1 : 0.5;
                   return (
                     <Geography
                       key={(geo as Feature).id}
                       geography={geo}
                       onClick={hasData ? () => handleCountryClick(geo) : undefined}
                       style={{
-                        default: { fill, outline: "none", stroke: isSelected ? "#6366F1" : "#CBD5E1", strokeWidth: isSelected ? 1.5 : 0.5, cursor: hasData ? "pointer" : "default" },
-                        hover: { fill: hoverFill, outline: "none", cursor: hasData ? "pointer" : "default" },
-                        pressed: { fill: "#C7D2FE", outline: "none" },
+                        default: { fill, outline: "none", stroke: strokeColor, strokeWidth: strokeW, cursor: hasData ? "pointer" : "default" },
+                        // Mirror default stroke on hover so selection outline stays visible
+                        hover: { fill: hoverFill, outline: "none", stroke: strokeColor, strokeWidth: strokeW, cursor: hasData ? "pointer" : "default" },
+                        pressed: { fill: "#C7D2FE", outline: "none", stroke: strokeColor, strokeWidth: strokeW },
                       }}
                     />
                   );
