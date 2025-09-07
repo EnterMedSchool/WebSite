@@ -69,7 +69,24 @@ export default function LessonPage() {
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
             <button
-              onClick={async ()=>{ if (!isAuthed) return; try { setIsSavingComplete(true); const target = !isComplete; setIsComplete(target); await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ completed: target }) }); } finally { setIsSavingComplete(false); } }}
+              onClick={async ()=>{
+                if (!isAuthed) return;
+                const target = !isComplete;
+                setIsSavingComplete(true);
+                setIsComplete(target);
+                try {
+                  const res = await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ completed: target }) });
+                  if (!res.ok) {
+                    setIsComplete(!target);
+                    // Optionally surface a toast; for now console
+                    console.warn('Failed to update completion', await res.text());
+                  }
+                } catch (e) {
+                  setIsComplete(!target);
+                } finally {
+                  setIsSavingComplete(false);
+                }
+              }}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${isComplete? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-white text-indigo-700 hover:bg-indigo-50'} ${(!isAuthed || isSavingComplete)? 'opacity-60 cursor-not-allowed' : ''}`}
               disabled={!isAuthed || isSavingComplete}
               title={isAuthed ? undefined : 'Sign in to track progress'}
