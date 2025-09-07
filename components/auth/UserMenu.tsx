@@ -12,9 +12,10 @@ type Props = {
   xpPct?: number | null; // 0..100 within current level
   xpInLevel?: number | null;
   xpSpan?: number | null;
+  isMax?: boolean | null;
 };
 
-export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInLevel, xpSpan }: Props) {
+export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInLevel, xpSpan, isMax }: Props) {
   const [open, setOpen] = useState(false);
   const [dispLevel, setDispLevel] = useState<number>(level ?? 1);
   const [dispPct, setDispPct] = useState<number>(Math.max(0, Math.min(100, xpPct ?? 0)));
@@ -138,7 +139,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
         </div>
         <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
-          {dispSpan && dispSpan > 1 ? `${dispIn}/${dispSpan} XP` : 'MAX'}
+          {isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}
         </span>
       </div>
 

@@ -4,8 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
 import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
+import ResourcesMenu from "@/components/nav/ResourcesMenu";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { xpToNext, GOAL_XP, MAX_LEVEL, levelFromXp } from "@/lib/xp";
@@ -13,31 +14,33 @@ import { xpToNext, GOAL_XP, MAX_LEVEL, levelFromXp } from "@/lib/xp";
 export default async function Navbar() {
   const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
   const session = isAuthConfigured ? await getServerSession(authOptions) : null;
-  let levelInfo: { level: number; xp: number; pct: number; inLevel: number; span: number; nextLevel: number } | null = null;
+  let levelInfo: { level: number; xp: number; pct: number; inLevel: number; span: number; nextLevel: number; isMax: boolean } | null = null;
   const sessUserId = Number(((session as any)?.userId) ?? 0);
   if (sessUserId || session?.user?.email) {
     try {
       let row: any | undefined;
       if (sessUserId) {
-        row = (await db.select().from(users).where(eq(users.id, sessUserId)).limit(1))[0] as any;
+        const r = await sql`SELECT xp, level, email FROM users WHERE id=${sessUserId} LIMIT 1`;
+        row = r.rows[0];
       }
       if (!row && session?.user?.email) {
         const email = String(session.user.email).toLowerCase();
-        row = (await db.select().from(users).where(eq(users.email as any, email)).limit(1))[0] as any;
+        const r2 = await sql`SELECT xp, level FROM users WHERE lower(email)=${email} LIMIT 1`;
+        row = r2.rows[0];
       }
       if (!row) throw new Error('user not found');
       const xp = Number(row?.xp ?? 0);
       const level = Math.max(1, Math.min(Number(row?.level ?? 1), MAX_LEVEL));
       const effLevel = Math.min(levelFromXp(xp), MAX_LEVEL);
       if (effLevel >= MAX_LEVEL) {
-        levelInfo = { level: MAX_LEVEL, xp, pct: 100, inLevel: 0, span: 1, nextLevel: MAX_LEVEL };
+        levelInfo = { level: MAX_LEVEL, xp, pct: 100, inLevel: 0, span: 1, nextLevel: MAX_LEVEL, isMax: true };
       } else {
         const { toNext, nextLevelGoal } = xpToNext(xp);
         const start = GOAL_XP[effLevel - 1];
         const span = Math.max(1, nextLevelGoal - start);
         const inLevel = Math.max(0, Math.min(span, span - toNext));
         const pct = Math.round((inLevel / span) * 100);
-        levelInfo = { level: effLevel, xp, pct, inLevel, span, nextLevel: effLevel + 1 };
+        levelInfo = { level: effLevel, xp, pct, inLevel, span, nextLevel: effLevel + 1, isMax: false };
       }
     } catch {}
   }
@@ -66,14 +69,12 @@ export default async function Navbar() {
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
-            {/* Universities mega menu trigger */}
+          <nav className="hidden items-center gap-6 md:flex">
             <UniversitiesMenu />
-            {[...primary.slice(1), ...secondary].map((item) => (
-              <Link key={item.label} href={item.href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">
-                {item.label}
-              </Link>
-            ))}
+            <Link href={primary[1].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
+            <Link href={primary[2].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>
+            <Link href={primary[3].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[3].label}</Link>
+            <ResourcesMenu />
           </nav>
 
           <div className="flex items-center gap-3">
@@ -85,6 +86,7 @@ export default async function Navbar() {
               xpPct={levelInfo?.pct}
               xpInLevel={levelInfo?.inLevel}
               xpSpan={levelInfo?.span}
+              isMax={levelInfo?.isMax}
             />
           </div>
         </div>
