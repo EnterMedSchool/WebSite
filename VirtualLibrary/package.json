@@ -1,0 +1,18 @@
+{
+  "name": "bebetter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/naeemdev360/BeBetter.git",
+  "author": "naeem252 <naeemhasan252@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm:client\" \"npm:server\"",
+    "start": "cd server && npm start",
+    "heroku-postbuild": "npm install --prefix server"
+  },
+  "dependencies": {
+    "concurrently": "^7.3.0"
+  }
+}
