@@ -19,9 +19,10 @@ type Props = {
   suggestions?: Array<{ label: string; kind: "uni" | "city" | "country"; value: string }>;
   onPick?: (s: { label: string; kind: "uni" | "city" | "country"; value: string }) => void;
   onViewMobile?: () => void; // mobile-only action
+  compact?: boolean;
 };
 
-export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount, suggestions = [], onPick, onViewMobile }: Props) {
+export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount, suggestions = [], onPick, onViewMobile, compact = false }: Props) {
   const hasFilters = useMemo(() => {
     const { q, country, language, exam } = filters;
     return !!q || !!country || !!language || !!exam;
@@ -40,11 +41,13 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
   }, []);
 
   return (
-    <div className="pointer-events-auto mx-auto w-[min(520px,42vw)] rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 text-white">
-      <div className="mb-2">
-        <h2 className="text-xl font-extrabold tracking-tight">Where would you like to EnterMedSchool?</h2>
-        <div className="mt-0.5 text-xs font-medium text-indigo-100/90">Showing Medical Courses in English</div>
-      </div>
+    <div className={`pointer-events-auto mx-auto rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 ${compact ? 'p-3' : 'p-5'} shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 text-white`}>
+      {!compact && (
+        <div className="mb-2">
+          <h2 className="text-xl font-extrabold tracking-tight">Where would you like to EnterMedSchool?</h2>
+          <div className="mt-0.5 text-xs font-medium text-indigo-100/90">Showing Medical Courses in English</div>
+        </div>
+      )}
 
       {/* Two-line layout: first search, then dropdowns */}
       <div className="mt-2 space-y-2" ref={boxRef}>
@@ -89,11 +92,11 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         </div>
 
         {/* Dropdown row */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className={compact ? "grid grid-cols-3 gap-2" : "grid grid-cols-1 gap-2 sm:grid-cols-3"}>
           <select
             value={filters.country}
             onChange={(e) => onChange({ country: e.target.value })}
-            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+            className="w-full min-w-0 rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
           >
             <option value="">All countries</option>
             {countries.map((c) => (
@@ -103,7 +106,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
           <select
             value={filters.language}
             onChange={(e) => onChange({ language: e.target.value })}
-            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+            className="w-full min-w-0 rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
           >
             <option value="">All languages</option>
             {languages.map((l) => (
@@ -113,7 +116,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
           <select
             value={filters.exam}
             onChange={(e) => onChange({ exam: e.target.value })}
-            className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
+            className="w-full min-w-0 rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm"
           >
             <option value="">All exams</option>
             {exams.map((x) => (
@@ -135,7 +138,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className={`mt-3 flex items-center gap-3 ${compact ? 'justify-between' : ''}`}>
         {typeof resultCount === 'number' && (
           <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">{resultCount} results</div>
         )}

@@ -200,6 +200,19 @@ export default function HomeMap() {
     }
   }, []);
 
+  // Initial mobile focus: zoom in over Italy without opening results
+  const initApplied = useRef(false);
+  useEffect(() => {
+    if (!isSmall || initApplied.current || selected) return;
+    const italy: [number, number] = [12.5, 42.7];
+    setPosition({ center: italy, zoom: 6.8 });
+    setSelected({ name: 'Italy', center: italy, baseCenter: italy });
+    initApplied.current = true;
+    // Do not open sheet here; sheetOpen remains false
+    // Users can pan/zoom or hit View universities to see results
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSmall]);
+
   // Compute a center offset that leaves room for the right panel and
   // adds a vertical margin so selection isn't glued to the bottom.
   function computeOffsetCenter(baseCenter: [number, number], zoom: number): [number, number] {
@@ -425,6 +438,7 @@ export default function HomeMap() {
             style={isSmall ? { width: "min(calc(100vw - 24px), 560px)" } : undefined}
           >
             <MapFiltersBar
+              compact={isSmall}
               filters={filters}
               onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
               countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
