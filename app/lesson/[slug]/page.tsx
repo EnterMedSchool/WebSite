@@ -18,6 +18,8 @@ export default function LessonPage() {
   const [qs, setQs] = useState<any[]>([]);
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+  const [isSavingComplete, setIsSavingComplete] = useState(false);
   const q = qs[idx];
 
   // Load lesson
@@ -31,6 +33,9 @@ export default function LessonPage() {
 
   // Track lightweight progress
   useEffect(() => { fetch(`/api/lesson/${slug}/progress`, { method:'POST', body: JSON.stringify({ progress: tab==='learn'? 40: (tab==='practice'? 70: 30) }), headers:{'Content-Type':'application/json'} }); }, [slug, tab]);
+
+  // Load completion status
+  useEffect(() => { (async () => { try { const r = await fetch(`/api/lesson/${slug}/progress`); const j = await r.json(); setIsComplete(!!j.completed); } catch {} })(); }, [slug]);
 
   const progressPct = useMemo(() => qs.length ? Math.round(((idx) / qs.length) * 100) : 0, [idx, qs.length]);
 
@@ -52,7 +57,16 @@ export default function LessonPage() {
               ))}
             </div>
           </div>
-          <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
+          <div className="flex items-center gap-2">
+            <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
+            <button
+              onClick={async ()=>{ try { setIsSavingComplete(true); const target = !isComplete; setIsComplete(target); await fetch(`/api/lesson/${slug}/progress`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ completed: target }) }); } finally { setIsSavingComplete(false); } }}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${isComplete? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-white text-indigo-700 hover:bg-indigo-50'}`}
+              disabled={isSavingComplete}
+            >
+              {isComplete? 'Mark as incomplete' : 'Mark as complete'}
+            </button>
+          </div>
         </div>
       </div>
 
