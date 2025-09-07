@@ -20,6 +20,10 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     // Resolve user id from session (fallback to lookup by email)
     const session = await getServerSession(authOptions as any);
     let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
+    // Guard against provider subject ids sneaking in (Google sub is a 21-digit string)
+    if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) {
+      userId = 0;
+    }
     if (!userId && (session as any)?.user?.email) {
       const email = String((session as any).user.email).toLowerCase();
       const ur = await sql`SELECT id FROM users WHERE email=${email} LIMIT 1`;
@@ -68,6 +72,9 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     }
     const session = await getServerSession(authOptions as any);
     let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
+    if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) {
+      userId = 0;
+    }
     if (!userId && (session as any)?.user?.email) {
       const email = String((session as any).user.email).toLowerCase();
       const ur = await sql`SELECT id FROM users WHERE email=${email} LIMIT 1`;
