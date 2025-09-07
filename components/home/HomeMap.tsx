@@ -80,6 +80,7 @@ export default function HomeMap() {
   // Mobile results control
   const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
   const [isSmall, setIsSmall] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Compare persistence + deep link
   useEffect(() => {
@@ -234,6 +235,7 @@ export default function HomeMap() {
     const center = isSmall ? baseCenter : computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name, center, baseCenter });
     setPosition({ center, zoom: targetZoom });
+    if (isSmall) { setSheetCustomItems(null); setSheetOpen(true); }
   }
 
   function reset() {
@@ -358,6 +360,7 @@ export default function HomeMap() {
                           if (!selected) {
                             setSelected({ name: c.country || "", center: position.center, baseCenter: position.center });
                           }
+                          setSheetOpen(true);
                         } else {
                           const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
                           try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
@@ -431,10 +434,12 @@ export default function HomeMap() {
                   if (found) {
                     setSelected({ name: filters.country, center: position.center, baseCenter: position.center });
                     setSheetCustomItems(null);
+                    setSheetOpen(true);
                   }
                 } else {
                   // Show all filtered results in sheet
                   setSheetCustomItems(allCityData);
+                  setSheetOpen(true);
                 }
               } : undefined}
               suggestions={
@@ -535,10 +540,10 @@ export default function HomeMap() {
             </div>
           </div>
         )}
-        {(isSmall && ( (selected && (sheetCustomItems===null)) || (sheetCustomItems && sheetCustomItems.length>0) )) && (
+        {(isSmall && sheetOpen && ( (selected && (sheetCustomItems===null)) || (sheetCustomItems && sheetCustomItems.length>0) )) && (
           <BottomSheet
             open={true}
-            onClose={() => { setSheetCustomItems(null); setSelected(null); }}
+            onClose={() => { setSheetCustomItems(null); setSelected(null); setSheetOpen(false); }}
             title={sheetCustomItems ? (filters.country || 'Results') : (selected!.name)}
             height="70vh"
           >
