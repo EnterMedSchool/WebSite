@@ -228,8 +228,8 @@ export default function HomeMap() {
     const name: string = geo.properties.name;
     const baseCenter = geoCentroid(geo) as [number, number];
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-    const targetZoom = vh < 850 ? 5.0 : 5.2; // moderate zoom so Italy is fully visible
-    const center = computeOffsetCenter(baseCenter, targetZoom);
+    const targetZoom = isSmall ? 6.5 : (vh < 850 ? 5.0 : 5.2); // much closer on small screens
+    const center = isSmall ? baseCenter : computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name, center, baseCenter });
     setPosition({ center, zoom: targetZoom });
   }
@@ -244,15 +244,15 @@ export default function HomeMap() {
     function onResize() {
       if (!selected) return;
       const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-      const targetZoom = vh < 850 ? 5.0 : 5.2;
-      const center = computeOffsetCenter(selected.baseCenter, targetZoom);
+      const targetZoom = isSmall ? 6.5 : (vh < 850 ? 5.0 : 5.2);
+      const center = isSmall ? selected.baseCenter : computeOffsetCenter(selected.baseCenter, targetZoom);
       setPosition({ center, zoom: targetZoom });
     }
     if (typeof window !== "undefined") {
       window.addEventListener("resize", onResize);
       return () => window.removeEventListener("resize", onResize);
     }
-  }, [selected]);
+  }, [selected, isSmall]);
 
   // Default selection: Italy on initial mount
   useEffect(() => {
@@ -391,14 +391,56 @@ export default function HomeMap() {
         </div>
 
         {/* Filters bar overlay docked at top-right, shrinks when panel open */}
-        <div className="pointer-events-none absolute left-3 top-3 z-30">
-          <motion.div
-            ref={overlayRef}
-            className="pointer-events-auto"
-            initial={{ opacity: 0, y: -10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 180, damping: 18 }}
-          >
+        {!isSmall && (
+          <div className="pointer-events-none absolute left-3 top-3 z-30">
+            <motion.div
+              ref={overlayRef}
+              className="pointer-events-auto"
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 180, damping: 18 }}
+            >
+              <MapFiltersBar
+                filters={filters}
+                onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+                countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
+                languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
+                exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
+                resultCount={allCityData.length}
+                suggestions={
+                  filters.q.trim().length >= 1
+                    ? Array.from(new Set([
+                        ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
+                        ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
+                        ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
+                      ].map((s) => `${s.kind}:${s.label}`)))
+                        .map((key) => {
+                          const [kind, label] = key.split(':');
+                          return { kind: kind as 'uni'|'city'|'country', label, value: label };
+                        })
+                        .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
+                        .slice(0, 12)
+                    : []
+                }
+                onPick={(s) => {
+                  if (s.kind === 'country') {
+                    setFilters((f) => ({ ...f, country: s.value }));
+                    setSelected({ name: s.value, center: position.center, baseCenter: position.center });
+                  } else if (s.kind === 'uni') {
+                    const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+                  } else {
+                    setFilters((f) => ({ ...f, q: s.value }));
+                  }
+                }}
+              />
+            </motion.div>
+          </div>
+        )}
+
+        {/* Mobile inline filters under map */}
+        {isSmall && (
+          <div className="px-3 pt-3">
             <MapFiltersBar
               filters={filters}
               onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
@@ -429,13 +471,12 @@ export default function HomeMap() {
                   const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                   try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
                 } else {
-                  // city: set text and try finding country
                   setFilters((f) => ({ ...f, q: s.value }));
                 }
               }}
             />
-          </motion.div>
-        </div>
+          </div>
+        )}
 
         {/* Right side panel of universities when a country is selected (legacy, disabled) */}
         {false && selected && cityData.length > 0 && (
