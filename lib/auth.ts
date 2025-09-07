@@ -40,18 +40,18 @@ export const authOptions: NextAuthOptions = {
         if (email) {
           const existing = (await db.select().from(users).where(eq(users.email as any, email)))[0];
           if (!existing) {
-            const username = (email.split("@")[0] || "user").slice(0, 80);
-            try {
-              const inserted = await db.insert(users).values({
-                username,
-                name: (profile.name as string) || username,
-                email,
-                image: (profile.picture as string) || null,
-              }).returning({ id: users.id });
-              token.userId = String(inserted[0].id);
-            } catch {
-              const fallback = (await db.select().from(users).where(eq(users.email as any, email)))[0];
-              if (fallback) token.userId = String(fallback.id);
+              const username = (email.split("@")[0] || "user").slice(0, 80);
+              try {
+                const inserted = await db.insert(users).values({
+                  username,
+                  name: (profile as any)?.name || (profile as any)?.given_name || username,
+                  email,
+                  image: ((profile as any)?.picture as string) || ((profile as any)?.image as string) || null,
+                }).returning({ id: users.id });
+                token.userId = String(inserted[0].id);
+              } catch {
+                const fallback = (await db.select().from(users).where(eq(users.email as any, email)))[0];
+                if (fallback) token.userId = String(fallback.id);
             }
           } else {
             token.userId = String(existing.id);
@@ -75,4 +75,3 @@ export const authOptions: NextAuthOptions = {
 };
 
 export const { handlers: authHandlers, auth: authGetServerSession } = NextAuth(authOptions);
-
