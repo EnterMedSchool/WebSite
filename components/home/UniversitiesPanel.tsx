@@ -44,7 +44,12 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
                 <div className="truncate font-medium">{c.uni}</div>
                 <div className="text-sm text-gray-500">
                   {c.city}
-                  {c.kind ? ` • ${c.kind === "private" ? "Private" : "Public"}` : ""}
+                  {c.kind && (
+                    <>
+                      {" · "}
+                      {c.kind === "private" ? "Private" : "Public"}
+                    </>
+                  )}
                 </div>
               </div>
               {typeof c.rating === "number" && (
@@ -72,13 +77,18 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
                   )}
                 </div>
               </div>
-          </div>
+            </div>
 
             {/* Trend + seats */}
-            <div className="mt-2 cursor-pointer rounded-2xl bg-gray-50 p-2 transition-all hover:ring-2 hover:ring-indigo-200" onClick={() => {
-              const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-              try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
-            }}>
+            <div
+              className="mt-2 cursor-pointer rounded-2xl bg-gray-50 p-2 transition-all hover:ring-2 hover:ring-indigo-200"
+              onClick={() => {
+                const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                try {
+                  router.push(`/university/${encodeURIComponent(slug)}`);
+                } catch {}
+              }}
+            >
               <MiniTrend uni={c.uni} />
             </div>
 
@@ -111,7 +121,11 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               <button
                 type="button"
                 onClick={() => onAddCompare?.({ ...c, country: selectedName })}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${compareSet?.has(c.uni) ? "bg-green-600 text-white hover:bg-green-700" : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700"}`}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
+                  compareSet?.has(c.uni)
+                    ? "bg-green-600 text-white hover:bg-green-700"
+                    : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700"
+                }`}
               >
                 {compareSet?.has(c.uni) ? "Added to Compare" : "Add to Compare"}
               </button>
@@ -122,3 +136,4 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
     </div>
   );
 }
+
