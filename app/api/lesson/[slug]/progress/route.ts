@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { levelFromXp, MAX_LEVEL } from "@/lib/xp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,12 +50,37 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
               VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})
               ON CONFLICT (user_id, lesson_id) DO UPDATE SET completed=${completed}`;
 
+    // Award XP once on first completion
     if (completed) {
-      try {
-        await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                  VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({progress})}::jsonb)`;
-      } catch (e) {
-        console.warn('lms_events insert failed (non-fatal):', e);
+      // Award XP only once per lesson per user based on xp_awarded marker
+      const awarded = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND subject_type='lesson' AND subject_id=${lesson.id} AND action='xp_awarded' LIMIT 1`;
+      if (awarded.rows.length === 0) {
+        // Record completion event (idempotent due to unique index)
+        try {
+          await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                    VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({ progress })}::jsonb)`;
+        } catch {}
+
+        // Load current XP/level, award 10 XP, compute new level
+        const ur = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
+        const currXp = Number(ur.rows[0]?.xp || 0);
+        const currLevel = Number(ur.rows[0]?.level || 1);
+        const add = 10;
+        const nextXp = currXp + add;
+        const newLevel = levelFromXp(nextXp);
+        await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
+        // Optional: log level up event
+        if (newLevel > currLevel && newLevel <= MAX_LEVEL) {
+          try {
+            await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                      VALUES (${userId}, 'user', ${userId}, 'level_up', ${JSON.stringify({ from: currLevel, to: newLevel, xp: nextXp })}::jsonb)`;
+          } catch {}
+        }
+        // Optional: separate xp_awarded event for auditing
+        try {
+          await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                    VALUES (${userId}, 'lesson', ${lesson.id}, 'xp_awarded', ${JSON.stringify({ amount: add, totalXp: nextXp })}::jsonb)`;
+        } catch {}
       }
     }
     return NextResponse.json({ ok: true });
