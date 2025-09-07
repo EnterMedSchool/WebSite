@@ -77,6 +77,8 @@ export default function HomeMap() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<Array<any>>([]);
   const compareSet = useMemo(() => new Set(compare.map((i) => i.uni)), [compare]);
+  // Mobile results control
+  const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
   const [isSmall, setIsSmall] = useState(false);
 
   // Compare persistence + deep link
@@ -284,7 +286,15 @@ export default function HomeMap() {
           }}
         >
         <ComposableMap projectionConfig={{ scale: 175 }} style={{ width: "100%", height: "100%" }}>
-          <ZoomableGroup center={position.center} zoom={position.zoom} minZoom={position.zoom} maxZoom={position.zoom} animate animationDuration={1100} animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}>
+          <ZoomableGroup
+            center={position.center}
+            zoom={position.zoom}
+            minZoom={isSmall ? 0.9 : position.zoom}
+            maxZoom={isSmall ? 8 : position.zoom}
+            animate
+            animationDuration={1100}
+            animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}
+          >
             <Geographies geography={GEO_URL}>
               {({ geographies }: { geographies: any[] }) =>
                 geographies.map((geo: any) => {
@@ -327,10 +337,10 @@ export default function HomeMap() {
                 const yJitter = 0; // keep precise alignment; jitter removed
                 const isSelectedCountry = selected?.name === c.country;
                 const scale = markerScale * (isSelectedCountry ? 1 : 0.8);
-                const key = `${c.country}-${c.city}-${c.uni}`;
-                return (
-                  <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
-                    <motion.g
+                  const key = `${c.country}-${c.city}-${c.uni}`;
+                  return (
+                    <Marker key={`${c.city}-${c.uni}`} coordinates={[c.lng, c.lat]}>
+                      <motion.g
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale, opacity: 1 }}
                       whileHover={{ scale: scale * 1.35 }}
@@ -343,8 +353,15 @@ export default function HomeMap() {
                       }}
                       onMouseLeave={() => setHoveredKey((k) => (k === key ? null : k))}
                       onClick={() => {
-                        const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-                        try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+                        if (isSmall) {
+                          setSheetCustomItems([c]);
+                          if (!selected) {
+                            setSelected({ name: c.country || "", center: position.center, baseCenter: position.center });
+                          }
+                        } else {
+                          const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                          try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+                        }
                       }}
                       style={{ cursor: "pointer" }}
                     >
@@ -395,7 +412,7 @@ export default function HomeMap() {
         <div className={isSmall ? "pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center" : "pointer-events-none absolute left-3 top-3 z-30"}>
           <motion.div
             ref={overlayRef}
-            className={isSmall ? "pointer-events-auto w-[min(92vw,560px)]" : "pointer-events-auto"}
+            className={isSmall ? "pointer-events-auto w-[min(96vw,560px)]" : "pointer-events-auto"}
             initial={{ opacity: 0, y: isSmall ? 10 : -10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 180, damping: 18 }}
@@ -407,6 +424,19 @@ export default function HomeMap() {
               languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
               exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
               resultCount={allCityData.length}
+              onViewMobile={isSmall ? () => {
+                if (filters.country) {
+                  // Zoom and open selected country
+                  const found = allCityDataRaw.find((c)=> c.country === filters.country);
+                  if (found) {
+                    setSelected({ name: filters.country, center: position.center, baseCenter: position.center });
+                    setSheetCustomItems(null);
+                  }
+                } else {
+                  // Show all filtered results in sheet
+                  setSheetCustomItems(allCityData);
+                }
+              } : undefined}
               suggestions={
                 filters.q.trim().length >= 1
                   ? Array.from(new Set([
@@ -437,8 +467,13 @@ export default function HomeMap() {
           </motion.div>
         </div>
 
-        {/* Mobile inline filters under map */}
-        {/* (Inline mobile filters removed; filters now hover over the map at bottom-center) */}
+        {/* Soft top/bottom gradient to blend edges on mobile */}
+        {isSmall && (
+          <>
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+          </>
+        )}
 
         {/* Right side panel of universities when a country is selected (legacy, disabled) */}
         {false && selected && cityData.length > 0 && (
@@ -500,16 +535,20 @@ export default function HomeMap() {
             </div>
           </div>
         )}
-        {selected && cityData.length > 0 && (
-          isSmall ? (
-            <BottomSheet open={true} onClose={() => setSelected(null)} title={selected!.name} height="70vh">
-              <UniversitiesListMobile selectedName={selected!.name} items={cityData as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
-            </BottomSheet>
-          ) : (
-            <div ref={panelRef}>
-              <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={panelOffset} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
-            </div>
-          )
+        {(isSmall && ( (selected && (sheetCustomItems===null)) || (sheetCustomItems && sheetCustomItems.length>0) )) && (
+          <BottomSheet
+            open={true}
+            onClose={() => { setSheetCustomItems(null); setSelected(null); }}
+            title={sheetCustomItems ? (filters.country || 'Results') : (selected!.name)}
+            height="70vh"
+          >
+            <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityData) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
+          </BottomSheet>
+        )}
+        {(!isSmall && selected && cityData.length>0) && (
+          <div ref={panelRef}>
+            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={panelOffset} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
+          </div>
         )}
 
         {/* Compare FAB + Drawer */}

@@ -18,9 +18,10 @@ type Props = {
   resultCount?: number;
   suggestions?: Array<{ label: string; kind: "uni" | "city" | "country"; value: string }>;
   onPick?: (s: { label: string; kind: "uni" | "city" | "country"; value: string }) => void;
+  onViewMobile?: () => void; // mobile-only action
 };
 
-export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount, suggestions = [], onPick }: Props) {
+export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount, suggestions = [], onPick, onViewMobile }: Props) {
   const hasFilters = useMemo(() => {
     const { q, country, language, exam } = filters;
     return !!q || !!country || !!language || !!exam;
@@ -68,7 +69,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
             className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-violet-300 focus:outline-none"
           />
           {open && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-white/30 bg-white/95 text-gray-900 shadow-2xl backdrop-blur-sm">
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-auto rounded-xl border border-white/30 bg-white/95 text-gray-900 shadow-2xl backdrop-blur-sm">
               {suggestions.slice(0, 8).map((s, i) => (
                 <button
                   key={`${s.kind}-${s.value}-${i}`}
@@ -120,6 +121,18 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
             ))}
           </select>
         </div>
+        {/* Mobile action button */}
+        {onViewMobile && (
+          <div className="block lg:hidden pt-1">
+            <button
+              type="button"
+              onClick={onViewMobile}
+              className="w-full rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm ring-1 ring-white/40 hover:bg-white"
+            >
+              View universities
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-3 flex items-center gap-3">
