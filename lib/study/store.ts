@@ -17,6 +17,7 @@ type StudyState = {
   taskLists: TaskList[];
   setSession: (s: { sessionId: number; slug: string; sharedEndAt: string | null; myUserId: number | null }) => void;
   setParticipants: (p: Participant[]) => void;
+  mergeParticipants: (p: Participant[]) => void;
   addParticipant: (p: Participant | { id: number }) => void;
   removeParticipant: (userId: number) => void;
   prependMessages: (ms: Message[]) => void;
@@ -37,6 +38,15 @@ export const useStudyStore = create<StudyState>((set) => ({
   taskLists: [],
   setSession: (s) => set({ sessionId: s.sessionId, slug: s.slug, sharedEndAt: s.sharedEndAt, myUserId: s.myUserId }),
   setParticipants: (p) => set({ participants: p }),
+  mergeParticipants: (incoming) => set((st) => {
+    const byId = new Map<number, Participant>();
+    st.participants.forEach((x) => byId.set(x.id, x));
+    incoming.forEach((x) => {
+      const prev = byId.get(x.id) || { id: x.id } as Participant;
+      byId.set(x.id, { ...prev, ...x });
+    });
+    return { participants: Array.from(byId.values()) } as any;
+  }),
   addParticipant: (p) => set((st) => ({ participants: st.participants.some((x) => x.id === (p as any).id) ? st.participants : [...st.participants, p as any] })),
   removeParticipant: (userId) => set((st) => ({ participants: st.participants.filter((p) => p.id !== userId) })),
   prependMessages: (ms) => set((st) => ({ messages: [...ms, ...st.messages] })),

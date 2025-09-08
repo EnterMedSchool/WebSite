@@ -6,16 +6,19 @@ import { useStudyStore } from "@/lib/study/store";
 export default function OthersTasks() {
   const myUserId = useStudyStore((s) => s.myUserId);
   const taskLists = useStudyStore((s) => s.taskLists);
+  const participants = useStudyStore((s) => s.participants);
 
   const groups = useMemo(() => {
     const byUser: Record<number, { userId: number; lists: any[] }> = {} as any;
+    const presentIds = new Set<number>(participants.map((p) => p.id));
     for (const l of taskLists) {
       if (l.userId === myUserId) continue;
+      if (!presentIds.has(l.userId)) continue; // hide lists from users not present
       if (!byUser[l.userId]) byUser[l.userId] = { userId: l.userId, lists: [] };
       byUser[l.userId].lists.push(l);
     }
     return Object.values(byUser);
-  }, [taskLists, myUserId]);
+  }, [taskLists, myUserId, participants]);
 
   if (!groups.length) return null;
 
@@ -42,4 +45,3 @@ export default function OthersTasks() {
     </div>
   );
 }
-

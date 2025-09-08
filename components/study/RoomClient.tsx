@@ -13,6 +13,7 @@ import OthersTasks from "@/components/study/tasks/OthersTasks";
 export default function RoomClient({ room, messages, taskLists, myUserId }: { room: any; messages: any[]; taskLists: any[]; myUserId: number | null; }) {
   const setSession = useStudyStore((s) => s.setSession);
   const setParticipants = useStudyStore((s) => s.setParticipants);
+  const mergeParticipants = useStudyStore((s) => s.mergeParticipants);
   const prependMessages = useStudyStore((s) => s.prependMessages);
   const setTaskLists = useStudyStore((s) => s.setTaskLists);
 
@@ -34,15 +35,15 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
       const res = await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/participants`, { credentials: "include" });
       if (res.ok) {
         const json = await res.json();
-        useStudyStore.getState().setParticipants((json.data || []).map((p: any) => ({ id: p.id, name: p.name, image: p.image, username: p.username })));
+        const list = (json.data || []).map((p: any) => ({ id: p.id, name: p.name, image: p.image, username: p.username }));
+        useStudyStore.getState().mergeParticipants(list);
       }
     };
-    join();
-    loadParticipants();
+    (async () => { await join(); await loadParticipants(); })();
     const handler = () => { void leave(); };
     window.addEventListener("beforeunload", handler);
     return () => { window.removeEventListener("beforeunload", handler); void leave(); };
-  }, [sessionId, setParticipants]);
+  }, [sessionId, setParticipants, mergeParticipants, room.slug]);
 
   const isOwner = myUserId != null && Number(myUserId) === Number(room.creatorUserId);
 
