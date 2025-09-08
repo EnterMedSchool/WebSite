@@ -1,14 +1,13 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import type { HTMLAttributes, ReactNode } from "react";
+import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
+import type { ReactNode } from "react";
 
-type Props = {
+type Props = HTMLMotionProps<"div"> & {
   children: ReactNode;
   delay?: number;
   y?: number;
-  className?: string;
-} & HTMLAttributes<HTMLDivElement>;
+};
 
 export default function Reveal({ children, delay = 0, y = 22, className, ...rest }: Props) {
   const prefersReduced = useReducedMotion();
@@ -27,4 +26,3 @@ export default function Reveal({ children, delay = 0, y = 22, className, ...rest
     </motion.div>
   );
 }
-
