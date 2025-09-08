@@ -22,6 +22,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const next = idx>=0 && idx < ordered.length-1 ? { slug: ordered[idx+1].slug, title: ordered[idx+1].title } : null;
   // Per-user course progress (if authenticated)
   let courseProgress: any = null;
+  let timelineLessons: any[] | null = null;
   try {
     const session = await getServerSession(authOptions as any);
     let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
@@ -38,7 +39,13 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       const completed = Number(compR.rows[0]?.completed || 0);
       const pct = total ? Math.round((completed / total) * 100) : 0;
       courseProgress = { total, completed, pct };
+      // Build timeline with completion flags
+      const cr = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND completed=true`;
+      const done = new Set<number>(cr.rows.map((r:any)=> Number(r.lesson_id)));
+      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: done.has(Number(l.id)) }));
+    } else {
+      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false }));
     }
   } catch { /* ignore, courseProgress stays null */ }
-  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], blocks: br.rows, nav: { prev, next }, courseProgress });
+  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false })) } });
 }

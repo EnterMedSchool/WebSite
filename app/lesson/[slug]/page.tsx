@@ -58,7 +58,7 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="mx-auto max-w-6xl p-6">
       {/* Hero header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex items-start justify-between gap-4">
@@ -94,6 +94,10 @@ export default function LessonPage() {
                 const wasComplete = isComplete;
                 setIsSavingComplete(true);
                 setIsComplete(target);
+                setTimeline((tl)=>{
+                  if (!tl) return tl;
+                  return { lessons: tl.lessons.map(l => l.slug===slug ? { ...l, completed: target } : l) };
+                });
                 // Optimistically update course progress counts
                 setCourseProg((p)=>{
                   if (!p) return p;
@@ -116,6 +120,10 @@ export default function LessonPage() {
                       return { ...p, completed, pct };
                     });
                     console.warn('Failed to update completion', payload);
+                    setTimeline((tl)=>{
+                      if (!tl) return tl;
+                      return { lessons: tl.lessons.map(l => l.slug===slug ? { ...l, completed: wasComplete } : l) };
+                    });
                   }
                   // Animate XP if server actually awarded some
                   if (payload?.awardedXp && Number(payload.awardedXp) > 0) {
@@ -151,7 +159,35 @@ export default function LessonPage() {
       </div>
 
       {/* Content */}
-      <div className="mt-5">
+      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[260px,1fr]">
+        {/* Timeline sidebar */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-20 rounded-2xl border border-indigo-100 bg-white/90 p-4 shadow-sm ring-1 ring-black/5">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Course Progress</div>
+            <div className="mb-3 h-2 w-full rounded-full bg-gray-200">
+              <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${courseProg?.pct ?? 0}%` }} />
+            </div>
+            <ul className="relative mt-2">
+              {timeline?.lessons?.map((t,i)=> {
+                const isCurr = t.slug === slug;
+                const done = !!t.completed || (isCurr && isComplete);
+                const last = (timeline?.lessons?.length||0)-1 === i;
+                return (
+                  <li key={t.slug} className="group relative pl-8 pb-4">
+                    {!last && (<span className="absolute left-3 top-6 h-full w-[2px] bg-gradient-to-b from-indigo-200 to-transparent" />)}
+                    <span className={`absolute left-0 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full ring-2 ${done? 'bg-emerald-500 text-white ring-emerald-200' : (isCurr? 'bg-indigo-600 text-white ring-indigo-200' : 'bg-white text-indigo-700 ring-indigo-200')}`}>
+                      {done? '✓' : i+1}
+                    </span>
+                    <Link href={`/lesson/${t.slug}`} className={`block rounded-lg px-2 py-1.5 text-sm transition ${isCurr? 'bg-indigo-50 text-indigo-800' : 'hover:bg-gray-50 text-gray-800'}`}>
+                      <div className="line-clamp-2 pr-6">{t.title}</div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </aside>
+        <section>
         {tab==='learn' && (
           <div className="space-y-4">
             {blocks.map((b, i) => (
@@ -220,7 +256,7 @@ export default function LessonPage() {
         <div className="mt-8 flex items-center justify-between">
           <div>
             {nav?.prev ? (
-              <Link href={`/lesson/${nav.prev.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50">
+                Prev: {nav.prev.title}
                 ← Previous: {nav.prev.title}
               </Link>
             ) : <span />}
@@ -228,7 +264,7 @@ export default function LessonPage() {
           <div>
             {nav?.next ? (
               <Link href={`/lesson/${nav.next.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50">
-                Next: {nav.next.title} →
+                Next: {nav.next.title}
               </Link>
             ) : <span />}
           </div>
