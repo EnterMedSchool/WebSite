@@ -131,10 +131,16 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     const lesson = lr.rows[0];
     if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    // Completion and question progress
     const pr = await sql`SELECT progress, completed FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id=${lesson.id} LIMIT 1`;
-    if (pr.rows.length === 0) return NextResponse.json({ progress: 0, completed: false });
-    const row = pr.rows[0];
-    return NextResponse.json({ progress: Number(row.progress || 0), completed: !!row.completed });
+    const completed = pr.rows.length ? !!pr.rows[0].completed : false;
+
+    const totalR = await sql`SELECT COUNT(*)::int AS total FROM questions WHERE lesson_id=${lesson.id}`;
+    const qTotal = Number(totalR.rows[0]?.total || 0);
+    const corrR = await sql`SELECT COUNT(*)::int AS cnt FROM user_question_progress WHERE user_id=${userId} AND correct=true AND question_id IN (SELECT id FROM questions WHERE lesson_id=${lesson.id})`;
+    const qCorrect = Number(corrR.rows[0]?.cnt || 0);
+    const lessonPct = Math.round(((completed ? 1 : 0) + (qTotal > 0 ? qCorrect / qTotal : 0)) / 2 * 100);
+    return NextResponse.json({ completed, qTotal, qCorrect, lessonPct });
   } catch (err: any) {
     console.error('progress GET failed', err);
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });

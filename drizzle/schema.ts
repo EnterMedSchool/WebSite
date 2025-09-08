@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   passwordHash: varchar("password_hash", { length: 255 }),
   xp: integer("xp").default(0).notNull(),
   level: integer("level").default(1).notNull(),
+  totalCorrectAnswers: integer("total_correct_answers").default(0).notNull(),
+  isPremium: boolean("is_premium").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -69,6 +71,7 @@ export const questions = pgTable(
     lessonId: integer("lesson_id").notNull(),
     prompt: text("prompt").notNull(),
     explanation: text("explanation"),
+    access: varchar("access", { length: 12 }), // public | auth | guest | premium
     rankKey: varchar("rank_key", { length: 32 }),
     difficulty: varchar("difficulty", { length: 10 }),
     tags: jsonb("tags"),
@@ -117,6 +120,23 @@ export const attemptAnswers = pgTable(
   (t) => ({
     attemptIdx: index("answers_attempt_idx").on(t.attemptId),
     questionIdx: index("answers_question_idx").on(t.questionId),
+  })
+);
+
+// Persistent per-user per-question progress (one row per user x question)
+export const userQuestionProgress = pgTable(
+  "user_question_progress",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    questionId: integer("question_id").notNull(),
+    choiceId: integer("choice_id"),
+    correct: boolean("correct").default(false).notNull(),
+    answeredAt: timestamp("answered_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("uqp_user_idx").on(t.userId),
+    questionIdx: index("uqp_question_idx").on(t.questionId),
   })
 );
 

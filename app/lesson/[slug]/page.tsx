@@ -32,6 +32,7 @@ export default function LessonPage() {
     next: { slug: string; title: string } | null;
   } | null>(null);
   const [courseProg, setCourseProg] = useState<{ total: number; completed: number; pct: number } | null>(null);
+  const [lessonProg, setLessonProg] = useState<{ completed: boolean; qTotal: number; qCorrect: number; lessonPct: number } | null>(null);
   const [timeline, setTimeline] = useState<{ lessons: { id: number; slug: string; title: string; completed?: boolean }[] } | null>(null);
 
   const q = qs[idx];
@@ -72,22 +73,24 @@ export default function LessonPage() {
     });
   }, [slug, tab, isAuthed]);
 
-  // Load completion status
+  // Load completion status and per-lesson progress
   useEffect(() => {
     (async () => {
       if (!isAuthed) {
         setIsComplete(false);
+        setLessonProg(null);
         return;
       }
       try {
         const r = await fetch(`/api/lesson/${slug}/progress`, { credentials: "include" });
         const j = await r.json();
         setIsComplete(!!j.completed);
+        if (j && ("lessonPct" in j)) setLessonProg(j);
       } catch {}
     })();
   }, [slug, isAuthed]);
 
-  const progressPct = useMemo(() => (qs.length ? Math.round(idx / qs.length * 100) : 0), [idx, qs.length]);
+  const progressPct = useMemo(() => (qs.length ? Math.round((idx) / qs.length * 100) : 0), [idx, qs.length]);
 
   function next() {
     if (idx < qs.length - 1) {
@@ -122,26 +125,30 @@ export default function LessonPage() {
                 </button>
               ))}
             </div>
-            {/* Course progress bar */}
+            {/* Lesson progress bar (complete lesson + solve all questions) */}
             <div className="mt-3 w-full max-w-md">
               <div
                 className={`relative h-3 overflow-hidden rounded-full ${isAuthed ? "bg-white/20" : "bg-white/10"}`}
-                title={isAuthed ? `${courseProg?.completed ?? 0}/${courseProg?.total ?? 0} lessons (${courseProg?.pct ?? 0}%)` : "Sign in to track course progress"}
+                title={isAuthed ? `Lesson progress: ${(lessonProg?.lessonPct ?? 0)}%` : "Sign in to track lesson progress"}
               >
                 <div
                   className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-300 to-emerald-200 transition-all`}
-                  style={{ width: `${isAuthed ? courseProg?.pct ?? 0 : 0}%`, opacity: isAuthed ? 1 : 0.5 }}
+                  style={{ width: `${isAuthed ? (lessonProg?.lessonPct ?? 0) : 0}%`, opacity: isAuthed ? 1 : 0.5 }}
                 />
               </div>
-              <div className={`mt-1 text-xs font-medium ${isAuthed ? "text-white/90" : "text-white/60"}`}>
-                {isAuthed ? (
-                  <span>
-                    {courseProg?.completed ?? 0}/{courseProg?.total ?? 0} lessons - {courseProg?.pct ?? 0}%
-                  </span>
-                ) : (
-                  <span>Sign in to track course progress</span>
-                )}
-              </div>
+              {isAuthed ? (
+                <div className="mt-1 text-xs font-medium text-white/90">
+                  {lessonProg ? (
+                    <span>
+                      {lessonProg.completed ? "Completed" : "Incomplete"} · Questions: {lessonProg.qCorrect}/{lessonProg.qTotal} · {lessonProg.lessonPct}%
+                    </span>
+                  ) : (
+                    <span>Lesson progress: 0%</span>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-1 text-xs font-medium text-white/60">Sign in to track lesson progress</div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -294,22 +301,29 @@ export default function LessonPage() {
                 <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
                   <div className="mb-3 text-sm font-semibold text-gray-900">Question {idx + 1} of {qs.length}</div>
                   <div className="mb-3 font-medium">{q.prompt}</div>
-                  <div className="grid gap-2">
-                    {q.choices.map((c: any) => {
-                      const state = picked == null ? "idle" : c.correct ? "correct" : picked === c.id ? "wrong" : "idle";
-                      const cls = state === "correct" ? "border-green-600 bg-green-50" : state === "wrong" ? "border-rose-600 bg-rose-50" : "hover:bg-gray-50";
-                      return (
-                        <button
-                          key={c.id}
-                          onClick={() => setPicked(c.id)}
-                          disabled={picked != null}
-                          className={`rounded-lg border px-3 py-2 text-left transition ${cls}`}
-                        >
-                          {c.text}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <QuestionChoices
+                    q={q}
+                    onAnswered={async (choiceId: number) => {
+                      setPicked(choiceId);
+                      try {
+                        const r = await fetch(`/api/questions/${q.id}/answer`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ choiceId }),
+                          credentials: 'include',
+                        });
+                        const j = await r.json();
+                        if (j?.awardedXp) {
+                          window.dispatchEvent(new CustomEvent('xp:awarded', { detail: { amount: j.awardedXp } }));
+                        }
+                        if (isAuthed) {
+                          const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
+                          const k = await r2.json();
+                          if (k && ('lessonPct' in k)) setLessonProg(k);
+                        }
+                      } catch {}
+                    }}
+                  />
                   {picked != null && (
                     <div className="mt-3 flex items-center justify-between">
                       <div className="text-xs text-gray-600">{q.explanation}</div>
@@ -377,3 +391,45 @@ export default function LessonPage() {
   );
 }
 
+function QuestionChoices({ q, onAnswered }: { q: any; onAnswered: (choiceId: number) => void }) {
+  const [picked, setPicked] = useState<number | null>(null);
+  const handle = (cid: number) => { if (picked == null) { setPicked(cid); onAnswered(cid); } };
+  const gated = q.access === 'auth' || q.access === 'premium';
+  return (
+    <div className="relative">
+      {gated && (
+        <div className="pointer-events-none absolute inset-0 z-10 rounded-xl bg-white/60 backdrop-blur-sm" />
+      )}
+      <div className="grid gap-2">
+        {q.choices.map((c: any) => {
+          const state = picked == null ? "idle" : c.correct ? "correct" : picked === c.id ? "wrong" : "idle";
+          const cls = state === "correct" ? "border-green-600 bg-green-50" : state === "wrong" ? "border-rose-600 bg-rose-50" : "hover:bg-gray-50";
+          return (
+            <button
+              key={c.id}
+              onClick={() => handle(c.id)}
+              disabled={picked != null}
+              className={`rounded-lg border px-3 py-2 text-left transition ${cls}`}
+            >
+              {c.text}
+            </button>
+          );
+        })}
+      </div>
+      {q.access === 'auth' && (
+        <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
+          <div className="pointer-events-auto rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow">
+            This question is available for free, but only to logged in users
+          </div>
+        </div>
+      )}
+      {q.access === 'premium' && (
+        <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
+          <div className="pointer-events-auto rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow">
+            Premium question � log in and upgrade to access
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
