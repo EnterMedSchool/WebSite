@@ -63,14 +63,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ ok: true, correct: isCorrect, explanation: row.explanation });
     }
 
-    // Persist only when correct; allow retries for wrong answers without locking
+    // Persist user's answer, including incorrect attempts. Award XP only on first correct.
     const existing = await sql`SELECT correct FROM user_question_progress WHERE user_id=${userId} AND question_id=${qid} LIMIT 1`;
     let awardedXp = 0;
     let totalCorrectAnswersInc = 0;
     if (existing.rows.length === 0) {
+      await sql`INSERT INTO user_question_progress (user_id, question_id, choice_id, correct) VALUES (${userId}, ${qid}, ${choiceId}, ${isCorrect})`;
       if (isCorrect) {
-        await sql`INSERT INTO user_question_progress (user_id, question_id, choice_id, correct) VALUES (${userId}, ${qid}, ${choiceId}, true)`;
-        // award
         const ur = await sql`SELECT xp, level, total_correct_answers FROM users WHERE id=${userId} LIMIT 1`;
         const currXp = Number(ur.rows[0]?.xp || 0);
         const currLevel = Number(ur.rows[0]?.level || 1);
@@ -87,13 +86,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         try {
           await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                     VALUES (${userId}, 'question', ${qid}, 'correct', ${JSON.stringify({ choiceId })}::jsonb)`;
+        } catch {}
+      } else {
+        try {
+          await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                    VALUES (${userId}, 'question', ${qid}, 'incorrect', ${JSON.stringify({ choiceId })}::jsonb)`;
         } catch {}
       }
     } else {
-      // update to correct if previously not correct; do not persist wrong
       const wasCorrect = !!existing.rows[0].correct;
+      await sql`UPDATE user_question_progress SET choice_id=${choiceId}, correct=${isCorrect || wasCorrect}, answered_at=now() WHERE user_id=${userId} AND question_id=${qid}`;
       if (isCorrect && !wasCorrect) {
-        await sql`UPDATE user_question_progress SET choice_id=${choiceId}, correct=true, answered_at=now() WHERE user_id=${userId} AND question_id=${qid}`;
         const ur = await sql`SELECT xp, level, total_correct_answers FROM users WHERE id=${userId} LIMIT 1`;
         const currXp = Number(ur.rows[0]?.xp || 0);
         const currLevel = Number(ur.rows[0]?.level || 1);
@@ -111,10 +114,29 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                     VALUES (${userId}, 'question', ${qid}, 'correct', ${JSON.stringify({ choiceId })}::jsonb)`;
         } catch {}
+      } else if (!isCorrect) {
+        try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                        VALUES (${userId}, 'question', ${qid}, 'incorrect', ${JSON.stringify({ choiceId })}::jsonb)`; } catch {}
       }
     }
 
-    return NextResponse.json({ ok: true, correct: isCorrect, explanation: row.explanation, awardedXp, totalCorrectAnswersInc });
+    // Include updated XP progress in response when authenticated
+    let newLevel: number | null = null;
+    let inLevel: number | null = null;
+    let span: number | null = null;
+    let pct: number | null = null;
+    try {
+      const ur2 = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
+      const newXp = Number(ur2.rows[0]?.xp || 0);
+      const lvl = Math.max(1, Math.min(levelFromXp(newXp), MAX_LEVEL));
+      const start = GOAL_XP[lvl - 1] ?? 0;
+      const nextGoal = GOAL_XP[Math.min(GOAL_XP.length - 1, lvl)] ?? start + 1;
+      const sp = Math.max(1, nextGoal - start);
+      const inL = Math.max(0, Math.min(sp, newXp - start));
+      newLevel = lvl; inLevel = inL; span = sp; pct = Math.round((inL / sp) * 100);
+    } catch {}
+
+    return NextResponse.json({ ok: true, correct: isCorrect, explanation: row.explanation, awardedXp, totalCorrectAnswersInc, newLevel, inLevel, span, pct });
   } catch (err: any) {
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });
   }

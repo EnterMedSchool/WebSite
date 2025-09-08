@@ -68,6 +68,7 @@ export default function LessonPage() {
       const init: Record<number, "correct" | "wrong"> = {};
       (j.questions || []).forEach((qq: any) => {
         if (qq.answeredCorrect) init[Number(qq.id)] = "correct";
+        else if (qq.selectedChoiceId != null) init[Number(qq.id)] = "wrong";
       });
       setAnsState(init);
     })();
@@ -332,29 +333,35 @@ export default function LessonPage() {
                     key={q.id}
                     q={q}
                     isAuthed={isAuthed}
-                    onChoice={async (choiceId: number, isCorrect: boolean) => {
+                    onChoice={async (choiceId: number, isCorrect: boolean, from?: { x: number; y: number }) => {
                       setPicked(choiceId);
                       try {
+                        // Persist answer (correct or wrong). XP awarded only when first correct.
+                        const r = await fetch(`/api/questions/${q.id}/answer`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ choiceId }),
+                          credentials: 'include',
+                        });
+                        const j = await r.json();
                         if (isCorrect) {
-                          const r = await fetch(`/api/questions/${q.id}/answer`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ choiceId }),
-                            credentials: 'include',
-                          });
-                          const j = await r.json();
                           setAnsState((s)=>({ ...s, [Number(q.id)]: 'correct' }));
-                          if (j?.awardedXp) {
-                            window.dispatchEvent(new CustomEvent('xp:awarded', { detail: { amount: j.awardedXp } }));
-                          }
-                          if (isAuthed) {
-                            const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
-                            const k = await r2.json();
-                            if (k && ('lessonPct' in k)) setLessonProg(k);
-                          }
                         } else {
-                          // mark temporary wrong; allow retry
                           setAnsState((s)=>({ ...s, [Number(q.id)]: 'wrong' }));
+                        }
+                        if (j?.awardedXp && Number(j.awardedXp) > 0) {
+                          const detail: any = { amount: Number(j.awardedXp) };
+                          if (from) detail.from = from;
+                          if (j?.newLevel != null) detail.newLevel = Number(j.newLevel);
+                          if (j?.pct != null) detail.newPct = Number(j.pct);
+                          if (j?.inLevel != null) detail.newInLevel = Number(j.inLevel);
+                          if (j?.span != null) detail.newSpan = Number(j.span);
+                          window.dispatchEvent(new CustomEvent('xp:awarded', { detail }));
+                        }
+                        if (isAuthed) {
+                          const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
+                          const k = await r2.json();
+                          if (k && ('lessonPct' in k)) setLessonProg(k);
                         }
                       } catch {}
                     }}
@@ -426,17 +433,23 @@ export default function LessonPage() {
   );
 }
 
-function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceId: number, isCorrect: boolean) => void; isAuthed?: boolean }) {
+function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceId: number, isCorrect: boolean, from?: { x: number; y: number }) => void; isAuthed?: boolean }) {
   const [picked, setPicked] = useState<number | null>(q.selectedChoiceId ?? null);
   const [solved, setSolved] = useState<boolean>(!!q.answeredCorrect);
   const gated = (q.access === 'auth' && !isAuthed) || (q.access === 'premium' && !isAuthed);
   const locked = solved; // lock after correct answer or when previously solved
-  const onPick = (cid: number) => {
+  const onPick = (e: any, cid: number) => {
     if (locked || gated) return;
     setPicked(cid);
     const isCorrect = !!q.choices.find((x: any) => Number(x.id) === Number(cid))?.correct;
     if (isCorrect) setSolved(true);
-    onChoice(cid, isCorrect);
+    try {
+      const rect = (e?.currentTarget as HTMLElement)?.getBoundingClientRect?.();
+      const from = rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : undefined;
+      onChoice(cid, isCorrect, from);
+    } catch {
+      onChoice(cid, isCorrect);
+    }
   };
   return (
     <div className="relative">
@@ -456,7 +469,7 @@ function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceI
           return (
             <button
               key={c.id}
-              onClick={() => onPick(c.id)}
+              onClick={(e) => onPick(e, c.id)}
               disabled={locked || gated}
               className={`rounded-lg border px-3 py-2 text-left transition ${cls}`}
             >
