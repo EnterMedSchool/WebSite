@@ -71,7 +71,7 @@ export default function MissionShowcase({
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
   const [pool, setPool] = useState<any[]>([]);
-  const [falling, setFalling] = useState<{ id: string; author: string; quote: string; uni: string; logo?: string; x: number }[]>([]);
+  const [falling, setFalling] = useState<{ id: string; author: string; quote: string; uni: string; logo?: string; x: number; dur: number }[]>([]);
 
   const cueIndex = useMemo(() => timeToCueIndex(time), [time]);
   const cue = CUES[cueIndex];
@@ -100,40 +100,59 @@ export default function MissionShowcase({
     return () => io.disconnect();
   }, []);
 
-  // Fetch random testimonials pool for falling cards
+  // Fallback testimonials (for now, so we always have something pretty)
+  const FALLBACK_TESTIMONIALS = [
+    { id: 'f1', author: 'Sara G.', quote: 'Supportive community and honest advice — found my fit.', university_title: 'Pavia', logo_url: '' },
+    { id: 'f2', author: 'Luca M.', quote: 'The map made options crystal clear. Game changer.', university_title: 'Milan', logo_url: '' },
+    { id: 'f3', author: 'Anya R.', quote: 'Testimonials were raw and real — no fluff.', university_title: 'Rome', logo_url: '' },
+    { id: 'f4', author: 'Marco P.', quote: 'I passed the exam with EMS study tools.', university_title: 'Bologna', logo_url: '' },
+    { id: 'f5', author: 'Noura A.', quote: 'Enrolment checklist kept me on track week by week.', university_title: 'Naples', logo_url: '' },
+    { id: 'f6', author: 'Elif T.', quote: 'Seeing seat trends removed all the guesswork.', university_title: 'Florence', logo_url: '' },
+    { id: 'f7', author: 'Hugo C.', quote: 'Found the right school — and friends.', university_title: 'Siena', logo_url: '' },
+    { id: 'f8', author: 'Mina S.', quote: 'Practice questions were spot on.', university_title: 'Parma', logo_url: '' },
+  ];
+
+  // Fetch random testimonials pool for falling cards, fallback to local list
   useEffect(() => {
     (async () => {
       try {
         const r = await fetch('/api/testimonials/random', { cache: 'no-store' });
         const j = await r.json();
-        setPool(j?.testimonials || []);
-      } catch {}
+        const arr = (j?.testimonials || []) as any[];
+        setPool(arr.length ? arr : FALLBACK_TESTIMONIALS);
+      } catch {
+        setPool(FALLBACK_TESTIMONIALS);
+      }
     })();
   }, []);
 
-  // Spawn falling testimonial cards
+  // Spawn falling testimonial cards only while speaking about testimonials (00:17–00:30)
+  const showTestimonialsWindow = time >= 17 && time < 30;
   useEffect(() => {
-    if (!pool.length) return;
+    if (!pool.length || !showTestimonialsWindow) return;
+    let stop = false;
     let timer: any;
     const spawn = () => {
+      if (stop) return;
       const pick = pool[Math.floor(Math.random() * pool.length)];
-      const x = Math.random() * 70 + 10; // 10%..80%
-      setFalling((arr) => [
-        ...arr,
-        {
+      const x = Math.random() * 80 + 10; // 10%..90%
+      const dur = 10 + Math.random() * 3; // slower fall
+      setFalling((arr) => (
+        [...arr, {
           id: `${pick.id}-${Date.now()}`,
           author: pick.author || 'Student',
           quote: pick.quote || '',
           uni: pick.university_title || 'University',
           logo: pick.logo_url || undefined,
           x,
-        },
-      ].slice(-10));
-      timer = setTimeout(spawn, 1800 + Math.random() * 1200);
+          dur,
+        }].slice(-12)
+      ));
+      timer = setTimeout(spawn, 2200 + Math.random() * 1500);
     };
     spawn();
-    return () => clearTimeout(timer);
-  }, [pool]);
+    return () => { stop = true; clearTimeout(timer); };
+  }, [pool, showTestimonialsWindow]);
 
   const jump = (idx: number) => {
     const v = videoRef.current; if (!v) return;
@@ -323,7 +342,7 @@ export default function MissionShowcase({
                   initial={{ y: -60, x: `${f.x}%`, opacity: 0, rotate: -5 }}
                   animate={{ y: 520, opacity: 1, rotate: 8 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 6.5, ease: 'linear' }}
+                  transition={{ duration: f.dur, ease: 'linear' }}
                   className="pointer-events-none w-[220px] -translate-x-1/2 rounded-xl border border-white/20 bg-white/95 p-3 text-indigo-900 shadow-xl backdrop-blur"
                   onAnimationComplete={() => setFalling((arr) => arr.filter((x) => x.id !== f.id))}
                   style={{ boxShadow: '0 12px 30px rgba(30,27,75,0.25)' }}
