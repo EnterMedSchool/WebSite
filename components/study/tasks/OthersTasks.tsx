@@ -20,6 +20,17 @@ export default function OthersTasks() {
     return Object.values(byUser);
   }, [taskLists, myUserId, participants]);
 
+  const buildTree = (items:any[]) => {
+    const byParent: Record<string, any[]> = {};
+    items.forEach((it:any)=>{
+      const k = String(it.parentItemId ?? 'root');
+      (byParent[k] = byParent[k] || []).push(it);
+    });
+    const sortInPlace = (arr:any[]) => arr.sort((a,b)=> (a.position??0)-(b.position??0));
+    Object.values(byParent).forEach(sortInPlace);
+    const build = (parentId: number | null) => (byParent[String(parentId ?? 'root')] || []).map((it:any)=> ({ ...it, children: build(it.id) }));
+    return build(null);
+  };
   if (!groups.length) return null;
 
   return (
@@ -29,16 +40,23 @@ export default function OthersTasks() {
         {groups.map((g) => (
           <div key={g.userId} className="border rounded p-3">
             <div className="font-medium mb-2">User #{g.userId}</div>
-            {g.lists.map((l) => (
-              <div key={l.id} className="mb-2">
-                <div className="text-sm font-semibold">{l.title}</div>
-                <ul className="list-disc pl-5 text-sm">
-                  {l.items?.map((it: any, i: number) => (
-                    <li key={`${it.name}-${i}`} className={it.isCompleted ? "line-through" : ""}>{it.name}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {g.lists.map((l) => {
+              const tree = buildTree(l.items || []);
+              const render = (n:any, depth=0) => (
+                <li key={n.id} className={n.isCompleted ? 'line-through' : ''}>
+                  <div style={{ paddingLeft: depth*10 }}>{n.name}</div>
+                  {n.children?.length>0 && <ul className="pl-3">{n.children.map((c:any)=>render(c, depth+1))}</ul>}
+                </li>
+              );
+              return (
+                <div key={l.id} className="mb-2">
+                  <div className="text-sm font-semibold">{l.title}</div>
+                  <ul className="pl-4 text-sm">
+                    {tree.map((n:any)=>render(n,0))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>

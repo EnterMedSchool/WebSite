@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, sql } from "@/lib/db";
 import { studyTaskLists, studyTaskItems } from "@/drizzle/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, asc } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
@@ -37,6 +37,7 @@ export async function GET(req: Request) {
           .select()
           .from(studyTaskItems)
           .where(inArray(studyTaskItems.taskListId as any, listIds as any))
+          .orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id))
       : [];
 
     const grouped = lists.map((l) => ({
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
       user: { id: l.user_id, name: l.name, image: l.image, username: l.username },
       items: items
         .filter((it: any) => it.taskListId === l.id)
-        .map((it: any) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.isCompleted })),
+        .map((it: any) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position })),
     }));
     return NextResponse.json({ data: grouped });
   } catch (e: any) {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const title = (body?.title || "").toString().trim() || "Untitled";
   const sessionId = Number(body?.sessionId);
-  const items: Array<{ name: string; isCompleted?: boolean }> = Array.isArray(body?.items) ? body.items : [];
+  const items: Array<{ name: string; isCompleted?: boolean; parentItemId?: number | null; position?: number }> = Array.isArray(body?.items) ? body.items : [];
   if (!Number.isFinite(sessionId)) return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
 
   try {
@@ -72,12 +73,19 @@ export async function POST(req: Request) {
       .returning({ id: studyTaskLists.id, title: studyTaskLists.title, sessionId: studyTaskLists.sessionId, userId: studyTaskLists.userId, createdAt: studyTaskLists.createdAt });
 
     if (items.length) {
+      let pos = 0;
       await db.insert(studyTaskItems).values(
-        items.map((it) => ({ taskListId: list.id, name: String(it.name || ""), isCompleted: !!it.isCompleted }))
+        items.map((it) => ({
+          taskListId: list.id,
+          name: String(it.name || ""),
+          isCompleted: !!it.isCompleted,
+          parentItemId: (it.parentItemId ?? null) as any,
+          position: typeof it.position === 'number' ? it.position! : pos++,
+        }))
       );
     }
 
-    const payload = { ...list, items: items.map((it, i) => ({ id: i, taskListId: list.id, name: it.name, isCompleted: !!it.isCompleted })) };
+    const payload = { ...list, items: items.map((it, i) => ({ id: i, taskListId: list.id, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: typeof it.position === 'number' ? it.position! : i })) };
     await publish(sessionId, StudyEvents.TaskUpsert, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
   } catch (e: any) {

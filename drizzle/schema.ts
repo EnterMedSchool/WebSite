@@ -503,10 +503,18 @@ export const studyTaskItems = pgTable(
     taskListId: integer("task_list_id").notNull(),
     name: varchar("name", { length: 400 }).notNull(),
     isCompleted: boolean("is_completed").default(false).notNull(),
+    // Hierarchy + ordering
+    parentItemId: integer("parent_item_id"),
+    position: integer("position").default(0).notNull(),
+    // Completion/Xp tracking
+    completedAt: timestamp("completed_at"),
+    xpAwarded: boolean("xp_awarded").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
     stiListIdx: index("study_task_items_list_idx").on(t.taskListId),
+    stiParentIdx: index("study_task_items_parent_idx").on(t.parentItemId),
+    stiOrderIdx: index("study_task_items_order_idx").on(t.taskListId, t.position),
   })
 );
 

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { studyTaskItems, studyTaskLists } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
+import { levelFromXp, GOAL_XP } from "@/lib/xp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export async function PATCH(
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const body = await req.json().catch(() => ({}));
   const title = typeof body?.title === "string" ? String(body.title).trim() : undefined;
-  const items: Array<{ name: string; isCompleted?: boolean }> = Array.isArray(body?.items) ? body.items : [];
+  const items: Array<{ id?: number; name: string; isCompleted?: boolean; parentItemId?: number | null; position?: number }> = Array.isArray(body?.items) ? body.items : [];
 
   try {
     const rows = await db.select().from(studyTaskLists).where(eq(studyTaskLists.id as any, id)).limit(1);
@@ -29,24 +30,76 @@ export async function PATCH(
     if (!list) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (list.userId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    if (title) {
-      await db.update(studyTaskLists).set({ title }).where(eq(studyTaskLists.id as any, id));
-    }
+    if (title) await db.update(studyTaskLists).set({ title }).where(eq(studyTaskLists.id as any, id));
 
-    if (Array.isArray(items)) {
-      // Simple full replace strategy
-      await db.delete(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id));
-      if (items.length) {
-        await db.insert(studyTaskItems).values(
-          items.map((it) => ({ taskListId: id, name: String(it.name || ""), isCompleted: !!it.isCompleted }))
-        );
+    // Fetch existing items to diff for XP and updates
+    const existing = await db
+      .select()
+      .from(studyTaskItems)
+      .where(eq(studyTaskItems.taskListId as any, id))
+      .orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
+
+    const existingMap = new Map<number, any>();
+    existing.forEach((it: any) => existingMap.set(it.id, it));
+
+    const incomingIds = new Set<number>();
+    let positionCounter = 0;
+    let xpDelta = 0;
+
+    for (const it of items) {
+      const pos = typeof it.position === 'number' ? it.position! : positionCounter++;
+      if (it.id && existingMap.has(it.id)) {
+        const prev = existingMap.get(it.id);
+        const becameCompleted = !prev.isCompleted && !!it.isCompleted;
+        const updates: any = {
+          name: String(it.name || prev.name || ''),
+          isCompleted: !!it.isCompleted,
+          parentItemId: (it.parentItemId ?? null) as any,
+          position: pos,
+        };
+        if (becameCompleted && !prev.xpAwarded) {
+          updates.xpAwarded = true;
+          updates.completedAt = new Date() as any;
+          xpDelta += 2;
+        }
+        await db.update(studyTaskItems).set(updates).where(eq(studyTaskItems.id as any, it.id));
+        incomingIds.add(it.id);
+      } else {
+        const ins = await db.insert(studyTaskItems).values({
+          taskListId: id,
+          name: String(it.name || ''),
+          isCompleted: !!it.isCompleted,
+          parentItemId: (it.parentItemId ?? null) as any,
+          position: pos,
+          completedAt: it.isCompleted ? (new Date() as any) : undefined,
+          xpAwarded: !!it.isCompleted,
+        }).returning({ id: studyTaskItems.id });
+        if (it.isCompleted) xpDelta += 2;
+        incomingIds.add(ins[0].id as any);
       }
     }
 
-    const newItems = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id));
+    // Delete items removed in incoming (including their subtrees)
+    const toDelete = existing.filter((e: any) => !incomingIds.has(e.id));
+    if (toDelete.length) {
+      await db.delete(studyTaskItems).where(inArray(studyTaskItems.id as any, toDelete.map((x: any) => x.id) as any));
+    }
+
+    // Award XP if needed
+    if (xpDelta > 0) {
+      const ur = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
+      const currXp = Number(ur.rows[0]?.xp || 0);
+      const nextXp = currXp + xpDelta;
+      const newLevel = levelFromXp(nextXp);
+      await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
+      await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                VALUES (${userId}, 'task', ${id}, 'xp_awarded', ${JSON.stringify({ amount: xpDelta, totalXp: nextXp })}::jsonb)`;
+    }
+
+    const newItems = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
     const payload = { ...list, title: title ?? list.title, items: newItems };
     await publish(list.sessionId, StudyEvents.TaskUpsert, payload);
-    return NextResponse.json({ data: payload });
+    return NextResponse.json({ data: payload, xpAwarded: xpDelta });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to update" }, { status: 500 });
   }
