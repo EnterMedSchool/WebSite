@@ -22,12 +22,10 @@ export default function HomePage() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-[var(--page-bg,#f6f7fb)]" />
       </section>
 
-      {/* Seam: a soft connective gradient + highlight (simpler and cleaner than a wave) */}
-      <div aria-hidden className="relative -mt-10 h-24 w-full">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(99,102,241,0.06)] to-[var(--page-bg,#f6f7fb)]" />
-        <div className="pointer-events-none absolute left-1/2 top-1 h-9 w-[72%] -translate-x-1/2 rounded-full bg-white/60 blur-2xl opacity-60" />
-        <div className="pointer-events-none absolute left-1/2 top-4 h-1.5 w-[46%] -translate-x-1/2 rounded-full bg-white/80 blur-md opacity-60" />
-      </div>
+      {/* Seam: full-bleed gradient to avoid narrow highlights and side gaps */}
+      <section aria-hidden className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen -mt-10 overflow-hidden">
+        <div className="h-20 w-full bg-gradient-to-b from-transparent via-[rgba(99,102,241,0.05)] to-[var(--page-bg,#f6f7fb)]" />
+      </section>
 
       {/* Under-map framework (lifted slightly with a restrained glow) */}
       <section className="relative -mt-3 z-10 mx-auto w-full max-w-6xl px-4">
