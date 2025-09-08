@@ -143,7 +143,7 @@ function ItalyWorldMap({
       <ComposableMap projectionConfig={{ scale: 550 }} style={{ width: "100%", height: "100%" }}>
         <ZoomableGroup center={[12.5, 42.2]} zoom={3.4} translateExtent={[[0, 0], [1000, 600]]}>
           <Geographies geography={GEO_URL}>
-            {({ geographies }) =>
+            {({ geographies }: { geographies: any[] }) =>
               geographies.map((geo) => (
                 <Geography
                   key={geo.rsmKey}
