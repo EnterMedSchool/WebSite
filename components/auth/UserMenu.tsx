@@ -56,6 +56,8 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signin' } }))} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign in</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign up</button>
         </div>
+        {/* Ensure the modal is mounted even when logged out */}
+        <AuthModal />
       </div>
     );
   }
