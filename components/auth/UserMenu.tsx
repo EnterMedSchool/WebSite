@@ -130,7 +130,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           <div className="absolute -top-2 right-24 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
             <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
-            <div className="mb-2 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} Â· {dispIn}/{dispSpan} XP</div>
+            <div className="mb-2 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} Ã‚Â· {dispIn}/{dispSpan} XP</div>
             <div className="h-2 w-full rounded-full bg-gray-200">
               <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${dispPct}%` }} />
             </div>
@@ -179,7 +179,7 @@ function AuthModal() {
       <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-6 text-gray-900 shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-white/20 backdrop-blur-xl" onClick={(e)=>e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-extrabold text-indigo-700">{mode==='signup' ? 'Create your account' : 'Welcome back'}</div>
-          <button onClick={()=>setOpen(false)} className="rounded-full bg-gray-100 p-1 text-gray-500 hover:bg-gray-200" aria-label="Close">Ã—</button>
+          <button onClick={()=>setOpen(false)} className=" rounded-full bg-white/70 p-1 text-gray-600 hover:bg-white\ aria-label=\Close\>Ã—</button>
         </div>
         <div className="mb-3 flex gap-2">
           <button onClick={()=>setMode('signup')} className={`rounded-full px-3 py-1 text-sm font-semibold ${mode==='signup'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700'}`}>Sign up</button>
@@ -202,4 +202,6 @@ function AuthModal() {
 }
 
 function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
+
+
 
