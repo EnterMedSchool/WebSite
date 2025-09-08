@@ -429,6 +429,22 @@ function MiniMapOverlay() {
       <div className="relative w-[480px] max-w-[86vw] rounded-3xl border border-white/25 bg-gradient-to-br from-indigo-500/40 to-violet-500/30 p-3 shadow-2xl backdrop-blur-md">
         {/* stylized map canvas */}
         <div className="relative h-[240px] w-full overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent_60%),radial-gradient(circle_at_70%_50%,rgba(255,255,255,0.08),transparent_55%)] ring-1 ring-white/20">
+          {/* faint coastline sketch (mini Europe focus on Italy) */}
+          <svg viewBox="0 0 100 60" className="absolute inset-0 h-full w-full opacity-50">
+            {/* land masses */}
+            <g fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.28)" strokeWidth="0.4">
+              {/* Italy (very simplified boot) */}
+              <path d="M58 18 L61 20 L63 22 L62 24 L64 26 L66 28 L65 30 L63 31 L62 33 L63 35 L66 37 L68 39 L67 41 L64 42 L62 44 L60 43 L59 40 L58 38 L57 36 L58 34 L57 32 L58 30 L59 28 L59 25 Z"/>
+              {/* Sicily */}
+              <path d="M68 46 L72 47 L73 49 L70 50 L67 49 Z"/>
+              {/* Sardinia */}
+              <path d="M54 40 L56 41 L56 44 L54 45 L52 44 L52 41 Z"/>
+              {/* Balkans blob */}
+              <path d="M70 25 L74 27 L76 31 L75 34 L72 36 L69 34 L69 30 Z"/>
+              {/* France/Spain coastline blob */}
+              <path d="M40 20 L45 18 L50 19 L52 22 L48 25 L44 26 L41 24 Z"/>
+            </g>
+          </svg>
           {/* faint grid */}
           <svg viewBox="0 0 100 50" className="absolute inset-0 h-full w-full opacity-30">
             <defs>
