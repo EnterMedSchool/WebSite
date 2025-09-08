@@ -2,15 +2,14 @@ import { NextResponse } from "next/server";
 import { db, sql } from "@/lib/db";
 import { studyUserMeta } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { authGetServerSession } from "@/lib/auth";
+import { requireUserId } from "@/lib/study/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
-  const session = await authGetServerSession();
-  const userId = (session as any)?.userId ? Number((session as any).userId) : null;
+export async function GET(req: Request) {
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const rows = await db.select().from(studyUserMeta).where(eq(studyUserMeta.userId as any, userId)).limit(1);
   const meta = rows[0] || null;
@@ -18,8 +17,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await authGetServerSession();
-  const userId = (session as any)?.userId ? Number((session as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const slug = (body?.lastSessionSlug || "").toString();
@@ -43,4 +41,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Failed to save" }, { status: 500 });
   }
 }
-

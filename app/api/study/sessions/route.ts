@@ -3,7 +3,7 @@ import { db, sql } from "@/lib/db";
 import { studySessions } from "@/drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 import crypto from "node:crypto";
-import { authGetServerSession } from "@/lib/auth";
+import { requireUserId } from "@/lib/study/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,8 +17,7 @@ export async function GET(req: Request) {
   const sort = url.searchParams.get("sort") || "latest"; // latest | popular
   const my = url.searchParams.get("mysessions") === "true";
 
-  const session = await authGetServerSession();
-  const userId = (session as any)?.userId ? Number((session as any).userId) : null;
+  const userId = await requireUserId(req);
 
   try {
     const order = sort === "popular" ? desc(studySessions.totalJoins) : desc(studySessions.createdAt);
@@ -47,8 +46,7 @@ export async function GET(req: Request) {
 
 // Create a session
 export async function POST(req: Request) {
-  const session = await authGetServerSession();
-  const userId = (session as any)?.userId ? Number((session as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));

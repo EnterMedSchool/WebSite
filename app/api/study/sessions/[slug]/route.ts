@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db, sql } from "@/lib/db";
 import { studySessions } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { authGetServerSession } from "@/lib/auth";
+import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
 
@@ -33,8 +33,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { slug: string } }
 ) {
-  const auth = await authGetServerSession();
-  const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
@@ -69,11 +68,10 @@ export async function PATCH(
 
 // Delete a session (owner only)
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { slug: string } }
 ) {
-  const auth = await authGetServerSession();
-  const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const rows = await db.select().from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1);

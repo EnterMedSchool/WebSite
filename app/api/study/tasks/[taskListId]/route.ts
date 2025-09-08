@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { studyTaskItems, studyTaskLists } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { authGetServerSession } from "@/lib/auth";
+import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
 
@@ -15,8 +15,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { taskListId: string } }
 ) {
-  const auth = await authGetServerSession();
-  const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number(params.taskListId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -54,11 +53,10 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { taskListId: string } }
 ) {
-  const auth = await authGetServerSession();
-  const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number(params.taskListId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -75,4 +73,3 @@ export async function DELETE(
     return NextResponse.json({ error: e?.message || "Failed to delete" }, { status: 500 });
   }
 }
-

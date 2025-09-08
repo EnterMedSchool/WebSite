@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db, sql } from "@/lib/db";
 import { studyMessages } from "@/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { authGetServerSession } from "@/lib/auth";
+import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
 
@@ -47,8 +47,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await authGetServerSession();
-  const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
+  const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const content = (body?.content || "").toString().trim();
