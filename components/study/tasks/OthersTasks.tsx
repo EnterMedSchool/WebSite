@@ -35,7 +35,7 @@ export default function OthersTasks() {
 
   return (
     <div className="border rounded p-4">
-      <h2 className="font-semibold mb-3">Others' Tasks</h2>
+      <h2 className="font-semibold mb-3">Others&apos; Tasks</h2>
       <div className="space-y-4">
         {groups.map((g) => (
           <div key={g.userId} className="border rounded p-3">
