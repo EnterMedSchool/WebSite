@@ -22,9 +22,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   const [dispPct, setDispPct] = useState<number>(clampPct(xpPct));
   const [dispIn, setDispIn] = useState<number>(xpInLevel ?? 0);
   const [dispSpan, setDispSpan] = useState<number>(xpSpan ?? 0);
-  const [burst, setBurst] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const xpRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDispLevel(level ?? 1);
@@ -36,7 +34,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
+      if (!ref.current.contains(e.target as Node)) { setOpen(false); setXpOpen(false); }
     }
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") { setOpen(false); setXpOpen(false); } }
     document.addEventListener("mousedown", onDocClick);
@@ -44,25 +42,9 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
     return () => { document.removeEventListener("mousedown", onDocClick); document.removeEventListener("keydown", onKey); };
   }, []);
 
-  // XP award animation listener (bubbles into XP pill)
-  useEffect(() => {
-    function onAward(e: any) {
-      const amount = Number(e?.detail?.amount || 0);
-      setBurst((b) => b + 1);
-      setTimeout(() => setBurst((b) => b - 1), 1000);
-      if (typeof e?.detail?.newPct === 'number') setDispPct(clampPct(e.detail.newPct));
-      if (typeof e?.detail?.newInLevel === 'number') setDispIn(e.detail.newInLevel);
-      if (typeof e?.detail?.newSpan === 'number') setDispSpan(e.detail.newSpan);
-      if (typeof e?.detail?.newLevel === 'number') setDispLevel(e.detail.newLevel);
-    }
-    window.addEventListener('xp:awarded' as any, onAward as any);
-    return () => window.removeEventListener('xp:awarded' as any, onAward as any);
-  }, []);
-
   if (!isAuthed) {
     return (
       <div className="flex items-center gap-3">
-        {/* Ghosted XP pill */}
         <div className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/70 shadow-sm backdrop-blur sm:flex">
           <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/20 px-2 text-[11px] font-semibold">Lv --</span>
           <div className="relative h-2 w-32 overflow-hidden rounded-full bg-white/15">
@@ -70,82 +52,86 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </div>
           <span className="text-[10px] text-white/70">0/0 XP</span>
         </div>
-        <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign in / Sign up</button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signin' } }))} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign in</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign up</button>
+        </div>
       </div>
     );
   }
 
   return (
     <div ref={ref} className="relative flex items-center gap-3">
-      {/* Compact XP strip (click to open details) */}
-      <div ref={xpRef} className="relative hidden sm:flex">
-        <button
-          type="button"
-          onClick={() => setXpOpen((v) => !v)}
-          className="group inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/90 shadow-sm backdrop-blur"
-        >
-          <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm">Lv {dispLevel}</span>
-          <div className="relative h-2 w-32 overflow-hidden rounded-full bg-white/15">
-            <div className="absolute inset-y-0 left-0 rounded-full bg-white/70 transition-all" style={{ width: `${dispPct}%` }} />
-          </div>
-          <span className="text-[10px] text-white/80">{dispIn}/{dispSpan} XP</span>
-        </button>
-      </div>
-
-      {/* Avatar trigger */}
+      {/* XP pill */}
       <button
-        className="flex items-center gap-2 rounded-full bg-white/10 p-1 pr-2 text-white/90 hover:bg-white/20"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
+        type="button"
+        onClick={() => setXpOpen((v) => !v)}
+        className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/90 shadow-sm backdrop-blur sm:inline-flex"
       >
-        <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white">
-          {imageUrl ? (
-            <Image src={imageUrl} alt="User" width={32} height={32} className="h-8 w-8 object-cover" />
-          ) : (
-            <span className="text-indigo-600">{(name ?? "U").slice(0, 1).toUpperCase()}</span>
-          )}
-        </span>
-        <svg className="h-4 w-4 text-white/70" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+        <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm">Lv {dispLevel}</span>
+        <div className="relative h-2 w-32 overflow-hidden rounded-full bg-white/15">
+          <div className="absolute inset-y-0 left-0 rounded-full bg-white/70 transition-all" style={{ width: `${dispPct}%` }} />
+        </div>
+        <span className="text-[10px] text-white/80">{dispIn}/{dispSpan} XP</span>
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-72 rounded-2xl border border-indigo-100 bg-white/95 shadow-xl backdrop-blur">
-          <div className="flex items-center gap-3 p-4">
-            <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
-              {imageUrl ? (
-                <Image src={imageUrl} alt="User" width={40} height={40} className="h-10 w-10 object-cover" />
-              ) : (
-                <span className="text-base font-semibold text-indigo-700">{(name ?? "U").slice(0, 1).toUpperCase()}</span>
-              )}
-            </span>
-            <div>
-              <div className="font-semibold text-gray-900">{name ?? "Your Name"}</div>
-              <div className="text-sm text-indigo-600 underline">View profile</div>
+      {/* Avatar */}
+      <div className="relative">
+        <button
+          className="flex items-center gap-2 rounded-full bg-white/10 p-1 pr-2 text-white/90 hover:bg-white/20"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+        >
+          <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white">
+            {imageUrl ? (
+              <Image src={imageUrl} alt="User" width={32} height={32} className="h-8 w-8 object-cover" />
+            ) : (
+              <span className="text-indigo-600">{(name ?? "U").slice(0, 1).toUpperCase()}</span>
+            )}
+          </span>
+          <svg className="h-4 w-4 text-white/70" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-72 rounded-2xl border border-indigo-100 bg-white/95 shadow-xl backdrop-blur">
+            <div className="flex items-center gap-3 p-4">
+              <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
+                {imageUrl ? (
+                  <Image src={imageUrl} alt="User" width={40} height={40} className="h-10 w-10 object-cover" />
+                ) : (
+                  <span className="text-base font-semibold text-indigo-700">{(name ?? "U").slice(0, 1).toUpperCase()}</span>
+                )}
+              </span>
+              <div>
+                <div className="font-semibold text-gray-900">{name ?? "Your Name"}</div>
+                <div className="text-sm text-indigo-600 underline">View profile</div>
+              </div>
+            </div>
+            <div className="border-t" />
+            <ul className="p-1">
+              {[{ label: "Dashboard" }, { label: "Calendar" }, { label: "Settings" }].map((item) => (
+                <li key={item.label}><button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">{item.label}</button></li>
+              ))}
+            </ul>
+            <div className="border-t" />
+            <div className="p-1">
+              <button onClick={() => signOut()} className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Sign out</button>
             </div>
           </div>
-          <div className="border-t" />
-          <ul className="p-1">
-            {[{ label: "Dashboard" }, { label: "Calendar" }, { label: "Settings" }].map((item) => (
-              <li key={item.label}><button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">{item.label}</button></li>
-            ))}
-          </ul>
-          <div className="border-t" />
-          <div className="p-1">
-            <button onClick={() => signOut()} className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Sign out</button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* XP popup */}
       {xpOpen && (
         <div className="absolute right-16 top-[calc(100%+10px)] z-50 w-[360px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
-          {/* Arrow */}
           <div className="absolute -top-2 right-24 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
             <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
             <div className="mb-2 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} · {dispIn}/{dispSpan} XP</div>
-            <div className="h-2 w-full rounded-full bg-gray-200"><div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${dispPct}%` }} /></div>
+            <div className="h-2 w-full rounded-full bg-gray-200">
+              <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${dispPct}%` }} />
+            </div>
           </div>
         </div>
       )}
@@ -165,7 +151,7 @@ function AuthModal() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(()=>{
-    const onOpen = () => { setOpen(true); setMode('signup'); };
+    const onOpen = (e: any) => { setOpen(true); const m = e?.detail?.mode; setMode(m === 'signin' ? 'signin' : 'signup'); };
     window.addEventListener('auth:open' as any, onOpen as any);
     return () => window.removeEventListener('auth:open' as any, onOpen as any);
   },[]);
