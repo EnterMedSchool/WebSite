@@ -20,6 +20,15 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const idx = ordered.findIndex((l:any)=> Number(l.id) === Number(lesson.id));
   const prev = idx>0 ? { slug: ordered[idx-1].slug, title: ordered[idx-1].title } : null;
   const next = idx>=0 && idx < ordered.length-1 ? { slug: ordered[idx+1].slug, title: ordered[idx+1].title } : null;
+  // Preload question counts per lesson for sidebar drilldown
+  let qCountByLesson = new Map<number, number>();
+  try {
+    if (ordered.length > 0) {
+      const ids = ordered.map((o:any)=> Number(o.id));
+      const qr = await sql`SELECT lesson_id, COUNT(*)::int AS cnt FROM questions WHERE lesson_id = ANY(${ids}) GROUP BY lesson_id`;
+      for (const r of qr.rows) qCountByLesson.set(Number(r.lesson_id), Number(r.cnt));
+    }
+  } catch {}
   // Per-user course progress (if authenticated)
   let courseProgress: any = null;
   let timelineLessons: any[] | null = null;
@@ -42,10 +51,10 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       // Build timeline with completion flags
       const cr = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND completed=true`;
       const done = new Set<number>(cr.rows.map((r:any)=> Number(r.lesson_id)));
-      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: done.has(Number(l.id)) }));
+      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: done.has(Number(l.id)), qCount: qCountByLesson.get(Number(l.id)) ?? 0 }));
     } else {
-      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false }));
+      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 }));
     }
   } catch { /* ignore, courseProgress stays null */ }
-  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false })) } });
+  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 })) } });
 }

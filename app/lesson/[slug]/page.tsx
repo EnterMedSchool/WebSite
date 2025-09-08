@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -17,7 +17,7 @@ type LessonProg = { completed: boolean; qTotal: number; qCorrect: number; lesson
 
 type NavInfo = { prev: { slug: string; title: string } | null; next: { slug: string; title: string } | null } | null;
 
-type Timeline = { lessons: { id: number; slug: string; title: string; completed?: boolean }[] } | null;
+type Timeline = { lessons: { id: number; slug: string; title: string; completed?: boolean; qCount?: number }[] } | null;
 
 export default function LessonPage() {
   const { status } = useSession();
@@ -43,6 +43,19 @@ export default function LessonPage() {
 
   const q = qs[idx];
 
+  // URL router + search params
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Initialize tab and question index from URL on slug change
+  useEffect(() => {
+    const t = (searchParams.get('tab') || '').toLowerCase();
+    if (t === 'learn' || t === 'practice' || t === 'notes') setTab(t as any);
+    const qParam = Number(searchParams.get('q') || NaN);
+    if (Number.isFinite(qParam) && qParam > 0) setIdx(Math.max(0, qParam - 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   // Load lesson and course/timeline data
   useEffect(() => {
     (async () => {
@@ -63,7 +76,9 @@ export default function LessonPage() {
       const r = await fetch(`/api/lesson/${slug}/questions`);
       const j = await r.json();
       setQs(j.questions || []);
-      setIdx(0);
+      const qParam = Number(searchParams.get('q') || NaN);
+      const startIdx = (Number.isFinite(qParam) && qParam > 0) ? Math.max(0, Math.min((j.questions?.length || 1) - 1, qParam - 1)) : 0;
+      setIdx(startIdx);
       setPicked(null);
       const init: Record<number, "correct" | "wrong"> = {};
       (j.questions || []).forEach((qq: any) => {
@@ -103,6 +118,15 @@ export default function LessonPage() {
   }, [slug, isAuthed]);
 
   const progressPct = useMemo(() => (qs.length ? Math.round((idx) / qs.length * 100) : 0), [idx, qs.length]);
+
+  // Keep URL in sync with tab and question index for shareable deep links
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    if (tab === 'practice') params.set('q', String(Math.max(1, Math.min(qs.length || 1, idx + 1))));
+    else params.delete('q');
+    router.replace(`/lesson/${slug}?${params.toString()}`);
+  }, [tab, idx, qs.length, slug]);
 
   async function markCompleteToggle() {
     if (!isAuthed) return;
@@ -250,11 +274,30 @@ export default function LessonPage() {
                       {done ? "✓" : i + 1}
                     </span>
                     <Link
-                      href={`/lesson/${t.slug}`}
+                      href={`/lesson/${t.slug}${isCurr && (tab==='practice' || tab==='notes') ? `?tab=${tab}${tab==='practice' ? `&q=${idx+1}`:''}` : ''}`}
                       className={`block rounded-lg px-2 py-1.5 text-sm transition ${isCurr ? "bg-indigo-50 text-indigo-800" : "hover:bg-gray-50 text-gray-800"}`}
                     >
                       <div className="line-clamp-2 pr-6">{t.title}</div>
                     </Link>
+                    {t.qCount && t.qCount > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1 pl-1">
+                        {Array.from({ length: t.qCount }).map((_, qi) => {
+                          const active = isCurr && tab === 'practice' && idx === qi;
+                          const href = `/lesson/${t.slug}?tab=practice&q=${qi + 1}`;
+                          return (
+                            <Link
+                              key={qi}
+                              href={href}
+                              className={`grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold ring-1 ring-inset ${active? 'bg-indigo-600 text-white ring-indigo-300' : 'bg-white text-gray-700 hover:bg-gray-50 ring-gray-200'}`}
+                              title={`Question ${qi+1}`}
+                              onClick={(e)=>{ if (isCurr) { e.preventDefault(); setTab('practice'); setIdx(qi); setPicked(null); } }}
+                            >
+                              {qi+1}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -315,7 +358,7 @@ export default function LessonPage() {
                     return (
                       <button
                         key={qq.id}
-                        onClick={() => { setIdx(i); setPicked(null); }}
+                        onClick={() => { setIdx(i); setPicked(null); setTab('practice'); }}
                         className={`grid h-7 w-7 place-items-center rounded-full text-xs font-bold ring-1 ring-inset ${cls}`}
                         title={state ? (state==='correct'?'Solved':'Wrong') : 'Unanswered'}
                       >
@@ -369,7 +412,7 @@ export default function LessonPage() {
                   {picked != null && (
                     <div className="mt-3 flex items-center justify-between">
                       <div className="text-xs text-gray-600">{q.explanation}</div>
-                      <button onClick={next} className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">
+                      <button onClick={() => { next(); setTab('practice'); }} className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">
                         {idx < qs.length - 1 ? "Next" : "Finish"}
                       </button>
                     </div>
