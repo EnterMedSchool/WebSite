@@ -22,11 +22,9 @@ export async function GET(req: Request) {
 
   try {
     const order = sort === "popular" ? desc(studySessions.totalJoins) : desc(studySessions.createdAt);
-    let q = db.select().from(studySessions).orderBy(order).limit(limit).offset((page - 1) * limit);
-    if (my && userId) {
-      q = db.select().from(studySessions).where(eq(studySessions.creatorUserId as any, userId)).orderBy(order).limit(limit).offset((page - 1) * limit);
-    }
-    const rows = await q;
+    const rows = my && userId
+      ? await db.select().from(studySessions).where(eq(studySessions.creatorUserId as any, userId)).orderBy(order).limit(limit).offset((page - 1) * limit)
+      : await db.select().from(studySessions).orderBy(order).limit(limit).offset((page - 1) * limit);
 
     // A light-weight count; we can refine later
     const result = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM study_sessions ${
