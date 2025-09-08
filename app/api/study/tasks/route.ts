@@ -33,11 +33,10 @@ export async function GET(req: Request) {
     const lists = listsRes.rows;
     const listIds = lists.map((l) => l.id);
     const items = listIds.length
-      ? (await sql<{ id: number; task_list_id: number; name: string; is_completed: boolean }>`
-           SELECT id, task_list_id, name, is_completed
-           FROM study_task_items
-           WHERE task_list_id = ANY(${listIds}::int[])
-         `).rows
+      ? await db
+          .select()
+          .from(studyTaskItems)
+          .where(inArray(studyTaskItems.taskListId as any, listIds as any))
       : [];
 
     const grouped = lists.map((l) => ({
@@ -47,8 +46,8 @@ export async function GET(req: Request) {
       title: l.title,
       user: { id: l.user_id, name: l.name, image: l.image, username: l.username },
       items: items
-        .filter((it) => it.task_list_id === l.id)
-        .map((it) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.is_completed })),
+        .filter((it: any) => it.taskListId === l.id)
+        .map((it: any) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.isCompleted })),
     }));
     return NextResponse.json({ data: grouped });
   } catch (e: any) {
