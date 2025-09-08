@@ -21,13 +21,13 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const prev = idx>0 ? { slug: ordered[idx-1].slug, title: ordered[idx-1].title } : null;
   const next = idx>=0 && idx < ordered.length-1 ? { slug: ordered[idx+1].slug, title: ordered[idx+1].title } : null;
   // Preload question counts per lesson for sidebar drilldown
-  let qCountByLesson = new Map<number, number>();
+  const qCountByLesson = new Map<number, number>();
   try {
-    if (ordered.length > 0) {
-      const ids = ordered.map((o:any)=> Number(o.id));
-      const qr = await sql`SELECT lesson_id, COUNT(*)::int AS cnt FROM questions WHERE lesson_id = ANY(${ids}) GROUP BY lesson_id`;
-      for (const r of qr.rows) qCountByLesson.set(Number(r.lesson_id), Number(r.cnt));
-    }
+    const qr = await sql`SELECT q.lesson_id, COUNT(*)::int AS cnt
+                         FROM questions q
+                         WHERE q.lesson_id IN (SELECT id FROM lessons WHERE course_id=${lesson.course_id})
+                         GROUP BY q.lesson_id`;
+    for (const r of qr.rows) qCountByLesson.set(Number(r.lesson_id), Number(r.cnt));
   } catch {}
   // Per-user course progress (if authenticated)
   let courseProgress: any = null;
