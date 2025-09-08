@@ -485,9 +485,10 @@ export const studyTaskLists = pgTable(
   "study_task_lists",
   {
     id: serial("id").primaryKey(),
-    sessionId: integer("session_id").notNull(),
+    sessionId: integer("session_id"),
     userId: integer("user_id").notNull(),
     title: varchar("title", { length: 200 }).notNull(),
+    isGlobal: boolean("is_global").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({

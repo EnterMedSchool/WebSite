@@ -16,6 +16,11 @@ export async function GET(req: Request) {
   const sessionId = Number(url.searchParams.get("sessionId"));
   if (!Number.isFinite(sessionId)) return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
   try {
+    // Participants in this session
+    const prs = await sql<{ user_id: number }>`SELECT DISTINCT user_id FROM study_session_participants WHERE session_id = ${sessionId}`;
+    const participantIds = prs.rows.map((r:any)=> Number(r.user_id));
+    if (participantIds.length === 0) return NextResponse.json({ data: [] });
+
     const listsRes = await sql<{
       id: number;
       session_id: number;
@@ -28,7 +33,7 @@ export async function GET(req: Request) {
       SELECT l.id, l.session_id, l.user_id, l.title, u.name, u.image, u.username
       FROM study_task_lists l
       JOIN users u ON u.id = l.user_id
-      WHERE l.session_id = ${sessionId}
+      WHERE l.user_id = ANY(${participantIds}::int[]) AND (l.is_global = TRUE OR l.session_id = ${sessionId})
     `;
     const lists = listsRes.rows;
     const listIds = lists.map((l) => l.id);
@@ -63,14 +68,14 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const title = (body?.title || "").toString().trim() || "Untitled";
   const sessionId = Number(body?.sessionId);
+  const isGlobal: boolean = body?.isGlobal !== false; // default: global list
   const items: Array<{ name: string; isCompleted?: boolean; parentItemId?: number | null; position?: number }> = Array.isArray(body?.items) ? body.items : [];
-  if (!Number.isFinite(sessionId)) return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
 
   try {
     const [list] = await db
       .insert(studyTaskLists)
-      .values({ title, sessionId, userId })
-      .returning({ id: studyTaskLists.id, title: studyTaskLists.title, sessionId: studyTaskLists.sessionId, userId: studyTaskLists.userId, createdAt: studyTaskLists.createdAt });
+      .values({ title, sessionId: isGlobal ? (null as any) : (Number.isFinite(sessionId)? sessionId : null) as any, userId, isGlobal })
+      .returning({ id: studyTaskLists.id, title: studyTaskLists.title, sessionId: studyTaskLists.sessionId, userId: studyTaskLists.userId, createdAt: studyTaskLists.createdAt, isGlobal: studyTaskLists.isGlobal });
 
     if (items.length) {
       let pos = 0;
@@ -86,7 +91,8 @@ export async function POST(req: Request) {
     }
 
     const payload = { ...list, items: items.map((it, i) => ({ id: i, taskListId: list.id, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: typeof it.position === 'number' ? it.position! : i })) };
-    await publish(sessionId, StudyEvents.TaskUpsert, payload);
+    const broadcast = list.sessionId ?? (Number.isFinite(sessionId) ? sessionId : null);
+    if (broadcast != null) await publish(broadcast, StudyEvents.TaskUpsert, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to create" }, { status: 500 });
