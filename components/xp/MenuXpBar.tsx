@@ -29,10 +29,10 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
     setDispPct(clampPct(xpPct));
     setDispIn(xpInLevel ?? 0);
     setDispSpan(xpSpan ?? 0);
-    if (next > prev) { setLvPulse((n)=>n+1); setTimeout(()=> setLvPulse((n)=>n-1), 800); }
+    if (next > prev) { setLvPulse((n) => n + 1); setTimeout(() => setLvPulse((n) => n - 1), 800); }
   }, [level, xpPct, xpInLevel, xpSpan]);
 
-  // Close XP popup on outside click/ESC
+  // Close popup on outside click / ESC
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!xpRef.current) return;
@@ -44,7 +44,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
     return () => { document.removeEventListener('mousedown', onDocClick); document.removeEventListener('keydown', onKey); };
   }, []);
 
-  // Listen for XP awards and animate bubble-to-bar + update numbers
+  // Listen for XP awards and animate bubble to the bar
   useEffect(() => {
     function onAward(e: any) {
       const detail = e?.detail ?? {};
@@ -54,7 +54,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
       const newPct: number | undefined = detail.newPct;
       const newIn: number | undefined = detail.newInLevel;
       const newSpan: number | undefined = detail.newSpan;
-      const levelUp: boolean = typeof detail.levelUp === 'boolean' ? detail.levelUp : (typeof newLevel === 'number' && newLevel > dispLevel);
+      const levelUp = typeof newLevel === 'number' && newLevel > dispLevel;
 
       const target = barRef.current?.getBoundingClientRect();
       if (from && target) {
@@ -74,7 +74,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
         document.body.appendChild(bubble);
         const anim = bubble.animate([
           { transform: 'translate(0,0) scale(1)', opacity: 1 },
-          { transform: `translate(${target.left + target.width/2 - from.x}px, ${target.top + target.height/2 - from.y}px) scale(.6)`, opacity: 0.1 }
+          { transform: `translate(${target.left + target.width / 2 - from.x}px, ${target.top + target.height / 2 - from.y}px) scale(.6)`, opacity: 0.1 }
         ], { duration: 800, easing: 'cubic-bezier(.22,1,.36,1)' });
         anim.onfinish = () => bubble.remove();
       }
@@ -83,10 +83,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
       if (typeof newIn === 'number') setDispIn(newIn);
       if (typeof newSpan === 'number') setDispSpan(newSpan);
       if (typeof newLevel === 'number') setDispLevel(newLevel);
-      if (levelUp) {
-        setBurst((b) => b + 1);
-        setTimeout(() => setBurst((b) => b - 1), 1400);
-      }
+      if (levelUp) { setBurst((b) => b + 1); setTimeout(() => setBurst((b) => b - 1), 1400); }
     }
     window.addEventListener('xp:awarded' as any, onAward as any);
     return () => window.removeEventListener('xp:awarded' as any, onAward as any);
@@ -95,7 +92,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
   if (!isAuthed) {
     return (
       <div className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/70 shadow-sm backdrop-blur sm:flex">
-        <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/20 px-2 text-[11px] font-semibold">Lv –</span>
+        <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/20 px-2 text-[11px] font-semibold">Lv --</span>
         <div className="relative h-2 w-36 overflow-hidden rounded-full bg-white/15 sm:w-40">
           <div className="absolute inset-y-0 left-0 w-0 bg-white/40" />
         </div>
@@ -106,80 +103,61 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
 
   return (
     <div className="relative flex items-center" ref={xpRef}>
-      {/* Compact XP strip (clickable for popup) */}
       <button
         type="button"
-        onClick={() => setXpOpen(v=>!v)}
+        onClick={() => setXpOpen(v => !v)}
         aria-expanded={xpOpen}
         className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur transition hover:shadow-[0_6px_22px_rgba(0,0,0,0.18)] hover:border-white/30 hover:bg-white/15 active:scale-[0.99]"
         title="View XP details"
       >
-        <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse>0? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
+        <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse > 0 ? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
           Lv {dispLevel}
         </span>
         <div ref={barRef} className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out"
-            style={{ width: `${dispPct}%` }}
-          />
+          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out" style={{ width: `${dispPct}%` }} />
           <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
-          {/* Shimmer sweep on hover */}
-          <span
-            className="pointer-events-none absolute -inset-y-2 -left-6 h-6 w-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.35)_40%,transparent_70%)] opacity-0 blur-[2px] transition-opacity group-hover:opacity-70"
-            style={{ animation: 'xpshimmer 1.2s linear infinite' }}
-          />
+          <span className="pointer-events-none absolute -inset-y-2 -left-6 h-6 w-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.35)_40%,transparent_70%)] opacity-0 blur-[2px] transition-opacity group-hover:opacity-70" style={{ animation: 'xpshimmer 1.2s linear infinite' }} />
         </div>
-        <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
-          {isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}
-        </span>
-        <svg className={`ml-1 h-3 w-3 text-white/80 transition-transform ${xpOpen? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
-        {/* Glow on hover */}
+        <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">{isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}</span>
+        <svg className={`ml-1 h-3 w-3 text-white/80 transition-transform ${xpOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z" /></svg>
         <span className="pointer-events-none absolute -inset-1 rounded-full opacity-0 blur-md transition group-hover:opacity-40" style={{ background: 'radial-gradient(40px 20px at 50% 50%, rgba(255,255,255,0.45), rgba(255,255,255,0))' }} />
-        {/* Tooltip */}
         <span className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 opacity-0 shadow group-hover:opacity-100">View details</span>
       </button>
 
-      {/* lightweight confetti burst */}
       {burst > 0 && (
         <div className="pointer-events-none absolute -top-2 right-12 z-[60] h-0 w-0">
           {Array.from({ length: 24 }).map((_, i) => (
             <span key={i} className="absolute h-1 w-2 rounded-sm" style={{
-              left: `${(i%8)*6}px`,
-              top: `${Math.floor(i/8)*-4}px`,
-              background: ['#fde047','#34d399','#60a5fa','#fca5a5'][i%4],
-              transform: `rotate(${(i*37)%360}deg)`,
-              animation: `fall ${600 + (i%5)*80}ms ease-out forwards`
+              left: `${(i % 8) * 6}px`,
+              top: `${Math.floor(i / 8) * -4}px`,
+              background: ['#fde047', '#34d399', '#60a5fa', '#fca5a5'][i % 4],
+              transform: `rotate(${(i * 37) % 360}deg)`,
+              animation: `fall ${600 + (i % 5) * 80}ms ease-out forwards`
             }} />
           ))}
-          <style jsx>{`
-            @keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } }
-          `}</style>
         </div>
       )}
-      {/* shimmer keyframes */}
-      <style jsx>{`
-        @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
-      `}</style>
 
-      {/* XP popup */}
+      {/* Global keyframes used by inline animation names */}
+      <style>{`@keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } } @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } }`}</style>
+
       {xpOpen && (
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[360px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
-          {/* Arrow */}
           <div className="absolute -top-2 right-6 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
             <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
-            <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax? ' (MAX)' : ''} • {dispSpan>0? `${dispIn}/${dispSpan} XP to next` : ''}</div>
+            <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} - {dispSpan > 0 ? `${dispIn}/${dispSpan} XP to next` : ''}</div>
             <div className="mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
             <RecentXpList />
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Achievements</div>
-                <div className="mt-1 text-gray-600">• First Steps (soon)</div>
-                <div className="text-gray-600">• Quiz Whiz (soon)</div>
+                <div className="mt-1 text-gray-600">- First Steps (soon)</div>
+                <div className="text-gray-600">- Quiz Whiz (soon)</div>
               </div>
               <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Daily Streak</div>
-                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">—</span> days (soon)</div>
+                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">-</span> days (soon)</div>
               </div>
             </div>
           </div>
