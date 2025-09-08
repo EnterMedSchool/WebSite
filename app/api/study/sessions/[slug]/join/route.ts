@@ -12,13 +12,15 @@ export const revalidate = 0;
 
 export async function PATCH(
   _req: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: { slug: string } }
 ) {
   const auth = await authGetServerSession();
   const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const sessionId = Number(params.sessionId);
-  if (!Number.isFinite(sessionId)) return NextResponse.json({ error: "Invalid session id" }, { status: 400 });
+  // Resolve slug to session id
+  const row = (await db.select({ id: studySessions.id }).from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1))[0];
+  if (!row) return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  const sessionId = Number(row.id);
 
   try {
     const existing = await db
@@ -33,8 +35,7 @@ export async function PATCH(
     }
 
     // Update user's last session slug in isolated meta table
-    const sessionRow = await db.select({ slug: studySessions.slug }).from(studySessions).where(eq(studySessions.id as any, sessionId)).limit(1);
-    const slug = sessionRow[0]?.slug as string | undefined;
+    const slug = params.slug as string | undefined;
     if (slug) {
       const meta = await db.select().from(studyUserMeta).where(eq(studyUserMeta.userId as any, userId)).limit(1);
       if (meta[0]) {

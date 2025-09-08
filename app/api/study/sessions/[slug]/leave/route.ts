@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { studySessionParticipants } from "@/drizzle/schema";
+import { studySessionParticipants, studySessions } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { authGetServerSession } from "@/lib/auth";
 import { publish } from "@/lib/study/pusher";
@@ -12,13 +12,14 @@ export const revalidate = 0;
 
 export async function PATCH(
   _req: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: { slug: string } }
 ) {
   const auth = await authGetServerSession();
   const userId = (auth as any)?.userId ? Number((auth as any).userId) : null;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const sessionId = Number(params.sessionId);
-  if (!Number.isFinite(sessionId)) return NextResponse.json({ error: "Invalid session id" }, { status: 400 });
+  const row = (await db.select({ id: studySessions.id }).from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1))[0];
+  if (!row) return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  const sessionId = Number(row.id);
 
   try {
     await db
@@ -31,4 +32,3 @@ export async function PATCH(
     return NextResponse.json({ error: e?.message || "Failed to leave" }, { status: 500 });
   }
 }
-

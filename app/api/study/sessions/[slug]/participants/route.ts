@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { db, sql } from "@/lib/db";
+import { studySessions } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,10 +9,11 @@ export const revalidate = 0;
 
 export async function GET(
   _req: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: { slug: string } }
 ) {
-  const sessionId = Number(params.sessionId);
-  if (!Number.isFinite(sessionId)) return NextResponse.json({ error: "Invalid session id" }, { status: 400 });
+  const row = (await db.select({ id: studySessions.id }).from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1))[0];
+  if (!row) return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  const sessionId = Number(row.id);
 
   try {
     const result = await sql<{
@@ -30,4 +33,3 @@ export async function GET(
     return NextResponse.json({ error: e?.message || "Failed to load participants" }, { status: 500 });
   }
 }
-
