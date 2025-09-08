@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { posts } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 
+import CuteArticle from "@/components/blog/CuteArticle";
+
 export default async function PostByRootSlug({ params }: { params: { slug: string } }) {
   try {
     const rows = await db
@@ -25,11 +27,15 @@ export default async function PostByRootSlug({ params }: { params: { slug: strin
     }
     const post = rows[0] as any;
     return (
-      <article className="prose prose-slate max-w-none dark:prose-invert">
-        <h1>{post.title}</h1>
-        <div className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.body}</ReactMarkdown>
-      </article>
+      <CuteArticle
+        title={post.title}
+        body={post.body}
+        coverImage={post.coverImageUrl}
+        date={post.createdAt}
+        category={post.category || 'Article'}
+        author={post.author || 'EnterMedSchool'}
+        stats={{ likes: post.likes || 0, views: post.views || 0, comments: post.comments || 0 }}
+      />
     );
   } catch (err) {
     return (

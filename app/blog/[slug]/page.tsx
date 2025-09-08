@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import CuteArticle from "@/components/blog/CuteArticle";
 
 export default async function BlogPost({ params }: { params: { slug: string } }) {
   const h = headers();
@@ -19,11 +18,14 @@ export default async function BlogPost({ params }: { params: { slug: string } })
   const post = await res.json();
 
   return (
-    <article className="prose prose-slate max-w-none dark:prose-invert">
-      <h1>{post.title}</h1>
-      <div className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.body}</ReactMarkdown>
-    </article>
+    <CuteArticle
+      title={post.title}
+      body={post.body}
+      coverImage={post.coverImageUrl}
+      date={post.createdAt}
+      category={post.category || 'Article'}
+      author={post.author || 'EnterMedSchool'}
+      stats={{ likes: post.likes || 0, views: post.views || 0, comments: post.comments || 0 }}
+    />
   );
 }
-

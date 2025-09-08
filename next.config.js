@@ -15,6 +15,7 @@ const nextConfig = {
       // Media used on the IMAT page
       { protocol: 'https', hostname: 'entermedschool.com' },
       { protocol: 'https', hostname: 'entermedschool.b-cdn.net' },
+      { protocol: 'https', hostname: 'images.pexels.com' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
     ],
