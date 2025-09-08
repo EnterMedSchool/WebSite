@@ -95,7 +95,8 @@ const EXAMS: Exam[] = [
 ];
 
 // Mini Italy map with pins (simple SVG + pulse)
-function MiniItalyMap({ items }: { items: Array<{ name: string; city: string; x: number; y: number }> }) {
+function MiniItalyMap({ items, highlight }:
+  { items: Array<{ name: string; city: string; x: number; y: number }>; highlight?: string | null }) {
   return (
     <div className="relative h-72 w-full overflow-hidden rounded-xl bg-white/60 p-2 ring-1 ring-indigo-100">
       <svg viewBox="0 0 100 60" className="absolute inset-0 h-full w-full">
@@ -114,12 +115,15 @@ function MiniItalyMap({ items }: { items: Array<{ name: string; city: string; x:
         </defs>
         <rect width="100" height="60" fill="url(#gm)" />
       </svg>
-      {items.map((u) => (
-        <div key={u.name} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${u.x}%`, top: `${u.y}%` }}>
-          <span className="absolute -left-2 -top-2 h-6 w-6 animate-ping rounded-full bg-emerald-300/50" />
-          <span className="block h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-        </div>
-      ))}
+      {items.map((u) => {
+        const active = highlight && u.name === highlight;
+        return (
+          <div key={u.name} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${u.x}%`, top: `${u.y}%` }}>
+            <span className={`absolute -left-3 -top-3 rounded-full ${active? 'h-8 w-8 animate-ping bg-fuchsia-300/60' : 'h-6 w-6 animate-ping bg-emerald-300/50'}`} />
+            <span className={`block rounded-full ring-2 ring-white ${active? 'h-4.5 w-4.5 bg-fuchsia-500' : 'h-3.5 w-3.5 bg-emerald-500'}`} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -127,6 +131,7 @@ function MiniItalyMap({ items }: { items: Array<{ name: string; city: string; x:
 export default function UniversitiesMenu() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(EXAMS[0].id);
+  const [hoveredUni, setHoveredUni] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<number | null>(null);
 
@@ -201,7 +206,7 @@ export default function UniversitiesMenu() {
               {/* Left: mini dynamic map (IMAT only) */}
               <div className="col-span-12 rounded-lg bg-indigo-50 p-3 sm:col-span-4">
                 {selected.id === 'imat' ? (
-                  <MiniItalyMap items={[
+                  <MiniItalyMap highlight={hoveredUni} items={[
                     { name: 'Turin', city: 'Turin', x: 53, y: 32 },
                     { name: 'Pavia', city: 'Pavia', x: 56, y: 38 },
                     { name: 'Parma', city: 'Parma', x: 58, y: 42 },
@@ -256,7 +261,8 @@ export default function UniversitiesMenu() {
                         <div className="mb-1 text-sm font-semibold text-gray-700">{region}</div>
                         <ul className="space-y-1">
                           {selected.columns.find(c=>c.title===region)?.items.map((name)=> (
-                            <li key={name} className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-white px-2 py-1 text-sm text-gray-800">
+                            <li key={name} className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-white px-2 py-1 text-sm text-gray-800 hover:bg-indigo-50"
+                                onMouseEnter={()=>setHoveredUni(name)} onMouseLeave={()=>setHoveredUni(null)}>
                               <span className="grid h-6 w-6 place-items-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">{name.split(' ').map(s=>s[0]).join('').slice(0,2)}</span>
                               <span className="truncate">{name}</span>
                             </li>
@@ -282,7 +288,7 @@ export default function UniversitiesMenu() {
 
                 {selected.cta && (
                   <div className="mt-6">
-                    <Link href={selected.cta.href} className="inline-flex items-center rounded-xl bg-indigo-50 px-4 py-2 font-semibold text-indigo-700 hover:bg-indigo-100">
+                    <Link href={selected.id==='imat' ? '/#universities' : (selected.cta.href)} className="inline-flex items-center rounded-xl bg-indigo-50 px-4 py-2 font-semibold text-indigo-700 hover:bg-indigo-100">
                       {selected.cta.label}
                     </Link>
                   </div>
