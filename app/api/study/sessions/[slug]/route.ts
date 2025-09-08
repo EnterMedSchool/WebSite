@@ -34,7 +34,7 @@ export async function PATCH(
   { params }: { params: { slug: string } }
 ) {
   const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const newSlug = body?.slug ? String(body.slug).trim() : undefined;
@@ -72,7 +72,7 @@ export async function DELETE(
   { params }: { params: { slug: string } }
 ) {
   const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   try {
     const rows = await db.select().from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1);
     const s = rows[0];

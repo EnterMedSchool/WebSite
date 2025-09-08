@@ -19,7 +19,12 @@ export default function NewStudyRoomPage() {
       body: JSON.stringify({ title, description }),
     });
     setLoading(false);
-    if (!res.ok) return alert("Failed to create. Please sign in and try again.");
+    if (!res.ok) {
+      let info: any = null;
+      try { info = await res.json(); } catch {}
+      console.error("Create room failed", { status: res.status, info });
+      return alert(info?.error || `Failed to create. Please sign in and try again.`);
+    }
     const json = await res.json();
     router.push(`/study-rooms/${json.data.slug}`);
   };

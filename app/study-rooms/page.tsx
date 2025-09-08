@@ -16,10 +16,12 @@ export default function StudyRoomsPage() {
       const json = await res.json();
       setSessions(json.data || []);
       setTotal(json.total || 0);
+    } else {
+      try { console.error("sessions list failed", res.status, await res.text()); } catch {}
     }
   };
   const loadMeta = async () => {
-    const res = await fetch(`/api/study/user/meta`, { cache: "no-store" });
+    const res = await fetch(`/api/study/user/meta`, { cache: "no-store", credentials: "include" });
     if (res.ok) setMeta((await res.json()).data);
   };
   useEffect(() => { load(); }, [sort, page]);

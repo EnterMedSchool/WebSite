@@ -58,7 +58,7 @@ export async function GET(req: Request) {
 // Create a new task list for the current user (optionally with items)
 export async function POST(req: Request) {
   const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const title = (body?.title || "").toString().trim() || "Untitled";
   const sessionId = Number(body?.sessionId);

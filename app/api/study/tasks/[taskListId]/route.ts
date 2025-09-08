@@ -16,7 +16,7 @@ export async function PATCH(
   { params }: { params: { taskListId: string } }
 ) {
   const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   const id = Number(params.taskListId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const body = await req.json().catch(() => ({}));
@@ -57,7 +57,7 @@ export async function DELETE(
   { params }: { params: { taskListId: string } }
 ) {
   const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   const id = Number(params.taskListId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   try {

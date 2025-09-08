@@ -15,7 +15,7 @@ export async function PATCH(
   { params }: { params: { slug: string } }
 ) {
   const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   const row = (await db.select({ id: studySessions.id }).from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1))[0];
   if (!row) return NextResponse.json({ error: "Session not found" }, { status: 404 });
   const sessionId = Number(row.id);
