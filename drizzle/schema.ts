@@ -48,6 +48,8 @@ export const lessons = pgTable(
     courseId: integer("course_id").notNull(),
     slug: varchar("slug", { length: 120 }).notNull(),
     title: varchar("title", { length: 200 }).notNull(),
+    // Optional thumbnail for homepage mini-lesson slider
+    miniLessonThumbnail: varchar("mini_lesson_thumbnail", { length: 500 }),
     body: text("body"),
     position: integer("position").default(0).notNull(),
     rankKey: varchar("rank_key", { length: 32 }),

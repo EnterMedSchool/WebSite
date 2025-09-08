@@ -36,6 +36,7 @@ export default function LatestLessons() {
           id: String(l.id),
           title: l.title,
           slug: l.slug,
+          thumb: l.thumb ?? l.mini_lesson_thumbnail ?? undefined,
           steps: 3,
           questions: 8 + i,
           progress: 0,
