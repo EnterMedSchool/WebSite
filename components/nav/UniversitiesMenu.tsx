@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker } from "react-simple-maps";
 
 type Exam = {
   id: string;
@@ -128,6 +129,50 @@ function MiniItalyMap({ items, highlight }:
   );
 }
 
+// World mini-map focused on Italy (uses the same lib as homepage map)
+const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+function ItalyWorldMap({
+  items,
+  highlight,
+}: {
+  items: Array<{ name: string; city: string; lat: number; lng: number }>;
+  highlight?: string | null;
+}) {
+  return (
+    <div className="relative h-80 w-full overflow-hidden rounded-xl bg-white/60 p-2 ring-1 ring-indigo-100">
+      <ComposableMap projectionConfig={{ scale: 550 }} style={{ width: "100%", height: "100%" }}>
+        <ZoomableGroup center={[12.5, 42.2]} zoom={3.4} translateExtent={[[0, 0], [1000, 600]]}>
+          <Geographies geography={GEO_URL}>
+            {({ geographies }) =>
+              geographies.map((geo) => (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  style={{
+                    default: { fill: "#eef2ff", stroke: "#c7d2fe", strokeWidth: 0.6, outline: "none" },
+                    hover: { fill: "#e0e7ff", stroke: "#a5b4fc", strokeWidth: 0.6, outline: "none" },
+                    pressed: { fill: "#e0e7ff", stroke: "#a5b4fc", strokeWidth: 0.6, outline: "none" },
+                  }}
+                />
+              ))
+            }
+          </Geographies>
+          {items.map((u) => {
+            const active = highlight && u.name === highlight;
+            return (
+              <Marker key={u.name} coordinates={[u.lng, u.lat]}>
+                <g transform="translate(-4,-4)">
+                  <circle r={active ? 7 : 5} fill={active ? "#f0abfc" : "#34d399"} stroke="#fff" strokeWidth={2} />
+                </g>
+              </Marker>
+            );
+          })}
+        </ZoomableGroup>
+      </ComposableMap>
+    </div>
+  );
+}
+
 export default function UniversitiesMenu() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(EXAMS[0].id);
@@ -206,22 +251,25 @@ export default function UniversitiesMenu() {
               {/* Left: mini dynamic map (IMAT only) */}
               <div className="col-span-12 rounded-lg bg-indigo-50 p-3 sm:col-span-4">
                 {selected.id === 'imat' ? (
-                  <MiniItalyMap highlight={hoveredUni} items={[
-                    { name: 'Turin', city: 'Turin', x: 53, y: 32 },
-                    { name: 'Pavia', city: 'Pavia', x: 56, y: 38 },
-                    { name: 'Parma', city: 'Parma', x: 58, y: 42 },
-                    { name: 'Padova', city: 'Padova', x: 61, y: 35 },
-                    { name: 'Milano Statale', city: 'Milan', x: 57, y: 37 },
-                    { name: 'Milano Bicocca', city: 'Milan', x: 58, y: 36 },
-                    { name: 'Bologna', city: 'Bologna', x: 61, y: 45 },
-                    { name: 'Tor Vergata', city: 'Rome', x: 66, y: 59 },
-                    { name: 'Ancona (M.D. & Tech)', city: 'Ancona', x: 68, y: 50 },
-                    { name: 'La Sapienza', city: 'Rome', x: 65, y: 58 },
-                    { name: 'Luigi Vanvitelli', city: 'Caserta', x: 69, y: 61 },
-                    { name: 'Federico II', city: 'Naples', x: 70, y: 62 },
-                    { name: 'Messina', city: 'Messina', x: 74, y: 70 },
-                    { name: 'Bari Aldo Moro', city: 'Bari', x: 74, y: 58 },
-                  ]} />
+                  <ItalyWorldMap
+                    highlight={hoveredUni}
+                    items={[
+                      { name: 'Turin', city: 'Turin', lat: 45.07, lng: 7.69 },
+                      { name: 'Pavia', city: 'Pavia', lat: 45.19, lng: 9.16 },
+                      { name: 'Parma', city: 'Parma', lat: 44.80, lng: 10.33 },
+                      { name: 'Padova', city: 'Padova', lat: 45.41, lng: 11.88 },
+                      { name: 'Milano Statale', city: 'Milan', lat: 45.46, lng: 9.19 },
+                      { name: 'Milano Bicocca', city: 'Milan', lat: 45.51, lng: 9.22 },
+                      { name: 'Bologna', city: 'Bologna', lat: 44.50, lng: 11.34 },
+                      { name: 'Tor Vergata', city: 'Rome', lat: 41.86, lng: 12.61 },
+                      { name: 'Ancona (M.D. & Tech)', city: 'Ancona', lat: 43.62, lng: 13.52 },
+                      { name: 'La Sapienza', city: 'Rome', lat: 41.90, lng: 12.50 },
+                      { name: 'Luigi Vanvitelli', city: 'Caserta', lat: 41.07, lng: 14.33 },
+                      { name: 'Federico II', city: 'Naples', lat: 40.85, lng: 14.27 },
+                      { name: 'Messina', city: 'Messina', lat: 38.19, lng: 15.55 },
+                      { name: 'Bari Aldo Moro', city: 'Bari', lat: 41.12, lng: 16.87 },
+                    ]}
+                  />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={selected.image} alt={selected.country} className="h-72 w-full rounded-md object-contain" />
