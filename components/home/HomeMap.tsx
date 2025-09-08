@@ -503,8 +503,8 @@ export default function HomeMap() {
         {/* Soft top/bottom gradient to blend edges on mobile */}
         {isSmall && (
           <>
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--page-bg,#f6f7fb)]/0 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--page-bg,#f6f7fb)]/0 to-transparent" />
           </>
         )}
 
@@ -592,3 +592,4 @@ export default function HomeMap() {
     </div>
   );
 }
+
