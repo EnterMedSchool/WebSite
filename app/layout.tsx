@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Baloo_2, Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Providers from "./providers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "WebSite",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="mx-auto max-w-6xl p-6">{children}</main>
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
