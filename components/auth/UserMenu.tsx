@@ -156,6 +156,11 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
               style={{ width: `${dispPct}%` }}
             />
             <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
+            {/* Shimmer sweep on hover */}
+            <span
+              className="pointer-events-none absolute -inset-y-2 -left-6 h-6 w-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.35)_40%,transparent_70%)] opacity-0 blur-[2px] transition-opacity group-hover:opacity-70"
+              style={{ animation: 'xpshimmer 1.2s linear infinite' }}
+            />
           </div>
           <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
             {isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}
@@ -185,6 +190,10 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           `}</style>
         </div>
       )}
+      {/* shimmer keyframes */}
+      <style jsx>{`
+        @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+      `}</style>
 
       {/* Avatar trigger */}
       <button
