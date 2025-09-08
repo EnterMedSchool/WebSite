@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -120,7 +120,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
       <div className="flex items-center gap-3">
         {/* Ghosted XP pill */}
         <div className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/70 shadow-sm backdrop-blur sm:flex">
-          <span className="inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/20 px-2 text-[11px] font-semibold">Lv –</span>
+          <span className=" inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/20 px-2 text-[11px] font-semibold\>Lv --</span>
           <div className="relative h-2 w-32 overflow-hidden rounded-full bg-white/15">
             <div className="absolute inset-y-0 left-0 w-0 bg-white/40" />
           </div>
@@ -248,18 +248,18 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           <div className="absolute -top-2 right-24 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
             <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
-            <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax? ' (MAX)' : ''} • {dispSpan>0? `${dispIn}/${dispSpan} XP to next` : ''}</div>
+            <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax? ' (MAX)' : ''} â€¢ {dispSpan>0? `${dispIn}/${dispSpan} XP to next` : ''}</div>
             <div className="mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
             <RecentXpList />
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Achievements</div>
-                <div className="mt-1 text-gray-600">• First Steps (soon)</div>
-                <div className="text-gray-600">• Quiz Whiz (soon)</div>
+                <div className="mt-1 text-gray-600">â€¢ First Steps (soon)</div>
+                <div className="text-gray-600">â€¢ Quiz Whiz (soon)</div>
               </div>
               <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Daily Streak</div>
-                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">—</span> days (soon)</div>
+                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">â€”</span> days (soon)</div>
               </div>
             </div>
           </div>
@@ -308,9 +308,9 @@ function AuthModal() {
       <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/90 p-5 text-gray-900 shadow-2xl backdrop-blur" onClick={(e)=>e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-extrabold text-indigo-700">{mode==='signup' ? 'Create your account' : 'Welcome back'}</div>
-          <button onClick={()=>setOpen(false)} className="rounded-full bg-gray-100 p-1 text-gray-500 hover:bg-gray-200" aria-label="Close">✕</button>
-        </div>
-        <div className="mb-3 flex gap-2">
+          <button onClick={()=>setOpen(false)} className=" rounded-full bg-gray-100 p-1 text-gray-500 hover:bg-gray-200\ aria-label=\Close\>×</button>
+ </div>
+ </div>
           <button onClick={()=>setMode('signup')} className={`rounded-full px-3 py-1 text-sm font-semibold ${mode==='signup'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700'}`}>Sign up</button>
           <button onClick={()=>setMode('signin')} className={`rounded-full px-3 py-1 text-sm font-semibold ${mode==='signin'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700'}`}>Sign in</button>
         </div>
@@ -322,7 +322,7 @@ function AuthModal() {
           <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" className="rounded-md border px-3 py-2" />
           {error && <div className="text-sm text-rose-600">{error}</div>}
           <button disabled={loading} onClick={mode==='signup'? doSignUp : doSignIn} className="mt-1 rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
-            {loading? 'Please wait…' : mode==='signup' ? 'Create account' : 'Sign in'}
+            {loading? 'Please wait...' : mode==='signup' ? 'Create account' : 'Sign in'}
           </button>
         </div>
       </div>
@@ -358,3 +358,6 @@ function RecentXpList() {
     </ul>
   );
 }
+
+
+
