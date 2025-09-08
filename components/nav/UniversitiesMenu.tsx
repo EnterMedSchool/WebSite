@@ -1,4 +1,24 @@
 ﻿"use client";
+}
+  );
+  const IMAT_UNIS = [
+    { name: "Turin", city: "Turin", x: 53, y: 32 },
+    { name: "Pavia", city: "Pavia", x: 56, y: 38 },
+    { name: "Parma", city: "Parma", x: 58, y: 42 },
+    { name: "Padova", city: "Padova", x: 61, y: 35 },
+    { name: "Milano Statale", city: "Milan", x: 57, y: 37 },
+    { name: "Milano Bicocca", city: "Milan", x: 58, y: 36 },
+    { name: "Bologna", city: "Bologna", x: 61, y: 45 },
+    { name: "Tor Vergata", city: "Rome", x: 66, y: 59 },
+    { name: "Ancona (M.D. & Tech)", city: "Ancona", x: 68, y: 50 },
+    { name: "La Sapienza", city: "Rome", x: 65, y: 58 },
+    { name: "Luigi Vanvitelli", city: "Caserta", x: 69, y: 61 },
+    { name: "Federico II", city: "Naples", x: 70, y: 62 },
+    { name: "Messina", city: "Messina", x: 74, y: 70 },
+    { name: "Bari Aldo Moro", city: "Bari", x: 74, y: 58 },
+  ];
+}
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -196,12 +216,31 @@ export default function UniversitiesMenu() {
           onMouseEnter={clearCloseTimer}
           onMouseLeave={scheduleClose}
         >
-          <div className="mx-auto w-[min(96vw,72rem)] rounded-2xl border bg-white p-6 shadow-2xl">
+          <div className="mx-auto w-[min(96vw,78rem)] rounded-2xl border bg-white p-6 shadow-2xl">
             <div className="grid grid-cols-12 gap-6">
-              {/* Left: country image (for selected exam) */}
+              {/* Left: mini dynamic map (IMAT only) */}
               <div className="col-span-12 rounded-lg bg-indigo-50 p-3 sm:col-span-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selected.image} alt={selected.country} className="h-72 w-full rounded-md object-contain" />
+                {selected.id === 'imat' ? (
+                  <MiniItalyMap items={[
+                    { name: 'Turin', city: 'Turin', x: 53, y: 32 },
+                    { name: 'Pavia', city: 'Pavia', x: 56, y: 38 },
+                    { name: 'Parma', city: 'Parma', x: 58, y: 42 },
+                    { name: 'Padova', city: 'Padova', x: 61, y: 35 },
+                    { name: 'Milano Statale', city: 'Milan', x: 57, y: 37 },
+                    { name: 'Milano Bicocca', city: 'Milan', x: 58, y: 36 },
+                    { name: 'Bologna', city: 'Bologna', x: 61, y: 45 },
+                    { name: 'Tor Vergata', city: 'Rome', x: 66, y: 59 },
+                    { name: 'Ancona (M.D. & Tech)', city: 'Ancona', x: 68, y: 50 },
+                    { name: 'La Sapienza', city: 'Rome', x: 65, y: 58 },
+                    { name: 'Luigi Vanvitelli', city: 'Caserta', x: 69, y: 61 },
+                    { name: 'Federico II', city: 'Naples', x: 70, y: 62 },
+                    { name: 'Messina', city: 'Messina', x: 74, y: 70 },
+                    { name: 'Bari Aldo Moro', city: 'Bari', x: 74, y: 58 },
+                  ]} />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={selected.image} alt={selected.country} className="h-72 w-full rounded-md object-contain" />
+                )}
               </div>
 
               {/* Middle: exam selector list */}
@@ -230,18 +269,36 @@ export default function UniversitiesMenu() {
               {/* Right: dynamic columns for selected exam */}
               <div className="col-span-12 sm:col-span-5">
                 <h3 className="mb-2 text-lg font-bold tracking-wide text-gray-800">{selected.country}</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  {selected.columns.map((col) => (
-                    <div key={col.title}>
-                      <div className="font-semibold text-gray-700">{col.title}</div>
-                      <ul className="mt-2 space-y-1 text-gray-600">
-                        {col.items.map((it) => (
-                          <li key={it}>{it}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                {selected.id === 'imat' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {['North','Center','South'].map((region) => (
+                      <div key={region} className="col-span-1">
+                        <div className="mb-1 text-sm font-semibold text-gray-700">{region}</div>
+                        <ul className="space-y-1">
+                          {selected.columns.find(c=>c.title===region)?.items.map((name)=> (
+                            <li key={name} className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-white px-2 py-1 text-sm text-gray-800">
+                              <span className="grid h-6 w-6 place-items-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">{name.split(' ').map(s=>s[0]).join('').slice(0,2)}</span>
+                              <span className="truncate">{name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-4">
+                    {selected.columns.map((col) => (
+                      <div key={col.title}>
+                        <div className="font-semibold text-gray-700">{col.title}</div>
+                        <ul className="mt-2 space-y-1 text-gray-600">
+                          {col.items.map((it) => (
+                            <li key={it}>{it}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {selected.cta && (
                   <div className="mt-6">
