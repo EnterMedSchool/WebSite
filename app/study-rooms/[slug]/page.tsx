@@ -1,4 +1,4 @@
-import { authGetServerSession } from "@/lib/auth";
+import { currentUserIdServer } from "@/lib/study/auth";
 import Link from "next/link";
 import RoomClient from "@/components/study/RoomClient";
 
@@ -41,8 +41,7 @@ export default async function RoomPage({ params }: { params: { slug: string } })
   ]);
 
   // Pull userId into client via props
-  const session = await authGetServerSession();
-  const myUserId = (session as any)?.userId ? Number((session as any).userId) : null;
+  const myUserId = await currentUserIdServer();
 
   return (
     <section className="container mx-auto p-6">
@@ -50,4 +49,3 @@ export default async function RoomPage({ params }: { params: { slug: string } })
     </section>
   );
 }
-

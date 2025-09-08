@@ -22,7 +22,7 @@ export async function GET(
       username: string | null;
       image: string | null;
     }>`
-      SELECT u.id, u.name, u.username, u.image
+      SELECT u.id, COALESCE(u.name, u.username) as name, u.username, u.image
       FROM study_session_participants p
       JOIN users u ON u.id = p.user_id
       WHERE p.session_id = ${sessionId}

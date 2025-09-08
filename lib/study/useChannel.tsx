@@ -20,7 +20,15 @@ export function useStudyChannel(sessionId: number | null) {
     const onMsg = (payload: any) => addMessage(payload);
     const onTask = (payload: any) => upsertTask(payload);
     const onTaskDel = (payload: any) => deleteTask(payload.taskListId);
-    const onJoin = (payload: any) => addParticipant({ id: Number(payload?.userId) });
+    const onJoin = (payload: any) => {
+      const p = {
+        id: Number(payload?.userId),
+        name: payload?.name ?? undefined,
+        image: payload?.image ?? undefined,
+        username: payload?.username ?? undefined,
+      };
+      addParticipant(p);
+    };
     const onLeave = (payload: any) => removeParticipant(Number(payload?.userId));
     const onTick = (payload: any) => setSharedEndAt(payload?.sharedEndAt ?? null);
 
@@ -42,4 +50,3 @@ export function useStudyChannel(sessionId: number | null) {
     };
   }, [sessionId, addMessage, upsertTask, deleteTask, addParticipant, removeParticipant, setSharedEndAt]);
 }
-

@@ -40,10 +40,9 @@ export const useStudyStore = create<StudyState>((set) => ({
   addParticipant: (p) => set((st) => ({ participants: st.participants.some((x) => x.id === (p as any).id) ? st.participants : [...st.participants, p as any] })),
   removeParticipant: (userId) => set((st) => ({ participants: st.participants.filter((p) => p.id !== userId) })),
   prependMessages: (ms) => set((st) => ({ messages: [...ms, ...st.messages] })),
-  addMessage: (m) => set((st) => ({ messages: [...st.messages, m] })),
+  addMessage: (m) => set((st) => ({ messages: st.messages.some((x) => x.id === (m as any).id) ? st.messages : [...st.messages, m] })),
   setTaskLists: (lists) => set({ taskLists: lists }),
   upsertTaskList: (list) => set((st) => ({ taskLists: st.taskLists.some((x) => x.id === list.id) ? st.taskLists.map((x) => (x.id === list.id ? list : x)) : [list, ...st.taskLists] })),
   deleteTaskList: (id) => set((st) => ({ taskLists: st.taskLists.filter((x) => x.id !== id) })),
   setSharedEndAt: (iso) => set({ sharedEndAt: iso }),
 }));
-

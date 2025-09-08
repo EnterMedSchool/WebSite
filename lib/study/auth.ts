@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { users } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 
-async function getOrCreateUserIdByEmail(email: string, name?: string | null, image?: string | null) {
+export async function getOrCreateUserIdByEmail(email: string, name?: string | null, image?: string | null) {
   const emailNorm = email.toLowerCase();
   const existing = (await db.select({ id: users.id }).from(users).where(eq(users.email as any, emailNorm)).limit(1))[0];
   if (existing?.id) return Number(existing.id);
@@ -59,5 +59,23 @@ export async function requireUserId(req: Request): Promise<number | null> {
     }
   } catch {}
 
+  return null;
+}
+
+// Helper for Server Components: resolve current user id using NextAuth session only
+export async function currentUserIdServer(): Promise<number | null> {
+  try {
+    const session = await getServerSession(authOptions);
+    const sUser: any = session as any;
+    const email: string | undefined = sUser?.user?.email;
+    if (email) {
+      return await getOrCreateUserIdByEmail(email, sUser?.user?.name, sUser?.user?.image);
+    }
+    const sid = sUser?.userId || sUser?.user?.id;
+    if (sid && /^\d+$/.test(String(sid))) {
+      const found = (await db.select({ id: users.id }).from(users).where(eq(users.id as any, Number(sid))).limit(1))[0];
+      if (found?.id) return Number(found.id);
+    }
+  } catch {}
   return null;
 }

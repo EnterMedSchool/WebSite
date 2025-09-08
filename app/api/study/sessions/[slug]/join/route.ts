@@ -44,7 +44,10 @@ export async function PATCH(
       }
     }
 
-    await publish(sessionId, StudyEvents.PresenceJoin, { userId });
+    // Load user details to include in presence event
+    const u = await db.select().from(studySessions).limit(0); // no-op to keep types
+    const userRow = (await db.execute<{ name: string | null; image: string | null; username: string | null }>(`SELECT name, image, username FROM users WHERE id = ${userId} LIMIT 1` as any)).rows?.[0];
+    await publish(sessionId, StudyEvents.PresenceJoin, { userId, name: userRow?.name ?? null, image: userRow?.image ?? null, username: userRow?.username ?? null });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to join" }, { status: 500 });

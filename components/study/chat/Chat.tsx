@@ -22,8 +22,8 @@ export default function Chat() {
       body: JSON.stringify({ sessionId, content }),
     });
     if (!res.ok) return;
-    const json = await res.json();
-    addMessage(json.data);
+    // Pusher will broadcast the message to all clients, including sender.
+    // We rely on that and store-level de-duplication to avoid double entries.
   };
 
   return (
