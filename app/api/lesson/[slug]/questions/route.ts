@@ -34,12 +34,10 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     }
   } catch {}
 
-  // Access filter
-  const whereAccess = userId
-    ? sql`AND (access IS NULL OR access IN ('public','auth','premium') ${isPremium ? sql`` : sql``})`
-    : sql`AND (access IS NULL OR access IN ('public','guest'))`;
-
-  const qr = await sql`SELECT id, prompt, explanation, access FROM questions WHERE lesson_id=${lesson.id} ${whereAccess} ORDER BY COALESCE(rank_key,'')`;
+  // Access filter: logged-in users can see public/auth/premium; guests see public/guest
+  const qr = userId
+    ? await sql`SELECT id, prompt, explanation, access FROM questions WHERE lesson_id=${lesson.id} AND (access IS NULL OR access IN ('public','auth','premium')) ORDER BY COALESCE(rank_key,'')`
+    : await sql`SELECT id, prompt, explanation, access FROM questions WHERE lesson_id=${lesson.id} AND (access IS NULL OR access IN ('public','guest')) ORDER BY COALESCE(rank_key,'')`;
   const result: any[] = [];
   for (const q of qr.rows) {
     const cr = await sql`SELECT id, content, correct FROM choices WHERE question_id=${q.id}`;
