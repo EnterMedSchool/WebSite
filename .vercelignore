@@ -1,2 +1,14 @@
 VirtualLibrary
 VirtualLibrary/**
+
+# Temporarily hide study feature from Vercel deployments
+app/study-rooms
+app/study-rooms/**
+app/api/study
+app/api/study/**
+components/study
+components/study/**
+lib/study
+lib/study/**
+docs/study
+docs/study/**
