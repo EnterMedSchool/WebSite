@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import LearnAbout from "@/components/home/LearnAbout";
+import MissionShowcase from "@/components/home/MissionShowcase";
 import LatestLessons from "@/components/home/LatestLessons";
 import HowItWorks from "@/components/home/HowItWorks";
 import Milestones from "@/components/home/Milestones";
@@ -19,7 +19,7 @@ export default function HomePage() {
 
       {/* Under-map framework */}
       <section className="mx-auto w-full max-w-6xl px-4">
-        <LearnAbout />
+        <MissionShowcase videoSrc="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Vidinsta_Instagram-Post_6634e8cf0c8eb.mp4" poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Untitled-design.png" />
         <LatestLessons />
         <HowItWorks />
         <Milestones />
