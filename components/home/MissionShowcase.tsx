@@ -70,6 +70,8 @@ export default function MissionShowcase({
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
+  const [pool, setPool] = useState<any[]>([]);
+  const [falling, setFalling] = useState<{ id: string; author: string; quote: string; uni: string; logo?: string; x: number }[]>([]);
 
   const cueIndex = useMemo(() => timeToCueIndex(time), [time]);
   const cue = CUES[cueIndex];
@@ -98,6 +100,41 @@ export default function MissionShowcase({
     return () => io.disconnect();
   }, []);
 
+  // Fetch random testimonials pool for falling cards
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/testimonials/random', { cache: 'no-store' });
+        const j = await r.json();
+        setPool(j?.testimonials || []);
+      } catch {}
+    })();
+  }, []);
+
+  // Spawn falling testimonial cards
+  useEffect(() => {
+    if (!pool.length) return;
+    let timer: any;
+    const spawn = () => {
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      const x = Math.random() * 70 + 10; // 10%..80%
+      setFalling((arr) => [
+        ...arr,
+        {
+          id: `${pick.id}-${Date.now()}`,
+          author: pick.author || 'Student',
+          quote: pick.quote || '',
+          uni: pick.university_title || 'University',
+          logo: pick.logo_url || undefined,
+          x,
+        },
+      ].slice(-10));
+      timer = setTimeout(spawn, 1800 + Math.random() * 1200);
+    };
+    spawn();
+    return () => clearTimeout(timer);
+  }, [pool]);
+
   const jump = (idx: number) => {
     const v = videoRef.current; if (!v) return;
     v.currentTime = CUES[idx].start + 0.05; v.play().catch(()=>{}); setPlaying(true);
@@ -112,7 +149,8 @@ export default function MissionShowcase({
   const cx = colorFrom(cue.color);
 
   // Emphasis moments overlay
-  const emphasize = (
+  const showMiniMap = time >= 8 && time < 11;
+  const emphasize = showMiniMap ? null : (
     (time >= 1 && time < 2) ? { text: "Choose the RIGHT medical school FOR YOU", color: "from-amber-400 to-pink-400" } :
     (time >= 8 && time < 9) ? { text: "Use the interactive map above!", color: "from-sky-400 to-cyan-300" } :
     (time >= 18 && time < 20) ? { text: "Real student testimonials — no BS", color: "from-emerald-400 to-lime-300" } :
@@ -258,6 +296,48 @@ export default function MissionShowcase({
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Mini map overlay (00:08–00:11) */}
+          <AnimatePresence>
+            {showMiniMap && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 grid place-items-center"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <MiniMapOverlay />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* Confetti trail when celebrating */}
+          <AnimatePresence>
+            {emphasize?.fireworks && <ConfettiTrail />}
+          </AnimatePresence>
+          {/* Falling testimonials overlay */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <AnimatePresence>
+              {falling.map((f) => (
+                <motion.div
+                  key={f.id}
+                  initial={{ y: -60, x: `${f.x}%`, opacity: 0, rotate: -5 }}
+                  animate={{ y: 520, opacity: 1, rotate: 8 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 6.5, ease: 'linear' }}
+                  className="pointer-events-none w-[220px] -translate-x-1/2 rounded-xl border border-white/20 bg-white/95 p-3 text-indigo-900 shadow-xl backdrop-blur"
+                  onAnimationComplete={() => setFalling((arr) => arr.filter((x) => x.id !== f.id))}
+                  style={{ boxShadow: '0 12px 30px rgba(30,27,75,0.25)' }}
+                >
+                  <div className="flex items-center gap-2">
+                    {f.logo ? <img src={f.logo} alt="logo" className="h-6 w-6 rounded" /> : <span className="h-6 w-6 rounded bg-indigo-200" />}
+                    <div className="text-xs font-semibold line-clamp-1">{f.uni}</div>
+                  </div>
+                  <div className="mt-1 text-[11px] text-gray-700 line-clamp-3">“{f.quote}”</div>
+                  <div className="mt-1 text-[10px] text-gray-500">— {f.author}</div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>
@@ -288,6 +368,69 @@ function Fireworks() {
           transition={{ duration: 1.1, ease: "easeOut", delay: (i % 6) * 0.02 }}
         />
       ))}
+    </div>
+  );
+}
+
+function ConfettiTrail() {
+  const items = Array.from({ length: 100 });
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {items.map((_, i) => (
+        <motion.span
+          key={i}
+          className="absolute h-1.5 w-2 rounded-sm"
+          style={{ left: `${(i / items.length) * 100}%`, top: `${(Math.random() * 30) + 60}%`, background: ["#f59e0b", "#10b981", "#60a5fa", "#f472b6"][i % 4] }}
+          initial={{ y: 0, opacity: 0 }}
+          animate={{ y: -30 - Math.random() * 40, opacity: [0, 1, 0] }}
+          transition={{ duration: 1.2 + Math.random() * 0.8, delay: (i % 20) * 0.03 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniMapOverlay() {
+  // Lightweight decorative "map" with pulsing pins and a label pointing up
+  const pins = [
+    { x: 22, y: 38 }, { x: 35, y: 30 }, { x: 48, y: 44 }, { x: 62, y: 28 }, { x: 72, y: 40 }, { x: 55, y: 55 }
+  ];
+  return (
+    <div className="pointer-events-none grid place-items-center">
+      <div className="relative w-[480px] max-w-[86vw] rounded-3xl border border-white/25 bg-gradient-to-br from-indigo-500/40 to-violet-500/30 p-3 shadow-2xl backdrop-blur-md">
+        {/* stylized map canvas */}
+        <div className="relative h-[240px] w-full overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),transparent_60%),radial-gradient(circle_at_70%_50%,rgba(255,255,255,0.08),transparent_55%)] ring-1 ring-white/20">
+          {/* faint grid */}
+          <svg viewBox="0 0 100 50" className="absolute inset-0 h-full w-full opacity-30">
+            <defs>
+              <pattern id="g" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeOpacity="0.15" strokeWidth="0.3" />
+              </pattern>
+            </defs>
+            <rect width="100" height="50" fill="url(#g)" />
+          </svg>
+          {/* pins */}
+          {pins.map((p, i) => (
+            <div key={i} className="absolute -translate-x-1/2 -translate-y-1/2">
+              <div
+                className="relative"
+                style={{ left: `${p.x}%`, top: `${p.y}%` }}
+              >
+                <div className="absolute -left-1 -top-1 h-6 w-6 animate-ping rounded-full bg-white/40" />
+                <div className="relative h-3 w-3 rounded-full bg-white" />
+              </div>
+            </div>
+          ))}
+          {/* label */}
+          <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-indigo-700 shadow">
+            Use the interactive map!
+          </div>
+          {/* arrow up */}
+          <div className="absolute left-1/2 bottom-3 -translate-x-1/2 text-[10px] text-white/90">
+            Want more? Check out the full map above ↑
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
