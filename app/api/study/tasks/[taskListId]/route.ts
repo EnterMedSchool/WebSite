@@ -124,7 +124,12 @@ export async function DELETE(
     if (list.userId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await db.delete(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id));
     await db.delete(studyTaskLists).where(eq(studyTaskLists.id as any, id));
-    await publish(list.sessionId, StudyEvents.TaskDelete, { taskListId: id });
+    const url = new URL(req.url);
+    const sessionIdFromQuery = Number(url.searchParams.get('sessionId'));
+    const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdFromQuery) ? sessionIdFromQuery : null)) as number | null;
+    if (typeof broadcastId === 'number') {
+      await publish(broadcastId, StudyEvents.TaskDelete, { taskListId: id });
+    }
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to delete" }, { status: 500 });
