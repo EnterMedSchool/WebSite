@@ -58,6 +58,7 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
     const res = await fetch(`/api/study/sessions/${encodeURIComponent(slug)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ sharedEndAt: iso }),
     });
     if (!res.ok) {
@@ -105,4 +106,3 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
     </div>
   );
 }
-

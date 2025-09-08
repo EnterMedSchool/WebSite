@@ -16,6 +16,7 @@ export default function RoomHeader({ room, isOwner }: { room: any; isOwner: bool
     const res = await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ slug }),
     });
     setSaving(false);
@@ -25,7 +26,7 @@ export default function RoomHeader({ room, isOwner }: { room: any; isOwner: bool
   const del = async () => {
     if (!isOwner) return;
     if (!confirm("Delete this room? This cannot be undone.")) return;
-    const res = await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}`, { method: "DELETE" });
+    const res = await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}`, { method: "DELETE", credentials: "include" });
     if (!res.ok) return alert("Failed to delete room.");
     window.location.href = "/study-rooms";
   };

@@ -28,10 +28,10 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
   // On mount: join; before unload: leave; fetch participants
   useEffect(() => {
     if (!sessionId) return;
-    const join = async () => { await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/join`, { method: "PATCH" }); };
-    const leave = async () => { await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/leave`, { method: "PATCH" }); };
+    const join = async () => { await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/join`, { method: "PATCH", credentials: "include" }); };
+    const leave = async () => { await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/leave`, { method: "PATCH", credentials: "include" }); };
     const loadParticipants = async () => {
-      const res = await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/participants`);
+      const res = await fetch(`/api/study/sessions/${encodeURIComponent(room.slug)}/participants`, { credentials: "include" });
       if (res.ok) {
         const json = await res.json();
         useStudyStore.getState().setParticipants((json.data || []).map((p: any) => ({ id: p.id, name: p.name, image: p.image, username: p.username })));

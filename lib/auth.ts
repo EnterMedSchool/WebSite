@@ -1,4 +1,4 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
+import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
@@ -74,4 +74,11 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export const { handlers: authHandlers, auth: authGetServerSession } = NextAuth(authOptions);
+// In NextAuth v4, prefer getServerSession(authOptions) inside Route Handlers and Server Components.
+// Export a thin wrapper with a stable name used across this codebase.
+export async function authGetServerSession() {
+  return await getServerSession(authOptions);
+}
+
+// Keep route handler export (used by app/api/auth/[...nextauth]/route.ts)
+export const authHandlers = NextAuth(authOptions);

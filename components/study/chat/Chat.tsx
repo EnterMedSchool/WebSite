@@ -18,6 +18,7 @@ export default function Chat() {
     const res = await fetch("/api/study/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ sessionId, content }),
     });
     if (!res.ok) return;

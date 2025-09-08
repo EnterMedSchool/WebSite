@@ -15,6 +15,7 @@ export default function NewStudyRoomPage() {
     const res = await fetch("/api/study/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ title, description }),
     });
     setLoading(false);
@@ -40,4 +41,3 @@ export default function NewStudyRoomPage() {
     </section>
   );
 }
-

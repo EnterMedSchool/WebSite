@@ -18,6 +18,7 @@ export default function MyTasks() {
     const res = await fetch("/api/study/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ sessionId, title }),
     });
     if (!res.ok) return null;
@@ -39,6 +40,7 @@ export default function MyTasks() {
     await fetch(`/api/study/tasks/${list.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ title: updated.title, items: updated.items.map((it: any) => ({ name: it.name, isCompleted: !!it.isCompleted })) }),
     });
   };
@@ -50,6 +52,7 @@ export default function MyTasks() {
     await fetch(`/api/study/tasks/${myList.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ title: clone.title, items: clone.items.map((it) => ({ name: it.name, isCompleted: it.isCompleted })) }),
     });
   };
