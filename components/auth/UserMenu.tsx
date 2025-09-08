@@ -126,7 +126,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </div>
           <span className="text-[10px] text-white/70">0/0 XP</span>
         </div>
-        <button onClick={() => setOpenAuth(true)} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign in / Sign up</button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign in / Sign up</button>
       </div>
     );
   }
