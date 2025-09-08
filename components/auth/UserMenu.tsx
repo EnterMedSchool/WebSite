@@ -126,12 +126,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </div>
           <span className="text-[10px] text-white/70">0/0 XP</span>
         </div>
-        <button
-          onClick={() => signIn()}
-          className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90"
-        >
-          Sign in
-        </button>
+        <button onClick={() => setOpenAuth(true)} className="rounded-full border border-white/70 bg-white px-3 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-white/90">Sign in / Sign up</button>
       </div>
     );
   }
@@ -270,6 +265,67 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </div>
         </div>
       )}
+
+      <AuthModal />
+    </div>
+  );
+}
+
+// Lightweight Auth modal inside UserMenu (listen for global 'auth:open')
+function AuthModal() {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'signin'|'signup'>('signup');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(()=>{
+    const onOpen = () => { setOpen(true); setMode('signup'); };
+    window.addEventListener('auth:open' as any, onOpen as any);
+    return () => window.removeEventListener('auth:open' as any, onOpen as any);
+  },[]);
+
+  async function doSignIn() {
+    setLoading(true); setError(null);
+    const res = await signIn('credentials', { email, password, redirect: false });
+    setLoading(false);
+    if ((res as any)?.error) setError((res as any).error as string); else setOpen(false);
+  }
+  async function doSignUp() {
+    setLoading(true); setError(null);
+    try {
+      const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, email, username: email.split('@')[0], password }) });
+      if (!r.ok) { const j=await r.json().catch(()=>({})); throw new Error(j?.error || 'Register failed'); }
+      await doSignIn();
+    } catch (e:any) { setError(String(e?.message||e)); setLoading(false); }
+  }
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/40 p-4" onClick={()=>setOpen(false)}>
+      <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/90 p-5 text-gray-900 shadow-2xl backdrop-blur" onClick={(e)=>e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-lg font-extrabold text-indigo-700">{mode==='signup' ? 'Create your account' : 'Welcome back'}</div>
+          <button onClick={()=>setOpen(false)} className="rounded-full bg-gray-100 p-1 text-gray-500 hover:bg-gray-200" aria-label="Close">✕</button>
+        </div>
+        <div className="mb-3 flex gap-2">
+          <button onClick={()=>setMode('signup')} className={`rounded-full px-3 py-1 text-sm font-semibold ${mode==='signup'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700'}`}>Sign up</button>
+          <button onClick={()=>setMode('signin')} className={`rounded-full px-3 py-1 text-sm font-semibold ${mode==='signin'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700'}`}>Sign in</button>
+        </div>
+        <div className="grid gap-2">
+          {mode==='signup' && (
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" className="rounded-md border px-3 py-2" />
+          )}
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className="rounded-md border px-3 py-2" />
+          <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" className="rounded-md border px-3 py-2" />
+          {error && <div className="text-sm text-rose-600">{error}</div>}
+          <button disabled={loading} onClick={mode==='signup'? doSignUp : doSignIn} className="mt-1 rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            {loading? 'Please wait…' : mode==='signup' ? 'Create account' : 'Sign in'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

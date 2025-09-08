@@ -68,7 +68,7 @@ export default function MissionShowcase({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [time, setTime] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [pool, setPool] = useState<any[]>([]);
   const [falling, setFalling] = useState<{ id: string; author: string; quote: string; uni: string; logo?: string; x: number; dur: number }[]>([]);
@@ -83,8 +83,10 @@ export default function MissionShowcase({
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
     const onTime = () => setTime(v.currentTime);
+    const onEnded = () => setFinished(true);
     v.addEventListener("timeupdate", onTime);
-    return () => v.removeEventListener("timeupdate", onTime);
+    v.addEventListener("ended", onEnded);
+    return () => { v.removeEventListener("timeupdate", onTime); v.removeEventListener("ended", onEnded); };
   }, []);
 
   useEffect(() => {
@@ -177,6 +179,8 @@ export default function MissionShowcase({
     null
   );
 
+  const [finished, setFinished] = useState(false);
+
   return (
     <div ref={containerRef} className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
       {/* floating stars */}
@@ -195,29 +199,47 @@ export default function MissionShowcase({
           {/* Cue content */}
           <div className={`mt-5 rounded-2xl border ${cx.ring} bg-white/10 p-4 backdrop-blur min-h-[200px]`}> 
             <AnimatePresence mode="wait">
-              <motion.div
-                key={cueIndex}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-              >
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <StepIcon index={cueIndex} />
-                  <span>{cue.title}</span>
-                </div>
-                {cue.body && <div className="mt-1 text-sm text-white/85">{cue.body}</div>}
-                {cue.bullets && (
-                  <ul className="mt-3 grid gap-1 text-sm text-white/90">
-                    {cue.bullets.map((b, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <span className={`inline-block h-2 w-2 rounded-full ${cx.dot}`} />
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </motion.div>
+              {!finished ? (
+                <motion.div key={`cue-${cueIndex}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                  <div className="flex items-center gap-2 text-lg font-semibold">
+                    <StepIcon index={cueIndex} />
+                    <span>{cue.title}</span>
+                  </div>
+                  {cue.body && <div className="mt-1 text-sm text-white/85">{cue.body}</div>}
+                  {cue.bullets && (
+                    <ul className="mt-3 grid gap-1 text-sm text-white/90">
+                      {cue.bullets.map((b, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className={`inline-block h-2 w-2 rounded-full ${cx.dot}`} />
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div key="finished"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <div className="text-2xl font-extrabold">Congrats! Now you know how to EnterMedSchool.</div>
+                  <div className="mt-2 text-sm text-white/85">How about we create your account?</div>
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                      className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow hover:bg-white/90"
+                    >Create your account</button>
+                    <button onClick={()=>{ setFinished(false); const v=videoRef.current; if(v){ v.currentTime=0; v.play().catch(()=>{}); setPlaying(true);} }} className="rounded-xl border border-white/50 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Back to video</button>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
 
             {/* Progress bar per cue */}
@@ -250,9 +272,9 @@ export default function MissionShowcase({
           </div>
 
           <div className="mt-6">
-            <a href="#map" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow hover:bg-white/90">
-              Start Exploring <span>→</span>
-            </a>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow hover:bg-white/90">
+              Create an account <span>→</span>
+            </button>
           </div>
         </div>
 
@@ -266,7 +288,7 @@ export default function MissionShowcase({
               className="aspect-[9/16] w-full object-cover"
               playsInline
               muted={muted}
-              autoPlay
+              preload="none"
               loop={false}
               controls={false}
             />
@@ -329,17 +351,18 @@ export default function MissionShowcase({
               </motion.div>
             )}
           </AnimatePresence>
-          {/* Confetti trail when celebrating */}
+          {/* Confetti trail when celebrating (covers the whole section) */}
           <AnimatePresence>
             {emphasize?.fireworks && <ConfettiTrail />}
           </AnimatePresence>
-          {/* Falling testimonials overlay */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <AnimatePresence>
-              {falling.map((f) => (
-                <motion.div
-                  key={f.id}
-                  initial={{ y: -60, x: `${f.x}%`, opacity: 0, rotate: -5 }}
+        </div>
+        {/* Falling testimonials overlay spanning entire section */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <AnimatePresence>
+            {falling.map((f) => (
+              <motion.div
+                key={f.id}
+                initial={{ y: -60, x: `${f.x}%`, opacity: 0, rotate: -5 }}
                   animate={{ y: 520, opacity: 1, rotate: 8 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: f.dur, ease: 'linear' }}

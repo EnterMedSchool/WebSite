@@ -1,19 +1,21 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 type Lesson = {
   id: string;
   title: string;
   thumb?: string;
+  slug?: string;
   steps: number;
   questions: number;
   progress: number; // 0..100
   completed?: boolean;
 };
 
-const MOCK: Lesson[] = [
+const FALLBACK: Lesson[] = [
   { id: "1", title: "IMAT Biology: Cell Structure Essentials", steps: 7, questions: 24, progress: 40, thumb: undefined },
   { id: "2", title: "Chemistry Quickstart: Stoichiometry", steps: 6, questions: 18, progress: 0 },
   { id: "3", title: "Physics Fundamentals: Kinematics", steps: 8, questions: 30, progress: 70 },
@@ -21,11 +23,26 @@ const MOCK: Lesson[] = [
 ];
 
 export default function LatestLessons() {
-  const data = MOCK;
+  const [data, setData] = useState<Lesson[]>(FALLBACK);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [prog, setProg] = useState(0);
 
   useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/lessons/latest', { cache: 'no-store' });
+        const j = await r.json();
+        const rows: Lesson[] = (j?.lessons || []).map((l: any, i: number) => ({
+          id: String(l.id),
+          title: l.title,
+          slug: l.slug,
+          steps: 3,
+          questions: 8 + i,
+          progress: 0,
+        }));
+        if (rows.length) setData(rows);
+      } catch {}
+    })();
     const el = scrollerRef.current;
     if (!el) return;
     const onScroll = () => {
@@ -94,8 +111,18 @@ export default function LatestLessons() {
                   <div className="mt-1 text-right text-[10px] text-gray-500">{l.progress}%</div>
                 </div>
                 <div className="mt-3 flex justify-between">
-                  <button className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">{l.progress>0 ? 'Continue' : 'Start'}</button>
-                  <button className="rounded-lg border px-3 py-1 text-xs font-semibold hover:bg-gray-50">Details</button>
+                  {l.slug ? (
+                    <Link href={`/lesson/${l.slug}`} className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">
+                      {l.progress>0 ? 'Continue' : 'Start'}
+                    </Link>
+                  ) : (
+                    <button className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white opacity-60" disabled>Start</button>
+                  )}
+                  {l.slug ? (
+                    <Link href={`/lesson/${l.slug}`} className="rounded-lg border px-3 py-1 text-xs font-semibold hover:bg-gray-50">Details</Link>
+                  ) : (
+                    <button className="rounded-lg border px-3 py-1 text-xs font-semibold" disabled>Details</button>
+                  )}
                 </div>
               </div>
             </motion.article>
