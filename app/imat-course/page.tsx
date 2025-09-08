@@ -415,7 +415,7 @@ export default function IMATCoursePage() {
               <button className="mt-4 w-full btn-primary-shine" disabled aria-disabled="true">
                 {p.cta}
               </button>
-              <div className="mt-4 text-sm font-semibold text-slate-700">What's included:</div>
+              <div className="mt-4 text-sm font-semibold text-slate-700">What&apos;s included:</div>
               <ul className="mt-2 space-y-2 text-sm text-slate-700">
                 {p.features.map((f, j) => (
                   <li key={j} className="flex items-start gap-2">
