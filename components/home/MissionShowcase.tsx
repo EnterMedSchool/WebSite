@@ -391,9 +391,19 @@ function ConfettiTrail() {
 }
 
 function MiniMapOverlay() {
-  // Lightweight decorative "map" with pulsing pins and a label pointing up
+  // Lightweight decorative "map" with pulsing pins and a label pointing up.
+  // Pins roughly clustered where Italy sits on a simple Europe bbox (not geo-accurate — just for vibe).
   const pins = [
-    { x: 22, y: 38 }, { x: 35, y: 30 }, { x: 48, y: 44 }, { x: 62, y: 28 }, { x: 72, y: 40 }, { x: 55, y: 55 }
+    { x: 56, y: 42, label: "Milan" },
+    { x: 58, y: 46, label: "Pavia" },
+    { x: 60, y: 44, label: "Bergamo" },
+    { x: 62, y: 48, label: "Bologna" },
+    { x: 63, y: 52, label: "Florence" },
+    { x: 66, y: 56, label: "Siena" },
+    { x: 66, y: 60, label: "Rome" },
+    { x: 69, y: 63, label: "Naples" },
+    { x: 73, y: 58, label: "Bari" },
+    { x: 58, y: 55, label: "Parma" },
   ];
   return (
     <div className="pointer-events-none grid place-items-center">
@@ -411,14 +421,12 @@ function MiniMapOverlay() {
           </svg>
           {/* pins */}
           {pins.map((p, i) => (
-            <div key={i} className="absolute -translate-x-1/2 -translate-y-1/2">
-              <div
-                className="relative"
-                style={{ left: `${p.x}%`, top: `${p.y}%` }}
-              >
-                <div className="absolute -left-1 -top-1 h-6 w-6 animate-ping rounded-full bg-white/40" />
-                <div className="relative h-3 w-3 rounded-full bg-white" />
+            <div key={i} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${p.x}%`, top: `${p.y}%` }}>
+              <div className="relative">
+                <div className="absolute -left-2 -top-2 h-7 w-7 animate-ping rounded-full bg-emerald-300/50" />
+                <div className="relative h-3.5 w-3.5 rounded-full bg-emerald-400 ring-2 ring-white/70" />
               </div>
+              <div className="mt-2 -ml-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 shadow">{p.label}</div>
             </div>
           ))}
           {/* label */}
@@ -426,9 +434,7 @@ function MiniMapOverlay() {
             Use the interactive map!
           </div>
           {/* arrow up */}
-          <div className="absolute left-1/2 bottom-3 -translate-x-1/2 text-[10px] text-white/90">
-            Want more? Check out the full map above ↑
-          </div>
+          <div className="absolute left-1/2 bottom-3 -translate-x-1/2 text-[10px] text-white/90">Want more? Check out the full map above ↑</div>
         </div>
       </div>
     </div>
