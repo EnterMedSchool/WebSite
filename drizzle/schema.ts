@@ -430,3 +430,93 @@ export const programYearStats = pgTable(
     yearIdx: index("program_year_stats_year_idx").on(t.year),
   })
 );
+
+// ==========================
+// Study Rooms (Isolated Area)
+// All tables in this block are prefixed with `study_` so the feature
+// can be dropped cleanly without affecting other tables.
+// ==========================
+
+export const studySessions = pgTable(
+  "study_sessions",
+  {
+    id: serial("id").primaryKey(),
+    creatorUserId: integer("creator_user_id").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description"),
+    slug: varchar("slug", { length: 64 }).notNull().unique(),
+    sharedEndAt: timestamp("shared_end_at"),
+    totalJoins: integer("total_joins").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ slugIdx: index("study_sessions_slug_idx").on(t.slug) })
+);
+
+export const studySessionParticipants = pgTable(
+  "study_session_participants",
+  {
+    id: serial("id").primaryKey(),
+    sessionId: integer("session_id").notNull(),
+    userId: integer("user_id").notNull(),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    sessionIdx: index("study_participants_session_idx").on(t.sessionId),
+    userIdx: index("study_participants_user_idx").on(t.userId),
+  })
+);
+
+export const studyMessages = pgTable(
+  "study_messages",
+  {
+    id: serial("id").primaryKey(),
+    sessionId: integer("session_id").notNull(),
+    userId: integer("user_id").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    msgSessionIdx: index("study_messages_session_idx").on(t.sessionId),
+    msgUserIdx: index("study_messages_user_idx").on(t.userId),
+  })
+);
+
+export const studyTaskLists = pgTable(
+  "study_task_lists",
+  {
+    id: serial("id").primaryKey(),
+    sessionId: integer("session_id").notNull(),
+    userId: integer("user_id").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    stlSessionIdx: index("study_task_lists_session_idx").on(t.sessionId),
+    stlUserIdx: index("study_task_lists_user_idx").on(t.userId),
+  })
+);
+
+export const studyTaskItems = pgTable(
+  "study_task_items",
+  {
+    id: serial("id").primaryKey(),
+    taskListId: integer("task_list_id").notNull(),
+    name: varchar("name", { length: 400 }).notNull(),
+    isCompleted: boolean("is_completed").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    stiListIdx: index("study_task_items_list_idx").on(t.taskListId),
+  })
+);
+
+export const studyUserMeta = pgTable(
+  "study_user_meta",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    lastSessionSlug: varchar("last_session_slug", { length: 64 }),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({ userIdx: index("study_user_meta_user_idx").on(t.userId) })
+);
