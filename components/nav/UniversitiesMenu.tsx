@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,7 +17,7 @@ const EXAMS: Exam[] = [
   {
     id: "imat",
     label: "IMAT",
-    flag: "🇮🇹",
+    flag: "IT",
     country: "Italy",
     image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/04/italy_map.svg",
     columns: [
@@ -30,7 +30,7 @@ const EXAMS: Exam[] = [
   {
     id: "ucat",
     label: "UCAT",
-    flag: "🇬🇧",
+    flag: "GB",
     country: "United Kingdom",
     image: "https://upload.wikimedia.org/wikipedia/commons/1/10/Blank_map_of_the_United_Kingdom.svg",
     columns: [
@@ -43,7 +43,7 @@ const EXAMS: Exam[] = [
   {
     id: "medat",
     label: "MedAT",
-    flag: "🇦🇹",
+    flag: "AT",
     country: "Austria",
     image: "https://upload.wikimedia.org/wikipedia/commons/4/41/Blank_map_of_Austria.svg",
     columns: [
@@ -56,7 +56,7 @@ const EXAMS: Exam[] = [
   {
     id: "ham-nat",
     label: "HAM-Nat",
-    flag: "🇩🇪",
+    flag: "DE",
     country: "Germany",
     image: "https://upload.wikimedia.org/wikipedia/commons/6/6e/Blank_map_of_Germany.svg",
     columns: [
@@ -69,7 +69,7 @@ const EXAMS: Exam[] = [
   {
     id: "tms",
     label: "TMS",
-    flag: "🇩🇪",
+    flag: "DE",
     country: "Germany",
     image: "https://upload.wikimedia.org/wikipedia/commons/6/6e/Blank_map_of_Germany.svg",
     columns: [
@@ -82,7 +82,7 @@ const EXAMS: Exam[] = [
   {
     id: "sat-med",
     label: "SAT Med",
-    flag: "🌍",
+    flag: "🌐",
     country: "International",
     image: "https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg",
     columns: [
@@ -93,6 +93,36 @@ const EXAMS: Exam[] = [
     cta: { label: "Global programs", href: "#" },
   },
 ];
+
+// Mini Italy map with pins (simple SVG + pulse)
+function MiniItalyMap({ items }: { items: Array<{ name: string; city: string; x: number; y: number }> }) {
+  return (
+    <div className="relative h-72 w-full overflow-hidden rounded-xl bg-white/60 p-2 ring-1 ring-indigo-100">
+      <svg viewBox="0 0 100 60" className="absolute inset-0 h-full w-full">
+        <g fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.35)" strokeWidth="0.4">
+          <path d="M58 18 L61 20 L63 22 L62 24 L64 26 L66 28 L65 30 L63 31 L62 33 L63 35 L66 37 L68 39 L67 41 L64 42 L62 44 L60 43 L59 40 L58 38 L57 36 L58 34 L57 32 L58 30 L59 28 L59 25 Z"/>
+          <path d="M68 46 L72 47 L73 49 L70 50 L67 49 Z"/>
+          <path d="M54 40 L56 41 L56 44 L54 45 L52 44 L52 41 Z"/>
+        </g>
+      </svg>
+      {/* grid */}
+      <svg viewBox="0 0 100 60" className="absolute inset-0 h-full w-full opacity-30">
+        <defs>
+          <pattern id="gm" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(99,102,241,0.4)" strokeWidth="0.3" />
+          </pattern>
+        </defs>
+        <rect width="100" height="60" fill="url(#gm)" />
+      </svg>
+      {items.map((u) => (
+        <div key={u.name} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${u.x}%`, top: `${u.y}%` }}>
+          <span className="absolute -left-2 -top-2 h-6 w-6 animate-ping rounded-full bg-emerald-300/50" />
+          <span className="block h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function UniversitiesMenu() {
   const [open, setOpen] = useState(false);
