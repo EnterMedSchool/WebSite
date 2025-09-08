@@ -42,11 +42,13 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   for (const q of qr.rows) {
     const cr = await sql`SELECT id, content, correct FROM choices WHERE question_id=${q.id}`;
     let answeredCorrect = false;
+    let selectedChoiceId: number | null = null;
     if (userId) {
-      const ar = await sql`SELECT correct FROM user_question_progress WHERE user_id=${userId} AND question_id=${q.id} LIMIT 1`;
+      const ar = await sql`SELECT choice_id, correct FROM user_question_progress WHERE user_id=${userId} AND question_id=${q.id} LIMIT 1`;
       answeredCorrect = !!ar.rows[0]?.correct;
+      if (ar.rows[0]?.choice_id != null) selectedChoiceId = Number(ar.rows[0].choice_id);
     }
-    result.push({ id: q.id, prompt: q.prompt, explanation: q.explanation, access: q.access || 'public', answeredCorrect, choices: cr.rows.map((c:any)=>({ id:c.id, text:c.content, correct:c.correct })) });
+    result.push({ id: q.id, prompt: q.prompt, explanation: q.explanation, access: q.access || 'public', answeredCorrect, selectedChoiceId, choices: cr.rows.map((c:any)=>({ id:c.id, text:c.content, correct:c.correct })) });
   }
   return NextResponse.json({ questions: result });
 }

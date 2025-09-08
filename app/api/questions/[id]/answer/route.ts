@@ -63,13 +63,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ ok: true, correct: isCorrect, explanation: row.explanation });
     }
 
-    // Upsert progress; award only once on first correct
+    // Persist only when correct; allow retries for wrong answers without locking
     const existing = await sql`SELECT correct FROM user_question_progress WHERE user_id=${userId} AND question_id=${qid} LIMIT 1`;
     let awardedXp = 0;
     let totalCorrectAnswersInc = 0;
     if (existing.rows.length === 0) {
-      await sql`INSERT INTO user_question_progress (user_id, question_id, choice_id, correct) VALUES (${userId}, ${qid}, ${choiceId}, ${isCorrect})`;
       if (isCorrect) {
+        await sql`INSERT INTO user_question_progress (user_id, question_id, choice_id, correct) VALUES (${userId}, ${qid}, ${choiceId}, true)`;
         // award
         const ur = await sql`SELECT xp, level, total_correct_answers FROM users WHERE id=${userId} LIMIT 1`;
         const currXp = Number(ur.rows[0]?.xp || 0);
@@ -90,10 +90,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         } catch {}
       }
     } else {
-      // update choice & correctness but do not double-award XP
+      // update to correct if previously not correct; do not persist wrong
       const wasCorrect = !!existing.rows[0].correct;
-      await sql`UPDATE user_question_progress SET choice_id=${choiceId}, correct=${isCorrect}, answered_at=now() WHERE user_id=${userId} AND question_id=${qid}`;
       if (isCorrect && !wasCorrect) {
+        await sql`UPDATE user_question_progress SET choice_id=${choiceId}, correct=true, answered_at=now() WHERE user_id=${userId} AND question_id=${qid}`;
         const ur = await sql`SELECT xp, level, total_correct_answers FROM users WHERE id=${userId} LIMIT 1`;
         const currXp = Number(ur.rows[0]?.xp || 0);
         const currLevel = Number(ur.rows[0]?.level || 1);
@@ -119,4 +119,3 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });
   }
 }
-

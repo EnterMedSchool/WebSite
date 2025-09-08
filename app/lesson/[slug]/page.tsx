@@ -329,26 +329,32 @@ export default function LessonPage() {
                   <div className="mb-3 text-sm font-semibold text-gray-900">Question {idx + 1} of {qs.length}</div>
                   <div className="mb-3 font-medium">{q.prompt}</div>
                   <QuestionChoices
+                    key={q.id}
                     q={q}
                     isAuthed={isAuthed}
-                    onAnswered={async (choiceId: number) => {
+                    onChoice={async (choiceId: number, isCorrect: boolean) => {
                       setPicked(choiceId);
                       try {
-                        const r = await fetch(`/api/questions/${q.id}/answer`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ choiceId }),
-                          credentials: 'include',
-                        });
-                        const j = await r.json();
-                        setAnsState((s)=>({ ...s, [Number(q.id)]: j?.correct ? 'correct' : 'wrong' }));
-                        if (j?.awardedXp) {
-                          window.dispatchEvent(new CustomEvent('xp:awarded', { detail: { amount: j.awardedXp } }));
-                        }
-                        if (isAuthed) {
-                          const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
-                          const k = await r2.json();
-                          if (k && ('lessonPct' in k)) setLessonProg(k);
+                        if (isCorrect) {
+                          const r = await fetch(`/api/questions/${q.id}/answer`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ choiceId }),
+                            credentials: 'include',
+                          });
+                          const j = await r.json();
+                          setAnsState((s)=>({ ...s, [Number(q.id)]: 'correct' }));
+                          if (j?.awardedXp) {
+                            window.dispatchEvent(new CustomEvent('xp:awarded', { detail: { amount: j.awardedXp } }));
+                          }
+                          if (isAuthed) {
+                            const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
+                            const k = await r2.json();
+                            if (k && ('lessonPct' in k)) setLessonProg(k);
+                          }
+                        } else {
+                          // mark temporary wrong; allow retry
+                          setAnsState((s)=>({ ...s, [Number(q.id)]: 'wrong' }));
                         }
                       } catch {}
                     }}
@@ -420,10 +426,18 @@ export default function LessonPage() {
   );
 }
 
-function QuestionChoices({ q, onAnswered, isAuthed }: { q: any; onAnswered: (choiceId: number) => void; isAuthed?: boolean }) {
-  const [picked, setPicked] = useState<number | null>(null);
-  const handle = (cid: number) => { if (picked == null) { setPicked(cid); onAnswered(cid); } };
+function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceId: number, isCorrect: boolean) => void; isAuthed?: boolean }) {
+  const [picked, setPicked] = useState<number | null>(q.selectedChoiceId ?? null);
+  const [solved, setSolved] = useState<boolean>(!!q.answeredCorrect);
   const gated = (q.access === 'auth' && !isAuthed) || (q.access === 'premium' && !isAuthed);
+  const locked = solved; // lock after correct answer or when previously solved
+  const onPick = (cid: number) => {
+    if (locked || gated) return;
+    setPicked(cid);
+    const isCorrect = !!q.choices.find((x: any) => Number(x.id) === Number(cid))?.correct;
+    if (isCorrect) setSolved(true);
+    onChoice(cid, isCorrect);
+  };
   return (
     <div className="relative">
       {gated && (
@@ -436,13 +450,14 @@ function QuestionChoices({ q, onAnswered, isAuthed }: { q: any; onAnswered: (cho
       )}
       <div className="grid gap-2">
         {q.choices.map((c: any) => {
-          const state = picked == null ? "idle" : c.correct ? "correct" : picked === c.id ? "wrong" : "idle";
+          const isPicked = picked === c.id;
+          const state = picked == null ? 'idle' : (solved && c.correct) ? 'correct' : isPicked && !c.correct ? 'wrong' : isPicked && c.correct ? 'correct' : 'idle';
           const cls = state === "correct" ? "border-green-600 bg-green-50" : state === "wrong" ? "border-rose-600 bg-rose-50" : "hover:bg-gray-50";
           return (
             <button
               key={c.id}
-              onClick={() => handle(c.id)}
-              disabled={picked != null || gated}
+              onClick={() => onPick(c.id)}
+              disabled={locked || gated}
               className={`rounded-lg border px-3 py-2 text-left transition ${cls}`}
             >
               {c.text}
@@ -450,6 +465,9 @@ function QuestionChoices({ q, onAnswered, isAuthed }: { q: any; onAnswered: (cho
           );
         })}
       </div>
+      {picked != null && !solved && (
+        <div className="mt-1 text-[11px] font-semibold text-rose-600">Not quite — try again!</div>
+      )}
     </div>
   );
 }
