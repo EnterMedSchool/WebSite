@@ -69,6 +69,7 @@ export default function MissionShowcase({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(true);
+  const [muted, setMuted] = useState(true);
 
   const cueIndex = useMemo(() => timeToCueIndex(time), [time]);
   const cue = CUES[cueIndex];
@@ -110,6 +111,15 @@ export default function MissionShowcase({
   });
   const cx = colorFrom(cue.color);
 
+  // Emphasis moments overlay
+  const emphasize = (
+    (time >= 1 && time < 2) ? { text: "Choose the RIGHT medical school FOR YOU", color: "from-amber-400 to-pink-400" } :
+    (time >= 8 && time < 9) ? { text: "Use the interactive map above!", color: "from-sky-400 to-cyan-300" } :
+    (time >= 18 && time < 20) ? { text: "Real student testimonials — no BS", color: "from-emerald-400 to-lime-300" } :
+    (time >= 36 && time < 39) ? { text: "You did it! You’ve Entered Med School!", color: "from-fuchsia-400 to-violet-400", fireworks: true } :
+    null
+  );
+
   return (
     <div ref={containerRef} className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
       {/* floating stars */}
@@ -120,13 +130,13 @@ export default function MissionShowcase({
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Left: dynamic text */}
+        {/* Left: dynamic text (fixed height to avoid layout jump) */}
         <div className="flex flex-col justify-center">
           <div className="text-3xl font-extrabold leading-tight sm:text-4xl">What is EnterMedSchool?</div>
           <div className="mt-2 text-white/85">A live, map‑first way to discover medical schools in Europe — with real seat numbers, historical admission scores, and trends you can compare at a glance.</div>
 
           {/* Cue content */}
-          <div className={`mt-5 rounded-2xl border ${cx.ring} bg-white/10 p-4 backdrop-blur`}> 
+          <div className={`mt-5 rounded-2xl border ${cx.ring} bg-white/10 p-4 backdrop-blur min-h-[200px]`}> 
             <AnimatePresence mode="wait">
               <motion.div
                 key={cueIndex}
@@ -135,7 +145,10 @@ export default function MissionShowcase({
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
               >
-                <div className="text-lg font-semibold">{cue.title}</div>
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <StepIcon index={cueIndex} />
+                  <span>{cue.title}</span>
+                </div>
                 {cue.body && <div className="mt-1 text-sm text-white/85">{cue.body}</div>}
                 {cue.bullets && (
                   <ul className="mt-3 grid gap-1 text-sm text-white/90">
@@ -156,7 +169,7 @@ export default function MissionShowcase({
             </div>
           </div>
 
-          {/* Step dots */}
+          {/* Step dots + scrubber */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {CUES.map((c, i) => (
               <button
@@ -167,6 +180,16 @@ export default function MissionShowcase({
                 {i + 1}
               </button>
             ))}
+          </div>
+          <div className="mt-2 h-1.5 w-full max-w-sm rounded-full bg-white/15">
+            <div className="relative h-1.5 rounded-full bg-white/20">
+              <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-white to-white/80" style={{ width: `${Math.min(100, (time / 45) * 100)}%` }} />
+              <div className="absolute inset-0 flex justify-between text-white/70">
+                {CUES.map((c, i) => (
+                  <button key={i} onClick={() => jump(i)} className="-mt-[3px] h-2 w-2 rounded-full bg-white/60 hover:bg-white" style={{ transform: `translateX(-1px)` }} />
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="mt-6">
@@ -185,7 +208,7 @@ export default function MissionShowcase({
               poster={poster}
               className="aspect-[9/16] w-full object-cover"
               playsInline
-              muted
+              muted={muted}
               autoPlay
               loop={false}
               controls={false}
@@ -205,12 +228,66 @@ export default function MissionShowcase({
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               )}
             </button>
+            {/* mute/unmute (enables audio on tap) */}
+            <button
+              onClick={() => { setMuted((m)=>!m); const v=videoRef.current; if(v) { v.muted = !muted; if(v.paused) v.play().catch(()=>{}); } }}
+              className="absolute left-3 top-3 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/50"
+              aria-label={muted ? "Unmute" : "Mute"}
+            >
+              {muted ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l-5 4H4v6h3l5 4zM16.5 12a4.5 4.5 0 0 0-2.2-3.9v7.8a4.5 4.5 0 0 0 2.2-3.9z"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l-5 4H4v6h3l5 4zM19 5l-2 2 2 2 2-2-2-2zm0 10l-2 2 2 2 2-2-2-2z"/></svg>
+              )}
+            </button>
           </div>
           {/* gentle glow */}
           <div className={`pointer-events-none absolute -inset-6 -z-10 bg-gradient-to-r ${cx.glow} to-transparent blur-2xl`} />
+          {/* emphasis overlays & fireworks */}
+          <AnimatePresence>
+            {emphasize && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 grid place-items-center"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className={`rounded-full bg-gradient-to-r ${emphasize.color} px-4 py-1.5 text-sm font-extrabold text-indigo-900 shadow-lg`}>{emphasize.text}</div>
+                {emphasize.fireworks && <Fireworks />}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
   );
 }
 
+function StepIcon({ index }: { index: number }) {
+  const s = index;
+  const base = "h-5 w-5";
+  if (s === 0) return <svg viewBox="0 0 24 24" className={base} fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5v5h5v2h-7V7h2z"/></svg>;
+  if (s === 1) return <svg viewBox="0 0 24 24" className={base} fill="currentColor"><path d="M3 5h18v2H3zM3 11h12v2H3zM3 17h8v2H3z"/></svg>;
+  if (s === 2) return <svg viewBox="0 0 24 24" className={base} fill="currentColor"><path d="M12 2l4 8H8l4-8zm0 20a8 8 0 100-16 8 8 0 000 16z"/></svg>;
+  if (s === 3) return <svg viewBox="0 0 24 24" className={base} fill="currentColor"><path d="M4 4h16v12H4zM2 18h20v2H2z"/></svg>;
+  return <svg viewBox="0 0 24 24" className={base} fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L6.5 20l2-7L3 9h7z"/></svg>;
+}
+
+function Fireworks() {
+  const sparks = Array.from({ length: 24 });
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {sparks.map((_, i) => (
+        <motion.span
+          key={i}
+          className="absolute h-1.5 w-1.5 rounded-sm"
+          style={{ left: "50%", top: "60%", background: ["#34d399", "#60a5fa", "#f472b6", "#fbbf24"][i % 4] }}
+          initial={{ opacity: 1, x: 0, y: 0, rotate: 0 }}
+          animate={{ opacity: 0, x: Math.cos((i / 24) * Math.PI * 2) * 140, y: Math.sin((i / 24) * Math.PI * 2) * 120, rotate: (i * 40) % 360 }}
+          transition={{ duration: 1.1, ease: "easeOut", delay: (i % 6) * 0.02 }}
+        />
+      ))}
+    </div>
+  );
+}
