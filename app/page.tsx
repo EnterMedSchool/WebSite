@@ -18,7 +18,7 @@ export default function HomePage() {
       {/* Map section with rounded base and soft fade */}
       <section
         id="universities"
-        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mt-[-24px] overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.08)]"
+        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mt-[-56px] overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.08)]"
       >
         <HomeMap />
         {/* Soft fade into page background */}
