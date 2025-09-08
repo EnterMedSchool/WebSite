@@ -34,28 +34,24 @@ export default function MyTasks() {
     if (!name || !myUserId) return;
     const list = await ensureList();
     if (!list) return;
-    const nextPosition = (myList?.items?.reduce((m:any,it:any)=>Math.max(m, Number(it.position||0)), 0) ?? 0) + 1;
-    const updated = { ...myList, id: list.id, title: list.title || title, items: [...(myList?.items || []), { id: Date.now(), name, isCompleted: false, parentItemId: null, position: nextPosition }] };
-    // optimistic
-    upsertTaskList(updated as any);
     setItem("");
-    await fetch(`/api/study/tasks/${list.id}`, {
-      method: "PATCH",
+    await fetch(`/api/study/items`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ sessionId, title: updated.title, items: updated.items.map((it: any) => ({ id: it.id>0?it.id:undefined, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) }),
+      body: JSON.stringify({ listId: list.id, name, parentItemId: null, sessionId }),
     });
   };
 
   const toggleItem = async (idx: number) => {
     if (!myList) return;
-    const clone = { ...myList, items: (myList.items as any[]).map((it, i) => (i === idx ? { ...it, isCompleted: !it.isCompleted } : it)) } as any;
-    upsertTaskList(clone);
-    const res = await fetch(`/api/study/tasks/${myList.id}`, {
+    const target = (myList.items as any[])[idx];
+    if (!target?.id) return;
+    const res = await fetch(`/api/study/items/${target.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ sessionId, title: clone.title, items: clone.items.map((it:any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) }),
+      body: JSON.stringify({ sessionId, isCompleted: !target.isCompleted }),
     });
     if (res.ok) {
       try {
@@ -71,36 +67,16 @@ export default function MyTasks() {
 
   const removeItem = async (id: number) => {
     if (!myList) return;
-    const withSubtreeRemoved = (items: any[], targetId: number): any[] => {
-      const toDelete = new Set<number>();
-      const mark = (pid: number) => {
-        toDelete.add(pid);
-        items.filter((x:any)=>x.parentItemId===pid).forEach((c:any)=>mark(c.id));
-      };
-      mark(targetId);
-      return items.filter((x:any)=>!toDelete.has(x.id));
-    };
-    const nextItems = withSubtreeRemoved(myList.items as any[], id);
-    const clone = { ...myList, items: nextItems } as any;
-    upsertTaskList(clone);
-    await fetch(`/api/study/tasks/${myList.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ sessionId, title: clone.title, items: clone.items.map((it:any)=>({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) })
-    });
+    await fetch(`/api/study/items/${id}?sessionId=${sessionId}`, { method: 'DELETE', credentials: 'include' });
   };
 
   const dropAsChild = async (dragItemId: number, targetId: number) => {
     if (!myList) return;
-    const updatedItems = (myList.items as any[]).map((it:any)=> it.id===dragItemId ? { ...it, parentItemId: targetId } : it );
-    const clone = { ...myList, items: updatedItems } as any;
-    upsertTaskList(clone);
-    await fetch(`/api/study/tasks/${myList.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ sessionId, title: clone.title, items: clone.items.map((it:any)=>({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) })
+    await fetch(`/api/study/items/${dragItemId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ sessionId, parentItemId: targetId })
     });
   };
 
