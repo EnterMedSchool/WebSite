@@ -114,7 +114,7 @@ export default function MyTasks() {
     });
     const sortInPlace = (arr:any[]) => arr.sort((a,b)=> (a.position??0)-(b.position??0));
     Object.values(byParent).forEach(sortInPlace);
-    const build = (parentId: number | null) => (byParent[String(parentId ?? 'root')] || []).map((it:any)=> ({ ...it, children: build(it.id) }));
+    const build = (parentId: number | null): any[] => (byParent[String(parentId ?? 'root')] || []).map((it:any)=> ({ ...it, children: build(it.id) }));
     return build(null);
   }, [myList]);
 
