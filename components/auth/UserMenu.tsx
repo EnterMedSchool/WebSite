@@ -26,6 +26,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   const [lvPulse, setLvPulse] = useState<number>(0);
   const ref = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
+  const xpRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -41,6 +42,18 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
+  }, []);
+
+  // Close XP popup on outside click/ESC
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!xpRef.current) return;
+      if (!xpRef.current.contains(e.target as Node)) setXpOpen(false);
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setXpOpen(false); }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDocClick); document.removeEventListener('keydown', onKey); };
   }, []);
 
   // Keep display in sync when props change (e.g., on navigation)
@@ -126,26 +139,34 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   return (
     <div ref={ref} className="relative flex items-center gap-3">
       {/* Compact XP strip (clickable for popup) */}
-      <button
-        type="button"
-        onClick={() => setXpOpen(v=>!v)}
-        className="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur sm:flex"
-        title={`Lv ${level ?? 1} • ${Math.max(0, Math.min(100, xpPct ?? 0))}% to next`}
-      >
-        <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse>0? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
-          Lv {dispLevel}
-        </span>
-        <div ref={barRef} className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out"
-            style={{ width: `${dispPct}%` }}
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
-        </div>
-        <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
-          {isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}
-        </span>
-      </button>
+      <div ref={xpRef} className="relative hidden sm:flex">
+        <button
+          type="button"
+          onClick={() => setXpOpen(v=>!v)}
+          aria-expanded={xpOpen}
+          className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur transition hover:shadow-[0_6px_22px_rgba(0,0,0,0.18)] hover:border-white/30 hover:bg-white/15 active:scale-[0.99]"
+          title="View XP details"
+        >
+          <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse>0? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
+            Lv {dispLevel}
+          </span>
+          <div ref={barRef} className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out"
+              style={{ width: `${dispPct}%` }}
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
+          </div>
+          <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">
+            {isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}
+          </span>
+          <svg className={`ml-1 h-3 w-3 text-white/80 transition-transform ${xpOpen? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+          {/* Glow on hover */}
+          <span className="pointer-events-none absolute -inset-1 rounded-full opacity-0 blur-md transition group-hover:opacity-40" style={{ background: 'radial-gradient(40px 20px at 50% 50%, rgba(255,255,255,0.45), rgba(255,255,255,0))' }} />
+          {/* Tooltip */}
+          <span className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 opacity-0 shadow group-hover:opacity-100">View details</span>
+        </button>
+      </div>
 
       {/* lightweight confetti burst */}
       {burst > 0 && (
@@ -225,19 +246,21 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
 
       {/* XP popup */}
       {xpOpen && (
-        <div className="absolute right-16 top-[calc(100%+8px)] z-50 w-[360px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
+        <div className="absolute right-16 top-[calc(100%+10px)] z-50 w-[380px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
+          {/* Arrow */}
+          <div className="absolute -top-2 right-24 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
-            <div className="mb-2 text-sm font-bold text-indigo-700">Your Progress</div>
+            <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
             <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax? ' (MAX)' : ''} • {dispSpan>0? `${dispIn}/${dispSpan} XP to next` : ''}</div>
             <div className="mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
             <RecentXpList />
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-xl border p-3">
+              <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Achievements</div>
                 <div className="mt-1 text-gray-600">• First Steps (soon)</div>
                 <div className="text-gray-600">• Quiz Whiz (soon)</div>
               </div>
-              <div className="rounded-xl border p-3">
+              <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Daily Streak</div>
                 <div className="mt-1 text-gray-600">Streak: <span id="streak-days">—</span> days (soon)</div>
               </div>
