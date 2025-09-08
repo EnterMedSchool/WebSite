@@ -145,8 +145,8 @@ export default function HomeMap() {
   useEffect(() => {
     function measure() {
       const h = overlayRef.current?.offsetHeight ?? 140;
-      // Account for the new two-row filter panel; add extra breathing room
-      setPanelOffset(Math.min(280, Math.max(140, h + 32)));
+      // Ensure the results panel always clears the filter with extra buffer
+      setPanelOffset(Math.min(320, Math.max(140, h + 48)));
     }
     measure();
     if (typeof window !== 'undefined') {
@@ -436,8 +436,12 @@ export default function HomeMap() {
         {/* Filters bar overlay docked at top-right, shrinks when panel open */}
         {/* Filters overlay: top-left on desktop, bottom-center on small screens */}
         <div
-          className={isSmall ? "pointer-events-none absolute inset-x-0 z-30 flex justify-center" : "pointer-events-none absolute left-3 top-3 z-30"}
-          style={isSmall ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)" } : undefined}
+          className={isSmall ? "pointer-events-none absolute inset-x-0 z-30 flex justify-center" : "pointer-events-none absolute left-3 z-30"}
+          style={
+            isSmall
+              ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)" }
+              : { top: 76, width: "min(520px, 42vw)" }
+          }
         >
           <motion.div
             ref={overlayRef}
