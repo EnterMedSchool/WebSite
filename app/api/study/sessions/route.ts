@@ -27,9 +27,12 @@ export async function GET(req: Request) {
       : await db.select().from(studySessions).orderBy(order).limit(limit).offset((page - 1) * limit);
 
     // A light-weight count; we can refine later
-    const result = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM study_sessions ${
-      my && userId ? sql`WHERE creator_user_id = ${userId}` : sql``
-    }`;
+    let result;
+    if (my && userId) {
+      result = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM study_sessions WHERE creator_user_id = ${userId}`;
+    } else {
+      result = await sql<{ count: string }>`SELECT COUNT(*)::text as count FROM study_sessions`;
+    }
     const count = result.rows?.[0]?.count ?? "0";
 
     return NextResponse.json({
