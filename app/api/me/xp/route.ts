@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions as any);
-    const email = (session?.user?.email || "").toString().toLowerCase();
+    const email = String((session as any)?.user?.email || "").toLowerCase();
     let userId = 0;
     if (email) {
       const ur = await sql`SELECT id FROM users WHERE lower(email)=${email} LIMIT 1`;
@@ -40,4 +40,3 @@ export async function GET() {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message||e) }, { status: 500 });
   }
 }
-
