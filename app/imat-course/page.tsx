@@ -275,45 +275,91 @@ export default function IMATCoursePage() {
         <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Course Enrollment — Join The Club!
         </h2>
+
+        {/* Main plans */}
         <Reveal className="grid gap-6 md:grid-cols-3">
           {[
             {
-              name: "IMAT 2025 Last Minute Course",
-              price: "€699",
-              note: "Perfect for quick polishing before IMAT 2025.",
+              tag: 'Incredible Value',
+              name: 'IMAT 2025 Last Minute Online Course + BONUS: 2 WEEKS of Live Question‑Solving Sessions During September',
+              price: '€699',
+              oldPrice: '€999',
+              note: "Use 'LASTPUSH30' for 30% OFF",
+              cta: 'Join Last Minute Crash Course',
               features: [
-                "200+ hours of content",
-                "30+ hours of marathons",
-                "All IMAT‑style questions",
+                '200+ Hours of Content',
+                '30+ Hours of Practice Marathons',
+                '200+ IMAT‑Styled Questions',
+                '300+ Hands‑on Analysis Videos',
+                'Student‑only Platform',
+                'Archive of All Past Student Questions',
+                'NEW: 2,600+ Math and Physics Videos',
+                'Critical Thinking Crash Course',
+                'Analyzing Past IMAT Tricks Playlist',
+                'Complete 8‑Week Study Planner',
+                'Free Retake Pass Guarantee!',
+                'Lowest Price Guarantee',
+                '2‑Weeks Intensive Marathon: 10 Live Classes starting 2 Weeks Before IMAT 2025',
+                'Recordings of both 2023 and 2024 Live Zoom Summer Classes',
               ],
             },
             {
-              name: "Full IMAT 2026 Online Course + 4 Weeks of Live Sessions",
-              price: "€699",
-              note: "The complete solution from basics to advanced.",
-              features: [
-                "200+ hours + 4 weeks live practice",
-                "300+ hands‑on analysis videos",
-                "New: 2,600+ math & physics videos",
-              ],
+              tag: '0 to 100 Solution',
+              name: 'Full IMAT 2026 Online Course + 4 WEEKS of Live Question‑Solving Sessions',
+              price: '€699',
+              oldPrice: '€899',
+              note: "Use 'IAMEARLY200' To Get 200EUR Discount",
+              cta: 'Start Studying Today',
               highlight: true,
+              features: [
+                '200+ Hours of Content',
+                '4 Weeks of Live Practice Sessions',
+                '300+ Hands‑on Analysis Videos',
+                '5000+ IMAT‑Styled Questions (Yes, not a typo)',
+                'Student‑only Platform',
+                'Archive of All Past Student Questions',
+                'NEW: 2,600+ Math and Physics Videos',
+                'Analyzing Past IMAT Tricks Playlist',
+                'New 2026 60 Days Planner',
+                'Lowest Price Guarantee',
+                'Recordings of the 2023‑2025 Live Zoom Summer Classes (2099 EUR)',
+                'Free Retake Pass Guarantee!',
+              ],
             },
             {
-              name: "Live Zoom Summer 2026 Bootcamp (Waiting List)",
-              price: "€2099",
-              note: "The most demanding and comprehensive live experience.",
+              tag: 'Next Year Summer Intake',
+              name: 'Live Zoom Summer 2026 Bootcamp · 3 Months of Intensive Classes',
+              price: '€2099',
+              oldPrice: '€3999',
+              note: 'Half the Price of Other Prep Courses',
+              cta: 'Enroll Today – Waiting List',
+              waitlist: true,
               features: [
-                "Small class, personal feedback",
-                "4 sessions/week during summer",
-                "Includes everything in Online Course",
+                "Everything in 'Full Online Course Access', and also:",
+                "Everything in '1‑on‑1 Coaching with Ari'",
+                '4 Sessions Per Week During the Entire Summer',
+                'Classes and Questions Based on Students\' Requests',
+                'New IMAT‑Style Question Marathons — Based on IMAT 2024',
+                'Ideal for those ready to invest time, and keen to deepen their understanding',
+                'Dissect advanced content, review crucial videos, and challenge yourself with the toughest questions out there',
+                'Lowest Price Guarantee',
+                'The most demanding and comprehensive live course on the market. If you have any question, contact Ari before!',
               ],
             },
           ].map((p, i) => (
-            <div key={i} className={`flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md ${p.highlight ? 'border-indigo-300 ring-1 ring-indigo-200' : 'border-slate-200'}`}>
-              <div className="text-sm font-semibold text-indigo-600">{p.highlight ? 'Most Popular' : '\u00A0'}</div>
-              <h3 className="mt-1 text-lg font-bold text-slate-900">{p.name}</h3>
-              <div className="mt-2 text-3xl font-extrabold text-slate-900">{p.price}</div>
-              <p className="mt-2 text-sm text-slate-600">{p.note}</p>
+            <div key={i} className={`relative flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md ${p.highlight ? 'border-transparent bg-gradient-to-b from-sky-50 to-white p-[1.5px]' : 'border-slate-200'}`}>
+              {p.highlight ? (
+                <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-sky-200 to-indigo-200" />
+              ) : null}
+              <div className={`absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-semibold ${p.highlight ? 'bg-indigo-600 text-white' : 'bg-sky-600 text-white'}`}>
+                {p.tag}
+              </div>
+              <h3 className="mt-1 pr-10 text-lg font-bold text-slate-900">{p.name}</h3>
+              <div className="mt-3 flex items-baseline gap-3">
+                {p.oldPrice ? <div className="text-lg font-semibold text-slate-400 line-through">{p.oldPrice}</div> : null}
+                <div className="text-3xl font-extrabold text-slate-900">{p.price}</div>
+              </div>
+              {p.note ? <p className="mt-1 text-xs font-semibold text-emerald-700">{p.note}</p> : null}
               <ul className="mt-4 space-y-2 text-sm text-slate-700">
                 {p.features.map((f, j) => (
                   <li key={j} className="flex items-start gap-2">
@@ -322,7 +368,67 @@ export default function IMATCoursePage() {
                   </li>
                 ))}
               </ul>
-              <a href="#" className="mt-5 btn-primary-shine">Start Studying Today</a>
+              <a href="#" className="mt-5 btn-primary-shine">{p.cta}</a>
+            </div>
+          ))}
+        </Reveal>
+
+        {/* Private lessons */}
+        <Reveal className="mt-8 grid gap-6 md:grid-cols-2">
+          {[
+            {
+              tag: 'Private Lessons',
+              name: 'IMAT 2026 1‑on‑1 Coaching with Ari',
+              price: '€1499',
+              note: 'For students who want someone to oversee their progress.',
+              soldOut: true,
+              cta: 'Fully Booked',
+              features: [
+                "Everything in 'Full Online Course Access'",
+                'Individual Approach',
+                'Customized Study Planner',
+                'Unlimited Sessions During The Summer',
+                'Progress Analysis',
+                'Simulator Results Analysis',
+              ],
+            },
+            {
+              tag: 'Private Lessons',
+              name: 'Single 3 Hours 1‑on‑1 Session with Ari',
+              price: '€150',
+              note: 'Get Ari\'s insight, custom study planner, and find weakspots together.',
+              soldOut: true,
+              cta: 'Schedule (Fully Booked for 2026)',
+              features: [
+                'Customized Study Planner',
+                'Customized Homework',
+                '180 Minute Private Coaching Lesson',
+                'Solving Qs of All Topic and Finding Weakspots',
+              ],
+            },
+          ].map((p, i) => (
+            <div key={i} className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="absolute -top-3 left-4 rounded-full bg-slate-700 px-3 py-1 text-[11px] font-semibold text-white">{p.tag}</div>
+              <h3 className="mt-1 text-lg font-bold text-slate-900">{p.name}</h3>
+              <div className="mt-2 text-3xl font-extrabold text-slate-900">{p.price}</div>
+              <p className="mt-2 text-sm text-slate-600">{p.note}</p>
+              <button className="mt-4 w-full btn-primary-shine" disabled aria-disabled="true">
+                {p.cta}
+              </button>
+              <div className="mt-4 text-sm font-semibold text-slate-700">What's included:</div>
+              <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                {p.features.map((f, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-slate-400" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              {p.soldOut && (
+                <div className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-inset ring-slate-300/60">
+                  <div className="absolute right-3 top-3 rounded-md bg-slate-800/90 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">Fully Booked</div>
+                </div>
+              )}
             </div>
           ))}
         </Reveal>
