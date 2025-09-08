@@ -1,6 +1,8 @@
 import Image from "next/image";
 import type { Metadata } from "next";
 import HomeBackdrop from "@/components/home/HomeBackdrop";
+import Reveal from "@/components/imat/Reveal";
+import StickyCTA from "@/components/imat/StickyCTA";
 
 export const metadata: Metadata = {
   title: "IMAT Course | EnterMedSchool",
@@ -117,7 +119,8 @@ const REVIEW_IMAGES = [
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-600">
+    <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-sky-600">
+      <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-500" />
       {children}
     </div>
   );
@@ -126,7 +129,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 function CTAButtons() {
   return (
     <div className="mt-6 flex flex-wrap gap-3">
-      <a href="#pricing" className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400">Start Studying Today</a>
+      <a href="#pricing" className="btn-primary-shine">Start Studying Today</a>
       <a href="#features" className="rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur hover:bg-white/15">Learn More</a>
     </div>
   );
@@ -134,12 +137,13 @@ function CTAButtons() {
 
 export default function IMATCoursePage() {
   return (
-    <div className="space-y-16">
+    <div className="space-y-20">
       <HomeBackdrop />
+      <StickyCTA />
 
       {/* Hero: full-bleed video with gradient overlay */}
-      <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.08)]">
-        <div className="relative h-[58vh] min-h-[440px] w-full">
+      <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.12)]">
+        <div className="relative h-[64vh] min-h-[460px] w-full">
           <video
             className="absolute inset-0 h-full w-full object-cover"
             autoPlay
@@ -149,10 +153,15 @@ export default function IMATCoursePage() {
             poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-22.png"
             src="https://entermedschool.com/wp-content/uploads/2024/06/ezgif.com-gif-to-mp4-converter.mp4"
           />
-          <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_70%_-10%,rgba(15,23,42,0.6),rgba(15,23,42,0.8))]" />
+          <div className="absolute inset-0 aurora-bg" />
+          {/* Floating orbs */}
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-8 top-10 h-24 w-24 rounded-full bg-sky-400/25 blur-2xl animate-float-slow" />
+            <div className="absolute right-16 bottom-12 h-28 w-28 rounded-full bg-indigo-400/25 blur-2xl animate-float-slow" style={{ animationDelay: '1s' }} />
+          </div>
           <div className="relative z-10 mx-auto flex h-full max-w-6xl items-center px-6">
             <div className="max-w-2xl text-white">
-              <h1 className="font-[var(--font-baloo,_inherit)] text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
+              <h1 className="font-[var(--font-baloo,_inherit)] text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl">
                 IMAT 2025 Full Online Course
               </h1>
               <p className="mt-4 text-white/90">
@@ -167,13 +176,30 @@ export default function IMATCoursePage() {
         </div>
       </section>
 
+      {/* Stats strip */}
+      <section className="mx-auto -mt-10 w-full max-w-6xl px-4">
+        <Reveal className="grid grid-cols-2 gap-3 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50 p-4 text-slate-800 shadow-md md:grid-cols-4">
+          {[
+            ["200+", "Hours of Content"],
+            ["300+", "Past-Paper Analyses"],
+            ["2600+", "Math & Physics Videos"],
+            ["30+", "Hours of IMAT-like Qs"],
+          ].map(([k, v], i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="rounded-xl bg-white px-3 py-2 text-2xl font-extrabold text-sky-600 shadow-sm ring-1 ring-slate-200">{k}</div>
+              <div className="text-sm font-semibold text-slate-700">{v}</div>
+            </div>
+          ))}
+        </Reveal>
+      </section>
+
       {/* Features */}
       <section id="features" className="relative z-10 mx-auto w-full max-w-6xl px-4">
         <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
-        <div className="grid gap-14">
+        <div className="grid gap-16">
           {FEATURES.map((f, i) => (
             <article key={i} className={`grid items-center gap-8 md:grid-cols-2 ${f.reverse ? 'md:[&>div:first-child]:order-2' : ''}`}>
-              <div>
+              <Reveal>
                 {f.eyebrow ? <Eyebrow>{f.eyebrow}</Eyebrow> : null}
                 <h2 className="font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
                   {f.title}
@@ -186,13 +212,16 @@ export default function IMATCoursePage() {
                     </li>
                   ))}
                 </ul>
-                <a href="#pricing" className="mt-5 inline-block rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">Start Studying Today</a>
-              </div>
-              <div className="">
-                <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                  <Image src={f.image} alt={f.imageAlt} width={1200} height={800} className="h-full w-full object-cover" />
+                <a href="#pricing" className="mt-5 inline-block btn-primary-shine">Start Studying Today</a>
+              </Reveal>
+              <Reveal delay={0.08} className="">
+                <div className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-xl">
+                  <div className="relative">
+                    <Image src={f.image} alt={f.imageAlt} width={1200} height={800} className="h-full w-full transform-gpu object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] group-hover:rotate-[0.8deg]" />
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10" />
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             </article>
           ))}
         </div>
@@ -200,16 +229,16 @@ export default function IMATCoursePage() {
 
       {/* Small features grid */}
       <section className="mx-auto max-w-6xl px-4">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {SMALL_FEATURES.map((it, idx) => (
-            <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-transform duration-200 hover:-translate-y-[2px] hover:shadow-md">
               <div className="overflow-hidden rounded-lg">
-                <Image src={it.image} alt="" width={900} height={600} className="h-44 w-full object-cover" />
+                <Image src={it.image} alt="" width={900} height={600} className="h-44 w-full object-cover transition-transform duration-500 ease-out hover:scale-[1.04]" />
               </div>
               <div className="px-1 pb-2 pt-3 text-center text-sm font-semibold text-slate-800">{it.title}</div>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Student videos */}
@@ -217,7 +246,7 @@ export default function IMATCoursePage() {
         <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Here Is What My Students Have To Say
         </h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <Reveal className="grid gap-6 md:grid-cols-3">
           {[
             { url: "https://www.youtube.com/embed/cM4qJmzAGzA", label: "Top 0.7%" },
             { url: "https://www.youtube.com/embed/vCHf00ACxjE", label: "Top 1.5%" },
@@ -238,7 +267,7 @@ export default function IMATCoursePage() {
               </div>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Pricing (concise) */}
@@ -246,7 +275,7 @@ export default function IMATCoursePage() {
         <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Course Enrollment — Join The Club!
         </h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <Reveal className="grid gap-6 md:grid-cols-3">
           {[
             {
               name: "IMAT 2025 Last Minute Course",
@@ -280,7 +309,7 @@ export default function IMATCoursePage() {
               ],
             },
           ].map((p, i) => (
-            <div key={i} className={`flex flex-col rounded-2xl border bg-white p-6 shadow-sm ${p.highlight ? 'border-indigo-300 ring-1 ring-indigo-200' : 'border-slate-200'}`}>
+            <div key={i} className={`flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md ${p.highlight ? 'border-indigo-300 ring-1 ring-indigo-200' : 'border-slate-200'}`}>
               <div className="text-sm font-semibold text-indigo-600">{p.highlight ? 'Most Popular' : '\u00A0'}</div>
               <h3 className="mt-1 text-lg font-bold text-slate-900">{p.name}</h3>
               <div className="mt-2 text-3xl font-extrabold text-slate-900">{p.price}</div>
@@ -293,10 +322,10 @@ export default function IMATCoursePage() {
                   </li>
                 ))}
               </ul>
-              <a href="#" className="mt-5 inline-flex items-center justify-center rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">Start Studying Today</a>
+              <a href="#" className="mt-5 btn-primary-shine">Start Studying Today</a>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Reviews grid (images) */}
@@ -304,17 +333,18 @@ export default function IMATCoursePage() {
         <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Real Reviews From Real Students
         </h2>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <Reveal className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {REVIEW_IMAGES.map((src, i) => (
             <div key={i} className="overflow-hidden rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
               <Image src={src} alt="Student review screenshot" width={600} height={600} className="h-full w-full object-contain" />
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Story */}
       <section className="mx-auto max-w-3xl px-4">
+        <Reveal>
         <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900">My Story — How I Built This Course</h2>
           <p className="mt-3 text-slate-700">
@@ -324,6 +354,7 @@ export default function IMATCoursePage() {
             The program is updated continuously with new videos, past‑paper analysis, strategy breakdowns, and focused review material — so you can prepare with confidence and clarity.
           </p>
         </article>
+        </Reveal>
       </section>
 
       {/* FAQ */}
@@ -344,7 +375,7 @@ export default function IMATCoursePage() {
                 { q: "Do you offer a payment plan?", a: "Contact us to discuss installment options." },
                 { q: "How long is access?", a: "Full access for the exam cycle, with extensions for returning students." },
               ].map((item, idx) => (
-                <details key={idx} className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <details key={idx} className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm open:glow-ring">
                   <summary className="cursor-pointer list-none font-medium text-slate-900">
                     <span className="mr-2 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">FAQ</span>
                     {item.q}
@@ -359,4 +390,3 @@ export default function IMATCoursePage() {
     </div>
   );
 }
-
