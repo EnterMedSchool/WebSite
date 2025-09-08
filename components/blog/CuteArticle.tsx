@@ -49,7 +49,7 @@ export default function CuteArticle({
       </div>
 
       {/* Floating article card */}
-      <div className="relative z-10 mx-auto -mt-10 w-full max-w-3xl px-4 sm:px-6">
+      <div className="relative z-10 mx-auto -mt-10 w-full max-w-5xl lg:max-w-6xl px-4 sm:px-6">
         <div className="rounded-[28px] bg-gradient-to-b from-sky-200/60 via-indigo-200/40 to-transparent p-[1.5px]">
           <article className="rounded-[28px] bg-white shadow-xl ring-1 ring-slate-200">
             <header className="px-5 pb-2 pt-6 sm:px-8">
@@ -59,7 +59,7 @@ export default function CuteArticle({
                 ) : null}
                 {formatted ? <span className="text-slate-500">{formatted}</span> : null}
               </div>
-              <h1 className="mt-3 font-[var(--font-baloo,_inherit)] text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl md:text-4xl">
+              <h1 className="mt-3 font-[var(--font-baloo,_inherit)] text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl md:text-5xl">
                 {title}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-600">
