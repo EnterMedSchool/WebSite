@@ -21,6 +21,7 @@ export async function PATCH(
   const id = Number(params.taskListId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const body = await req.json().catch(() => ({}));
+  const sessionIdFromBody = Number((body as any)?.sessionId);
   const title = typeof body?.title === "string" ? String(body.title).trim() : undefined;
   const items: Array<{ id?: number; name: string; isCompleted?: boolean; parentItemId?: number | null; position?: number }> = Array.isArray(body?.items) ? body.items : [];
 
@@ -97,8 +98,11 @@ export async function PATCH(
     }
 
     const newItems = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
-    const payload = { ...list, title: title ?? list.title, items: newItems };
-    await publish(list.sessionId, StudyEvents.TaskUpsert, payload);
+    const payload = { ...list, title: title ?? list.title, items: newItems } as any;
+    const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdFromBody) ? sessionIdFromBody : null)) as number | null;
+    if (typeof broadcastId === 'number') {
+      await publish(broadcastId, StudyEvents.TaskUpsert, payload);
+    }
     return NextResponse.json({ data: payload, xpAwarded: xpDelta });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to update" }, { status: 500 });

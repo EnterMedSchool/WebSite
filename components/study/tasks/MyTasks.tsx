@@ -43,19 +43,19 @@ export default function MyTasks() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ title: updated.title, items: updated.items.map((it: any) => ({ id: it.id>0?it.id:undefined, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) }),
+      body: JSON.stringify({ sessionId, title: updated.title, items: updated.items.map((it: any) => ({ id: it.id>0?it.id:undefined, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) }),
     });
   };
 
   const toggleItem = async (idx: number) => {
     if (!myList) return;
-    const clone = { ...myList, items: myList.items.map((it, i) => (i === idx ? { ...it, isCompleted: !it.isCompleted } : it)) } as any;
+    const clone = { ...myList, items: (myList.items as any[]).map((it, i) => (i === idx ? { ...it, isCompleted: !it.isCompleted } : it)) } as any;
     upsertTaskList(clone);
     const res = await fetch(`/api/study/tasks/${myList.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ title: clone.title, items: clone.items.map((it:any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) }),
+      body: JSON.stringify({ sessionId, title: clone.title, items: clone.items.map((it:any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) }),
     });
     if (res.ok) {
       try {
@@ -87,7 +87,7 @@ export default function MyTasks() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ title: clone.title, items: clone.items.map((it:any)=>({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) })
+      body: JSON.stringify({ sessionId, title: clone.title, items: clone.items.map((it:any)=>({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) })
     });
   };
 
@@ -100,7 +100,7 @@ export default function MyTasks() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ title: clone.title, items: clone.items.map((it:any)=>({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) })
+      body: JSON.stringify({ sessionId, title: clone.title, items: clone.items.map((it:any)=>({ id: it.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position ?? 0 })) })
     });
   };
 
