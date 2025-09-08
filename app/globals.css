@@ -27,6 +27,10 @@ html, body {
 .animate-float-slow { animation: floatSlow 7s ease-in-out infinite; }
 .animate-twinkle { animation: twinkle 2.4s ease-in-out infinite; }
 
+/* XP UI animations */
+@keyframes ems-fall { from { opacity: 1; transform: translateY(0) rotate(0deg);} to { opacity: 0; transform: translateY(18px) rotate(60deg);} }
+@keyframes xpshimmer { from { transform: translateX(-120%);} to { transform: translateX(220%);} }
+
 /* Hide native scrollbars for custom progress UI */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

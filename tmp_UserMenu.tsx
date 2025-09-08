@@ -182,11 +182,18 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
               top: `${Math.floor(i/8)*-4}px`,
               background: ['#fde047','#34d399','#60a5fa','#fca5a5'][i%4],
               transform: `rotate(${(i*37)%360}deg)`,
-              animation: `ems-fall ${600 + (i%5)*80}ms ease-out forwards`
+              animation: `fall ${600 + (i%5)*80}ms ease-out forwards`
             }} />
           ))}
+          <style jsx>{`
+            @keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } }
+          `}</style>
         </div>
       )}
+      {/* shimmer keyframes */}
+      <style jsx>{`
+        @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+      `}</style>
 
       {/* Avatar trigger */}
       <button
