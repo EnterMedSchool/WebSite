@@ -1,24 +1,4 @@
 ﻿"use client";
-}
-  );
-  const IMAT_UNIS = [
-    { name: "Turin", city: "Turin", x: 53, y: 32 },
-    { name: "Pavia", city: "Pavia", x: 56, y: 38 },
-    { name: "Parma", city: "Parma", x: 58, y: 42 },
-    { name: "Padova", city: "Padova", x: 61, y: 35 },
-    { name: "Milano Statale", city: "Milan", x: 57, y: 37 },
-    { name: "Milano Bicocca", city: "Milan", x: 58, y: 36 },
-    { name: "Bologna", city: "Bologna", x: 61, y: 45 },
-    { name: "Tor Vergata", city: "Rome", x: 66, y: 59 },
-    { name: "Ancona (M.D. & Tech)", city: "Ancona", x: 68, y: 50 },
-    { name: "La Sapienza", city: "Rome", x: 65, y: 58 },
-    { name: "Luigi Vanvitelli", city: "Caserta", x: 69, y: 61 },
-    { name: "Federico II", city: "Naples", x: 70, y: 62 },
-    { name: "Messina", city: "Messina", x: 74, y: 70 },
-    { name: "Bari Aldo Moro", city: "Bari", x: 74, y: 58 },
-  ];
-}
-"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
