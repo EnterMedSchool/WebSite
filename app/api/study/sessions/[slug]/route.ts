@@ -3,7 +3,7 @@ import { db, sql } from "@/lib/db";
 import { studySessions } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
+import { emit } from "@/lib/study/sse";
 import { StudyEvents } from "@/lib/study/events";
 
 export const runtime = "nodejs";
@@ -58,7 +58,7 @@ export async function PATCH(
       .returning({ id: studySessions.id, slug: studySessions.slug, sharedEndAt: studySessions.sharedEndAt });
     const out = updated[0];
     if (updatingShared && out?.sharedEndAt) {
-      await publish(s.id, StudyEvents.TimerTick, { sharedEndAt: out.sharedEndAt });
+      emit(Number(s.id), StudyEvents.TimerTick, { sharedEndAt: out.sharedEndAt });
     }
     return NextResponse.json({ data: out });
   } catch (e: any) {

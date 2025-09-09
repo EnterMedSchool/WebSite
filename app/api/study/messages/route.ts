@@ -3,7 +3,7 @@ import { db, sql } from "@/lib/db";
 import { studyMessages } from "@/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
+import { emit } from "@/lib/study/sse";
 import { StudyEvents } from "@/lib/study/events";
 
 export const runtime = "nodejs";
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     const ures = await sql<{ name: string | null; image: string | null; username: string | null }>`SELECT name, image, username FROM users WHERE id = ${userId} LIMIT 1`;
     const user = ures.rows?.[0] || { name: null, image: null, username: null };
     const payload = { ...msg, user: { id: userId, name: user.name, image: user.image, username: user.username } } as any;
-    await publish(sessionId, StudyEvents.MessageNew, payload);
+    emit(sessionId, StudyEvents.MessageNew, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to post" }, { status: 500 });

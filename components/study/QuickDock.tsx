@@ -52,6 +52,19 @@ export default function QuickDock() {
     })();
   }, [panelOpen]);
 
+  // Live updates via SSE when a room is resolved
+  useEffect(() => {
+    if (!slug) return;
+    const es = new EventSource(`/api/study/sse/${encodeURIComponent(slug)}`);
+    const onMsg = (e: MessageEvent) => {
+      try { const m = JSON.parse(e.data); setMessages((prev) => prev.some((x)=>x.id===m.id)?prev:[...prev, m]); } catch {}
+    };
+    const onTick = (e: MessageEvent) => { try { const p = JSON.parse(e.data); setSharedEndAt(p?.sharedEndAt ?? null); } catch {} };
+    es.addEventListener('message:new', onMsg);
+    es.addEventListener('timer:tick', onTick);
+    return () => { es.removeEventListener('message:new', onMsg as any); es.removeEventListener('timer:tick', onTick as any); es.close(); };
+  }, [slug]);
+
   async function reloadTasks() {
     // Ask server to return/create my personal global list (no session linkage)
     const r = await fetch('/api/study/tasks', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isGlobal: true }) });

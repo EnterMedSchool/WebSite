@@ -1,52 +1,38 @@
 "use client";
 
 import { useEffect } from "react";
-import { getPusherClient } from "@/lib/study/pusherClient";
-import { channelForSession, StudyEvents } from "@/lib/study/events";
+import { StudyEvents } from "@/lib/study/events";
 import { useStudyStore } from "@/lib/study/store";
 
-export function useStudyChannel(sessionId: number | null) {
+export function useStudyChannel(slug: string | null) {
   const addMessage = useStudyStore((s) => s.addMessage);
-  const upsertTask = useStudyStore((s) => s.upsertTaskList);
-  const deleteTask = useStudyStore((s) => s.deleteTaskList);
   const addParticipant = useStudyStore((s) => s.addParticipant);
   const removeParticipant = useStudyStore((s) => s.removeParticipant);
   const setSharedEndAt = useStudyStore((s) => s.setSharedEndAt);
 
   useEffect(() => {
-    const client = getPusherClient();
-    if (!client || !sessionId) return;
-    const channel = client.subscribe(channelForSession(sessionId));
-    const onMsg = (payload: any) => addMessage(payload);
-    const onTask = (payload: any) => upsertTask(payload);
-    const onTaskDel = (payload: any) => deleteTask(payload.taskListId);
-    const onJoin = (payload: any) => {
-      const p = {
-        id: Number(payload?.userId),
-        name: payload?.name ?? undefined,
-        image: payload?.image ?? undefined,
-        username: payload?.username ?? undefined,
-      };
+    if (!slug) return;
+    const es = new EventSource(`/api/study/sse/${encodeURIComponent(slug)}`);
+    const onMsg = (e: MessageEvent) => { try { addMessage(JSON.parse(e.data)); } catch {} };
+    const onJoin = (e: MessageEvent) => { try {
+      const payload = JSON.parse(e.data);
+      const p = { id: Number(payload?.userId), name: payload?.name ?? undefined, image: payload?.image ?? undefined, username: payload?.username ?? undefined };
       addParticipant(p);
-    };
-    const onLeave = (payload: any) => removeParticipant(Number(payload?.userId));
-    const onTick = (payload: any) => setSharedEndAt(payload?.sharedEndAt ?? null);
+    } catch {} };
+    const onLeave = (e: MessageEvent) => { try { const p = JSON.parse(e.data); removeParticipant(Number(p?.userId)); } catch {} };
+    const onTick = (e: MessageEvent) => { try { const p = JSON.parse(e.data); setSharedEndAt(p?.sharedEndAt ?? null); } catch {} };
 
-    channel.bind(StudyEvents.MessageNew, onMsg);
-    channel.bind(StudyEvents.TaskUpsert, onTask);
-    channel.bind(StudyEvents.TaskDelete, onTaskDel);
-    channel.bind(StudyEvents.PresenceJoin, onJoin);
-    channel.bind(StudyEvents.PresenceLeave, onLeave);
-    channel.bind(StudyEvents.TimerTick, onTick);
+    es.addEventListener(StudyEvents.MessageNew, onMsg);
+    es.addEventListener(StudyEvents.PresenceJoin, onJoin);
+    es.addEventListener(StudyEvents.PresenceLeave, onLeave);
+    es.addEventListener(StudyEvents.TimerTick, onTick);
 
     return () => {
-      channel.unbind(StudyEvents.MessageNew, onMsg);
-      channel.unbind(StudyEvents.TaskUpsert, onTask);
-      channel.unbind(StudyEvents.TaskDelete, onTaskDel);
-      channel.unbind(StudyEvents.PresenceJoin, onJoin);
-      channel.unbind(StudyEvents.PresenceLeave, onLeave);
-      channel.unbind(StudyEvents.TimerTick, onTick);
-      client.unsubscribe(channelForSession(sessionId));
+      es.removeEventListener(StudyEvents.MessageNew, onMsg as any);
+      es.removeEventListener(StudyEvents.PresenceJoin, onJoin as any);
+      es.removeEventListener(StudyEvents.PresenceLeave, onLeave as any);
+      es.removeEventListener(StudyEvents.TimerTick, onTick as any);
+      es.close();
     };
-  }, [sessionId, addMessage, upsertTask, deleteTask, addParticipant, removeParticipant, setSharedEndAt]);
+  }, [slug, addMessage, addParticipant, removeParticipant, setSharedEndAt]);
 }

@@ -9,11 +9,11 @@ Code Locations
 - Drizzle tables: `drizzle/schema.ts` (tables prefixed with `study_`)
 
 Environment Variables
-- Pusher server: `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`
-- Pusher client: `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER`
+- SSE server: `SSE_APP_ID`, `SSE_KEY`, `SSE_SECRET`, `SSE_CLUSTER`
+- SSE client: `NEXT_PUBLIC_SSE_KEY`, `NEXT_PUBLIC_SSE_CLUSTER`
 
 Install & Migrate
-1) Install deps: `npm i pusher pusher-js`
+1) Install deps: `npm i SSE SSE-js`
 2) Generate migrations: `npm run db:generate`
 3) Push migrations: `npm run db:push`
 
@@ -31,12 +31,12 @@ API Endpoints (skeleton)
 - `PATCH /api/study/tasks/[taskListId]` { title?, items? }
 - `DELETE /api/study/tasks/[taskListId]`
 
-Realtime Events (Pusher)
+Realtime Events (SSE)
 - Channel: `study-session-{id}`
 - Events: `presence:join`, `presence:leave`, `message:new`, `timer:tick`, `task:upsert`, `task:delete`
 
 Removal
 - Delete `app/api/study` and `lib/study` folders
 - Remove `study_` tables from `drizzle/schema.ts` (and create a migration to drop them, if already applied)
-- Remove Pusher env vars and packages if unused elsewhere
+- Remove SSE env vars and packages if unused elsewhere
 

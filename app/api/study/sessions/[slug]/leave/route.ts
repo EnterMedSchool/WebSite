@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { studySessionParticipants, studySessions } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
+import { emit } from "@/lib/study/sse";
 import { StudyEvents } from "@/lib/study/events";
 
 export const runtime = "nodejs";
@@ -25,7 +25,7 @@ export async function PATCH(
       .delete(studySessionParticipants)
       .where(and(eq(studySessionParticipants.sessionId as any, sessionId), eq(studySessionParticipants.userId as any, userId)));
 
-    await publish(sessionId, StudyEvents.PresenceLeave, { userId });
+    emit(sessionId, StudyEvents.PresenceLeave, { userId });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to leave" }, { status: 500 });

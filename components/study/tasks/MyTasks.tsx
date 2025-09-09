@@ -46,7 +46,7 @@ export default function MyTasks() {
       body: JSON.stringify({ listId: list.id, name, parentItemId: null }),
     });
     if (!res.ok) return;
-    // Server will broadcast the real list; for safety, remove temp when payload returns via pusher
+    // Server returns created list; tasks are personal-only, no realtime broadcast required
   };
 
   const toggleItem = async (idx: number, ev?: React.MouseEvent) => {

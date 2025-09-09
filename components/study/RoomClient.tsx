@@ -17,7 +17,7 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
   const setTaskLists = useStudyStore((s) => s.setTaskLists);
 
   const sessionId = room?.id ? Number(room.id) : null;
-  useStudyChannel(sessionId);
+  useStudyChannel(room?.slug || null);
 
   useEffect(() => {
     setSession({ sessionId: Number(room.id), slug: room.slug, sharedEndAt: room.sharedEndAt, myUserId });
