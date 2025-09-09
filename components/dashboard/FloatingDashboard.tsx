@@ -1,6 +1,4 @@
 "use client";
-
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type DashData = {
@@ -128,9 +126,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             <div className="col-span-5 space-y-4">
               {/* Profile */}
               <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/90 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="relative h-28 w-full bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200">
-                  <Image src="/logo.svg" alt="Cover" width={100} height={100} className="absolute right-3 top-3 opacity-40" />
-                </div>
+                <div className="relative h-28 w-full bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200" />
                 <div className="p-4">
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
