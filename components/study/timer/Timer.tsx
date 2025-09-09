@@ -97,7 +97,7 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
   const deg = Math.round(pct * 360);
 
   return (
-    <div className="mb-6 rounded-3xl border border-gray-200 bg-white p-5 shadow-xl">
+    <div className="mb-6 rounded-3xl border border-sky-200 bg-gradient-to-b from-sky-50 to-white p-5 shadow-xl">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Timer</h2>
         <div className="flex gap-2">
@@ -106,19 +106,15 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-center">
-        <div className="relative h-44 w-44 rounded-full p-1" style={{ backgroundImage: `conic-gradient(#6366f1 ${deg}deg, #e5e7eb 0deg)` }}>
-          <div className="grid h-full w-full place-items-center rounded-full bg-white">
-            <div className="font-mono text-4xl sm:text-5xl tracking-wider">{formatMS(rem)}</div>
-          </div>
+      <div className="mt-4 grid grid-cols-2 items-end justify-center gap-3 text-sky-700">
+        <div className="text-center">
+          <div className="font-black leading-none tracking-tight" style={{ fontSize: '72px' }}>{formatMS(rem).split(':')[1]}</div>
+          <div className="text-xs font-semibold text-sky-800">MIN</div>
         </div>
-      </div>
-
-      {/* Quick presets */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-        <button onClick={()=>{ setH(0); setM(25); setS(0); }} className="rounded-full bg-indigo-50 px-2 py-1 font-semibold text-indigo-700 hover:bg-indigo-100">Focus 25</button>
-        <button onClick={()=>{ setH(0); setM(5); setS(0); }} className="rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-700 hover:bg-emerald-100">Short 5</button>
-        <button onClick={()=>{ setH(0); setM(15); setS(0); }} className="rounded-full bg-sky-50 px-2 py-1 font-semibold text-sky-700 hover:bg-sky-100">Long 15</button>
+        <div className="-mt-1 text-center">
+          <div className="font-black leading-none tracking-tight" style={{ fontSize: '72px' }}>{formatMS(rem).split(':')[2]}</div>
+          <div className="text-xs font-semibold text-sky-800">SEC</div>
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -129,9 +125,9 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
 
       <div className="mt-4 flex gap-2">
         {mode === "share" ? (
-          <button onClick={setShared} className="rounded-full bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700" disabled={!isOwner}>Share Timer</button>
+          <button onClick={setShared} className="rounded-2xl bg-sky-600 px-4 py-2 text-white shadow hover:bg-sky-700" disabled={!isOwner}>Share Timer</button>
         ) : (
-          <button onClick={setPrivate} className="rounded-full bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700">Start Private</button>
+          <button onClick={setPrivate} className="rounded-2xl bg-sky-600 px-4 py-2 text-white shadow hover:bg-sky-700">Start Private</button>
         )}
       </div>
       {mode === "share" && !isOwner && (

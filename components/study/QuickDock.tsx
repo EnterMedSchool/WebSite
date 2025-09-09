@@ -19,40 +19,42 @@ export default function QuickDock() {
   const [text, setText] = useState("");
   const [sharedEndAt, setSharedEndAt] = useState<string | null>(null);
   const tick = useTick(panelOpen ? 1000 : null);
-  const [showTimer, setShowTimer] = useState(false);
 
-  // When opening, resolve last session and join it (so lists are visible)
+  // When opening, load personal tasks always; resolve last session only for chat/timer view
   useEffect(() => {
     if (!panelOpen) return;
     (async () => {
-      if (sessionId) return; // already loaded
       setLoading(true);
       try {
-        const meta = await fetch('/api/study/user/meta', { credentials: 'include' });
-        if (!meta.ok) { setLoading(false); return; }
-        const mj = await meta.json();
-        const slug = mj?.data?.lastSessionSlug;
-        if (!slug) { setLoading(false); return; }
-        setSlug(slug);
-        // Join to become a participant
-        await fetch(`/api/study/sessions/${encodeURIComponent(slug)}/join`, { method: 'PATCH', credentials: 'include' });
-        const rs = await fetch(`/api/study/sessions/${encodeURIComponent(slug)}`);
-        if (!rs.ok) { setLoading(false); return; }
-        const rj = await rs.json();
-        const id = Number(rj?.data?.id);
-        setSessionId(id);
-        setSharedEndAt(rj?.data?.sharedEndAt ?? null);
-        // Load tasks & messages
-        await Promise.all([reloadTasks(id), reloadMessages(id)]);
+        await reloadTasks();
+        if (!sessionId) {
+          const meta = await fetch('/api/study/user/meta', { credentials: 'include' });
+          if (meta.ok) {
+            const mj = await meta.json();
+            const slug = mj?.data?.lastSessionSlug;
+            if (slug) {
+              setSlug(slug);
+              await fetch(`/api/study/sessions/${encodeURIComponent(slug)}/join`, { method: 'PATCH', credentials: 'include' });
+              const rs = await fetch(`/api/study/sessions/${encodeURIComponent(slug)}`);
+              if (rs.ok) {
+                const rj = await rs.json();
+                const id = Number(rj?.data?.id);
+                setSessionId(id);
+                setSharedEndAt(rj?.data?.sharedEndAt ?? null);
+                await reloadMessages(id);
+              }
+            }
+          }
+        }
       } finally {
         setLoading(false);
       }
     })();
   }, [panelOpen]);
 
-  async function reloadTasks(id: number) {
-    // Ask server to return/create my global list for this session context
-    const r = await fetch('/api/study/tasks', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: id, isGlobal: true }) });
+  async function reloadTasks() {
+    // Ask server to return/create my personal global list (no session linkage)
+    const r = await fetch('/api/study/tasks', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isGlobal: true }) });
     if (!r.ok) return;
     const j = await r.json();
     const items = (j?.data?.items || []) as any[];
@@ -75,19 +77,18 @@ export default function QuickDock() {
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newTask.trim();
-    if (!name || !sessionId) return;
+    if (!name) return;
     setNewTask("");
     const listId = await ensureListId();
     if (!listId) return;
     setTasks([...tasks, { id: -Math.floor(Math.random()*1e9), name, isCompleted: false }]);
-    await fetch('/api/study/items', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listId, name, sessionId }) });
-    await reloadTasks(sessionId);
+    await fetch('/api/study/items', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listId, name }) });
+    await reloadTasks();
   };
 
   async function ensureListId(): Promise<number | null> {
-    if (!sessionId) return null;
     // Ask server to return/create my global list
-    const r = await fetch('/api/study/tasks', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, isGlobal: true }) });
+    const r = await fetch('/api/study/tasks', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isGlobal: true }) });
     if (!r.ok) return null;
     const j = await r.json();
     return Number(j?.data?.id || null);
@@ -95,7 +96,7 @@ export default function QuickDock() {
 
   const toggle = async (i: number, ev?: React.MouseEvent) => {
     const t = tasks[i];
-    if (!t || !sessionId) return;
+    if (!t) return;
     setTasks(tasks.map((x, idx) => idx === i ? { ...x, isCompleted: !x.isCompleted } : x));
     if (!t.isCompleted && typeof window !== 'undefined') {
       const pt = ev ? { x: (ev.clientX||0), y: (ev.clientY||0) } : undefined;
@@ -108,7 +109,7 @@ export default function QuickDock() {
     } else {
       setVanish((m) => { const c = { ...m }; delete c[t.id]; return c; });
     }
-    const r = await fetch(`/api/study/items/${t.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, isCompleted: !t.isCompleted }) });
+    const r = await fetch(`/api/study/items/${t.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isCompleted: !t.isCompleted }) });
     if (r.ok) {
       try {
         const j = await r.json();
@@ -153,7 +154,7 @@ export default function QuickDock() {
         </div>
         {/* Timer */}
         <div className="group relative">
-          <button onClick={() => { setShowTimer(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-400">
+          <button onClick={() => { setTab('timer'); setPanelOpen(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-400">
             <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
           </button>
           <div className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 opacity-0 transition-all group-hover:opacity-100">
@@ -189,12 +190,12 @@ export default function QuickDock() {
           </div>
           <div className="max-h-[60vh] overflow-y-auto p-3">
             {loading && <div className="text-sm text-gray-600">Loading…</div>}
-            {!loading && !slug && (
+            {!loading && !slug && tab !== 'tasks' && (
               <div className="text-sm text-gray-600">
                 No active room. <a href="/study-rooms/new" className="text-indigo-600 underline">Open my room</a>
               </div>
             )}
-            {!loading && slug && tab === 'tasks' && (
+            {!loading && tab === 'tasks' && (
               <div>
                 <ul className="mb-2 space-y-2">
                   {tasks.filter((t)=> !t.isCompleted || vanish[t.id]).map((t, i) => (
@@ -213,23 +214,39 @@ export default function QuickDock() {
                 </form>
               </div>
             )}
-            {!loading && slug && tab === 'timer' && (
-              <div className="text-center text-2xl font-mono">
-                {formatMS(remaining)}
-                <div className="mt-2 text-xs text-gray-500">Shared timer (view-only)</div>
-                <a className="mt-2 inline-block text-xs font-semibold text-indigo-700 underline" href={`/study-rooms/${slug}`}>Open room</a>
+            {!loading && tab === 'timer' && (
+              <div className="rounded-2xl border border-sky-200 bg-gradient-to-b from-sky-50 to-sky-100 p-4 text-center shadow-sm">
+                <div className="text-[11px] font-semibold text-sky-800">Timer</div>
+                <div className="mt-2 grid grid-cols-2 items-end justify-center gap-2">
+                  <div className="font-black leading-none tracking-tight text-sky-700" style={{ fontSize: '56px' }}>{formatMS(remaining).split(':')[1]}</div>
+                  <div className="-mt-1 font-black leading-none tracking-tight text-sky-700" style={{ fontSize: '56px' }}>{formatMS(remaining).split(':')[2]}</div>
+                </div>
+                {slug && (
+                  <div className="mt-2 text-[11px] text-gray-600">Shared timer (view-only) · <a className="font-semibold text-indigo-700 underline" href={`/study-rooms/${slug}`}>Open room</a></div>
+                )}
               </div>
             )}
             {!loading && slug && tab === 'chat' && (
               <div>
-                <div className="mb-2 max-h-[38vh] overflow-y-auto rounded border p-2 text-sm">
-                  {messages.map((m)=> (
-                    <div key={m.id} className="mb-1"><span className="opacity-60 mr-1">[{new Date(m.createdAt).toLocaleTimeString()}]</span><span className="font-medium mr-1">{m.user?.name || m.user?.username || `User #${m.userId}`}:</span>{m.content}</div>
-                  ))}
+                <div className="mb-2 max-h-[38vh] overflow-y-auto rounded-2xl border border-indigo-100 bg-white/70 p-2">
+                  {messages.map((m)=> {
+                    const isMe = false; // floating widget doesn't track my id; render neutral bubble style
+                    const name = m.user?.name || m.user?.username || `User #${m.userId}`;
+                    return (
+                      <div key={m.id} className={`mb-2 flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        {!isMe && <div className="mr-2 mt-4 h-6 w-6 shrink-0 rounded-full bg-indigo-200" />}
+                        <div className={`${isMe ? 'bg-indigo-600 text-white rounded-t-2xl rounded-bl-2xl' : 'bg-white text-gray-800 border border-indigo-100 rounded-t-2xl rounded-br-2xl'} max-w-[78%] p-2 shadow-sm` }>
+                          <div className={`text-[10px] ${isMe ? 'text-white/80' : 'text-gray-500'} mb-0.5`}>{name} · {new Date(m.createdAt).toLocaleTimeString()}</div>
+                          <div className="text-sm leading-snug whitespace-pre-wrap break-words">{m.content}</div>
+                        </div>
+                        {isMe && <div className="ml-2 mt-4 h-6 w-6 shrink-0 rounded-full bg-indigo-200" />}
+                      </div>
+                    );
+                  })}
                 </div>
                 <form onSubmit={send} className="flex gap-2">
-                  <input className="flex-1 rounded border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={text} onChange={(e)=>setText(e.target.value)} placeholder="Message" />
-                  <button className="rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Send</button>
+                  <input className="flex-1 rounded-2xl border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={text} onChange={(e)=>setText(e.target.value)} placeholder="Write a message" />
+                  <button className="rounded-2xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Send</button>
                 </form>
               </div>
             )}
@@ -247,9 +264,7 @@ export default function QuickDock() {
           `}</style>
         </div>
       )}
-      {showTimer && (
-        <TimerOverlay onClose={() => setShowTimer(false)} />
-      )}
+      {/* removed FloatingTimer overlay */}
     </div>
   );
 }
@@ -273,16 +288,6 @@ function formatMS(ms: number) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-function TimerOverlay({ onClose }: { onClose: () => void }) {
-  // Lazy import to keep QuickDock light
-  const [Comp, setComp] = useState<any>(null);
-  useEffect(() => {
-    let mounted = true;
-    import("@/components/study/timer/FloatingTimerClean").then((m) => { if (mounted) setComp(() => m.default); });
-    return () => { mounted = false; };
-  }, []);
-  if (!Comp) return null;
-  return <Comp open={true} onClose={onClose} />;
-}
+// Overlay timer removed; panel timer uses sharedEndAt read-only view
 
 

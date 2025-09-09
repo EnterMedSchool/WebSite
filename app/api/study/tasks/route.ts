@@ -3,8 +3,7 @@ import { db, sql } from "@/lib/db";
 import { studyTaskLists, studyTaskItems, studySessionParticipants, users } from "@/drizzle/schema";
 import { and, eq, inArray, asc, or } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
-import { StudyEvents } from "@/lib/study/events";
+// Removed realtime broadcast dependency for tasks
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -100,8 +99,6 @@ export async function POST(req: Request) {
           title: existing.title,
           items: existingItems.map((it: any) => ({ id: it.id, taskListId: existing.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position })),
         };
-        const broadcast = Number.isFinite(sessionId) ? (sessionId as number) : null;
-        if (broadcast != null) await publish(broadcast, StudyEvents.TaskUpsert, payload);
         return NextResponse.json({ data: payload });
       }
     }
@@ -125,8 +122,6 @@ export async function POST(req: Request) {
     }
 
     const payload = { ...list, items: items.map((it, i) => ({ id: i, taskListId: list.id, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: typeof it.position === 'number' ? it.position! : i })), updatedAt: list.updatedAt };
-    const broadcast = list.sessionId ?? (Number.isFinite(sessionId) ? sessionId : null);
-    if (broadcast != null) await publish(broadcast, StudyEvents.TaskUpsert, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to create" }, { status: 500 });

@@ -8,7 +8,6 @@ import Chat from "@/components/study/chat/Chat";
 import MyTasks from "@/components/study/tasks/MyTasks";
 import Timer from "@/components/study/timer/Timer";
 import RoomHeader from "@/components/study/RoomHeader";
-import OthersTasks from "@/components/study/tasks/OthersTasks";
 
 export default function RoomClient({ room, messages, taskLists, myUserId }: { room: any; messages: any[]; taskLists: any[]; myUserId: number | null; }) {
   const setSession = useStudyStore((s) => s.setSession);
@@ -23,7 +22,8 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
   useEffect(() => {
     setSession({ sessionId: Number(room.id), slug: room.slug, sharedEndAt: room.sharedEndAt, myUserId });
     prependMessages(messages?.slice().reverse() || []);
-    setTaskLists((taskLists || []).map((l: any) => ({ id: l.id, title: l.title, userId: l.userId, updatedAt: l.updatedAt ?? null, items: (l.items || []).map((it: any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted, xpAwarded: it.xpAwarded })) })));
+    // Tasks are now personal-only; let the client component load the user's list independently
+    setTaskLists([]);
   }, [room, messages, taskLists, myUserId, setSession, prependMessages, setTaskLists]);
 
   // On mount: join; before unload: leave; fetch participants
@@ -62,7 +62,6 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
         <div className="md:col-span-2 space-y-6">
           <Chat />
           <MyTasks />
-          <OthersTasks />
         </div>
         <aside>
           <Timer isOwner={!!isOwner} slug={room.slug} />

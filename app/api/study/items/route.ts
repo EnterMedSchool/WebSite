@@ -3,8 +3,7 @@ import { db } from "@/lib/db";
 import { studyTaskItems, studyTaskLists } from "@/drizzle/schema";
 import { and, asc, eq, max, sql } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
-import { StudyEvents } from "@/lib/study/events";
+// Removed realtime broadcast dependency for tasks
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +16,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const listId = Number(body?.listId);
   const name = String(body?.name || "").trim();
-  const sessionIdBody = Number(body?.sessionId);
+  // session linkage removed for personal tasks
   const parentItemId = body?.parentItemId != null ? Number(body.parentItemId) : null;
   if (!Number.isFinite(listId) || !name) return NextResponse.json({ error: "listId and name are required" }, { status: 400 });
 
@@ -47,8 +46,6 @@ export async function POST(req: Request) {
     // re-read list for updatedAt
     const l2 = (await db.select().from(studyTaskLists).where(eq(studyTaskLists.id as any, listId)).limit(1))[0];
     const payload = { ...(l2 || list), items } as any;
-    const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdBody) ? sessionIdBody : null)) as number | null;
-    if (typeof broadcastId === 'number') await publish(broadcastId, StudyEvents.TaskUpsert, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Failed to create item' }, { status: 500 });

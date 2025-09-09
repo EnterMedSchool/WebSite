@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useStudyStore } from "@/lib/study/store";
 
 export default function MyTasks() {
-  const sessionId = useStudyStore((s) => s.sessionId);
   const myUserId = useStudyStore((s) => s.myUserId);
   const taskLists = useStudyStore((s) => s.taskLists);
   const setTaskLists = useStudyStore((s) => s.setTaskLists);
@@ -16,12 +15,13 @@ export default function MyTasks() {
   const [vanish, setVanish] = useState<Record<number, boolean>>({});
 
   const ensureList = async () => {
-    if (myList || !sessionId) return myList;
+    if (myList) return myList;
     const res = await fetch("/api/study/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ sessionId, title, isGlobal: true }),
+      // Create or fetch the user's personal global list (no session linkage)
+      body: JSON.stringify({ title, isGlobal: true }),
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -43,7 +43,7 @@ export default function MyTasks() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ listId: list.id, name, parentItemId: null, sessionId }),
+      body: JSON.stringify({ listId: list.id, name, parentItemId: null }),
     });
     if (!res.ok) return;
     // Server will broadcast the real list; for safety, remove temp when payload returns via pusher
@@ -74,7 +74,7 @@ export default function MyTasks() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ sessionId, isCompleted: !target.isCompleted }),
+      body: JSON.stringify({ isCompleted: !target.isCompleted }),
     });
     try {
       if (res.ok) {
@@ -97,7 +97,7 @@ export default function MyTasks() {
     if (!myList) return;
     // Optimistic removal
     setTaskLists(taskLists.map((l) => l.id === (myList as any).id ? { ...l, items: l.items.filter((it:any)=> it.id !== id) } : l));
-    await fetch(`/api/study/items/${id}?sessionId=${sessionId}`, { method: 'DELETE', credentials: 'include' });
+    await fetch(`/api/study/items/${id}`, { method: 'DELETE', credentials: 'include' });
   };
 
   const items = (myList?.items || []) as any[];

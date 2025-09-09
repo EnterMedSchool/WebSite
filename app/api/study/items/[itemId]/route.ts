@@ -3,21 +3,18 @@ import { db, sql } from "@/lib/db";
 import { studyTaskItems, studyTaskLists } from "@/drizzle/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
-import { StudyEvents } from "@/lib/study/events";
+// Realtime broadcasting removed for tasks
 import { levelFromXp, xpToNext, GOAL_XP, MAX_LEVEL } from "@/lib/xp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function broadcastList(listId: number, sessionIdHint?: number) {
+async function readList(listId: number) {
   const listRows = await db.select().from(studyTaskLists).where(eq(studyTaskLists.id as any, listId)).limit(1);
   const list = listRows[0];
   if (!list) return;
   const items = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, listId)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
   const payload = { ...list, items } as any;
-  const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdHint||NaN) ? sessionIdHint! : null)) as number | null;
-  if (typeof broadcastId === 'number') await publish(broadcastId, StudyEvents.TaskUpsert, payload);
   return payload;
 }
 
@@ -27,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: { itemId: string
   const id = Number(params.itemId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   const body = await req.json().catch(()=>({}));
-  const sessionIdBody = Number(body?.sessionId);
+  // session linkage removed
   try {
     const rows = await db.select().from(studyTaskItems).where(eq(studyTaskItems.id as any, id)).limit(1);
     const item = rows[0];
@@ -75,7 +72,7 @@ export async function PATCH(req: Request, { params }: { params: { itemId: string
       }
     }
 
-    const payload = await broadcastList(item.taskListId, sessionIdBody);
+    const payload = await readList(item.taskListId);
     return NextResponse.json({ data: payload, xpAwarded: xpDelta, progress });
   } catch (e:any) {
     return NextResponse.json({ error: e?.message || 'Failed to update item' }, { status: 500 });
@@ -87,8 +84,7 @@ export async function DELETE(req: Request, { params }: { params: { itemId: strin
   if (!userId) return NextResponse.json({ error: 'Unauthorized', code: 'NO_SESSION' }, { status: 401 });
   const id = Number(params.itemId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  const url = new URL(req.url);
-  const sessionIdFromQuery = Number(url.searchParams.get('sessionId'));
+  // sessionId parameter removed
   try {
     const rows = await db.select().from(studyTaskItems).where(eq(studyTaskItems.id as any, id)).limit(1);
     const item = rows[0];
@@ -99,7 +95,7 @@ export async function DELETE(req: Request, { params }: { params: { itemId: strin
 
     // Delete item and its subtree (via ON DELETE CASCADE for children pointing to this item as parent)
     await db.delete(studyTaskItems).where(eq(studyTaskItems.id as any, id));
-    const payload = await broadcastList(item.taskListId, sessionIdFromQuery);
+    const payload = await readList(item.taskListId);
     return NextResponse.json({ ok: true, data: payload });
   } catch (e:any) {
     return NextResponse.json({ error: e?.message || 'Failed to delete item' }, { status: 500 });

@@ -3,8 +3,7 @@ import { db, sql } from "@/lib/db";
 import { studyTaskItems, studyTaskLists } from "@/drizzle/schema";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { publish } from "@/lib/study/pusher";
-import { StudyEvents } from "@/lib/study/events";
+// Removed realtime broadcast dependency for tasks
 import { levelFromXp, GOAL_XP, xpToNext, MAX_LEVEL } from "@/lib/xp";
 
 export const runtime = "nodejs";
@@ -21,7 +20,7 @@ export async function PATCH(
   const id = Number(params.taskListId);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   const body = await req.json().catch(() => ({}));
-  const sessionIdFromBody = Number((body as any)?.sessionId);
+  // No session broadcasting
   const title = typeof body?.title === "string" ? String(body.title).trim() : undefined;
   const items: Array<{ id?: number; name: string; isCompleted?: boolean; parentItemId?: number | null; position?: number }> = Array.isArray(body?.items) ? body.items : [];
 
@@ -112,10 +111,7 @@ export async function PATCH(
     const newItems = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
     const refreshedList = (await db.select().from(studyTaskLists).where(eq(studyTaskLists.id as any, id)).limit(1))[0];
     const payload = { ...(refreshedList || list), title: title ?? list.title, items: newItems } as any;
-    const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdFromBody) ? sessionIdFromBody : null)) as number | null;
-    if (typeof broadcastId === 'number') {
-      await publish(broadcastId, StudyEvents.TaskUpsert, payload);
-    }
+    // No broadcast
     return NextResponse.json({ data: payload, xpAwarded: xpDelta, progress });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to update" }, { status: 500 });
@@ -138,11 +134,7 @@ export async function DELETE(
     await db.delete(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id));
     await db.delete(studyTaskLists).where(eq(studyTaskLists.id as any, id));
     const url = new URL(req.url);
-    const sessionIdFromQuery = Number(url.searchParams.get('sessionId'));
-    const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdFromQuery) ? sessionIdFromQuery : null)) as number | null;
-    if (typeof broadcastId === 'number') {
-      await publish(broadcastId, StudyEvents.TaskDelete, { taskListId: id });
-    }
+    // No broadcast
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to delete" }, { status: 500 });
