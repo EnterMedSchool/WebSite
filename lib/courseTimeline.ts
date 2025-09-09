@@ -150,11 +150,11 @@ export async function getCourseTimeline(
   const totalsByKey: Record<string, number> = {};
   const correctByKey: Record<string, number> = {};
   const doneByKey: Record<string, boolean> = {};
-  for (const lid of lessonIds) {
-    const key = idToKey.get(lid) || String(lid);
+  // Aggregate using ALL lessons in the course (not just the ones in this slice)
+  for (const [lidNum, key] of idToKey.entries()) {
+    const lid = Number(lidNum);
     const t = qTotals[lid] || 0;
     const c = qCorrect[lid] || 0;
-    // Take max to prevent double counting across duplicates
     totalsByKey[key] = Math.max(totalsByKey[key] || 0, t);
     correctByKey[key] = Math.max(correctByKey[key] || 0, c);
     doneByKey[key] = (doneByKey[key] || false) || done.has(lid);

@@ -1,4 +1,5 @@
 import { authGetServerSession } from "@/lib/auth";
+import { sql } from "@/lib/db";
 import { getCourseTimeline } from "@/lib/courseTimeline";
 import CourseTimeline from "@/components/course/CourseTimeline";
 
@@ -9,7 +10,16 @@ export default async function CoursePage({ params }: { params: { slug: string } 
   let userId = 0;
   try {
     const session = await authGetServerSession();
-    const uid = session && (session as any).userId ? Number((session as any).userId) : 0;
+    let uid = session && (session as any).userId ? Number((session as any).userId) : 0;
+    if (!Number.isSafeInteger(uid) || uid <= 0 || uid > 2147483647) {
+      const email = String((session as any)?.user?.email || "").toLowerCase();
+      if (email) {
+        try {
+          const ur = await sql`SELECT id FROM users WHERE lower(email)=${email} LIMIT 1`;
+          uid = Number(ur.rows?.[0]?.id || 0);
+        } catch {}
+      }
+    }
     if (Number.isSafeInteger(uid) && uid > 0 && uid <= 2147483647) userId = uid;
   } catch {}
 
