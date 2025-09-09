@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { signIn, signOut } from "next-auth/react";
 import MenuXpBar from "@/components/xp/MenuXpBar";
+import FloatingDashboard from "@/components/dashboard/FloatingDashboard";
 
 type Props = {
   isAuthed: boolean;
@@ -19,6 +20,7 @@ type Props = {
 export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInLevel, xpSpan, isMax }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [dashOpen, setDashOpen] = useState(false);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -29,6 +31,12 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDocClick); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  useEffect(() => {
+    function onOpen() { setDashOpen(true); }
+    window.addEventListener("dashboard:open" as any, onOpen as any);
+    return () => window.removeEventListener("dashboard:open" as any, onOpen as any);
   }, []);
 
   if (!isAuthed) {
@@ -90,9 +98,15 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
             </div>
             <div className="border-t" />
             <ul className="p-1">
-              {[{ label: "Dashboard" }, { label: "Calendar" }, { label: "Settings" }].map((item) => (
-                <li key={item.label}><button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">{item.label}</button></li>
-              ))}
+              <li>
+                <button onClick={() => { setDashOpen(true); setOpen(false); }} className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Dashboard</button>
+              </li>
+              <li>
+                <button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Calendar</button>
+              </li>
+              <li>
+                <button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Settings</button>
+              </li>
             </ul>
             <div className="border-t" />
             <div className="p-1">
@@ -103,6 +117,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
       </div>
 
       <AuthModal />
+      <FloatingDashboard open={dashOpen} onClose={() => setDashOpen(false)} />
     </div>
   );
 }
@@ -170,4 +185,3 @@ function AuthModal() {
 }
 
 function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
-

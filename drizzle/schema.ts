@@ -58,6 +58,9 @@ export const lessons = pgTable(
     visibility: varchar("visibility", { length: 16 }).default("public"),
     sectionId: integer("section_id"),
     durationMin: integer("duration_min"),
+    // New explicit length in minutes for UI summaries
+    // Kept separate to avoid breaking existing uses of durationMin
+    lengthMin: integer("length_min"),
     meta: jsonb("meta"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
