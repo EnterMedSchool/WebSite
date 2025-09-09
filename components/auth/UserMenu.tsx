@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { signIn, signOut } from "next-auth/react";
 import MenuXpBar from "@/components/xp/MenuXpBar";
 import FloatingDashboard from "@/components/dashboard/FloatingDashboard";
@@ -100,6 +101,9 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
             <ul className="p-1">
               <li>
                 <button onClick={() => { setDashOpen(true); setOpen(false); }} className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Dashboard</button>
+              </li>
+              <li>
+                <Link href="/leaderboard" onClick={() => setOpen(false)} className="block w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Leaderboard</Link>
               </li>
               <li>
                 <button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Calendar</button>
