@@ -6,14 +6,15 @@ import { useStudyStore } from "@/lib/study/store";
 
 type Mode = "focus" | "short" | "long";
 
-const MODE_META: Record<Mode, { label: string; minutes: number; bg: string; accent: string; chip: string }> = {
-  focus: { label: "Focus", minutes: 25, bg: "from-rose-50 to-rose-100", accent: "rose-500", chip: "bg-rose-100 text-rose-800" },
-  short: { label: "Short Break", minutes: 5, bg: "from-emerald-50 to-emerald-100", accent: "emerald-500", chip: "bg-emerald-100 text-emerald-800" },
-  long: { label: "Long Break", minutes: 15, bg: "from-sky-50 to-sky-100", accent: "sky-600", chip: "bg-sky-100 text-sky-800" },
-};
+const MODE_META = {
+  focus: { label: "Focus", bg: "from-rose-50 to-rose-100", chip: "bg-rose-100 text-rose-800", accent: "#f43f5e" },
+  short: { label: "Short Break", bg: "from-emerald-50 to-emerald-100", chip: "bg-emerald-100 text-emerald-800", accent: "#10b981" },
+  long: { label: "Long Break", bg: "from-sky-50 to-sky-100", chip: "bg-sky-100 text-sky-800", accent: "#0284c7" },
+} as const;
 
 export default function FloatingTimer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const slug = useStudyStore((s) => s.slug);
+  const sessionId = useStudyStore((s) => s.sessionId);
   const sharedEndAt = useStudyStore((s) => s.sharedEndAt);
   const setSharedEndAt = useStudyStore((s) => s.setSharedEndAt);
 
@@ -45,6 +46,11 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
       if (m === "focus" || m === "short" || m === "long") setMode(m);
       const p = localStorage.getItem("vl_timer_pos");
       if (p) { const obj = JSON.parse(p); if (obj && typeof obj.x==='number' && typeof obj.y==='number') setPos({x:obj.x,y:obj.y}); }
+      const pr = localStorage.getItem("vl_timer_preset");
+      if (pr) {
+        const obj = JSON.parse(pr);
+        if (obj && typeof obj.focus==='number' && typeof obj.short==='number' && typeof obj.long==='number') setPreset(obj);
+      }
     } catch {}
   }, [open]);
 
@@ -55,6 +61,10 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
   useEffect(() => {
     if (!pos) return; try { localStorage.setItem("vl_timer_pos", JSON.stringify(pos)); } catch {}
   }, [pos]);
+
+  useEffect(() => {
+    try { localStorage.setItem("vl_timer_preset", JSON.stringify(preset)); } catch {}
+  }, [preset]);
 
   const remainingMs = useMemo(() => {
     const now = Date.now();
@@ -103,21 +113,23 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
   }, []);
 
+  const minutesForMode = useCallback((m: Mode) => (m === 'focus' ? preset.focus : m === 'short' ? preset.short : preset.long), [preset]);
+
   const startLocal = useCallback(() => {
-    const minutes = MODE_META[mode].minutes;
+    const minutes = minutesForMode(mode);
     const tgt = Date.now() + minutes * 60 * 1000;
     setTarget(tgt);
     setRunning(true);
-  }, [mode]);
+  }, [mode, minutesForMode]);
 
   const pauseLocal = useCallback(() => {
     setRunning(false);
   }, []);
 
-  const shareTimer = useCallback(async () => {
+  const shareTimer = useCallback(async (mins?: number) => {
     if (!slug) return;
-    // Push a shared end time derived from current mode
-    const tgtIso = new Date(Date.now() + MODE_META[mode].minutes * 60 * 1000).toISOString();
+    const m = typeof mins === 'number' ? mins : minutesForMode(mode);
+    const tgtIso = new Date(Date.now() + m * 60 * 1000).toISOString();
     setSharedEndAt(tgtIso);
     await fetch(`/api/study/sessions/${encodeURIComponent(slug)}`, {
       method: "PATCH",
@@ -125,11 +137,11 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
       credentials: "include",
       body: JSON.stringify({ sharedEndAt: tgtIso }),
     }).catch(() => {});
-  }, [slug, mode, setSharedEndAt]);
+  }, [slug, mode, setSharedEndAt, minutesForMode]);
 
   if (!open || !pos) return null;
   const meta = MODE_META[mode];
-  const accent = mode === "focus" ? "#f43f5e" : mode === "short" ? "#10b981" : "#0284c7"; // rose-500, emerald-500, sky-600
+  const accent = meta.accent;
 
   const card = (
       <div ref={cardRef} className={`fixed z-[70] w-[360px] sm:w-[420px] overflow-hidden rounded-[28px] bg-gradient-to-b ${meta.bg} p-4 shadow-2xl ring-1 ring-black/5`} style={{ left: pos.x, top: pos.y }}>
@@ -157,11 +169,27 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
 
         {/* Controls */}
         <div className="mt-4 flex items-center justify-center gap-3">
-          <button className="rounded-2xl bg-white/70 px-3 py-2 text-sm text-gray-700 backdrop-blur hover:bg-white">···</button>
+          <MenuButton 
+            onSave={(vals)=>setPreset(vals)}
+            initial={preset}
+            onUseCode={async(code)=>{
+              const id = decodeRoomCode(code);
+              if (!id) return alert('Invalid code');
+              const r = await fetch(`/api/study/sessions/by-id/${id}`);
+              if (!r.ok) return alert('Code not found');
+              const j = await r.json();
+              const slug = j?.data?.slug; if (!slug) return alert('Code invalid');
+  const [preset, setPreset] = useState<{ focus: number; short: number; long: number }>({ focus: 25, short: 5, long: 15 });
+              await fetch(`/api/study/sessions/${encodeURIComponent(slug)}/join`, { method:'PATCH', credentials:'include' });
+              // Optionally open the room
+              window.location.href = `/study-rooms/${slug}`;
+            }}
+            myCode={typeof sessionId === 'number' && sessionId>0 ? encodeRoomCode(sessionId) : null}
+          />
           {running ? (
             <button onClick={pauseLocal} className={`rounded-2xl px-4 py-2 text-white shadow hover:opacity-90`} style={{ backgroundColor: accent }}>Pause</button>
           ) : (
-            <button onClick={startLocal} className={`rounded-2xl px-4 py-2 text-white shadow hover:opacity-90`} style={{ backgroundColor: accent }}>Start</button>
+            <button onClick={() => { startLocal(); if (slug) shareTimer(minutesForMode(mode)); }} className={`rounded-2xl px-4 py-2 text-white shadow hover:opacity-90`} style={{ backgroundColor: accent }}>Start</button>
           )}
           <button onClick={() => setTarget(null)} className="rounded-2xl bg-white/70 px-3 py-2 text-sm text-gray-700 backdrop-blur hover:bg-white">Skip</button>
         </div>
@@ -175,6 +203,47 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
       </div>
   );
   return createPortal(card, document.body);
+}
+
+function encodeRoomCode(id: number) { return 'S' + id.toString(36).toUpperCase(); }
+function decodeRoomCode(s: string): number | null {
+  const t = s.trim().toUpperCase(); if (!/^S[0-9A-Z]+$/.test(t)) return null; try { return parseInt(t.slice(1), 36); } catch { return null; }
+}
+
+function MenuButton({ onSave, initial, onUseCode, myCode }: { onSave: (v:{focus:number;short:number;long:number})=>void; initial: {focus:number;short:number;long:number}; onUseCode: (code:string)=>void; myCode: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [focus, setFocus] = useState(initial.focus);
+  const [short, setShort] = useState(initial.short);
+  const [long, setLong] = useState(initial.long);
+  const [code, setCode] = useState("");
+  useEffect(()=>{ setFocus(initial.focus); setShort(initial.short); setLong(initial.long); }, [initial.focus, initial.short, initial.long]);
+  return (
+    <div className="relative">
+      <button className="rounded-2xl bg-white/70 px-3 py-2 text-sm text-gray-700 backdrop-blur hover:bg-white" onClick={()=>setOpen(o=>!o)}>···</button>
+      {open && (
+        <div className="absolute left-1/2 z-[80] mt-2 w-[260px] -translate-x-1/2 rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
+          <div className="mb-2 text-xs font-semibold text-gray-700">Presets (minutes)</div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <label className="block"><span className="mb-1 block text-gray-600">Focus</span><input type="number" min={1} className="w-full rounded border border-gray-300 p-1.5" value={focus} onChange={e=>setFocus(Math.max(1, Number(e.target.value)||1))}/></label>
+            <label className="block"><span className="mb-1 block text-gray-600">Short</span><input type="number" min={1} className="w-full rounded border border-gray-300 p-1.5" value={short} onChange={e=>setShort(Math.max(1, Number(e.target.value)||1))}/></label>
+            <label className="block"><span className="mb-1 block text-gray-600">Long</span><input type="number" min={1} className="w-full rounded border border-gray-300 p-1.5" value={long} onChange={e=>setLong(Math.max(1, Number(e.target.value)||1))}/></label>
+          </div>
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <div className="text-gray-600">Room Code</div>
+            <div className="font-mono text-gray-900">{myCode ?? '—'}</div>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <input className="flex-1 rounded border border-gray-300 p-1.5 text-xs" placeholder="Enter code" value={code} onChange={e=>setCode(e.target.value)} />
+            <button className="rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white" onClick={()=>onUseCode(code)}>Join</button>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button className="rounded bg-gray-100 px-2 py-1 text-xs" onClick={()=>setOpen(false)}>Close</button>
+            <button className="ml-2 rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white" onClick={()=>{ onSave({focus, short, long}); setOpen(false); }}>Save</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // (no longer used)
