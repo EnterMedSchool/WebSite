@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db, sql } from "@/lib/db";
 import { studySessions, users } from "@/drizzle/schema";
 import { desc, eq } from "drizzle-orm";
-import crypto from "node:crypto";
 import { requireUserId } from "@/lib/study/auth";
 
 export const runtime = "nodejs";

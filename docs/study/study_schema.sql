@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS study_sessions (
 
 CREATE INDEX IF NOT EXISTS study_sessions_created_idx ON study_sessions(created_at DESC);
 CREATE INDEX IF NOT EXISTS study_sessions_popular_idx ON study_sessions(total_joins DESC);
+-- Enforce one personal room per user
+CREATE UNIQUE INDEX IF NOT EXISTS study_sessions_creator_unique ON study_sessions(creator_user_id);
 
 -- 2) Participants (who is/was in a room)
 CREATE TABLE IF NOT EXISTS study_session_participants (
@@ -78,4 +80,3 @@ CREATE TABLE IF NOT EXISTS study_user_meta (
 CREATE INDEX IF NOT EXISTS study_user_meta_user_idx ON study_user_meta(user_id);
 
 COMMIT;
-

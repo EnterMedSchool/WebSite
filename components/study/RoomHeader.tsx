@@ -38,7 +38,6 @@ export default function RoomHeader({ room, isOwner }: { room: any; isOwner: bool
         {isOwner && (
           <div className="flex gap-2">
             <button className="border rounded px-3 py-1" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
-            <button className="border rounded px-3 py-1 text-red-600" onClick={del}>Delete</button>
           </div>
         )}
       </div>

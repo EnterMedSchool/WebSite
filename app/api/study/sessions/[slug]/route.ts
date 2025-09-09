@@ -71,21 +71,6 @@ export async function DELETE(
   req: Request,
   { params }: { params: { slug: string } }
 ) {
-  const userId = await requireUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
-  try {
-    const rows = await db.select().from(studySessions).where(eq(studySessions.slug as any, params.slug)).limit(1);
-    const s = rows[0];
-    if (!s) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (s.creatorUserId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // Delete child data first (items -> lists -> messages -> participants -> session)
-    await sql`DELETE FROM study_task_items WHERE task_list_id IN (SELECT id FROM study_task_lists WHERE session_id = ${s.id})`;
-    await sql`DELETE FROM study_task_lists WHERE session_id = ${s.id}`;
-    await sql`DELETE FROM study_messages WHERE session_id = ${s.id}`;
-    await sql`DELETE FROM study_session_participants WHERE session_id = ${s.id}`;
-    await sql`DELETE FROM study_sessions WHERE id = ${s.id}`;
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Failed to delete" }, { status: 500 });
-  }
+  // Deleting personal rooms is disabled to enforce one room per user
+  return NextResponse.json({ error: "Deleting personal rooms is disabled" }, { status: 405 });
 }
