@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { imatUserPlan, studyTaskItems, studyTaskLists } from "@/drizzle/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { imatUserPlan, imatUserPlanTasks } from "@/drizzle/schema";
+import { asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { IMAT_PLANNER } from "@/lib/imat/plan";
 
@@ -13,55 +13,57 @@ export async function POST(req: Request) {
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   try {
-    // If a plan exists already, return it
+    // If a plan exists already, return it with tasks grouped by day
     const existing = (await db.select().from(imatUserPlan).where(eq(imatUserPlan.userId as any, userId)).limit(1))[0];
-    if (existing?.taskListId) {
-      const l = (await db.select().from(studyTaskLists).where(and(eq(studyTaskLists.id as any, existing.taskListId as any), eq(studyTaskLists.userId as any, userId))).limit(1))[0];
-      if (l) {
-        const items = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, l.id)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
-        return NextResponse.json({ data: { plan: existing, list: { ...l, items } } });
-      }
+    if (existing) {
+      const tasks = await db
+        .select()
+        .from(imatUserPlanTasks)
+        .where(eq(imatUserPlanTasks.userId as any, userId))
+        .orderBy(asc(imatUserPlanTasks.dayNumber), asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
+      return NextResponse.json({ data: { plan: existing, days: groupTasks(tasks) } });
     }
 
-    // Create a new global task list for this user's IMAT planner
-    const title = "IMAT 8-Week Study Planner";
-    const [list] = await db.insert(studyTaskLists).values({ userId, title, isGlobal: true as any, sessionId: null as any }).returning();
+    // Create plan and seed tasks for the user from IMAT_PLANNER
+    const startDate = new Date();
+    const [plan] = await db
+      .insert(imatUserPlan)
+      .values({ userId, startDate: startDate as any, currentDay: 1 as any })
+      .returning();
 
-    // Insert days as parent items, then day tasks as children
-    let pos = 0;
-    // Map day number -> parent id for children linking
-    const parentIds: number[] = [];
     for (const d of IMAT_PLANNER.days) {
-      const [parent] = await db.insert(studyTaskItems).values({
-        taskListId: list.id,
-        name: `${String(d.day).padStart(2, '0')} • ${d.title}${d.rest ? ' (Rest)' : ''}`,
-        isCompleted: false,
-        parentItemId: null as any,
-        position: pos++,
-      }).returning({ id: studyTaskItems.id });
-      parentIds[d.day] = Number(parent.id);
-      let cpos = 0;
-      for (const t of d.tasks) {
-        await db.insert(studyTaskItems).values({
-          taskListId: list.id,
-          name: t,
+      let idx = 0;
+      for (const label of d.tasks) {
+        await db.insert(imatUserPlanTasks).values({
+          userId,
+          dayNumber: d.day as any,
+          taskIndex: idx++ as any,
+          label,
           isCompleted: false,
-          parentItemId: parent.id as any,
-          position: cpos++,
         });
       }
     }
 
-    const startDate = new Date();
-    const [plan] = await db
-      .insert(imatUserPlan)
-      .values({ userId, taskListId: list.id as any, startDate: startDate as any, currentDay: 1 as any })
-      .returning();
-
-    const items = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, list.id)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
-    return NextResponse.json({ data: { plan, list: { ...list, items } } }, { status: 201 });
+    const tasks = await db
+      .select()
+      .from(imatUserPlanTasks)
+      .where(eq(imatUserPlanTasks.userId as any, userId))
+      .orderBy(asc(imatUserPlanTasks.dayNumber), asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
+    return NextResponse.json({ data: { plan, days: groupTasks(tasks) } }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to initialize" }, { status: 500 });
   }
 }
 
+function groupTasks(rows: any[]) {
+  const byDay: Record<number, { day: number; title: string; rest?: boolean; tasks: any[] }> = {} as any;
+  for (const r of rows) {
+    const dn = Number(r.dayNumber);
+    const meta = IMAT_PLANNER.days.find((d) => d.day === dn);
+    if (!byDay[dn]) {
+      byDay[dn] = { day: dn, title: meta ? meta.title : `Day ${dn}`, rest: meta?.rest, tasks: [] };
+    }
+    byDay[dn].tasks.push({ id: r.id, label: r.label, isCompleted: r.isCompleted });
+  }
+  return Object.values(byDay);
+}

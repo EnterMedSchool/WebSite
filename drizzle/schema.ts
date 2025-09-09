@@ -583,7 +583,6 @@ export const imatUserPlan = pgTable(
   {
     id: serial("id").primaryKey(),
     userId: integer("user_id").notNull(),
-    taskListId: integer("task_list_id"), // references study_task_lists.id
     startDate: timestamp("start_date"),
     currentDay: integer("current_day"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -591,5 +590,24 @@ export const imatUserPlan = pgTable(
   },
   (t) => ({
     userIdx: index("imat_user_plan_user_idx").on(t.userId),
+  })
+);
+
+export const imatUserPlanTasks = pgTable(
+  "imat_user_plan_tasks",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    dayNumber: integer("day_number").notNull(),
+    taskIndex: integer("task_index").notNull(),
+    label: varchar("label", { length: 500 }).notNull(),
+    isCompleted: boolean("is_completed").default(false).notNull(),
+    completedAt: timestamp("completed_at"),
+    xpAwarded: boolean("xp_awarded").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    planUserIdx: index("imat_plan_tasks_user_idx").on(t.userId),
+    planDayIdx: index("imat_plan_tasks_day_idx").on(t.userId, t.dayNumber),
   })
 );
