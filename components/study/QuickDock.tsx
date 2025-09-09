@@ -269,7 +269,7 @@ function TimerOverlay({ onClose }: { onClose: () => void }) {
   const [Comp, setComp] = useState<any>(null);
   useEffect(() => {
     let mounted = true;
-    import("@/components/study/timer/FloatingTimer").then((m) => { if (mounted) setComp(() => m.default); });
+    import("@/components/study/timer/FloatingTimerClean").then((m) => { if (mounted) setComp(() => m.default); });
     return () => { mounted = false; };
   }, []);
   if (!Comp) return null;
