@@ -24,7 +24,7 @@ export default function HowItWorks() {
         "Meet more candidates in our WhatsApp",
         "Ask questions in the official forums",
       ],
-      cta: { label: "Virtual Library", href: "#portal" },
+      cta: { label: "Virtual Library", href: "/study-rooms" },
     },
   ];
   return (
@@ -52,4 +52,3 @@ export default function HowItWorks() {
     </section>
   );
 }
-

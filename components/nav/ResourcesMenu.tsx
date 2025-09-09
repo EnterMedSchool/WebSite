@@ -4,7 +4,7 @@ export default function ResourcesMenu() {
   const items = [
     { href: "/blog", label: "Study Materials", sub: "Notes & guides" },
     { href: "/#parents", label: "For Parents", sub: "Help & information" },
-    { href: "/#portal", label: "Student Portal", sub: "Tools & resources" },
+    { href: "/study-rooms", label: "Student Portal", sub: "Tools & resources" },
     { href: "/#scholarships", label: "Scholarships", sub: "Financial aid" },
   ];
   return (
@@ -28,4 +28,3 @@ export default function ResourcesMenu() {
     </div>
   );
 }
-
