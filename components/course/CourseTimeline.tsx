@@ -177,7 +177,6 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
                   <h2 className="text-lg font-bold text-slate-900">{ch.title}</h2>
                   {ch.description ? <p className="mt-1 text-sm text-slate-600">{ch.description}</p> : null}
                 </div>
-                <Link href={`/course/${slug}/guidebook/${ch.slug}`} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">Guidebook</Link>
               </div>
             </motion.div>
 
@@ -282,11 +281,7 @@ function LessonNode({ slug, title, data, highlight, idAttr }: { slug: string; ti
             </Link>
           )}
         </div>
-        {highlight && (
-          <div className="hidden sm:block">
-            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">Jump here</span>
-          </div>
-        )}
+        {/* Removed "Jump here" badge per UX simplification */}
       </div>
       <div className="hidden w-[16%] sm:block" />
     </div>

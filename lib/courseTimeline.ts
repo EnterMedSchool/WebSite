@@ -80,51 +80,10 @@ export async function getCourseTimeline(
   }
 
   const chapters = chaptersRows.rows as any[];
-  // Fallback: if a course has no explicit chapters yet, expose a single virtual chapter
+  // If a course has no explicit chapters, do not render a virtual
+  // "All Lessons" section (per product feedback). Return an empty list.
   if (chapters.length === 0) {
-    // Load all lessons for the course in rank order
-    const lr = await sql`
-      SELECT l.id, l.slug, l.title, COALESCE(l.length_min, l.duration_min) as length_min, COALESCE(l.rank_key,'') as rk, l.meta
-      FROM lessons l
-      WHERE l.course_id=${course.id}
-      ORDER BY COALESCE(l.rank_key,'') ASC, l.id ASC`;
-    const lessonRows = lr.rows as any[];
-    const lessonIds = lessonRows.map((r)=> Number(r.id));
-    const qTotals: Record<number, number> = {};
-    if (lessonIds.length > 0) {
-      const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${lessonIds as any}) GROUP BY lesson_id`;
-      for (const r of qt.rows) qTotals[Number(r.lesson_id)] = Number(r.total || 0);
-    }
-    const qCorrect: Record<number, number> = {};
-    const done = new Set<number>();
-    if (userId && lessonIds.length > 0) {
-      const qc = await sql`
-        SELECT q.lesson_id, COUNT(*)::int AS cnt
-        FROM user_question_progress uqp JOIN questions q ON q.id=uqp.question_id
-        WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${lessonIds as any})
-        GROUP BY q.lesson_id`;
-      for (const r of qc.rows) qCorrect[Number(r.lesson_id)] = Number(r.cnt || 0);
-      const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds as any}) AND completed=true`;
-      for (const r of dc.rows) done.add(Number(r.lesson_id));
-    }
-    // Map to lessons
-    const lessonsLite = lessonRows.map((r, idx) => {
-      let state: "normal" | "locked" | "review" | "boss" = "normal";
-      try { const meta = r.meta ? (typeof r.meta === 'string' ? JSON.parse(r.meta) : r.meta) : null; const kind = (meta?.kind || meta?.type || '').toLowerCase(); if (kind === 'review') state = 'review'; else if (kind === 'boss' || kind === 'checkpoint') state = 'boss'; } catch {}
-      return {
-        id: Number(r.id),
-        slug: String(r.slug),
-        title: String(r.title),
-        lengthMin: r.length_min != null ? Number(r.length_min) : null,
-        position: idx + 1,
-        completed: done.has(Number(r.id)),
-        qTotal: qTotals[Number(r.id)] || 0,
-        qCorrect: qCorrect[Number(r.id)] || 0,
-        state,
-      } as LessonProgressLite;
-    });
-    const outChapters: ChapterWithLessons[] = [{ id: 0, slug: 'all', title: 'All Lessons', description: null, position: 1, lessons: lessonsLite }];
-    return { course, chapters: outChapters, nextCursor: null } as any;
+    return { course, chapters: [], nextCursor: null } as any;
   }
 
   const chapterIds = chapters.map((r) => Number(r.id));
@@ -140,9 +99,16 @@ export async function getCourseTimeline(
 
   const lessonRows = lr.rows as any[];
   const lessonIds = lessonRows.map((r) => Number(r.id));
-  // Map lesson id -> slug for aggregation by slug (handles duplicate lessons with same slug)
-  const idToSlug = new Map<number, string>();
-  for (const r of lessonRows) idToSlug.set(Number(r.id), String(r.slug));
+  // Map lesson id -> aggregation key. Prefer slug; fall back to a normalized
+  // title so duplicates with different slugs (data hygiene issues) still
+  // share progress for the same-named content in the same course.
+  const idToKey = new Map<number, string>();
+  function normTitle(t: string) { return t.toLowerCase().replace(/\s+/g, ' ').trim(); }
+  for (const r of lessonRows) {
+    const slug = String(r.slug || '').trim();
+    const key = slug || normTitle(String(r.title || ''));
+    idToKey.set(Number(r.id), key);
+  }
 
   // Question totals per lesson
   const qTotals: Record<number, number> = {};
@@ -171,18 +137,18 @@ export async function getCourseTimeline(
     for (const r of dc.rows) done.add(Number(r.lesson_id));
   }
 
-  // Aggregate per-slug totals so duplicate lessons share progress
-  const totalsBySlug: Record<string, number> = {};
-  const correctBySlug: Record<string, number> = {};
-  const doneBySlug: Record<string, boolean> = {};
+  // Aggregate per-key totals so duplicate lessons share progress
+  const totalsByKey: Record<string, number> = {};
+  const correctByKey: Record<string, number> = {};
+  const doneByKey: Record<string, boolean> = {};
   for (const lid of lessonIds) {
-    const slug = idToSlug.get(lid) || "";
+    const key = idToKey.get(lid) || String(lid);
     const t = qTotals[lid] || 0;
     const c = qCorrect[lid] || 0;
     // Take max to prevent double counting across duplicates
-    totalsBySlug[slug] = Math.max(totalsBySlug[slug] || 0, t);
-    correctBySlug[slug] = Math.max(correctBySlug[slug] || 0, c);
-    doneBySlug[slug] = (doneBySlug[slug] || false) || done.has(lid);
+    totalsByKey[key] = Math.max(totalsByKey[key] || 0, t);
+    correctByKey[key] = Math.max(correctByKey[key] || 0, c);
+    doneByKey[key] = (doneByKey[key] || false) || done.has(lid);
   }
 
   // Prerequisites for lock state
@@ -222,23 +188,31 @@ export async function getCourseTimeline(
     }
 
     const slug = String(r.slug);
+    const key = idToKey.get(lid) || slug;
     arr.push({
       id: lid,
       slug,
       title: String(r.title),
       lengthMin: r.length_min != null ? Number(r.length_min) : null,
       position: Number(r.position || 0),
-      completed: !!doneBySlug[slug],
-      qTotal: totalsBySlug[slug] || 0,
-      qCorrect: correctBySlug[slug] || 0,
+      completed: !!doneByKey[key],
+      qTotal: totalsByKey[key] || 0,
+      qCorrect: correctByKey[key] || 0,
       state,
     });
     byChapter.set(chapterId, arr);
   }
 
   const outChapters: ChapterWithLessons[] = chapters
-    // Hide placeholder chapter titled "All Lessons" if present in DB
-    .filter((c) => String(c.title).trim().toLowerCase() !== 'all lessons')
+    // Hide placeholder chapter if it sneaks in
+    .filter((c) => {
+      const title = String(c.title || '').toLowerCase().trim();
+      const slug = String(c.slug || '').toLowerCase().trim();
+      return !(
+        title.includes('all lessons') ||
+        slug === 'all' || slug === 'all-lessons' || slug === 'all_lessons'
+      );
+    })
     .map((c) => ({
       id: Number(c.id),
       slug: String(c.slug),
