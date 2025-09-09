@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
+import LeoConfused from "@/assets/leo-confused.png";
+import Scribble from "@/assets/scribble.svg";
 
 export default function NotFound() {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -48,14 +51,10 @@ export default function NotFound() {
           <div className="relative">
             <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-3xl bg-fuchsia-100/60 blur-xl" />
             <div className="pointer-events-none absolute -left-8 bottom-6 h-20 w-20 rounded-full bg-indigo-100/60 blur-xl" />
-            {/* Image with gentle bob animation; fallback-safe <img> */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/assets/leo-confused.png"
-              alt="Confused Leo"
-              className="mx-auto h-64 w-auto animate-[bob_4s_ease-in-out_infinite] drop-shadow-[0_12px_24px_rgba(99,102,241,0.25)]"
-              onError={(e)=>{ (e.currentTarget as HTMLImageElement).src='/assets/LeoLogoWebsite.png'; }}
-            />
+            {/* Leo image (bundled asset) */}
+            <div className="mx-auto h-64 w-auto animate-[bob_4s_ease-in-out_infinite] drop-shadow-[0_12px_24px_rgba(99,102,241,0.25)]">
+              <Image src={LeoConfused} alt="Confused Leo" className="h-64 w-auto" />
+            </div>
             {/* Floating question marks */}
             <Question style={{ left: "12%", top: "16%" }} refCb={(n)=>n && (layersRef.current[2]=n)} />
             <Question style={{ right: "10%", top: "8%" }} refCb={(n)=>n && (layersRef.current[3]=n)} />
@@ -75,9 +74,8 @@ export default function NotFound() {
 function Swirl({ className, delay=0, refCb }: { className?: string; delay?: number; refCb?: (n: HTMLDivElement|null)=>void }) {
   return (
     <div ref={refCb as any} className={`${className||''} h-10 w-10 animate-[scribble_8s_linear_infinite]`} style={{ animationDelay: `${delay}ms` }}>
-      {/* Try to load external asset; fallback to inline SVG swirl */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/scribble.svg" alt="swirl" onError={(e)=>{ (e.currentTarget as HTMLImageElement).outerHTML = inlineSwirlSVG; }} />
+      {/* Bundled swirl svg */}
+      <Image src={Scribble} alt="swirl" width={40} height={40} />
     </div>
   );
 }
@@ -90,5 +88,5 @@ function Question({ style, refCb }: { style?: React.CSSProperties; refCb?: (n: H
   );
 }
 
+// kept for reference if we ever need an inline fallback
 const inlineSwirlSVG = `<svg viewBox='0 0 24 24' width='40' height='40' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-width='1.8'><path d='M12 3c-5 0-8 4-8 7.5S6.5 18 11 18s6.5-2 6.5-4.5S15 9 12 9s-3.5 1-3.5 2.5S9.5 15 12 15s3.5-1 3.5-2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
-
