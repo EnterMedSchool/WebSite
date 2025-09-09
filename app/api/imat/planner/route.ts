@@ -13,13 +13,43 @@ export async function GET(req: Request) {
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   try {
-    const up = (await db.select().from(imatUserPlan).where(eq(imatUserPlan.userId as any, userId)).limit(1))[0];
-    if (!up) return NextResponse.json({ data: null });
-    const tasks = await db
+    let up = (await db.select().from(imatUserPlan).where(eq(imatUserPlan.userId as any, userId)).limit(1))[0];
+    if (!up) {
+      // Create a minimal plan lazily if missing (no tasks yet)
+      const [created] = await db
+        .insert(imatUserPlan)
+        .values({ userId, startDate: new Date() as any, currentDay: 1 as any })
+        .returning();
+      up = created;
+    }
+
+    let tasks = await db
       .select()
       .from(imatUserPlanTasks)
       .where(eq(imatUserPlanTasks.userId as any, userId))
       .orderBy(asc(imatUserPlanTasks.dayNumber), asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
+
+    if (tasks.length === 0) {
+      // Backfill tasks from IMAT_PLANNER if an early empty plan exists
+      for (const d of IMAT_PLANNER.days) {
+        let idx = 0;
+        for (const label of d.tasks) {
+          await db.insert(imatUserPlanTasks).values({
+            userId,
+            dayNumber: d.day as any,
+            taskIndex: idx++ as any,
+            label,
+            isCompleted: false,
+          });
+        }
+      }
+      tasks = await db
+        .select()
+        .from(imatUserPlanTasks)
+        .where(eq(imatUserPlanTasks.userId as any, userId))
+        .orderBy(asc(imatUserPlanTasks.dayNumber), asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
+    }
+
     const days = groupTasks(tasks);
     return NextResponse.json({ data: { plan: up, days } });
   } catch (e: any) {

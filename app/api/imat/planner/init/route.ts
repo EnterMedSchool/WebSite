@@ -16,11 +16,30 @@ export async function POST(req: Request) {
     // If a plan exists already, return it with tasks grouped by day
     const existing = (await db.select().from(imatUserPlan).where(eq(imatUserPlan.userId as any, userId)).limit(1))[0];
     if (existing) {
-      const tasks = await db
+      let tasks = await db
         .select()
         .from(imatUserPlanTasks)
         .where(eq(imatUserPlanTasks.userId as any, userId))
         .orderBy(asc(imatUserPlanTasks.dayNumber), asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
+      if (tasks.length === 0) {
+        for (const d of IMAT_PLANNER.days) {
+          let idx = 0;
+          for (const label of d.tasks) {
+            await db.insert(imatUserPlanTasks).values({
+              userId,
+              dayNumber: d.day as any,
+              taskIndex: idx++ as any,
+              label,
+              isCompleted: false,
+            });
+          }
+        }
+        tasks = await db
+          .select()
+          .from(imatUserPlanTasks)
+          .where(eq(imatUserPlanTasks.userId as any, userId))
+          .orderBy(asc(imatUserPlanTasks.dayNumber), asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
+      }
       return NextResponse.json({ data: { plan: existing, days: groupTasks(tasks) } });
     }
 
