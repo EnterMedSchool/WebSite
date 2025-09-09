@@ -97,9 +97,16 @@ export default function QuickDock() {
     const t = tasks[i];
     if (!t || !sessionId) return;
     setTasks(tasks.map((x, idx) => idx === i ? { ...x, isCompleted: !x.isCompleted } : x));
-    if (!t.isCompleted && !t.xpAwarded && typeof window !== 'undefined') {
+    if (!t.isCompleted && typeof window !== 'undefined') {
       const pt = ev ? { x: (ev.clientX||0), y: (ev.clientY||0) } : undefined;
       window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: 2, from: pt } }));
+    }
+    // immediate vanish during pop animation
+    if (!t.isCompleted) {
+      setVanish((m) => ({ ...m, [t.id]: true }));
+      setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[t.id]; return c; }), 5000);
+    } else {
+      setVanish((m) => { const c = { ...m }; delete c[t.id]; return c; });
     }
     const r = await fetch(`/api/study/items/${t.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, isCompleted: !t.isCompleted }) });
     if (r.ok) {
@@ -110,6 +117,8 @@ export default function QuickDock() {
           const pg = j?.progress;
           if (pg && typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pg.level, newPct: pg.pct, newInLevel: pg.inLevel, newSpan: pg.span } }));
+          } else {
+            try { const pr = await fetch('/api/me/progress'); if (pr.ok) { const pj = await pr.json(); window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pj.level, newPct: pj.pct, newInLevel: pj.inLevel, newSpan: pj.span } })); } } catch {}
           }
           setVanish((m) => ({ ...m, [t.id]: true }));
           setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[t.id]; return c; }), 5000);

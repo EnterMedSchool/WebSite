@@ -112,7 +112,7 @@ export default function FloatingTimerClean({ open, onClose }: { open: boolean; o
   const meta = MODE_META[mode]; const accent = meta.accent;
 
   const card = (
-    <div ref={cardRef} className={`fixed z-[70] w-[360px] sm:w-[420px] overflow-hidden rounded-[28px] bg-gradient-to-b ${meta.bg} p-4 shadow-2xl ring-1 ring-black/5`} style={{ left: pos.x, top: pos.y }}>
+    <div ref={cardRef} className={`fixed z-[80] w-[360px] sm:w-[420px] overflow-visible rounded-[28px] bg-gradient-to-b ${meta.bg} p-4 shadow-2xl ring-1 ring-black/5`} style={{ left: pos.x, top: pos.y }}>
       <div className="mb-2 flex cursor-grab items-center justify-between active:cursor-grabbing" onMouseDown={onMouseDown}>
         <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${meta.chip}`}>
           <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
@@ -202,4 +202,3 @@ function MenuButton({ onSave, initial, onUseCode, myCode }: { onSave: (v:{focus:
     </div>
   );
 }
-

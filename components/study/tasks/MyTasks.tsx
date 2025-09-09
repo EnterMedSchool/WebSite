@@ -56,10 +56,18 @@ export default function MyTasks() {
     // Optimistic local toggle
     setTaskLists(taskLists.map((l) => l.id === (myList as any).id ? { ...l, items: l.items.map((it:any) => it.id === target.id ? { ...it, isCompleted: !target.isCompleted } : it) } : l));
     // XP bubble optimistic when checking
-    if (!target.isCompleted && !target.xpAwarded && typeof window !== 'undefined') {
+    if (!target.isCompleted && typeof window !== 'undefined') {
       const pt = ev ? { x: (ev.clientX || 0), y: (ev.clientY || 0) } : undefined;
       const evn = new CustomEvent('xp:awarded' as any, { detail: { amount: 2, from: pt } });
       window.dispatchEvent(evn);
+    }
+    // Show vanish animation immediately when marking completed
+    if (!target.isCompleted) {
+      setVanish((m) => ({ ...m, [target.id]: true }));
+      setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[target.id]; return c; }), 5000);
+    } else {
+      // If unchecking, ensure it stays visible
+      setVanish((m) => { const c = { ...m }; delete c[target.id]; return c; });
     }
     // Persist
     const res = await fetch(`/api/study/items/${target.id}`, {
@@ -76,10 +84,10 @@ export default function MyTasks() {
           const pg = j?.progress;
           if (pg && typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pg.level, newPct: pg.pct, newInLevel: pg.inLevel, newSpan: pg.span } }));
+          } else {
+            // Fallback: fetch real progress in background and animate when ready
+            try { const pr = await fetch('/api/me/progress'); if (pr.ok) { const pj = await pr.json(); window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pj.level, newPct: pj.pct, newInLevel: pj.inLevel, newSpan: pj.span } })); } } catch {}
           }
-          // Mark vanish for this item so it pops and disappears after 4.5s
-          setVanish((m) => ({ ...m, [target.id]: true }));
-          setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[target.id]; return c; }), 5000);
         }
       }
     } catch {}
@@ -92,7 +100,7 @@ export default function MyTasks() {
     await fetch(`/api/study/items/${id}?sessionId=${sessionId}`, { method: 'DELETE', credentials: 'include' });
   };
 
-  const items = ((myList?.items || []) as any[]).filter((it:any) => !it.isCompleted || vanish[it.id]);
+  const items = (myList?.items || []) as any[];
 
   return (
     <div className="rounded-[28px] border border-gray-200 bg-gradient-to-b from-indigo-50 to-white p-5 shadow-xl">
