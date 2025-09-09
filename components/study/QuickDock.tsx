@@ -6,11 +6,8 @@ type Message = { id: number; userId: number; content: string; createdAt: string;
 type TaskItem = { id: number; name: string; isCompleted: boolean; xpAwarded?: boolean };
 
 export default function QuickDock() {
-  // Panel / menu state
+  // Panel state
   const [panelOpen, setPanelOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [hover, setHover] = useState(false);
-
   const [tab, setTab] = useState<"tasks" | "timer" | "chat">("tasks");
   const [slug, setSlug] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -135,49 +132,47 @@ export default function QuickDock() {
   };
 
   return (
-    <div className="fixed right-5 top-1/2 z-[60] -translate-y-1/2">
-      {/* Floating round blue widget */}
-      <div className="relative group"
-           onMouseEnter={() => setHover(true)}
-           onMouseLeave={() => setHover(false)}>
-        {/* glow */}
-        <span className={`pointer-events-none absolute inset-0 -m-2 rounded-full bg-blue-500/30 blur-md transition-opacity ${hover || menuOpen ? 'opacity-100' : 'opacity-0'}`} />
-        {/* main button */}
-        <button
-          onClick={() => setMenuOpen(v => !v)}
-          className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-2xl ring-1 ring-blue-400/30 transition-transform hover:scale-105 active:scale-95"
-          aria-haspopup="true"
-          aria-expanded={menuOpen}
-          title="Virtual Library"
-        >
-          {/* three icons stacked lightly to hint features */}
-          <div className="relative">
-            <svg viewBox="0 0 24 24" className="absolute -left-3 -top-2 h-4 w-4 opacity-80"><path fill="currentColor" d="M7 21a1 1 0 0 1-1-1V6h10v14a1 1 0 0 1-1 1H7Zm2-3h6V8H9v10Zm-3-14V4h12v2H6Z"/></svg>
-            <svg viewBox="0 0 24 24" className="h-6 w-6"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
-            <svg viewBox="0 0 24 24" className="absolute -right-3 -bottom-2 h-4 w-4 opacity-80"><path fill="currentColor" d="M2 3h20v14H6l-4 4V3Zm4 4v2h12V7H6Zm0 4v2h9v-2H6Z"/></svg>
-          </div>
-          {/* ping ring */}
-          <span className={`absolute inset-0 rounded-full ring-4 ring-blue-300/30 animate-ping ${hover || menuOpen ? '' : 'hidden'}`} />
-        </button>
-
-        {/* Fan-out mini actions */}
-        <div className="pointer-events-none absolute left-0 top-1/2 -translate-x-[72px] -translate-y-1/2 space-y-3 transition-all"
-             style={{ opacity: (hover || menuOpen) ? 1 : 0, transform: `translate(-72px, -50%) scale(${hover || menuOpen ? 1 : 0.9})` }}>
-          <button onClick={() => { setTab('tasks'); setPanelOpen(true); setMenuOpen(false); }} className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600 shadow ring-1 ring-blue-100 hover:bg-blue-50" title="Tasks">
+    <div className="fixed right-5 top-1/2 z-[60] -translate-y-1/2 flex items-center gap-4">
+      {/* Vertical rail */}
+      <div className="flex flex-col items-center gap-3 rounded-full border border-gray-200 bg-white/90 px-3 py-4 shadow-xl backdrop-blur">
+        {/* Tasks */}
+        <div className="group relative">
+          <button onClick={() => { setTab('tasks'); setPanelOpen(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-emerald-500 hover:text-white hover:ring-emerald-400">
             <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M7 21a1 1 0 0 1-1-1V6h10v14a1 1 0 0 1-1 1H7Zm2-3h6V8H9v10Zm-3-14V4h12v2H6Z"/></svg>
           </button>
-          <button onClick={() => { setTab('timer'); setPanelOpen(true); setMenuOpen(false); }} className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600 shadow ring-1 ring-blue-100 hover:bg-blue-50" title="Timer">
+          <div className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 opacity-0 transition-all group-hover:opacity-100 group-hover:translate-x-0">
+            <div className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow">
+              Tasks
+            </div>
+          </div>
+        </div>
+        {/* Timer */}
+        <div className="group relative">
+          <button onClick={() => { setTab('timer'); setPanelOpen(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-400">
             <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
           </button>
-          <button onClick={() => { setTab('chat'); setPanelOpen(true); setMenuOpen(false); }} className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600 shadow ring-1 ring-blue-100 hover:bg-blue-50" title="Chat">
+          <div className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 opacity-0 transition-all group-hover:opacity-100">
+            <div className="rounded-full bg-rose-500 px-3 py-1 text-xs font-semibold text-white shadow">
+              Timer
+            </div>
+          </div>
+        </div>
+        {/* Chat */}
+        <div className="group relative">
+          <button onClick={() => { setTab('chat'); setPanelOpen(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-indigo-500 hover:text-white hover:ring-indigo-400">
             <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M2 3h20v14H6l-4 4V3Zm4 4v2h12V7H6Zm0 4v2h9v-2H6Z"/></svg>
           </button>
+          <div className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 opacity-0 transition-all group-hover:opacity-100">
+            <div className="rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white shadow">
+              Chat
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Panel */}
       {panelOpen && (
-        <div className="absolute right-[76px] top-1/2 w-[340px] -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <div className="w-[360px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-500 px-3 py-2 text-white">
             <div className="text-sm font-semibold">Virtual Library</div>
             <div className="flex gap-1">

@@ -101,26 +101,29 @@ export default function MyTasks() {
   const items = ((myList?.items || []) as any[]).filter((it:any) => !it.isCompleted || vanish[it.id]);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xl">
       <h2 className="mb-3 text-lg font-semibold">My Tasks</h2>
-      <ul className="mb-3 space-y-1">
+      <ul className="mb-3 space-y-2">
         {items.map((n:any, i:number) => (
-          <li key={n.id} className={`group flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-50 ${vanish[n.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
-            <input
-              type="checkbox"
-              checked={!!n.isCompleted}
-              onChange={(e) => toggleItem(i, e as any)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className={`text-sm ${n.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>{n.name}</span>
-            <button className="ml-auto hidden rounded px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 group-hover:inline" onClick={()=>removeItem(n.id)}>Remove</button>
+          <li key={n.id} className={`${vanish[n.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
+            <div className="group flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/30">
+              <input
+                type="checkbox"
+                checked={!!n.isCompleted}
+                onChange={(e) => toggleItem(i, e as any)}
+                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className={`text-[15px] ${n.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>{n.name}</span>
+              <span className="ml-auto hidden rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 group-hover:inline">Personal</span>
+              <button className="ml-2 hidden rounded-full px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 group-hover:inline" onClick={()=>removeItem(n.id)}>Remove</button>
+            </div>
           </li>
         ))}
       </ul>
       {myUserId ? (
         <form onSubmit={addItem} className="flex gap-2">
-          <input className="flex-1 rounded border border-gray-300 p-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={item} onChange={(e) => setItem(e.target.value)} placeholder="Add a task" />
-          <button className="rounded bg-indigo-600 px-3 py-2 text-white shadow hover:bg-indigo-700">Add</button>
+          <input className="flex-1 rounded-2xl border border-gray-300 p-3 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={item} onChange={(e) => setItem(e.target.value)} placeholder="Add a task" />
+          <button className="rounded-2xl bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700">Add</button>
         </form>
       ) : (
         <div className="text-sm text-gray-600">Sign in to create and manage your tasks.</div>
