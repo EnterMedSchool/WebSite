@@ -74,3 +74,7 @@ export async function POST(request: Request) {
   }
 }
 
+// Convenience: allow triggering via GET (browser address bar)
+export async function GET(request: Request) {
+  return await POST(request);
+}
