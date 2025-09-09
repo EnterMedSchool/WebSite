@@ -68,6 +68,10 @@ export async function POST(request: Request) {
                 VALUES (${userId}, ${qid}, ${qid * 10}, true, ${todayISO})`;
     }
 
+    // Log an xp_awarded event today to start a streak
+    await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, created_at, payload)
+              VALUES (${userId}, 'lesson', ${lessonIds[0]}, 'xp_awarded', ${todayISO}, jsonb_build_object('amount', 10))`;
+
     return NextResponse.json({ ok: true, chapterId, linkedLessons: lessonIds, userId });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });

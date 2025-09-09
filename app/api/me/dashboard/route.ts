@@ -32,34 +32,66 @@ export async function GET() {
     const minutesTotal = Math.round(Number(totalRow.rows?.[0]?.sec || 0) / 60);
     const correctToday = Number(correctTodayRow.rows?.[0]?.cnt || 0);
 
-    // Latest two chapters the user is working on (by last viewed lesson)
+    // Latest two chapters the user is working on (by last viewed lesson),
+    // plus stats: total minutes (sum length_min), average progress, and a continue slug
     const ch = await sql`
       WITH recent_lessons AS (
         SELECT lesson_id, MAX(last_viewed_at) AS lv
         FROM user_lesson_progress
         WHERE user_id=${userId}
         GROUP BY lesson_id
-        ORDER BY lv DESC
-        LIMIT 30
       ),
       chapter_hits AS (
         SELECT cl.chapter_id, MAX(rl.lv) AS lv
         FROM chapter_lessons cl
         JOIN recent_lessons rl ON rl.lesson_id = cl.lesson_id
         GROUP BY cl.chapter_id
+      ),
+      top_chapters AS (
+        SELECT c.id, c.slug, c.title, co.slug AS course_slug, co.title AS course_title, ch.lv AS last_viewed
+        FROM chapters c
+        JOIN chapter_hits ch ON ch.chapter_id = c.id
+        JOIN courses co ON co.id = c.course_id
+        ORDER BY ch.lv DESC
+        LIMIT 2
+      ),
+      stats AS (
+        SELECT tc.id AS chapter_id,
+               SUM(COALESCE(l.length_min, 0)) AS total_min,
+               COALESCE(ROUND(AVG(COALESCE(ulp.progress,0))::numeric), 0) AS progress_pct,
+               (
+                 SELECT le.slug FROM chapter_lessons cl2
+                 JOIN lessons le ON le.id = cl2.lesson_id
+                 LEFT JOIN user_lesson_progress ulp2 ON ulp2.lesson_id = le.id AND ulp2.user_id=${userId}
+                 WHERE cl2.chapter_id = tc.id
+                 ORDER BY ulp2.last_viewed_at DESC NULLS LAST, cl2.position ASC
+                 LIMIT 1
+               ) AS continue_slug
+        FROM top_chapters tc
+        JOIN chapter_lessons cl ON cl.chapter_id = tc.id
+        JOIN lessons l ON l.id = cl.lesson_id
+        LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = l.id AND ulp.user_id=${userId}
+        GROUP BY tc.id
       )
-      SELECT c.id, c.slug, c.title, co.slug AS course_slug, co.title AS course_title, ch.lv AS last_viewed
-      FROM chapters c
-      JOIN chapter_hits ch ON ch.chapter_id = c.id
-      JOIN courses co ON co.id = c.course_id
-      ORDER BY ch.lv DESC
-      LIMIT 2`;
+      SELECT tc.*, s.total_min, s.progress_pct, s.continue_slug
+      FROM top_chapters tc
+      LEFT JOIN stats s ON s.chapter_id = tc.id
+      ORDER BY tc.last_viewed DESC`;
 
     // Your class: all available courses (basic fields)
     const cr = await sql`SELECT id, slug, title, description FROM courses ORDER BY created_at DESC LIMIT 8`;
 
+    // Streak days (simple): consecutive days with any xp_awarded event
+    let streakDays = 0;
+    try {
+      const sr = await sql`SELECT created_at FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at > now() - interval '40 days' ORDER BY created_at DESC`;
+      const days = Array.from(new Set(sr.rows.map((r:any) => new Date(r.created_at).toDateString())));
+      let d = new Date(); d.setHours(0,0,0,0);
+      while (days.includes(d.toDateString())) { streakDays++; d = new Date(d.getTime() - 86400000); }
+    } catch {}
+
     return NextResponse.json({
-      user: { id: userId, name: u.name, image: u.image, xp: Number(u.xp||0), level: Number(u.level||1) },
+      user: { id: userId, name: u.name, image: u.image, xp: Number(u.xp||0), level: Number(u.level||1), streakDays },
       learning: { minutesToday, minutesTotal, correctToday },
       chapters: ch.rows,
       courses: cr.rows,
