@@ -52,16 +52,20 @@ export async function GET(req: Request) {
 
     if (range === "all") {
       // Keyset: order by xp DESC, id ASC
-      const where = cur
-        ? sql`WHERE (xp < ${cur.xp}) OR (xp = ${cur.xp} AND id > ${cur.id})`
-        : sql``;
-      const rows = await sql`
-        SELECT id, username, name, image, level, xp
-        FROM users
-        ${where}
-        ORDER BY xp DESC, id ASC
-        LIMIT ${limit}
-      `;
+      const rows = cur
+        ? await sql`
+            SELECT id, username, name, image, level, xp
+            FROM users
+            WHERE (xp < ${cur.xp}) OR (xp = ${cur.xp} AND id > ${cur.id})
+            ORDER BY xp DESC, id ASC
+            LIMIT ${limit}
+          `
+        : await sql`
+            SELECT id, username, name, image, level, xp
+            FROM users
+            ORDER BY xp DESC, id ASC
+            LIMIT ${limit}
+          `;
 
       // Rank offset comes from cursor, default 0
       const rankOffset = cur?.rankOffset ?? 0;
@@ -116,39 +120,57 @@ export async function GET(req: Request) {
     // Prefer materialized view if present; fallback to on-the-fly aggregate.
     const mvCheck = await sql`SELECT to_regclass('public.leaderboard_weekly_xp') AS reg`;
     const hasMv = !!mvCheck.rows[0]?.reg;
-    const whereWeekly = cur
-      ? sql`WHERE (COALESCE(t.weekly_xp,0) < ${cur.xp}) OR (COALESCE(t.weekly_xp,0) = ${cur.xp} AND t.id > ${cur.id})`
-      : sql``;
-
     const rows = hasMv
-      ? await sql`
-          WITH base AS (
+      ? cur
+        ? await sql`
             SELECT u.id, u.username, u.name, u.image, u.level, u.xp,
                    COALESCE(lw.weekly_xp,0) AS weekly_xp
             FROM users u
             LEFT JOIN leaderboard_weekly_xp lw ON lw.user_id = u.id
-          )
-          SELECT * FROM base t
-          ${whereWeekly}
-          ORDER BY t.weekly_xp DESC, t.id ASC
-          LIMIT ${limit}
-        `
-      : await sql`
-          WITH weekly AS (
-            SELECT user_id, COALESCE(SUM((payload->>'amount')::int),0) AS wxp
-            FROM lms_events
-            WHERE action='xp_awarded' AND created_at >= now() - interval '7 days'
-            GROUP BY user_id
-          ), base AS (
-            SELECT u.id, u.username, u.name, u.image, u.level, u.xp, COALESCE(w.wxp,0) AS weekly_xp
+            WHERE (COALESCE(lw.weekly_xp,0) < ${cur.xp}) OR (COALESCE(lw.weekly_xp,0) = ${cur.xp} AND u.id > ${cur.id})
+            ORDER BY COALESCE(lw.weekly_xp,0) DESC, u.id ASC
+            LIMIT ${limit}
+          `
+        : await sql`
+            SELECT u.id, u.username, u.name, u.image, u.level, u.xp,
+                   COALESCE(lw.weekly_xp,0) AS weekly_xp
             FROM users u
-            LEFT JOIN weekly w ON w.user_id = u.id
-          )
-          SELECT * FROM base t
-          ${whereWeekly}
-          ORDER BY t.weekly_xp DESC, t.id ASC
-          LIMIT ${limit}
-        `;
+            LEFT JOIN leaderboard_weekly_xp lw ON lw.user_id = u.id
+            ORDER BY COALESCE(lw.weekly_xp,0) DESC, u.id ASC
+            LIMIT ${limit}
+          `
+      : cur
+        ? await sql`
+            WITH weekly AS (
+              SELECT user_id, COALESCE(SUM((payload->>'amount')::int),0) AS wxp
+              FROM lms_events
+              WHERE action='xp_awarded' AND created_at >= now() - interval '7 days'
+              GROUP BY user_id
+            ), base AS (
+              SELECT u.id, u.username, u.name, u.image, u.level, u.xp, COALESCE(w.wxp,0) AS weekly_xp
+              FROM users u
+              LEFT JOIN weekly w ON w.user_id = u.id
+            )
+            SELECT * FROM base t
+            WHERE (COALESCE(t.weekly_xp,0) < ${cur.xp}) OR (COALESCE(t.weekly_xp,0) = ${cur.xp} AND t.id > ${cur.id})
+            ORDER BY t.weekly_xp DESC, t.id ASC
+            LIMIT ${limit}
+          `
+        : await sql`
+            WITH weekly AS (
+              SELECT user_id, COALESCE(SUM((payload->>'amount')::int),0) AS wxp
+              FROM lms_events
+              WHERE action='xp_awarded' AND created_at >= now() - interval '7 days'
+              GROUP BY user_id
+            ), base AS (
+              SELECT u.id, u.username, u.name, u.image, u.level, u.xp, COALESCE(w.wxp,0) AS weekly_xp
+              FROM users u
+              LEFT JOIN weekly w ON w.user_id = u.id
+            )
+            SELECT * FROM base t
+            ORDER BY t.weekly_xp DESC, t.id ASC
+            LIMIT ${limit}
+          `;
 
     const rankOffset = cur?.rankOffset ?? 0;
     const items = rows.rows.map((r: any, i: number) => ({
