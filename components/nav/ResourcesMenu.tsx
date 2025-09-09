@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 export default function ResourcesMenu() {
+  const studyEnabled = (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === '1') || (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === 'true') || (process.env.STUDY_ROOMS_ENABLED === '1') || (process.env.STUDY_ROOMS_ENABLED === 'true');
   const items = [
     { href: "/blog", label: "Study Materials", sub: "Notes & guides" },
     { href: "/#parents", label: "For Parents", sub: "Help & information" },
-    { href: "/study-rooms", label: "Virtual Library", sub: "Study rooms & tools" },
+    ...(studyEnabled ? [{ href: "/study-rooms", label: "Virtual Library", sub: "Study rooms & tools" }] : [] as any),
     { href: "/#scholarships", label: "Scholarships", sub: "Financial aid" },
   ];
   return (

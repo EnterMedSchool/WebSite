@@ -1,4 +1,5 @@
 export default function HowItWorks() {
+  const studyEnabled = (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === '1') || (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === 'true') || (process.env.STUDY_ROOMS_ENABLED === '1') || (process.env.STUDY_ROOMS_ENABLED === 'true');
   const steps = [
     {
       title: "Explore",
@@ -24,7 +25,7 @@ export default function HowItWorks() {
         "Meet more candidates in our WhatsApp",
         "Ask questions in the official forums",
       ],
-      cta: { label: "Virtual Library", href: "/study-rooms" },
+      cta: studyEnabled ? { label: "Virtual Library", href: "/study-rooms" } : undefined,
     },
   ];
   return (
