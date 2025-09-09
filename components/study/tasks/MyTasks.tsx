@@ -95,22 +95,22 @@ export default function MyTasks() {
   const items = ((myList?.items || []) as any[]).filter((it:any) => !it.isCompleted || vanish[it.id]);
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xl">
-      <h2 className="mb-3 text-lg font-semibold">My Tasks</h2>
+    <div className="rounded-[28px] border border-gray-200 bg-gradient-to-b from-indigo-50 to-white p-5 shadow-xl">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">
+          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M7 21a1 1 0 0 1-1-1V6h10v14a1 1 0 0 1-1 1H7Zm2-3h6V8H9v10Zm-3-14V4h12v2H6Z"/></svg>
+          My Tasks
+        </div>
+      </div>
       <ul className="mb-3 space-y-2">
         {items.map((n:any, i:number) => (
           <li key={n.id} className={`${vanish[n.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
-            <div className="group flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/30">
-              <input
-                type="checkbox"
-                checked={!!n.isCompleted}
-                onChange={(e) => toggleItem(i, e as any)}
-                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className={`text-[15px] ${n.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>{n.name}</span>
-              <span className="ml-auto hidden rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 group-hover:inline">Personal</span>
-              <button className="ml-2 hidden rounded-full px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 group-hover:inline" onClick={()=>removeItem(n.id)}>Remove</button>
-            </div>
+            <label className="vlTaskBox">
+              <input type="checkbox" checked={!!n.isCompleted} onChange={(e)=>toggleItem(i, e as any)} />
+              <div className="vlCheck" />
+              <span className={`vlText ${n.isCompleted ? 'vlDone' : ''}`}>{n.name}</span>
+              <button className="vlRemove" onClick={(e)=>{ e.preventDefault(); removeItem(n.id); }}>Remove</button>
+            </label>
           </li>
         ))}
       </ul>
@@ -122,7 +122,20 @@ export default function MyTasks() {
       ) : (
         <div className="text-sm text-gray-600">Sign in to create and manage your tasks.</div>
       )}
-      <style>{`@keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }`}</style>
+      <style jsx>{`
+        @keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }
+        .vlTaskBox { display:flex; align-items:center; gap:12px; position:relative; cursor:pointer; user-select:none; padding:10px 12px; border-radius:16px; background:linear-gradient(180deg,#fff, #f9f9ff); border:1px solid rgba(99,102,241,0.18); box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:background .2s, box-shadow .2s; }
+        .vlTaskBox:hover { background:linear-gradient(180deg,#f7f7ff,#ffffff); box-shadow:0 6px 18px rgba(99,102,241,0.10); }
+        .vlTaskBox input { position:absolute; opacity:0; height:0; width:0; }
+        .vlCheck { position:relative; width:22px; height:22px; background:#d1d5db; border-radius:6px; box-shadow:1px 1px 0 #b7b7b7; transition:all .2s; flex:0 0 auto; }
+        .vlTaskBox input:checked ~ .vlCheck { background-image:linear-gradient(45deg,#643ddb 0%, #d915ef 100%); box-shadow:3px 3px 0 #b7b7b7; }
+        .vlCheck:after { content:""; position:absolute; left:8px; top:5px; width:4px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); opacity:0; transition:opacity .2s; }
+        .vlTaskBox input:checked ~ .vlCheck:after { opacity:1; }
+        .vlText { font-size:15px; color:#1f2937; }
+        .vlDone { color:#9ca3af; text-decoration:line-through; }
+        .vlRemove { margin-left:auto; display:none; border-radius:999px; padding:2px 8px; font-size:12px; color:#b91c1c; }
+        .vlTaskBox:hover .vlRemove { display:inline-block; background:#fff0f0; }
+      `}</style>
     </div>
   );
 }

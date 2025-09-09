@@ -187,11 +187,14 @@ export default function QuickDock() {
             )}
             {!loading && slug && tab === 'tasks' && (
               <div>
-                <ul className="mb-2 space-y-1">
+                <ul className="mb-2 space-y-2">
                   {tasks.filter((t)=> !t.isCompleted || vanish[t.id]).map((t, i) => (
-                    <li key={t.id} className={`flex items-center gap-2 ${vanish[t.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
-                      <input type="checkbox" checked={!!t.isCompleted} onChange={(e)=>toggle(i, e as any)} className="h-4 w-4 rounded border-gray-300 text-indigo-600" />
-                      <span className={`text-sm ${t.isCompleted? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.name}</span>
+                    <li key={t.id} className={`${vanish[t.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
+                      <label className="vlTaskBox">
+                        <input type="checkbox" checked={!!t.isCompleted} onChange={(e)=>toggle(i, e as any)} />
+                        <div className="vlCheck" />
+                        <span className={`vlText ${t.isCompleted ? 'vlDone' : ''}`}>{t.name}</span>
+                      </label>
                     </li>
                   ))}
                 </ul>
@@ -222,7 +225,17 @@ export default function QuickDock() {
               </div>
             )}
           </div>
-          <style>{`@keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }`}</style>
+          <style jsx>{`@keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }
+            .vlTaskBox { display:flex; align-items:center; gap:10px; position:relative; cursor:pointer; user-select:none; padding:8px 10px; border-radius:14px; background:linear-gradient(180deg,#fff, #f9f9ff); border:1px solid rgba(99,102,241,0.18); box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:background .2s, box-shadow .2s; }
+            .vlTaskBox:hover { background:linear-gradient(180deg,#f7f7ff,#ffffff); box-shadow:0 6px 18px rgba(99,102,241,0.10); }
+            .vlTaskBox input { position:absolute; opacity:0; height:0; width:0; }
+            .vlCheck { position:relative; width:20px; height:20px; background:#d1d5db; border-radius:6px; box-shadow:1px 1px 0 #b7b7b7; transition:all .2s; flex:0 0 auto; }
+            .vlTaskBox input:checked ~ .vlCheck { background-image:linear-gradient(45deg,#643ddb 0%, #d915ef 100%); box-shadow:3px 3px 0 #b7b7b7; }
+            .vlCheck:after { content:""; position:absolute; left:7px; top:4px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); opacity:0; transition:opacity .2s; }
+            .vlTaskBox input:checked ~ .vlCheck:after { opacity:1; }
+            .vlText { font-size:14px; color:#1f2937; }
+            .vlDone { color:#9ca3af; text-decoration:line-through; }
+          `}</style>
         </div>
       )}
       {showTimer && (
