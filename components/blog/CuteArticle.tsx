@@ -24,23 +24,25 @@ export default function CuteArticle({
   stats?: Stats;
 }) {
   const d = date ? new Date(date) : null;
-  const formatted = d ? d.toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' }) : undefined;
+  const formatted = d
+    ? d.toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric" })
+    : undefined;
 
   const likeCount = stats?.likes ?? 0;
   const viewCount = stats?.views ?? 0;
   const commentCount = stats?.comments ?? 0;
 
-  const hero = coverImage ||
+  const hero =
+    coverImage ||
     "https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg?cs=srgb&dl=pexels-padrinan-255379.jpg&fm=jpg";
 
   return (
     <section className="relative">
-      {/* Decorated hero */}
-      <div className="relative -mx-6 mb-0 overflow-hidden rounded-b-[36px] sm:mx-0">
+      {/* Full-bleed hero under the navbar padding */}
+      <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] -mt-6 w-screen overflow-hidden rounded-b-[36px]">
         <div className="relative h-[260px] w-full sm:h-[360px] md:h-[420px]">
           <Image src={hero} alt="" fill priority className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/20 to-black/40" />
-          {/* Subtle orbs */}
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute left-6 top-10 h-24 w-24 rounded-full bg-sky-300/25 blur-2xl" />
             <div className="absolute right-10 bottom-12 h-28 w-28 rounded-full bg-indigo-300/25 blur-2xl" />
@@ -72,9 +74,15 @@ export default function CuteArticle({
                   </span>
                 ) : null}
                 <div className="ml-auto flex items-center gap-4">
-                  <span className="inline-flex items-center gap-1"><span className="text-rose-500">❤</span> {likeCount}</span>
-                  <span className="inline-flex items-center gap-1"><span className="text-slate-500">👁</span> {Intl.NumberFormat().format(viewCount)}</span>
-                  <span className="inline-flex items-center gap-1"><span className="text-emerald-500">💬</span> {commentCount}</span>
+                  <span className="inline-flex items-center gap-1"><span className="text-rose-500" aria-hidden>
+                    ❤
+                  </span> {likeCount}</span>
+                  <span className="inline-flex items-center gap-1"><span className="text-slate-500" aria-hidden>
+                    👁
+                  </span> {Intl.NumberFormat().format(viewCount)}</span>
+                  <span className="inline-flex items-center gap-1"><span className="text-emerald-500" aria-hidden>
+                    💬
+                  </span> {commentCount}</span>
                 </div>
               </div>
               <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -89,3 +97,4 @@ export default function CuteArticle({
     </section>
   );
 }
+
