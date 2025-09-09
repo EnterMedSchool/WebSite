@@ -199,9 +199,9 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-3xl" ref={containerRef}>
-        {/* Summary ribbon */}
-        <div className="mb-5 grid gap-3 rounded-2xl border border-indigo-100/70 bg-gradient-to-br from-white via-white to-indigo-50/40 p-4 shadow-sm ring-1 ring-black/5 sm:grid-cols-[1fr_auto]">
+      {/* Summary above the timeline so the center line never overlaps it */}
+      <div className="mx-auto mb-5 max-w-3xl">
+        <div className="grid gap-3 rounded-2xl border border-indigo-100/70 bg-white p-4 shadow-sm ring-1 ring-black/5 sm:grid-cols-[1fr_auto]">
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Overall Progress</div>
             <div className="mt-1 flex items-center gap-2">
@@ -229,6 +229,9 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
             </button>
           ) : null}
         </div>
+      </div>
+
+      <div className="relative mx-auto max-w-3xl" ref={containerRef}>
 
         {/* Vertical path line */}
         <div className="pointer-events-none absolute left-1/2 top-0 -ml-[2px] h-full w-1 bg-gradient-to-b from-indigo-200 via-indigo-100 to-transparent" />
@@ -404,4 +407,3 @@ function ChapterChestNode({ chapter, highlight }: { chapter: Chapter; highlight?
     </div>
   );
 }
-
