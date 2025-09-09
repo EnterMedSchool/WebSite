@@ -71,10 +71,9 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
     return null;
   }, [chapters]);
 
-  // Path travel animation from previously stored actionable index to the current one
+  // Path travel animation from previous actionable index to the current one
   useEffect(() => {
     if (!nextLesson) return;
-    // Flatten lessons
     const all: Lesson[] = [];
     chapters.forEach((c) => c.lessons.forEach((l) => all.push(l)));
     const currIdx = all.findIndex((l) => l.id === nextLesson.lesson.id);
@@ -82,12 +81,9 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
     const key = `ems:course:lastIdx:${slug}`;
     let prevIdx = -1;
     try { prevIdx = Number(localStorage.getItem(key) || -1); } catch {}
-    // Update stored value for next time
     try { localStorage.setItem(key, String(currIdx)); } catch {}
     if (!(prevIdx >= 0) || currIdx <= prevIdx) return;
-    // Ensure both nodes are in DOM
-    const container = containerRef.current;
-    if (!container) return;
+    const container = containerRef.current; if (!container) return;
     const from = document.getElementById(`node-${all[prevIdx].id}`);
     const to = document.getElementById(`node-${all[currIdx].id}`);
     if (!from || !to) return;
@@ -109,7 +105,7 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
     function onReward(e: any) {
       const d = e?.detail || {};
       if (d?.type !== 'chest') return;
-      const key = String(d?.key || ''); // format: chapter_<id>
+      const key = String(d?.key || '');
       const m = key.match(/chapter_(\d+)/);
       if (!m) return;
       const id = Number(m[1]);
@@ -135,8 +131,30 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
     } catch {}
   }, [chapters.map((c) => c.id).join(',')]);
 
-  // Patch per-lesson progress client-side to ensure correctness even if
-  // SSR didn’t resolve user id or data came from a different duplicate.
+  // Smooth camera pan to next actionable node on mount
+  useEffect(() => {
+    if (!nextLesson) return;
+    const id = `next-node-${nextLesson.lesson.id}`;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const y = window.scrollY + r.top - Math.max(80, window.innerHeight * 0.18);
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }, [nextLesson?.lesson?.id]);
+
+  // Summary numbers for visible portion
+  const summary = useMemo(() => {
+    let total = 0; let completed = 0; let minutes = 0;
+    for (const ch of chapters) {
+      for (const ls of ch.lessons) {
+        total += 1; if (ls.completed) completed += 1; minutes += Number(ls.lengthMin || 0);
+      }
+    }
+    const pct = total ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, pct, minutes };
+  }, [chapters]);
+
+  // Patch per-lesson progress client-side (ensures correctness if SSR missed user)
   useEffect(() => {
     const allSlugs: string[] = [];
     for (const c of chapters) for (const l of c.lessons) if (!patchedSlugsRef.current[l.slug]) allSlugs.push(l.slug);
@@ -151,43 +169,24 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
               if (!r.ok) return [s, null] as const;
               const j = await r.json();
               return [s, j] as const;
-            } catch {
-              return [s, null] as const;
-            }
+            } catch { return [s, null] as const; }
           })
         );
         if (cancelled) return;
         const map = new Map<string, any>(entries as any);
-        // Apply patches
         setChapters((prev) => prev.map((c) => ({
           ...c,
           lessons: c.lessons.map((l) => {
             const j = map.get(l.slug);
             if (!j) return l;
             patchedSlugsRef.current[l.slug] = true;
-            return {
-              ...l,
-              completed: !!j.completed || !!l.completed,
-              qTotal: Math.max(Number(j.qTotal ?? 0), l.qTotal),
-              qCorrect: Math.max(Number(j.qCorrect ?? 0), l.qCorrect),
-            } as any;
+            return { ...l, completed: !!j.completed || !!l.completed, qTotal: Math.max(Number(j.qTotal ?? 0), l.qTotal), qCorrect: Math.max(Number(j.qCorrect ?? 0), l.qCorrect) } as any;
           }),
         })));
       } catch {}
     })();
     return () => { cancelled = true; };
   }, [chapters.length]);
-
-  // Smooth camera pan to next actionable node on mount
-  useEffect(() => {
-    if (!nextLesson) return;
-    const id = `next-node-${nextLesson.lesson.id}`;
-    const el = document.getElementById(id);
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const y = window.scrollY + r.top - Math.max(80, window.innerHeight * 0.18);
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-  }, [nextLesson?.lesson?.id]);
 
   return (
     <div>
@@ -201,20 +200,46 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
       </div>
 
       <div className="relative mx-auto max-w-3xl" ref={containerRef}>
+        {/* Summary ribbon */}
+        <div className="mb-5 grid gap-3 rounded-2xl border border-indigo-100/70 bg-gradient-to-br from-white via-white to-indigo-50/40 p-4 shadow-sm ring-1 ring-black/5 sm:grid-cols-[1fr_auto]">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Overall Progress</div>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-100">
+                <div className="h-full rounded-full bg-indigo-600" style={{ width: `${Math.max(0, Math.min(100, summary.pct))}%`, transition: 'width 600ms ease' }} />
+              </div>
+              <div className="w-10 text-right text-xs font-bold text-slate-700">{summary.pct}%</div>
+            </div>
+            <div className="mt-1 text-[11px] text-slate-500">{summary.completed}/{summary.total} lessons • {summary.minutes || 0} min</div>
+          </div>
+          {nextLesson?.lesson ? (
+            <button
+              onClick={() => {
+                try {
+                  const el = document.getElementById(`node-${nextLesson.lesson.id}`);
+                  if (!el) return;
+                  const r = el.getBoundingClientRect();
+                  const y = window.scrollY + r.top - Math.max(80, window.innerHeight * 0.18);
+                  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+                } catch {}
+              }}
+              className="h-fit self-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            >
+              Continue
+            </button>
+          ) : null}
+        </div>
+
         {/* Vertical path line */}
         <div className="pointer-events-none absolute left-1/2 top-0 -ml-[2px] h-full w-1 bg-gradient-to-b from-indigo-200 via-indigo-100 to-transparent" />
         {travel && (
-          <div
-            className="pointer-events-none absolute left-1/2 -ml-[1px] w-[2px] rounded bg-gradient-to-b from-emerald-400 via-indigo-400 to-indigo-500"
-            style={{ top: travel.top, height: travel.height, opacity: travel.show ? 1 : 0, transition: 'height 900ms cubic-bezier(.22,1,.36,1), opacity 300ms ease-out' }}
-          />
+          <div className="pointer-events-none absolute left-1/2 -ml-[1px] w-[2px] rounded bg-gradient-to-b from-emerald-400 via-indigo-400 to-indigo-500" style={{ top: travel.top, height: travel.height, opacity: travel.show ? 1 : 0, transition: 'height 900ms cubic-bezier(.22,1,.36,1), opacity 300ms ease-out' }} />
         )}
 
         {chapters.map((ch) => (
           <section key={ch.id} className="relative">
             {/* Chapter header card */}
-            <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }}
-              className="mb-4 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm ring-1 ring-black/5">
+            <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }} className="mb-4 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm ring-1 ring-black/5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Chapter {ch.position}</div>
@@ -228,14 +253,12 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
             <ul className="mb-8 grid gap-12">
               {ch.lessons.map((ls, j) => (
                 <li key={ls.id} className="relative">
-                  {/* dotted connector between nodes */}
                   {j < ch.lessons.length - 1 && (
                     <span className="pointer-events-none absolute left-1/2 top-12 -ml-[1px] h-16 w-[2px] bg-gradient-to-b from-indigo-200 to-transparent" />
                   )}
                   <LessonNode slug={ls.slug} title={ls.title} data={ls} highlight={nextLesson?.lesson?.id === ls.id} idAttr={`node-${ls.id}`} />
                 </li>
               ))}
-              {/* Chapter reward chest node */}
               <li className="relative">
                 <ChapterChestNode chapter={ch} highlight={!!claimedChests[ch.id]} />
               </li>
@@ -280,9 +303,7 @@ function LessonNode({ slug, title, data, highlight, idAttr }: { slug: string; ti
       raf = requestAnimationFrame(step);
       localStorage.setItem(key, String(target));
       return () => cancelAnimationFrame(raf);
-    } catch {
-      setPct(target);
-    }
+    } catch { setPct(target); }
   }, [data.id, target]);
 
   // Detect unlock transitions for celebratory pulse
@@ -300,9 +321,7 @@ function LessonNode({ slug, title, data, highlight, idAttr }: { slug: string; ti
     } catch {}
   }, [data.state, data.id]);
 
-  const baseColor = data.state === 'locked' ? "#cbd5e1" :
-                   data.state === 'review' ? "#38bdf8" :
-                   data.state === 'boss' ? "#f59e0b" : "#4f46e5";
+  const baseColor = data.state === 'locked' ? "#cbd5e1" : data.state === 'review' ? "#38bdf8" : data.state === 'boss' ? "#f59e0b" : "#4f46e5";
   const color = target >= 100 ? "#10b981" : highlight ? "#6366f1" : baseColor;
 
   return (
@@ -325,7 +344,7 @@ function LessonNode({ slug, title, data, highlight, idAttr }: { slug: string; ti
             </Link>
           )}
         </div>
-        {/* Removed "Jump here" badge per UX simplification */}
+        {/* Jump badge removed per UX simplification */}
       </div>
       <div className="hidden w-[16%] sm:block" />
     </div>
@@ -333,13 +352,12 @@ function LessonNode({ slug, title, data, highlight, idAttr }: { slug: string; ti
 }
 
 function ProgressRing({ pct, color, completed, state }: { pct: number; color: string; completed?: boolean; state?: "normal" | "locked" | "review" | "boss" }) {
+  const label = completed ? '✓' : state === 'boss' ? '!' : state === 'review' ? 'R' : `${Math.max(0, Math.min(99, pct))}%`;
   return (
     <div className="relative grid h-16 w-16 place-items-center">
       <div className="h-16 w-16 rounded-full" style={{ background: `conic-gradient(${color} ${pct}%, #e5e7eb 0)` }} />
       <div className="absolute h-12 w-12 rounded-full bg-white shadow ring-1 ring-inset ring-indigo-100" />
-      <div className="pointer-events-none absolute select-none text-sm font-bold text-slate-700">
-        {completed ? "✓" : state === 'boss' ? '★' : state === 'review' ? 'R' : `${Math.max(0, Math.min(99, pct))}%`}
-      </div>
+      <div className="pointer-events-none absolute select-none text-sm font-bold text-slate-700">{label}</div>
     </div>
   );
 }
@@ -364,19 +382,15 @@ function ChapterChestNode({ chapter, highlight }: { chapter: Chapter; highlight?
                   <stop offset="100%" stopColor="#d97706" />
                 </linearGradient>
               </defs>
-              {/* Body */}
               <rect x="6" y="22" width="52" height="30" rx="6" fill="url(#lc2)" stroke="#92400e" strokeWidth="2" />
-              {/* Lid (animated on highlight) */}
               <g style={{ transformBox: 'fill-box', transformOrigin: '10% 50%', animation: highlight ? 'lidLift 900ms ease-out 1' as any : undefined }}>
                 <rect x="8" y="16" width="48" height="12" rx="6" fill="url(#lc1)" stroke="#92400e" strokeWidth="2" />
               </g>
-              {/* Shine sweep */}
               <rect x="6" y="22" width="52" height="30" rx="6" fill="url(#lc2)" opacity="0">
                 <animate attributeName="opacity" from="0" to={highlight ? '0.25' : '0'} dur="900ms" fill="freeze" />
               </rect>
             </svg>
           </div>
-          {/* CSS keyframes for lid lift + shimmer bar */}
           <style>{`@keyframes lidLift{0%{transform:rotate(0deg) translateY(0)}40%{transform:rotate(-10deg) translateY(-2px)}100%{transform:rotate(0deg) translateY(0)}}`}</style>
         </div>
         <div className="flex-1">
@@ -390,3 +404,4 @@ function ChapterChestNode({ chapter, highlight }: { chapter: Chapter; highlight?
     </div>
   );
 }
+
