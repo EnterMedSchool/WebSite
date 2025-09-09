@@ -16,6 +16,7 @@ const baloo = Baloo_2({ subsets: ["latin"], weight: ["600", "700"], variable: "-
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const QuickDock = dynamic(() => import("@/components/study/QuickDock"), { ssr: false });
+  const RewardsOverlay = dynamic(() => import("@/components/xp/RewardsOverlay"), { ssr: false });
   return (
     <html lang="en">
       <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="mx-auto max-w-6xl p-6">{children}</main>
           <QuickDock />
+          <RewardsOverlay />
         </Providers>
         <SpeedInsights />
       </body>

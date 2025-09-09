@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { resolveUserIdFromSession } from "@/lib/user";
 import { levelFromXp, MAX_LEVEL, GOAL_XP } from "@/lib/xp";
 
 export const runtime = "nodejs";
@@ -19,17 +18,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const progress = hasProgress ? Math.max(0, Math.min(100, Number(body.progress))) : 0;
     const hasCompleted = Object.prototype.hasOwnProperty.call(body, "completed");
     // Resolve user id from session (fallback to lookup by email)
-    const session = await getServerSession(authOptions as any);
-    let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
-    // Guard against provider subject ids sneaking in (Google sub is a 21-digit string)
-    if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) {
-      userId = 0;
-    }
-    if (!userId && (session as any)?.user?.email) {
-      const email = String((session as any).user.email).toLowerCase();
-      const ur = await sql`SELECT id FROM users WHERE email=${email} LIMIT 1`;
-      if (ur.rows[0]?.id) userId = Number(ur.rows[0].id);
-    }
+    const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
 
     const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
@@ -45,15 +34,24 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       completed = existing.rows.length ? !!existing.rows[0].completed : progress === 100;
     }
 
-    // Insert or update. On conflict, only update 'completed' to avoid clobbering progress/last_viewed_at when toggling.
-    await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed)
-              VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})
-              ON CONFLICT (user_id, lesson_id) DO UPDATE SET completed=${completed}`;
+    // Insert or update. Some environments may not yet have the unique constraint; fall back gracefully.
+    try {
+      await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed)
+                VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})
+                ON CONFLICT (user_id, lesson_id) DO UPDATE SET completed=${completed}`;
+    } catch {
+      // Manual upsert: try update first; if rowcount 0, insert
+      const upd = await sql`UPDATE user_lesson_progress SET completed=${completed} WHERE user_id=${userId} AND lesson_id=${lesson.id}`;
+      if ((upd as any)?.rowCount === 0) {
+        try { await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed) VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})`; } catch {}
+      }
+    }
 
     // Award XP once on first completion
     let awardedXp = 0;
     let newXp = null as null | number;
     let newLevel = null as null | number;
+    const rewards: any[] = [];
     if (completed) {
       // Award XP only once per lesson per user based on xp_awarded marker
       const awarded = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND subject_type='lesson' AND subject_id=${lesson.id} AND action='xp_awarded' LIMIT 1`;
@@ -85,6 +83,46 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
           await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                     VALUES (${userId}, 'lesson', ${lesson.id}, 'xp_awarded', ${JSON.stringify({ amount: add, totalXp: nextXp })}::jsonb)`;
         } catch {}
+        // Milestone: total completed lessons
+        try {
+          const cntR = await sql`SELECT COUNT(*)::int AS completed FROM user_lesson_progress WHERE user_id=${userId} AND completed=true`;
+          const totalCompleted = Number(cntR.rows[0]?.completed || 0);
+          const milestones = [3, 5, 10, 20, 50];
+          for (const m of milestones) {
+            if (totalCompleted === m) {
+              const key = `lessons_${m}`;
+              const exists = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND action='reward' AND (payload->>'key')=${key} LIMIT 1`;
+              if (exists.rows.length === 0) {
+                try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                                 VALUES (${userId}, 'user', ${userId}, 'reward', ${JSON.stringify({ type: 'badge', key, label: `${m} Lessons Completed` })}::jsonb)`; } catch {}
+                rewards.push({ type: 'badge', key, label: `${m} Lessons Completed` });
+              }
+            }
+          }
+        } catch {}
+
+        // Milestone: chapter completion chest(s) for any chapters that include this lesson
+        try {
+          const cr = await sql`SELECT cl.chapter_id, c.title, c.position
+                               FROM chapter_lessons cl JOIN chapters c ON c.id=cl.chapter_id
+                               WHERE cl.lesson_id=${lesson.id}`;
+          for (const ch of cr.rows) {
+            const chId = Number(ch.chapter_id);
+            const doneR = await sql`SELECT COUNT(*)::int AS completed FROM user_lesson_progress WHERE user_id=${userId} AND completed=true AND lesson_id IN (SELECT lesson_id FROM chapter_lessons WHERE chapter_id=${chId})`;
+            const totR = await sql`SELECT COUNT(*)::int AS total FROM chapter_lessons WHERE chapter_id=${chId}`;
+            const d = Number(doneR.rows[0]?.completed || 0);
+            const t = Number(totR.rows[0]?.total || 0);
+            if (t > 0 && d === t) {
+              const key = `chapter_${chId}`;
+              const exists = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND action='reward' AND (payload->>'key')=${key} LIMIT 1`;
+              if (exists.rows.length === 0) {
+                try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                                 VALUES (${userId}, 'chapter', ${chId}, 'reward', ${JSON.stringify({ type: 'chest', key, label: `Chapter ${Number(ch.position || 0)} Complete` })}::jsonb)`; } catch {}
+                rewards.push({ type: 'chest', key, label: `Chapter ${Number(ch.position || 0)} Complete` });
+              }
+            }
+          }
+        } catch {}
       }
     }
     if (newXp == null) {
@@ -102,7 +140,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const span = Math.max(1, nextGoal - start);
     const inLevel = Math.max(0, Math.min(span, Number(newXp || 0) - start));
     const pct = Math.round((inLevel / span) * 100);
-    return NextResponse.json({ ok: true, awardedXp, newXp, newLevel: lvl, inLevel, span, pct });
+    return NextResponse.json({ ok: true, awardedXp, newXp, newLevel: lvl, inLevel, span, pct, rewards });
   } catch (err: any) {
     console.error('progress POST failed', err);
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });
@@ -115,16 +153,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     if (!isAuthConfigured) {
       return NextResponse.json({ error: 'auth_not_configured' }, { status: 401 });
     }
-    const session = await getServerSession(authOptions as any);
-    let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
-    if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) {
-      userId = 0;
-    }
-    if (!userId && (session as any)?.user?.email) {
-      const email = String((session as any).user.email).toLowerCase();
-      const ur = await sql`SELECT id FROM users WHERE email=${email} LIMIT 1`;
-      if (ur.rows[0]?.id) userId = Number(ur.rows[0].id);
-    }
+    const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
 
     const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;

@@ -22,6 +22,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [dashOpen, setDashOpen] = useState(false);
+  const [achCount, setAchCount] = useState<number>(0);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -38,6 +39,21 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
     function onOpen() { setDashOpen(true); }
     window.addEventListener("dashboard:open" as any, onOpen as any);
     return () => window.removeEventListener("dashboard:open" as any, onOpen as any);
+  }, []);
+
+  // Achievements count (inventory size) + live updates on reward events
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const r = await fetch('/api/me/xp', { credentials: 'include' });
+        const j = await r.json();
+        if (mounted) setAchCount(Array.isArray(j?.rewards) ? j.rewards.length : 0);
+      } catch { /* ignore */ }
+    })();
+    function onReward() { setAchCount((n) => n + 1); }
+    window.addEventListener('reward:earned' as any, onReward as any);
+    return () => { mounted = false; window.removeEventListener('reward:earned' as any, onReward as any); };
   }, []);
 
   if (!isAuthed) {
@@ -81,6 +97,9 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </span>
           <svg className="h-4 w-4 text-white/70" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
         </button>
+        {achCount > 0 && (
+          <span className="pointer-events-none absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow ring-2 ring-indigo-500/70">{Math.min(99, achCount)}</span>
+        )}
 
         {open && (
           <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-72 rounded-2xl border border-indigo-100 bg-white/95 shadow-xl backdrop-blur">
@@ -101,6 +120,12 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
             <ul className="p-1">
               <li>
                 <button onClick={() => { setDashOpen(true); setOpen(false); }} className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Dashboard</button>
+              </li>
+              <li>
+                <Link href="/achievements" onClick={() => setOpen(false)} className="relative block w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">
+                  Achievements
+                  {achCount > 0 && <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-indigo-600 px-2 py-[2px] text-[10px] font-bold text-white">{Math.min(99, achCount)}</span>}
+                </Link>
               </li>
               <li>
                 <Link href="/leaderboard" onClick={() => setOpen(false)} className="block w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Leaderboard</Link>

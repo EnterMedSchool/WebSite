@@ -6,37 +6,71 @@ import { sql } from "@/lib/db";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function whenLabel(d: Date) {
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const day = Math.floor(hr / 24);
+  return `${day}d`;
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions as any);
-    const email = String((session as any)?.user?.email || "").toLowerCase();
-    let userId = 0;
-    if (email) {
-      const ur = await sql`SELECT id FROM users WHERE lower(email)=${email} LIMIT 1`;
-      if (ur.rows[0]?.id) userId = Number(ur.rows[0].id);
+    let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
+    if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) {
+      // fallback by email when using provider
+      if ((session as any)?.user?.email) {
+        const email = String((session as any).user.email).toLowerCase();
+        const ur = await sql`SELECT id FROM users WHERE email=${email} LIMIT 1`;
+        if (ur.rows[0]?.id) userId = Number(ur.rows[0].id);
+      }
     }
-    if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+    if (!userId) return NextResponse.json({ recent: [], rewards: [], streakDays: 0 });
 
-    // recent xp events
-    const er = await sql`SELECT action, subject_type, subject_id, created_at, payload
-                         FROM lms_events
-                         WHERE user_id=${userId} AND (action='xp_awarded' OR action='completed')
-                         ORDER BY created_at DESC LIMIT 20`;
-    const recent = er.rows.map((r:any)=>({
-      what: r.action==='xp_awarded' ? 'Lesson XP' : 'Lesson Completed',
-      when: new Date(r.created_at).toLocaleDateString(),
-      amount: r.action==='xp_awarded' ? (Number((r.payload||{}).amount)||10) : 0,
-    }));
+    // Recent XP events
+    const xr = await sql`SELECT payload, created_at FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' ORDER BY created_at DESC LIMIT 12`;
+    const recent = xr.rows.map((r: any) => {
+      const p = typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload || {};
+      const when = new Date(r.created_at as string);
+      const amount = Number(p.amount || 0);
+      const what = p.subject || (amount ? `${amount} XP` : 'XP');
+      return { when: whenLabel(when), what, amount };
+    });
 
-    // naive streak: count consecutive days with at least one xp_awarded event
-    const sr = await sql`SELECT created_at FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at > now() - interval '30 days' ORDER BY created_at DESC`;
-    const dates = Array.from(new Set(sr.rows.map((x:any)=> new Date(x.created_at).toDateString())));
-    let streak = 0;
-    let d = new Date(); d.setHours(0,0,0,0);
-    while (dates.includes(d.toDateString())) { streak++; d = new Date(d.getTime() - 86400000); }
+    // Rewards inventory (dedupe by key keeping latest)
+    const rr = await sql`SELECT payload, created_at FROM lms_events WHERE user_id=${userId} AND action='reward' ORDER BY created_at DESC LIMIT 50`;
+    const seen = new Set<string>();
+    const rewards: { key: string; type: string; label: string; earnedAt: string }[] = [];
+    for (const r of rr.rows) {
+      const p = typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload || {};
+      const key = String(p.key || `${p.type}:${p.label}`);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rewards.push({ key, type: String(p.type || 'badge'), label: String(p.label || 'Reward'), earnedAt: new Date(r.created_at as string).toISOString() });
+    }
 
-    return NextResponse.json({ recent, streakDays: streak });
-  } catch (e:any) {
-    return NextResponse.json({ error: 'internal_error', message: String(e?.message||e) }, { status: 500 });
+    // Streak: count consecutive days with any xp_awarded event
+    let streakDays = 0;
+    try {
+      const since = new Date(); since.setDate(since.getDate() - 30);
+      const sr = await sql`SELECT DATE(created_at) AS d FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at >= ${since.toISOString()} GROUP BY DATE(created_at) ORDER BY d DESC`;
+      const days = sr.rows.map((r:any)=> new Date(r.d as string));
+      let cursor = new Date(); cursor.setHours(0,0,0,0);
+      for (;;) {
+        const has = days.find((d)=> d.getTime() === cursor.getTime());
+        if (!has) break;
+        streakDays++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    } catch {}
+
+    return NextResponse.json({ recent, rewards, streakDays });
+  } catch (e: any) {
+    return NextResponse.json({ recent: [], rewards: [], streakDays: 0 }, { status: 200 });
   }
 }
+

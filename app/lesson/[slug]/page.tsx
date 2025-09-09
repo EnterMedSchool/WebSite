@@ -156,6 +156,12 @@ export default function LessonPage() {
           const from = rect ? { x: rect.left + rect.width / 2, y: rect.top } : { x: window.innerWidth - 80, y: 12 };
           window.dispatchEvent(new CustomEvent("xp:awarded", { detail: { amount: Number(payload.awardedXp), from, newLevel: Number(payload.newLevel || 1), newPct: Number(payload.pct || 0), newInLevel: Number(payload.inLevel || 0), newSpan: Number(payload.span || 1) } }));
         }
+        if (Array.isArray((payload as any)?.rewards)) {
+          for (const r of (payload as any).rewards) {
+            try { window.dispatchEvent(new CustomEvent('reward:earned', { detail: r })); } catch {}
+            try { if (r?.type === 'chest' && typeof r?.key === 'string') localStorage.setItem(`ems:chest:flash:${r.key}`, '1'); } catch {}
+          }
+        }
       } else {
         // revert
         setIsComplete(!target);
@@ -401,6 +407,7 @@ export default function LessonPage() {
                           if (j?.span != null) detail.newSpan = Number(j.span);
                           window.dispatchEvent(new CustomEvent('xp:awarded', { detail }));
                         }
+                        if (Array.isArray(j?.rewards)) { for (const rwd of j.rewards) { try { window.dispatchEvent(new CustomEvent('reward:earned', { detail: rwd })); } catch {} try { if (rwd?.type === 'chest' && typeof rwd?.key === 'string') localStorage.setItem(ems:chest:flash:, '1'); } catch {} } }
                         if (isAuthed) {
                           const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
                           const k = await r2.json();
@@ -527,3 +534,8 @@ function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceI
     </div>
   );
 }
+
+
+
+
+

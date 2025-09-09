@@ -151,13 +151,12 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
             <RecentXpList />
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
-                <div className="font-semibold text-gray-900">Achievements</div>
-                <div className="mt-1 text-gray-600">- First Steps (soon)</div>
-                <div className="text-gray-600">- Quiz Whiz (soon)</div>
+                <div className="mb-1 font-semibold text-gray-900">Inventory</div>
+                <InventoryMini />
               </div>
               <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
                 <div className="font-semibold text-gray-900">Daily Streak</div>
-                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">-</span> days (soon)</div>
+                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">-</span> days</div>
               </div>
             </div>
           </div>
@@ -196,5 +195,33 @@ function RecentXpList() {
   );
 }
 
-function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
+function InventoryMini() {
+  const [items, setItems] = useState<{ key: string; type: string; label: string }[] | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/me/xp');
+        const j = await r.json();
+        setItems((j?.rewards || []).slice(0, 8));
+      } catch { setItems([]); }
+    })();
+  }, []);
+  if (!items) return <div className="h-14 animate-pulse rounded bg-gray-100" />;
+  if (items.length === 0) return <div className="text-gray-600">No items yet. Complete chapters and milestones!</div>;
+  return (
+    <div className="grid grid-cols-4 gap-1">
+      {items.map((it) => (
+        <div key={it.key} className="grid place-items-center rounded-lg border bg-white p-2 text-center text-[10px]">
+          {it.type === 'chest' ? (
+            <svg viewBox="0 0 64 64" className="h-8 w-8"><defs><linearGradient id="c1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient><linearGradient id="c2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs><rect x="6" y="22" width="52" height="30" rx="6" fill="url(#c2)" stroke="#92400e" strokeWidth="2"/><rect x="8" y="16" width="48" height="12" rx="6" fill="url(#c1)" stroke="#92400e" strokeWidth="2"/></svg>
+          ) : (
+            <svg viewBox="0 0 64 64" className="h-8 w-8"><defs><linearGradient id="b1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a7f3d0"/><stop offset="100%" stopColor="#22c55e"/></linearGradient></defs><circle cx="32" cy="28" r="20" fill="url(#b1)" stroke="#065f46" strokeWidth="2"/><path d="M22 46l10-6 10 6v10l-10-6-10 6z" fill="#10b981" stroke="#065f46" strokeWidth="2"/></svg>
+          )}
+          <div className="line-clamp-2 text-[10px] font-semibold text-slate-700">{it.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
+function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }

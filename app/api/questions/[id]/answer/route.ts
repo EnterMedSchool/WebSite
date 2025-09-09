@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { resolveUserIdFromSession } from "@/lib/user";
 import { levelFromXp, MAX_LEVEL, GOAL_XP } from "@/lib/xp";
 
 export const runtime = "nodejs";
@@ -25,26 +24,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const isCorrect = !!row.correct;
 
     // Resolve user
-    let userId = 0;
+    let userId = await resolveUserIdFromSession();
     let isPremium = false;
-    try {
-      const session = await getServerSession(authOptions as any);
-      if (session) {
-        userId = Number((session as any).userId || 0);
-        if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) userId = 0;
-        if (!userId && (session as any)?.user?.email) {
-          const email = String((session as any).user.email).toLowerCase();
-          const ur = await sql`SELECT id, is_premium FROM users WHERE email=${email} LIMIT 1`;
-          if (ur.rows[0]?.id) {
-            userId = Number(ur.rows[0].id);
-            isPremium = !!ur.rows[0].is_premium;
-          }
-        } else if (userId) {
-          const ur = await sql`SELECT is_premium FROM users WHERE id=${userId} LIMIT 1`;
-          isPremium = !!ur.rows[0]?.is_premium;
-        }
-      }
-    } catch {}
+    if (userId) {
+      try { const ur = await sql`SELECT is_premium FROM users WHERE id=${userId} LIMIT 1`; isPremium = !!ur.rows[0]?.is_premium; } catch {}
+    }
 
     // Access gating
     const access = String(row.access || 'public');
@@ -125,6 +109,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     let inLevel: number | null = null;
     let span: number | null = null;
     let pct: number | null = null;
+    const rewards: any[] = [];
     try {
       const ur2 = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
       const newXp = Number(ur2.rows[0]?.xp || 0);
@@ -136,7 +121,26 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       newLevel = lvl; inLevel = inL; span = sp; pct = Math.round((inL / sp) * 100);
     } catch {}
 
-    return NextResponse.json({ ok: true, correct: isCorrect, explanation: row.explanation, awardedXp, totalCorrectAnswersInc, newLevel, inLevel, span, pct });
+    // Badge milestones for total correct answers
+    try {
+      if (totalCorrectAnswersInc > 0) {
+        const cr = await sql`SELECT total_correct_answers FROM users WHERE id=${userId} LIMIT 1`;
+        const totalCorrect = Number(cr.rows[0]?.total_correct_answers || 0);
+        for (const m of [10, 25, 50, 100]) {
+          if (totalCorrect === m) {
+            const key = `correct_${m}`;
+            const exists = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND action='reward' AND (payload->>'key')=${key} LIMIT 1`;
+            if (exists.rows.length === 0) {
+              try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                               VALUES (${userId}, 'user', ${userId}, 'reward', ${JSON.stringify({ type: 'badge', key, label: `${m} Questions Correct` })}::jsonb)`; } catch {}
+              rewards.push({ type: 'badge', key, label: `${m} Questions Correct` });
+            }
+          }
+        }
+      }
+    } catch {}
+
+    return NextResponse.json({ ok: true, correct: isCorrect, explanation: row.explanation, awardedXp, totalCorrectAnswersInc, newLevel, inLevel, span, pct, rewards });
   } catch (err: any) {
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });
   }
