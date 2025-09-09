@@ -19,6 +19,7 @@ export default function QuickDock() {
   const [text, setText] = useState("");
   const [sharedEndAt, setSharedEndAt] = useState<string | null>(null);
   const tick = useTick(panelOpen ? 1000 : null);
+  const [showTimer, setShowTimer] = useState(false);
 
   // When opening, resolve last session and join it (so lists are visible)
   useEffect(() => {
@@ -143,7 +144,7 @@ export default function QuickDock() {
         </div>
         {/* Timer */}
         <div className="group relative">
-          <button onClick={() => { setTab('timer'); setPanelOpen(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-400">
+          <button onClick={() => { setShowTimer(true); }} className="grid h-10 w-10 place-items-center rounded-full text-gray-700 ring-1 ring-gray-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-400">
             <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
           </button>
           <div className="pointer-events-none absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 opacity-0 transition-all group-hover:opacity-100">
@@ -224,6 +225,9 @@ export default function QuickDock() {
           <style>{`@keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }`}</style>
         </div>
       )}
+      {showTimer && (
+        <TimerOverlay onClose={() => setShowTimer(false)} />
+      )}
     </div>
   );
 }
@@ -245,6 +249,18 @@ function formatMS(ms: number) {
   const s = total % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+function TimerOverlay({ onClose }: { onClose: () => void }) {
+  // Lazy import to keep QuickDock light
+  const [Comp, setComp] = useState<any>(null);
+  useEffect(() => {
+    let mounted = true;
+    import("@/components/study/timer/FloatingTimer").then((m) => { if (mounted) setComp(() => m.default); });
+    return () => { mounted = false; };
+  }, []);
+  if (!Comp) return null;
+  return <Comp open={true} onClose={onClose} />;
 }
 
 
