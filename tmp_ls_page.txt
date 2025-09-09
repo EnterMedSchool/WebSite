@@ -227,7 +227,7 @@ export default function LessonPage() {
                 <div className="mt-1 text-xs font-medium text-white/90">
                   {lessonProg ? (
                     <span>
-                      {lessonProg.completed ? "Completed" : "Incomplete"} - Questions: {lessonProg.qCorrect}/{lessonProg.qTotal} - {lessonProg.lessonPct}%
+                      {lessonProg.completed ? "Completed" : "Incomplete"} · Questions: {lessonProg.qCorrect}/{lessonProg.qTotal} · {lessonProg.lessonPct}%
                     </span>
                   ) : (
                     <span>Lesson progress: 0%</span>
@@ -277,7 +277,7 @@ export default function LessonPage() {
                         done ? "bg-emerald-500 text-white ring-emerald-200" : isCurr ? "bg-indigo-600 text-white ring-indigo-200" : "bg-white text-indigo-700 ring-indigo-200"
                       }`}
                     >
-                      {i + 1}
+                      {done ? "✓" : i + 1}
                     </span>
                     <Link
                       href={`/lesson/${t.slug}${isCurr && (tab==='practice' || tab==='notes') ? `?tab=${tab}${tab==='practice' ? `&q=${idx+1}`:''}` : ''}`}
@@ -534,7 +534,6 @@ function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceI
     </div>
   );
 }
-
 
 
 
