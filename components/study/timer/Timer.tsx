@@ -21,6 +21,7 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
   const [tick, setTick] = useState(0);
   const [sharedDurationMs, setSharedDurationMs] = useState<number>(0);
   const [privateDurationMs, setPrivateDurationMs] = useState<number>(0);
+  const [sharedBaseMs, setSharedBaseMs] = useState<number | null>(null);
 
   // tick interval
   useEffect(() => {
@@ -77,9 +78,22 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
     setPrivateDurationMs((h * 3600 + m * 60 + s) * 1000);
   }, [h, m, s]);
 
+  // Capture a reasonable base duration when a new sharedEndAt arrives from the room
+  useEffect(() => {
+    if (!sharedEndAt) { setSharedBaseMs(null); return; }
+    const now = Date.now();
+    const remain = Math.max(0, new Date(sharedEndAt).getTime() - now);
+    // Initialize base if empty or if room extended
+    setSharedBaseMs((prev) => {
+      if (!prev) return remain;
+      if (remain > prev) return remain; // shared timer extended
+      return prev;
+    });
+  }, [sharedEndAt]);
+
   const rem = mode === "share" ? sharedRemaining : privateRemaining;
-  const dur = mode === "share" ? sharedDurationMs : privateDurationMs;
-  const pct = Math.max(0, Math.min(1, dur > 0 ? (dur - rem) / Math.max(dur, 1) : 0));
+  const durCandidate = mode === "share" ? (sharedDurationMs || sharedBaseMs || 0) : privateDurationMs;
+  const pct = Math.max(0, Math.min(1, durCandidate > 0 ? (durCandidate - rem) / Math.max(durCandidate, 1) : 0));
   const deg = Math.round(pct * 360);
 
   return (
@@ -100,7 +114,14 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-2">
+      {/* Quick presets */}
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+        <button onClick={()=>{ setH(0); setM(25); setS(0); }} className="rounded-full bg-indigo-50 px-2 py-1 font-semibold text-indigo-700 hover:bg-indigo-100">Focus 25</button>
+        <button onClick={()=>{ setH(0); setM(5); setS(0); }} className="rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-700 hover:bg-emerald-100">Short 5</button>
+        <button onClick={()=>{ setH(0); setM(15); setS(0); }} className="rounded-full bg-sky-50 px-2 py-1 font-semibold text-sky-700 hover:bg-sky-100">Long 15</button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
         <input type="number" min={0} className="rounded-xl border border-gray-300 p-3 text-center focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={h} onChange={(e) => setH(Math.max(0, Number(e.target.value) || 0))} placeholder="H" />
         <input type="number" min={0} className="rounded-xl border border-gray-300 p-3 text-center focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={m} onChange={(e) => setM(Math.max(0, Number(e.target.value) || 0))} placeholder="M" />
         <input type="number" min={0} className="rounded-xl border border-gray-300 p-3 text-center focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={s} onChange={(e) => setS(Math.max(0, Number(e.target.value) || 0))} placeholder="S" />
