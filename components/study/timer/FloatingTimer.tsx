@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useStudyStore } from "@/lib/study/store";
 
 type Mode = "focus" | "short" | "long";
@@ -21,6 +22,9 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
   const [target, setTarget] = useState<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const [, setTick] = useState(0);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{dx: number; dy: number; dragging: boolean}>({dx:0,dy:0,dragging:false});
 
   // rAF ticker for smooth countdown
   useEffect(() => {
@@ -32,6 +36,25 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
     rafRef.current = requestAnimationFrame(loop);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); rafRef.current = null; };
   }, [open]);
+
+  // Load persisted mode/position
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const m = (localStorage.getItem("vl_timer_mode") as Mode | null);
+      if (m === "focus" || m === "short" || m === "long") setMode(m);
+      const p = localStorage.getItem("vl_timer_pos");
+      if (p) { const obj = JSON.parse(p); if (obj && typeof obj.x==='number' && typeof obj.y==='number') setPos({x:obj.x,y:obj.y}); }
+    } catch {}
+  }, [open]);
+
+  useEffect(() => {
+    try { localStorage.setItem("vl_timer_mode", mode); } catch {}
+  }, [mode]);
+
+  useEffect(() => {
+    if (!pos) return; try { localStorage.setItem("vl_timer_pos", JSON.stringify(pos)); } catch {}
+  }, [pos]);
 
   const remainingMs = useMemo(() => {
     const now = Date.now();
@@ -47,6 +70,38 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
     const s = total % 60;
     return [String(m).padStart(2, '0'), String(s).padStart(2, '0')];
   }, [remainingMs, mode]);
+
+  // Setup initial position (near right center) when opened
+  useEffect(() => {
+    if (!open) return;
+    if (pos) return;
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+    setPos({ x: Math.max(16, w - 420), y: Math.max(16, Math.round(h/2 - 220)) });
+  }, [open, pos]);
+
+  // Drag handling (drag by top bar area)
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, dragging: true };
+    e.preventDefault();
+  }, []);
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!dragRef.current.dragging) return;
+      const w = window.innerWidth; const h = window.innerHeight;
+      const el = cardRef.current; const cw = el ? el.offsetWidth : 360; const ch = el ? el.offsetHeight : 440;
+      let nx = e.clientX - dragRef.current.dx; let ny = e.clientY - dragRef.current.dy;
+      nx = Math.min(Math.max(8, nx), w - cw - 8);
+      ny = Math.min(Math.max(8, ny), h - ch - 8);
+      setPos({ x: nx, y: ny });
+    }
+    function onUp() { dragRef.current.dragging = false; }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, []);
 
   const startLocal = useCallback(() => {
     const minutes = MODE_META[mode].minutes;
@@ -72,16 +127,14 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
     }).catch(() => {});
   }, [slug, mode, setSharedEndAt]);
 
-  if (!open) return null;
+  if (!open || !pos) return null;
   const meta = MODE_META[mode];
   const accent = mode === "focus" ? "#f43f5e" : mode === "short" ? "#10b981" : "#0284c7"; // rose-500, emerald-500, sky-600
 
-  return (
-    <div className="fixed inset-0 z-[70] grid place-items-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className={`relative w-[360px] sm:w-[420px] overflow-hidden rounded-[28px] bg-gradient-to-b ${meta.bg} p-4 shadow-2xl ring-1 ring-black/5`}>
+  const card = (
+      <div ref={cardRef} className={`fixed z-[70] w-[360px] sm:w-[420px] overflow-hidden rounded-[28px] bg-gradient-to-b ${meta.bg} p-4 shadow-2xl ring-1 ring-black/5`} style={{ left: pos.x, top: pos.y }}>
         {/* Top bar */}
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex cursor-grab items-center justify-between active:cursor-grabbing" onMouseDown={onMouseDown}>
           <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${meta.chip}`}>
             <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
             {meta.label}
@@ -120,8 +173,8 @@ export default function FloatingTimer({ open, onClose }: { open: boolean; onClos
           </div>
         )}
       </div>
-    </div>
   );
+  return createPortal(card, document.body);
 }
 
 // (no longer used)
