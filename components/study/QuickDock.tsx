@@ -6,7 +6,11 @@ type Message = { id: number; userId: number; content: string; createdAt: string;
 type TaskItem = { id: number; name: string; isCompleted: boolean; xpAwarded?: boolean };
 
 export default function QuickDock() {
-  const [open, setOpen] = useState(false);
+  // Panel / menu state
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+
   const [tab, setTab] = useState<"tasks" | "timer" | "chat">("tasks");
   const [slug, setSlug] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -17,11 +21,11 @@ export default function QuickDock() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sharedEndAt, setSharedEndAt] = useState<string | null>(null);
-  const tick = useTick(open ? 1000 : null);
+  const tick = useTick(panelOpen ? 1000 : null);
 
   // When opening, resolve last session and join it (so lists are visible)
   useEffect(() => {
-    if (!open) return;
+    if (!panelOpen) return;
     (async () => {
       if (sessionId) return; // already loaded
       setLoading(true);
@@ -46,7 +50,7 @@ export default function QuickDock() {
         setLoading(false);
       }
     })();
-  }, [open]);
+  }, [panelOpen]);
 
   async function reloadTasks(id: number) {
     // Ask server to return/create my global list for this session context
@@ -131,26 +135,56 @@ export default function QuickDock() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[60]">
-      {/* Toggle button */}
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="group rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 p-0.5 shadow-xl"
-        aria-expanded={open}
-        title="Virtual Library Quick Dock"
-      >
-        <span className="block rounded-full bg-white px-4 py-3 text-sm font-bold text-indigo-700 transition group-hover:bg-white/95">VL</span>
-      </button>
+    <div className="fixed right-5 top-1/2 z-[60] -translate-y-1/2">
+      {/* Floating round blue widget */}
+      <div className="relative group"
+           onMouseEnter={() => setHover(true)}
+           onMouseLeave={() => setHover(false)}>
+        {/* glow */}
+        <span className={`pointer-events-none absolute inset-0 -m-2 rounded-full bg-blue-500/30 blur-md transition-opacity ${hover || menuOpen ? 'opacity-100' : 'opacity-0'}`} />
+        {/* main button */}
+        <button
+          onClick={() => setMenuOpen(v => !v)}
+          className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-2xl ring-1 ring-blue-400/30 transition-transform hover:scale-105 active:scale-95"
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
+          title="Virtual Library"
+        >
+          {/* three icons stacked lightly to hint features */}
+          <div className="relative">
+            <svg viewBox="0 0 24 24" className="absolute -left-3 -top-2 h-4 w-4 opacity-80"><path fill="currentColor" d="M7 21a1 1 0 0 1-1-1V6h10v14a1 1 0 0 1-1 1H7Zm2-3h6V8H9v10Zm-3-14V4h12v2H6Z"/></svg>
+            <svg viewBox="0 0 24 24" className="h-6 w-6"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
+            <svg viewBox="0 0 24 24" className="absolute -right-3 -bottom-2 h-4 w-4 opacity-80"><path fill="currentColor" d="M2 3h20v14H6l-4 4V3Zm4 4v2h12V7H6Zm0 4v2h9v-2H6Z"/></svg>
+          </div>
+          {/* ping ring */}
+          <span className={`absolute inset-0 rounded-full ring-4 ring-blue-300/30 animate-ping ${hover || menuOpen ? '' : 'hidden'}`} />
+        </button>
+
+        {/* Fan-out mini actions */}
+        <div className="pointer-events-none absolute left-0 top-1/2 -translate-x-[72px] -translate-y-1/2 space-y-3 transition-all"
+             style={{ opacity: (hover || menuOpen) ? 1 : 0, transform: `translate(-72px, -50%) scale(${hover || menuOpen ? 1 : 0.9})` }}>
+          <button onClick={() => { setTab('tasks'); setPanelOpen(true); setMenuOpen(false); }} className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600 shadow ring-1 ring-blue-100 hover:bg-blue-50" title="Tasks">
+            <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M7 21a1 1 0 0 1-1-1V6h10v14a1 1 0 0 1-1 1H7Zm2-3h6V8H9v10Zm-3-14V4h12v2H6Z"/></svg>
+          </button>
+          <button onClick={() => { setTab('timer'); setPanelOpen(true); setMenuOpen(false); }} className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600 shadow ring-1 ring-blue-100 hover:bg-blue-50" title="Timer">
+            <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm.75 5h-1.5v6l5.25 3.15.75-1.23-4.5-2.67Z"/></svg>
+          </button>
+          <button onClick={() => { setTab('chat'); setPanelOpen(true); setMenuOpen(false); }} className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full bg-white text-blue-600 shadow ring-1 ring-blue-100 hover:bg-blue-50" title="Chat">
+            <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M2 3h20v14H6l-4 4V3Zm4 4v2h12V7H6Zm0 4v2h9v-2H6Z"/></svg>
+          </button>
+        </div>
+      </div>
 
       {/* Panel */}
-      {open && (
-        <div className="absolute bottom-14 right-0 w-[340px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
-          <div className="flex items-center justify-between bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 px-3 py-2 text-white">
+      {panelOpen && (
+        <div className="absolute right-[76px] top-1/2 w-[340px] -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+          <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-500 px-3 py-2 text-white">
             <div className="text-sm font-semibold">Virtual Library</div>
             <div className="flex gap-1">
               <button className={`rounded px-2 py-1 text-xs ${tab==='tasks'?'bg-white/20':''}`} onClick={()=>setTab('tasks')}>Tasks</button>
               <button className={`rounded px-2 py-1 text-xs ${tab==='timer'?'bg-white/20':''}`} onClick={()=>setTab('timer')}>Timer</button>
               <button className={`rounded px-2 py-1 text-xs ${tab==='chat'?'bg-white/20':''}`} onClick={()=>setTab('chat')}>Chat</button>
+              <button className="ml-1 rounded px-2 py-1 text-xs hover:bg-white/20" onClick={()=>setPanelOpen(false)} aria-label="Close">×</button>
             </div>
           </div>
           <div className="max-h-[60vh] overflow-y-auto p-3">
@@ -222,3 +256,5 @@ function formatMS(ms: number) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
+
+
