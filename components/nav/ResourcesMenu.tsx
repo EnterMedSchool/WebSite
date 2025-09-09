@@ -4,7 +4,7 @@ export default function ResourcesMenu() {
   const items = [
     { href: "/blog", label: "Study Materials", sub: "Notes & guides" },
     { href: "/#parents", label: "For Parents", sub: "Help & information" },
-    { href: "/study-rooms", label: "Student Portal", sub: "Tools & resources" },
+    { href: "/study-rooms", label: "Virtual Library", sub: "Study rooms & tools" },
     { href: "/#scholarships", label: "Scholarships", sub: "Financial aid" },
   ];
   return (

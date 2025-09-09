@@ -25,8 +25,8 @@ export default function MyRoomsPage() {
   return (
     <section className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold">My Study Rooms</h1>
-        <Link href="/study-rooms/new" className="underline">Create a room</Link>
+        <h1 className="text-3xl font-semibold">My Study Room</h1>
+        <Link href="/study-rooms/new" className="underline">Open my room</Link>
       </div>
       <ul className="space-y-3">
         {sessions.map((s: any) => (
@@ -47,4 +47,3 @@ export default function MyRoomsPage() {
     </section>
   );
 }
-

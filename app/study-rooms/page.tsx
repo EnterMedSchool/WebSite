@@ -32,12 +32,12 @@ export default function StudyRoomsPage() {
   return (
     <section className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold">Study Rooms</h1>
+        <h1 className="text-3xl font-semibold">Virtual Library</h1>
         <div className="flex items-center gap-4">
           {meta?.lastSessionSlug ? (
-            <Link href={`/study-rooms/${meta.lastSessionSlug}`} className="underline">Join last one</Link>
+            <Link href={`/study-rooms/${meta.lastSessionSlug}`} className="underline">Reopen last room</Link>
           ) : null}
-          <Link href="/study-rooms/new" className="underline">Create a room</Link>
+          <Link href="/study-rooms/new" className="underline">Open my room</Link>
         </div>
       </div>
       <div className="flex items-center gap-3 mb-3">

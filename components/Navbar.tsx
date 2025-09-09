@@ -61,7 +61,7 @@ export default async function Navbar() {
   const secondary = [
     { href: "/blog", label: "Study Materials" },
     { href: "/#parents", label: "Information for Parents" },
-    { href: "/study-rooms", label: "Student Portal" },
+    { href: "/study-rooms", label: "Virtual Library" },
     { href: "/#scholarships", label: "Scholarship Program" },
   ];
 

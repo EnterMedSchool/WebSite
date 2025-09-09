@@ -31,7 +31,7 @@ export default function NewStudyRoomPage() {
 
   return (
     <section className="container mx-auto p-6">
-      <h1 className="text-3xl font-semibold mb-6">Create Study Room</h1>
+      <h1 className="text-3xl font-semibold mb-6">My Study Room</h1>
       <form onSubmit={create} className="space-y-4 max-w-xl">
         <div>
           <label className="block text-sm mb-1">Title</label>
@@ -41,7 +41,7 @@ export default function NewStudyRoomPage() {
           <label className="block text-sm mb-1">Description</label>
           <textarea className="w-full border rounded p-2" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
-        <button className="border rounded px-4 py-2" disabled={loading}>{loading ? "Creating..." : "Create"}</button>
+        <button className="border rounded px-4 py-2" disabled={loading}>{loading ? "Opening..." : "Open My Room"}</button>
       </form>
     </section>
   );
