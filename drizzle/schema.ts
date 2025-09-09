@@ -573,3 +573,23 @@ export const studyUserMeta = pgTable(
   },
   (t) => ({ userIdx: index("study_user_meta_user_idx").on(t.userId) })
 );
+
+// ==========================
+// IMAT Planner (per-user meta tying to study_task_lists)
+// ==========================
+
+export const imatUserPlan = pgTable(
+  "imat_user_plan",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    taskListId: integer("task_list_id"), // references study_task_lists.id
+    startDate: timestamp("start_date"),
+    currentDay: integer("current_day"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("imat_user_plan_user_idx").on(t.userId),
+  })
+);
