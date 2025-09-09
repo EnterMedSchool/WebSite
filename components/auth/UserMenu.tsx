@@ -97,9 +97,9 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
           </span>
           <svg className="h-4 w-4 text-white/70" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
         </button>
-        {achCount > 0 && (
-          <span className="pointer-events-none absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow ring-2 ring-indigo-500/70">{Math.min(99, achCount)}</span>
-        )}
+        {/* Removed persistent achievement badge bubble on avatar to avoid
+            notification-like dot that never clears. Counts still appear
+            inside the menu next to the Achievements link. */}
 
         {open && (
           <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-72 rounded-2xl border border-indigo-100 bg-white/95 shadow-xl backdrop-blur">

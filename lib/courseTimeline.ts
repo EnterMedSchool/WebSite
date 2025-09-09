@@ -140,6 +140,9 @@ export async function getCourseTimeline(
 
   const lessonRows = lr.rows as any[];
   const lessonIds = lessonRows.map((r) => Number(r.id));
+  // Map lesson id -> slug for aggregation by slug (handles duplicate lessons with same slug)
+  const idToSlug = new Map<number, string>();
+  for (const r of lessonRows) idToSlug.set(Number(r.id), String(r.slug));
 
   // Question totals per lesson
   const qTotals: Record<number, number> = {};
@@ -166,6 +169,20 @@ export async function getCourseTimeline(
   if (userId && lessonIds.length > 0) {
     const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds as any}) AND completed=true`;
     for (const r of dc.rows) done.add(Number(r.lesson_id));
+  }
+
+  // Aggregate per-slug totals so duplicate lessons share progress
+  const totalsBySlug: Record<string, number> = {};
+  const correctBySlug: Record<string, number> = {};
+  const doneBySlug: Record<string, boolean> = {};
+  for (const lid of lessonIds) {
+    const slug = idToSlug.get(lid) || "";
+    const t = qTotals[lid] || 0;
+    const c = qCorrect[lid] || 0;
+    // Take max to prevent double counting across duplicates
+    totalsBySlug[slug] = Math.max(totalsBySlug[slug] || 0, t);
+    correctBySlug[slug] = Math.max(correctBySlug[slug] || 0, c);
+    doneBySlug[slug] = (doneBySlug[slug] || false) || done.has(lid);
   }
 
   // Prerequisites for lock state
@@ -204,28 +221,32 @@ export async function getCourseTimeline(
       if (!ok) state = 'locked';
     }
 
+    const slug = String(r.slug);
     arr.push({
       id: lid,
-      slug: String(r.slug),
+      slug,
       title: String(r.title),
       lengthMin: r.length_min != null ? Number(r.length_min) : null,
       position: Number(r.position || 0),
-      completed: done.has(lid),
-      qTotal: qTotals[lid] || 0,
-      qCorrect: qCorrect[lid] || 0,
+      completed: !!doneBySlug[slug],
+      qTotal: totalsBySlug[slug] || 0,
+      qCorrect: correctBySlug[slug] || 0,
       state,
     });
     byChapter.set(chapterId, arr);
   }
 
-  const outChapters: ChapterWithLessons[] = chapters.map((c) => ({
-    id: Number(c.id),
-    slug: String(c.slug),
-    title: String(c.title),
-    description: c.description ?? null,
-    position: Number(c.position || 0),
-    lessons: byChapter.get(Number(c.id)) || [],
-  }));
+  const outChapters: ChapterWithLessons[] = chapters
+    // Hide placeholder chapter titled "All Lessons" if present in DB
+    .filter((c) => String(c.title).trim().toLowerCase() !== 'all lessons')
+    .map((c) => ({
+      id: Number(c.id),
+      slug: String(c.slug),
+      title: String(c.title),
+      description: c.description ?? null,
+      position: Number(c.position || 0),
+      lessons: byChapter.get(Number(c.id)) || [],
+    }));
 
   const last = chapters[chapters.length - 1];
   const nextCursor = last ? encodeCursor(Number(last.position || 0), Number(last.id)) : null;
