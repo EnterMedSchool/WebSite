@@ -86,7 +86,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                         <div className="mt-1 line-clamp-2 text-base font-bold text-gray-900">{ch.title}</div>
                         <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">79% done</span>
-                          <span className="opacity-60">•</span>
+                          <span className="opacity-60">-</span>
                           <span>45 min</span>
                         </div>
                       </div>
@@ -156,7 +156,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                       <div className="text-gray-600">XP</div>
                     </div>
                     <div className="rounded-xl border p-2">
-                      <div className="text-lg font-extrabold text-gray-900">⚡</div>
+                      <div className="text-lg font-extrabold text-gray-900">—</div>
                       <div className="text-gray-600">Streak</div>
                     </div>
                   </div>
@@ -201,3 +201,4 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
     </div>
   );
 }
+
