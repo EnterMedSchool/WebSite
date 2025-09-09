@@ -72,17 +72,11 @@ export default function MyTasks() {
       if (res.ok) {
         const j = await res.json();
         const awarded = Number(j?.xpAwarded || 0);
-        // If XP really awarded now (first completion), fetch progress for smooth bar update and schedule vanish
         if (awarded > 0) {
-          try {
-            const pr = await fetch('/api/me/progress');
-            if (pr.ok) {
-              const pj = await pr.json();
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pj.level, newPct: pj.pct, newInLevel: pj.inLevel, newSpan: pj.span } }));
-              }
-            }
-          } catch {}
+          const pg = j?.progress;
+          if (pg && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pg.level, newPct: pg.pct, newInLevel: pg.inLevel, newSpan: pg.span } }));
+          }
           // Mark vanish for this item so it pops and disappears after 4.5s
           setVanish((m) => ({ ...m, [target.id]: true }));
           setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[target.id]; return c; }), 5000);

@@ -5,7 +5,7 @@ import { create } from "zustand";
 type Participant = { id: number; name?: string | null; image?: string | null; username?: string | null };
 type Message = { id: number; userId: number; content: string; createdAt: string };
 type TaskItem = { id: number; name: string; isCompleted: boolean; xpAwarded?: boolean };
-type TaskList = { id: number; title: string; userId: number; items: TaskItem[] };
+type TaskList = { id: number; title: string; userId: number; items: TaskItem[]; updatedAt?: string | null };
 
 type StudyState = {
   sessionId: number | null;
@@ -52,7 +52,19 @@ export const useStudyStore = create<StudyState>((set) => ({
   prependMessages: (ms) => set((st) => ({ messages: [...ms, ...st.messages] })),
   addMessage: (m) => set((st) => ({ messages: st.messages.some((x) => x.id === (m as any).id) ? st.messages : [...st.messages, m] })),
   setTaskLists: (lists) => set({ taskLists: lists }),
-  upsertTaskList: (list) => set((st) => ({ taskLists: st.taskLists.some((x) => x.id === list.id) ? st.taskLists.map((x) => (x.id === list.id ? list : x)) : [list, ...st.taskLists] })),
+  upsertTaskList: (incoming) => set((st) => {
+    const idx = st.taskLists.findIndex((x) => x.id === incoming.id);
+    if (idx === -1) return { taskLists: [incoming, ...st.taskLists] } as any;
+    const current = st.taskLists[idx];
+    const curTs = current.updatedAt ? Date.parse(current.updatedAt) : 0;
+    const inTs = incoming.updatedAt ? Date.parse(incoming.updatedAt) : Number.MAX_SAFE_INTEGER; // prefer incoming when missing cur ts
+    if (inTs >= curTs) {
+      const copy = st.taskLists.slice();
+      copy[idx] = incoming;
+      return { taskLists: copy } as any;
+    }
+    return { taskLists: st.taskLists } as any;
+  }),
   deleteTaskList: (id) => set((st) => ({ taskLists: st.taskLists.filter((x) => x.id !== id) })),
   setSharedEndAt: (iso) => set({ sharedEndAt: iso }),
 }));

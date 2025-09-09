@@ -36,14 +36,17 @@ export async function POST(req: Request) {
     const nextPos = Number(posRows[0]?.m ?? 0) + 1;
 
     await db.insert(studyTaskItems).values({ taskListId: listId, name, isCompleted: false, parentItemId: parentItemId as any, position: nextPos });
+    // bump list updated_at
+    await db.update(studyTaskLists).set({ updatedAt: new Date() as any }).where(eq(studyTaskLists.id as any, listId));
 
-    const items = await db
+  const items = await db
       .select()
       .from(studyTaskItems)
       .where(eq(studyTaskItems.taskListId as any, listId))
       .orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
-
-    const payload = { ...list, items } as any;
+    // re-read list for updatedAt
+    const l2 = (await db.select().from(studyTaskLists).where(eq(studyTaskLists.id as any, listId)).limit(1))[0];
+    const payload = { ...(l2 || list), items } as any;
     const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdBody) ? sessionIdBody : null)) as number | null;
     if (typeof broadcastId === 'number') await publish(broadcastId, StudyEvents.TaskUpsert, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
@@ -51,4 +54,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'Failed to create item' }, { status: 500 });
   }
 }
-

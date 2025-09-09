@@ -34,7 +34,7 @@ export default function OthersTasks() {
                 <div key={l.id} className="mb-2">
                   <div className="text-sm font-semibold">{l.title}</div>
                   <ul className="pl-4 text-sm">
-                    {(l.items || []).map((n:any) => (
+                    {(l.items || []).filter((it:any)=>!it.isCompleted).map((n:any) => (
                       <li key={n.id} className={n.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}>{n.name}</li>
                     ))}
                   </ul>

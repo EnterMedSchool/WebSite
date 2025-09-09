@@ -5,7 +5,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
-import { levelFromXp, GOAL_XP } from "@/lib/xp";
+import { levelFromXp, GOAL_XP, xpToNext, MAX_LEVEL } from "@/lib/xp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export async function PATCH(
     if (!list) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (list.userId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    if (title) await db.update(studyTaskLists).set({ title }).where(eq(studyTaskLists.id as any, id));
+    if (title) await db.update(studyTaskLists).set({ title, updatedAt: new Date() as any }).where(eq(studyTaskLists.id as any, id));
 
     // Fetch existing items to diff for XP and updates
     const existing = await db
@@ -85,8 +85,10 @@ export async function PATCH(
     if (toDelete.length) {
       await db.delete(studyTaskItems).where(inArray(studyTaskItems.id as any, toDelete.map((x: any) => x.id) as any));
     }
+    await db.update(studyTaskLists).set({ updatedAt: new Date() as any }).where(eq(studyTaskLists.id as any, id));
 
     // Award XP if needed
+    let progress: any = null;
     if (xpDelta > 0) {
       const ur = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
       const currXp = Number(ur.rows[0]?.xp || 0);
@@ -95,15 +97,26 @@ export async function PATCH(
       await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
       await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                 VALUES (${userId}, 'task', ${id}, 'xp_awarded', ${JSON.stringify({ amount: xpDelta, totalXp: nextXp })}::jsonb)`;
+      if (newLevel >= MAX_LEVEL) {
+        progress = { level: MAX_LEVEL, pct: 100, inLevel: 0, span: 1 };
+      } else {
+        const start = GOAL_XP[newLevel - 1];
+        const { toNext, nextLevelGoal } = xpToNext(nextXp);
+        const span = Math.max(1, nextLevelGoal - start);
+        const inLevel = Math.max(0, Math.min(span, span - toNext));
+        const pct = Math.round((inLevel / span) * 100);
+        progress = { level: newLevel, pct, inLevel, span };
+      }
     }
 
     const newItems = await db.select().from(studyTaskItems).where(eq(studyTaskItems.taskListId as any, id)).orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
-    const payload = { ...list, title: title ?? list.title, items: newItems } as any;
+    const refreshedList = (await db.select().from(studyTaskLists).where(eq(studyTaskLists.id as any, id)).limit(1))[0];
+    const payload = { ...(refreshedList || list), title: title ?? list.title, items: newItems } as any;
     const broadcastId = (list.sessionId ?? (Number.isFinite(sessionIdFromBody) ? sessionIdFromBody : null)) as number | null;
     if (typeof broadcastId === 'number') {
       await publish(broadcastId, StudyEvents.TaskUpsert, payload);
     }
-    return NextResponse.json({ data: payload, xpAwarded: xpDelta });
+    return NextResponse.json({ data: payload, xpAwarded: xpDelta, progress });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to update" }, { status: 500 });
   }

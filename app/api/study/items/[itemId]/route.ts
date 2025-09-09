@@ -5,7 +5,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { publish } from "@/lib/study/pusher";
 import { StudyEvents } from "@/lib/study/events";
-import { levelFromXp } from "@/lib/xp";
+import { levelFromXp, xpToNext, GOAL_XP, MAX_LEVEL } from "@/lib/xp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,8 +51,10 @@ export async function PATCH(req: Request, { params }: { params: { itemId: string
 
     if (Object.keys(updates).length > 0) {
       await db.update(studyTaskItems).set(updates).where(eq(studyTaskItems.id as any, id));
+      await db.update(studyTaskLists).set({ updatedAt: new Date() as any }).where(eq(studyTaskLists.id as any, item.taskListId));
     }
 
+    let progress: any = null;
     if (xpDelta > 0) {
       const ur = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
       const currXp = Number(ur.rows[0]?.xp || 0);
@@ -61,10 +63,20 @@ export async function PATCH(req: Request, { params }: { params: { itemId: string
       await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
       await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                 VALUES (${userId}, 'task', ${item.taskListId}, 'xp_awarded', ${JSON.stringify({ amount: xpDelta, totalXp: nextXp })}::jsonb)`;
+      if (newLevel >= MAX_LEVEL) {
+        progress = { level: MAX_LEVEL, pct: 100, inLevel: 0, span: 1 };
+      } else {
+        const start = GOAL_XP[newLevel - 1];
+        const { toNext, nextLevelGoal } = xpToNext(nextXp);
+        const span = Math.max(1, nextLevelGoal - start);
+        const inLevel = Math.max(0, Math.min(span, span - toNext));
+        const pct = Math.round((inLevel / span) * 100);
+        progress = { level: newLevel, pct, inLevel, span };
+      }
     }
 
     const payload = await broadcastList(item.taskListId, sessionIdBody);
-    return NextResponse.json({ data: payload, xpAwarded: xpDelta });
+    return NextResponse.json({ data: payload, xpAwarded: xpDelta, progress });
   } catch (e:any) {
     return NextResponse.json({ error: e?.message || 'Failed to update item' }, { status: 500 });
   }
@@ -93,4 +105,3 @@ export async function DELETE(req: Request, { params }: { params: { itemId: strin
     return NextResponse.json({ error: e?.message || 'Failed to delete item' }, { status: 500 });
   }
 }
-

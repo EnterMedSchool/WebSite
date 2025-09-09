@@ -106,15 +106,10 @@ export default function QuickDock() {
         const j = await r.json();
         const awarded = Number(j?.xpAwarded || 0);
         if (awarded > 0) {
-          try {
-            const pr = await fetch('/api/me/progress');
-            if (pr.ok) {
-              const pj = await pr.json();
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pj.level, newPct: pj.pct, newInLevel: pj.inLevel, newSpan: pj.span } }));
-              }
-            }
-          } catch {}
+          const pg = j?.progress;
+          if (pg && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pg.level, newPct: pg.pct, newInLevel: pg.inLevel, newSpan: pg.span } }));
+          }
           setVanish((m) => ({ ...m, [t.id]: true }));
           setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[t.id]; return c; }), 5000);
         }

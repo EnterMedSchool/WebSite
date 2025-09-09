@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS study_task_lists (
   session_id  INTEGER NOT NULL REFERENCES study_sessions(id) ON DELETE CASCADE,
   user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title       VARCHAR(200) NOT NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS study_task_lists_session_idx ON study_task_lists(session_id);

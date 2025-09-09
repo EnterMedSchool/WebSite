@@ -491,6 +491,7 @@ export const studyTaskLists = pgTable(
     title: varchar("title", { length: 200 }).notNull(),
     isGlobal: boolean("is_global").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => ({
     stlSessionIdx: index("study_task_lists_session_idx").on(t.sessionId),

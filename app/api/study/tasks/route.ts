@@ -30,6 +30,7 @@ export async function GET(req: Request) {
         sessionId: studyTaskLists.sessionId,
         userId: studyTaskLists.userId,
         title: studyTaskLists.title,
+        updatedAt: studyTaskLists.updatedAt,
         name: users.name,
         image: users.image,
         username: users.username,
@@ -60,6 +61,7 @@ export async function GET(req: Request) {
       items: items
         .filter((it: any) => it.taskListId === l.id)
         .map((it: any) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position, xpAwarded: it.xpAwarded })),
+      updatedAt: l.updatedAt,
     }));
     return NextResponse.json({ data: grouped });
   } catch (e: any) {
@@ -107,7 +109,7 @@ export async function POST(req: Request) {
     const [list] = await db
       .insert(studyTaskLists)
       .values({ title, sessionId: isGlobal ? (null as any) : (Number.isFinite(sessionId)? sessionId : null) as any, userId, isGlobal })
-      .returning({ id: studyTaskLists.id, title: studyTaskLists.title, sessionId: studyTaskLists.sessionId, userId: studyTaskLists.userId, createdAt: studyTaskLists.createdAt, isGlobal: studyTaskLists.isGlobal });
+      .returning({ id: studyTaskLists.id, title: studyTaskLists.title, sessionId: studyTaskLists.sessionId, userId: studyTaskLists.userId, createdAt: studyTaskLists.createdAt, isGlobal: studyTaskLists.isGlobal, updatedAt: studyTaskLists.updatedAt });
 
     if (items.length) {
       let pos = 0;
@@ -122,7 +124,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const payload = { ...list, items: items.map((it, i) => ({ id: i, taskListId: list.id, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: typeof it.position === 'number' ? it.position! : i })) };
+    const payload = { ...list, items: items.map((it, i) => ({ id: i, taskListId: list.id, name: it.name, isCompleted: !!it.isCompleted, parentItemId: it.parentItemId ?? null, position: typeof it.position === 'number' ? it.position! : i })), updatedAt: list.updatedAt };
     const broadcast = list.sessionId ?? (Number.isFinite(sessionId) ? sessionId : null);
     if (broadcast != null) await publish(broadcast, StudyEvents.TaskUpsert, payload);
     return NextResponse.json({ data: payload }, { status: 201 });
