@@ -99,32 +99,40 @@ export async function getCourseTimeline(
 
   const lessonRows = lr.rows as any[];
   const lessonIds = lessonRows.map((r) => Number(r.id));
-  // Map lesson id -> aggregation key. Prefer slug; fall back to a normalized
-  // title so duplicates with different slugs (data hygiene issues) still
-  // share progress for the same-named content in the same course.
+  // Build aggregation keys across the entire course so progress from
+  // duplicate lessons (elsewhere in the course, e.g. "All Lessons")
+  // is reflected on this slice too.
   const idToKey = new Map<number, string>();
   function normTitle(t: string) { return t.toLowerCase().replace(/\s+/g, ' ').trim(); }
-  for (const r of lessonRows) {
-    const slug = String(r.slug || '').trim();
-    const key = slug || normTitle(String(r.title || ''));
-    idToKey.set(Number(r.id), key);
+  {
+    const allLr = await sql`SELECT id, slug, title FROM lessons WHERE course_id=${course.id}`;
+    for (const r of allLr.rows as any[]) {
+      const slug = String(r.slug || '').trim();
+      const key = slug || normTitle(String(r.title || ''));
+      idToKey.set(Number(r.id), key);
+    }
   }
 
   // Question totals per lesson
   const qTotals: Record<number, number> = {};
-  if (lessonIds.length > 0) {
-    const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${lessonIds as any}) GROUP BY lesson_id`;
-    for (const r of qt.rows) qTotals[Number(r.lesson_id)] = Number(r.total || 0);
+  {
+    // Derive per-lesson totals across the whole course for accurate aggregation
+    const allIds = Array.from(idToKey.keys());
+    if (allIds.length > 0) {
+      const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${allIds as any}) GROUP BY lesson_id`;
+      for (const r of qt.rows) qTotals[Number(r.lesson_id)] = Number(r.total || 0);
+    }
   }
 
   // User-correct counts per lesson (optional)
   const qCorrect: Record<number, number> = {};
-  if (userId && lessonIds.length > 0) {
+  if (userId && idToKey.size > 0) {
+    const allIds = Array.from(idToKey.keys());
     const qc = await sql`
       SELECT q.lesson_id, COUNT(*)::int AS cnt
       FROM user_question_progress uqp
       JOIN questions q ON q.id = uqp.question_id
-      WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${lessonIds as any})
+      WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${allIds as any})
       GROUP BY q.lesson_id
     `;
     for (const r of qc.rows) qCorrect[Number(r.lesson_id)] = Number(r.cnt || 0);
@@ -132,8 +140,9 @@ export async function getCourseTimeline(
 
   // Lesson completion flags
   const done = new Set<number>();
-  if (userId && lessonIds.length > 0) {
-    const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds as any}) AND completed=true`;
+  if (userId && idToKey.size > 0) {
+    const allIds = Array.from(idToKey.keys());
+    const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${allIds as any}) AND completed=true`;
     for (const r of dc.rows) done.add(Number(r.lesson_id));
   }
 
