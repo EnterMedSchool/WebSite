@@ -64,6 +64,45 @@ export const lessons = pgTable(
   (t) => ({ courseIdx: index("lessons_course_idx").on(t.courseId) })
 );
 
+// Chapters group lessons within a course. Lessons can appear in multiple
+// chapters via the junction table below, and chapters have an explicit
+// sequence (position) within a course.
+export const chapters = pgTable(
+  "chapters",
+  {
+    id: serial("id").primaryKey(),
+    courseId: integer("course_id").notNull(),
+    slug: varchar("slug", { length: 120 }).notNull().unique(),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description"),
+    position: integer("position").default(0).notNull(),
+    visibility: varchar("visibility", { length: 16 }).default("public"),
+    meta: jsonb("meta"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    courseIdx: index("chapters_course_idx").on(t.courseId),
+    slugIdx: index("chapters_slug_idx").on(t.slug),
+  })
+);
+
+// Many-to-many mapping: lessons within a chapter with explicit ordering.
+export const chapterLessons = pgTable(
+  "chapter_lessons",
+  {
+    id: serial("id").primaryKey(),
+    chapterId: integer("chapter_id").notNull(),
+    lessonId: integer("lesson_id").notNull(),
+    position: integer("position").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    chapterIdx: index("chapter_lessons_chapter_idx").on(t.chapterId),
+    lessonIdx: index("chapter_lessons_lesson_idx").on(t.lessonId),
+    orderIdx: index("chapter_lessons_order_idx").on(t.chapterId, t.position),
+  })
+);
+
 export const questions = pgTable(
   "questions",
   {
