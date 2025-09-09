@@ -32,20 +32,22 @@ export default function RoomHeader({ room, isOwner }: { room: any; isOwner: bool
   };
 
   return (
-    <div className="border rounded p-4 mb-6">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{room.title}</h1>
-        {isOwner && (
-          <div className="flex gap-2">
-            <button className="border rounded px-3 py-1" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
-          </div>
-        )}
+    <div className="mb-6 overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm">
+      <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 px-4 py-3 text-white">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold drop-shadow">{room.title}</h1>
+          {isOwner && (
+            <button className="rounded bg-white/15 px-3 py-1 text-sm font-semibold shadow hover:bg-white/25" onClick={save} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </button>
+          )}
+        </div>
       </div>
-      <div className="mt-2 text-sm">
-        <label className="block text-xs mb-1">Shareable Link</label>
+      <div className="p-4 text-sm">
+        <label className="mb-1 block text-xs text-gray-600">Shareable Link</label>
         <div className="flex gap-2">
-          <input className="flex-1 border rounded p-2" value={link} onChange={(e) => setSlug(e.target.value.replace(origin + "/study-rooms/", ""))} readOnly={!isOwner} />
-          <button className="border rounded px-3" onClick={() => navigator.clipboard.writeText(link)}>Copy</button>
+          <input className="flex-1 rounded border border-gray-300 p-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={link} onChange={(e) => setSlug(e.target.value.replace(origin + "/study-rooms/", ""))} readOnly={!isOwner} />
+          <button className="rounded bg-indigo-600 px-3 py-2 text-white shadow hover:bg-indigo-700" onClick={() => navigator.clipboard.writeText(link)}>Copy</button>
         </div>
       </div>
     </div>

@@ -27,14 +27,14 @@ export default function Chat() {
   };
 
   return (
-    <div className="border rounded p-4">
-      <h2 className="font-semibold mb-3">Room Chat</h2>
-      <div className="h-64 overflow-y-auto border rounded p-2 mb-3 bg-white/50">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <h2 className="mb-3 font-semibold">Room Chat</h2>
+      <div className="mb-3 h-64 overflow-y-auto rounded border bg-white/50 p-2">
         {messages.map((m: any) => {
           const isMe = m.userId === myUserId;
           const name = m?.user?.name || m?.user?.username || `User #${m.userId}`;
           return (
-            <div key={m.id} className={`text-sm mb-1 ${isMe ? "text-blue-700" : "text-gray-800"}`}>
+            <div key={m.id} className={`mb-1 text-sm ${isMe ? "text-indigo-700" : "text-gray-800"}`}>
               <span className="opacity-60 mr-2">[{new Date(m.createdAt).toLocaleTimeString()}]</span>
               <span className="font-medium mr-1">{name}:</span>
               {m.content}
@@ -44,8 +44,8 @@ export default function Chat() {
       </div>
       {myUserId ? (
         <form onSubmit={send} className="flex gap-2">
-          <input className="flex-1 border rounded p-2" value={text} onChange={(e) => setText(e.target.value)} placeholder="Message" />
-          <button className="border rounded px-3">Send</button>
+          <input className="flex-1 rounded border border-gray-300 p-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={text} onChange={(e) => setText(e.target.value)} placeholder="Message" />
+          <button className="rounded bg-indigo-600 px-3 py-2 text-white shadow hover:bg-indigo-700">Send</button>
         </form>
       ) : (
         <div className="text-sm text-gray-600">Sign in to send messages.</div>

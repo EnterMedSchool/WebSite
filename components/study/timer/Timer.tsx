@@ -74,12 +74,12 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
   }, [h, m, s]);
 
   return (
-    <div className="border rounded p-4 mb-6">
+    <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Timer</h2>
         <div className="flex gap-2">
-          <button onClick={() => setMode("share")} className={`px-2 py-1 rounded border ${mode === "share" ? "bg-blue-600 text-white" : "bg-white"}`}>Share</button>
-          <button onClick={() => setMode("private")} className={`px-2 py-1 rounded border ${mode === "private" ? "bg-blue-600 text-white" : "bg-white"}`}>Private</button>
+          <button onClick={() => setMode("share")} className={`rounded px-2 py-1 ${mode === "share" ? "bg-indigo-600 text-white" : "bg-gray-100"}`}>Share</button>
+          <button onClick={() => setMode("private")} className={`rounded px-2 py-1 ${mode === "private" ? "bg-indigo-600 text-white" : "bg-gray-100"}`}>Private</button>
         </div>
       </div>
 
@@ -88,16 +88,16 @@ export default function Timer({ isOwner, slug }: { isOwner: boolean; slug: strin
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <input type="number" min={0} className="border rounded p-2" value={h} onChange={(e) => setH(Math.max(0, Number(e.target.value) || 0))} placeholder="Hours" />
-        <input type="number" min={0} className="border rounded p-2" value={m} onChange={(e) => setM(Math.max(0, Number(e.target.value) || 0))} placeholder="Minutes" />
-        <input type="number" min={0} className="border rounded p-2" value={s} onChange={(e) => setS(Math.max(0, Number(e.target.value) || 0))} placeholder="Seconds" />
+        <input type="number" min={0} className="rounded border border-gray-300 p-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={h} onChange={(e) => setH(Math.max(0, Number(e.target.value) || 0))} placeholder="Hours" />
+        <input type="number" min={0} className="rounded border border-gray-300 p-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={m} onChange={(e) => setM(Math.max(0, Number(e.target.value) || 0))} placeholder="Minutes" />
+        <input type="number" min={0} className="rounded border border-gray-300 p-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" value={s} onChange={(e) => setS(Math.max(0, Number(e.target.value) || 0))} placeholder="Seconds" />
       </div>
 
       <div className="mt-3 flex gap-2">
         {mode === "share" ? (
-          <button onClick={setShared} className="border rounded px-3 py-1" disabled={!isOwner}>Set Shared</button>
+          <button onClick={setShared} className="rounded bg-indigo-600 px-3 py-2 text-white shadow hover:bg-indigo-700" disabled={!isOwner}>Set Shared</button>
         ) : (
-          <button onClick={setPrivate} className="border rounded px-3 py-1">Set Private</button>
+          <button onClick={setPrivate} className="rounded bg-indigo-600 px-3 py-2 text-white shadow hover:bg-indigo-700">Set Private</button>
         )}
       </div>
       {mode === "share" && !isOwner && (
