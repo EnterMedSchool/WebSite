@@ -92,7 +92,7 @@ export async function getCourseTimeline(
     const lessonIds = lessonRows.map((r)=> Number(r.id));
     const qTotals: Record<number, number> = {};
     if (lessonIds.length > 0) {
-      const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${lessonIds}) GROUP BY lesson_id`;
+      const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${lessonIds as any}) GROUP BY lesson_id`;
       for (const r of qt.rows) qTotals[Number(r.lesson_id)] = Number(r.total || 0);
     }
     const qCorrect: Record<number, number> = {};
@@ -101,10 +101,10 @@ export async function getCourseTimeline(
       const qc = await sql`
         SELECT q.lesson_id, COUNT(*)::int AS cnt
         FROM user_question_progress uqp JOIN questions q ON q.id=uqp.question_id
-        WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${lessonIds})
+        WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${lessonIds as any})
         GROUP BY q.lesson_id`;
       for (const r of qc.rows) qCorrect[Number(r.lesson_id)] = Number(r.cnt || 0);
-      const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds}) AND completed=true`;
+      const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds as any}) AND completed=true`;
       for (const r of dc.rows) done.add(Number(r.lesson_id));
     }
     // Map to lessons
@@ -134,7 +134,7 @@ export async function getCourseTimeline(
     SELECT cl.chapter_id, l.id, l.slug, l.title, COALESCE(l.length_min, l.duration_min) as length_min, cl.position, l.meta
     FROM chapter_lessons cl
     JOIN lessons l ON l.id = cl.lesson_id
-    WHERE cl.chapter_id = ANY (${chapterIds})
+    WHERE cl.chapter_id = ANY (${chapterIds as any})
     ORDER BY cl.chapter_id ASC, cl.position ASC, l.id ASC
   `;
 
@@ -144,7 +144,7 @@ export async function getCourseTimeline(
   // Question totals per lesson
   const qTotals: Record<number, number> = {};
   if (lessonIds.length > 0) {
-    const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${lessonIds}) GROUP BY lesson_id`;
+    const qt = await sql`SELECT lesson_id, COUNT(*)::int AS total FROM questions WHERE lesson_id = ANY(${lessonIds as any}) GROUP BY lesson_id`;
     for (const r of qt.rows) qTotals[Number(r.lesson_id)] = Number(r.total || 0);
   }
 
@@ -155,7 +155,7 @@ export async function getCourseTimeline(
       SELECT q.lesson_id, COUNT(*)::int AS cnt
       FROM user_question_progress uqp
       JOIN questions q ON q.id = uqp.question_id
-      WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${lessonIds})
+      WHERE uqp.user_id=${userId} AND uqp.correct=true AND q.lesson_id = ANY(${lessonIds as any})
       GROUP BY q.lesson_id
     `;
     for (const r of qc.rows) qCorrect[Number(r.lesson_id)] = Number(r.cnt || 0);
@@ -164,7 +164,7 @@ export async function getCourseTimeline(
   // Lesson completion flags
   const done = new Set<number>();
   if (userId && lessonIds.length > 0) {
-    const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds}) AND completed=true`;
+    const dc = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${lessonIds as any}) AND completed=true`;
     for (const r of dc.rows) done.add(Number(r.lesson_id));
   }
 
@@ -172,7 +172,7 @@ export async function getCourseTimeline(
   const prereqMap = new Map<number, number[]>();
   if (lessonIds.length > 0) {
     try {
-      const pr = await sql`SELECT lesson_id, requires_lesson_id FROM lesson_prerequisites WHERE lesson_id = ANY(${lessonIds})`;
+      const pr = await sql`SELECT lesson_id, requires_lesson_id FROM lesson_prerequisites WHERE lesson_id = ANY(${lessonIds as any})`;
       for (const r of pr.rows) {
         const lid = Number(r.lesson_id);
         const arr = prereqMap.get(lid) || [];
