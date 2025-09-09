@@ -59,7 +59,7 @@ export async function GET(req: Request) {
       user: { id: l.userId, name: l.name, image: l.image, username: l.username },
       items: items
         .filter((it: any) => it.taskListId === l.id)
-        .map((it: any) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position })),
+        .map((it: any) => ({ id: it.id, taskListId: l.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position, xpAwarded: it.xpAwarded })),
     }));
     return NextResponse.json({ data: grouped });
   } catch (e: any) {

@@ -23,7 +23,7 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
   useEffect(() => {
     setSession({ sessionId: Number(room.id), slug: room.slug, sharedEndAt: room.sharedEndAt, myUserId });
     prependMessages(messages?.slice().reverse() || []);
-    setTaskLists((taskLists || []).map((l: any) => ({ id: l.id, title: l.title, userId: l.userId, items: (l.items || []).map((it: any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted })) })));
+    setTaskLists((taskLists || []).map((l: any) => ({ id: l.id, title: l.title, userId: l.userId, items: (l.items || []).map((it: any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted, xpAwarded: it.xpAwarded })) })));
   }, [room, messages, taskLists, myUserId, setSession, prependMessages, setTaskLists]);
 
   // On mount: join; before unload: leave; fetch participants
@@ -43,7 +43,7 @@ export default function RoomClient({ room, messages, taskLists, myUserId }: { ro
       const res = await fetch(`/api/study/tasks?sessionId=${sessionId}`, { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
-        const lists = (json.data || []).map((l: any) => ({ id: l.id, title: l.title, userId: l.userId, items: (l.items || []).map((it: any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted })) }));
+        const lists = (json.data || []).map((l: any) => ({ id: l.id, title: l.title, userId: l.userId, items: (l.items || []).map((it: any) => ({ id: it.id, name: it.name, isCompleted: it.isCompleted, xpAwarded: it.xpAwarded })) }));
         useStudyStore.getState().setTaskLists(lists);
       }
     };

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Message = { id: number; userId: number; content: string; createdAt: string; user?: { name?: string | null; username?: string | null } };
-type TaskItem = { id: number; name: string; isCompleted: boolean };
+type TaskItem = { id: number; name: string; isCompleted: boolean; xpAwarded?: boolean };
 
 export default function QuickDock() {
   const [open, setOpen] = useState(false);
@@ -12,6 +12,7 @@ export default function QuickDock() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [vanish, setVanish] = useState<Record<number, boolean>>({});
   const [newTask, setNewTask] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
@@ -53,7 +54,7 @@ export default function QuickDock() {
     if (!r.ok) return;
     const j = await r.json();
     const items = (j?.data?.items || []) as any[];
-    setTasks(items.map((it: any) => ({ id: it.id, name: it.name, isCompleted: !!it.isCompleted })));
+    setTasks(items.map((it: any) => ({ id: it.id, name: it.name, isCompleted: !!it.isCompleted, xpAwarded: !!it.xpAwarded })));
   }
 
   async function reloadMessages(id: number) {
@@ -94,12 +95,30 @@ export default function QuickDock() {
     const t = tasks[i];
     if (!t || !sessionId) return;
     setTasks(tasks.map((x, idx) => idx === i ? { ...x, isCompleted: !x.isCompleted } : x));
-    if (!t.isCompleted && typeof window !== 'undefined') {
+    if (!t.isCompleted && !t.xpAwarded && typeof window !== 'undefined') {
       const pt = ev ? { x: (ev.clientX||0), y: (ev.clientY||0) } : undefined;
       window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: 2, from: pt } }));
     }
-    // Persist via list lookup (select my list id first)
-    await fetch(`/api/study/items/${t.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, isCompleted: !t.isCompleted }) });
+    const r = await fetch(`/api/study/items/${t.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, isCompleted: !t.isCompleted }) });
+    if (r.ok) {
+      try {
+        const j = await r.json();
+        const awarded = Number(j?.xpAwarded || 0);
+        if (awarded > 0) {
+          try {
+            const pr = await fetch('/api/me/progress');
+            if (pr.ok) {
+              const pj = await pr.json();
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pj.level, newPct: pj.pct, newInLevel: pj.inLevel, newSpan: pj.span } }));
+              }
+            }
+          } catch {}
+          setVanish((m) => ({ ...m, [t.id]: true }));
+          setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[t.id]; return c; }), 5000);
+        }
+      } catch {}
+    }
   };
 
   const send = async (e: React.FormEvent) => {
@@ -144,8 +163,8 @@ export default function QuickDock() {
             {!loading && slug && tab === 'tasks' && (
               <div>
                 <ul className="mb-2 space-y-1">
-                  {tasks.map((t, i) => (
-                    <li key={t.id} className="flex items-center gap-2">
+                  {tasks.filter((t)=> !t.isCompleted || vanish[t.id]).map((t, i) => (
+                    <li key={t.id} className={`flex items-center gap-2 ${vanish[t.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
                       <input type="checkbox" checked={!!t.isCompleted} onChange={(e)=>toggle(i, e as any)} className="h-4 w-4 rounded border-gray-300 text-indigo-600" />
                       <span className={`text-sm ${t.isCompleted? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.name}</span>
                     </li>
@@ -178,6 +197,7 @@ export default function QuickDock() {
               </div>
             )}
           </div>
+          <style>{`@keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }`}</style>
         </div>
       )}
     </div>

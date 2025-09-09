@@ -13,6 +13,7 @@ export default function MyTasks() {
   const myList = useMemo(() => taskLists.find((l) => l.userId === myUserId) || null, [taskLists, myUserId]);
   const [title] = useState(myList?.title || "My Tasks");
   const [item, setItem] = useState("");
+  const [vanish, setVanish] = useState<Record<number, boolean>>({});
 
   const ensureList = async () => {
     if (myList || !sessionId) return myList;
@@ -55,18 +56,39 @@ export default function MyTasks() {
     // Optimistic local toggle
     setTaskLists(taskLists.map((l) => l.id === (myList as any).id ? { ...l, items: l.items.map((it:any) => it.id === target.id ? { ...it, isCompleted: !target.isCompleted } : it) } : l));
     // XP bubble optimistic when checking
-    if (!target.isCompleted && typeof window !== 'undefined') {
+    if (!target.isCompleted && !target.xpAwarded && typeof window !== 'undefined') {
       const pt = ev ? { x: (ev.clientX || 0), y: (ev.clientY || 0) } : undefined;
       const evn = new CustomEvent('xp:awarded' as any, { detail: { amount: 2, from: pt } });
       window.dispatchEvent(evn);
     }
     // Persist
-    await fetch(`/api/study/items/${target.id}`, {
+    const res = await fetch(`/api/study/items/${target.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ sessionId, isCompleted: !target.isCompleted }),
     });
+    try {
+      if (res.ok) {
+        const j = await res.json();
+        const awarded = Number(j?.xpAwarded || 0);
+        // If XP really awarded now (first completion), fetch progress for smooth bar update and schedule vanish
+        if (awarded > 0) {
+          try {
+            const pr = await fetch('/api/me/progress');
+            if (pr.ok) {
+              const pj = await pr.json();
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount: awarded, newLevel: pj.level, newPct: pj.pct, newInLevel: pj.inLevel, newSpan: pj.span } }));
+              }
+            }
+          } catch {}
+          // Mark vanish for this item so it pops and disappears after 4.5s
+          setVanish((m) => ({ ...m, [target.id]: true }));
+          setTimeout(() => setVanish((m) => { const c = { ...m }; delete c[target.id]; return c; }), 5000);
+        }
+      }
+    } catch {}
   };
 
   const removeItem = async (id: number) => {
@@ -76,14 +98,14 @@ export default function MyTasks() {
     await fetch(`/api/study/items/${id}?sessionId=${sessionId}`, { method: 'DELETE', credentials: 'include' });
   };
 
-  const items = (myList?.items || []) as any[];
+  const items = ((myList?.items || []) as any[]).filter((it:any) => !it.isCompleted || vanish[it.id]);
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-lg font-semibold">My Tasks</h2>
       <ul className="mb-3 space-y-1">
         {items.map((n:any, i:number) => (
-          <li key={n.id} className="group flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-50">
+          <li key={n.id} className={`group flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-50 ${vanish[n.id] ? 'animate-[popout_450ms_ease-in_forwards]' : ''}`}>
             <input
               type="checkbox"
               checked={!!n.isCompleted}
@@ -103,6 +125,7 @@ export default function MyTasks() {
       ) : (
         <div className="text-sm text-gray-600">Sign in to create and manage your tasks.</div>
       )}
+      <style>{`@keyframes popout { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(1.06); opacity: .9; } 100% { transform: scale(0.85); opacity: 0; height: 0; margin: 0; padding: 0; } }`}</style>
     </div>
   );
 }

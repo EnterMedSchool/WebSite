@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 type Participant = { id: number; name?: string | null; image?: string | null; username?: string | null };
 type Message = { id: number; userId: number; content: string; createdAt: string };
-type TaskItem = { id: number; name: string; isCompleted: boolean };
+type TaskItem = { id: number; name: string; isCompleted: boolean; xpAwarded?: boolean };
 type TaskList = { id: number; title: string; userId: number; items: TaskItem[] };
 
 type StudyState = {
