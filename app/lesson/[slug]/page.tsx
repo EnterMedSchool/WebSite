@@ -407,7 +407,7 @@ export default function LessonPage() {
                           if (j?.span != null) detail.newSpan = Number(j.span);
                           window.dispatchEvent(new CustomEvent('xp:awarded', { detail }));
                         }
-                        if (Array.isArray(j?.rewards)) { for (const rwd of j.rewards) { try { window.dispatchEvent(new CustomEvent('reward:earned', { detail: rwd })); } catch {} try { if (rwd?.type === 'chest' && typeof rwd?.key === 'string') localStorage.setItem(ems:chest:flash:, '1'); } catch {} } }
+                        if (Array.isArray(j?.rewards)) { for (const rwd of j.rewards) { try { window.dispatchEvent(new CustomEvent('reward:earned', { detail: rwd })); } catch {} try { if (rwd?.type === 'chest' && typeof rwd?.key === 'string') localStorage.setItem('ems:chest:flash:', '1'); } catch {} } }
                         if (isAuthed) {
                           const r2 = await fetch(`/api/lesson/${slug}/progress`, { credentials: 'include' });
                           const k = await r2.json();
