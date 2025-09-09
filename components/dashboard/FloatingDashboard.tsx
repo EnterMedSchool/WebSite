@@ -31,6 +31,26 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  async function completeLesson(lessonSlug: string) {
+    try {
+      const r = await fetch(`/api/lesson/${encodeURIComponent(lessonSlug)}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ completed: true })
+      });
+      if (!r.ok) return;
+      const j = await r.json();
+      const amount = Number(j?.awardedXp || 0);
+      if (amount > 0 && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount, newLevel: j?.newLevel, newPct: j?.pct, newInLevel: j?.inLevel, newSpan: j?.span } }));
+      }
+      // Refresh dashboard data so progress updates
+      const res = await fetch('/api/me/dashboard', { credentials: 'include' });
+      if (res.ok) setData(await res.json());
+    } catch {}
+  }
+
   const firstName = useMemo(() => {
     const n = data?.user?.name || "there";
     const f = n.split(" ")[0]?.trim();
@@ -85,12 +105,12 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                         <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 shadow-sm">{typeof (ch as any).progress_pct === 'number' ? `${Math.round((ch as any).progress_pct)}% done` : 'In progress'}</span>
                           <span className="opacity-60">-</span>
-                          <span>{(ch as any).total_min != null && (ch as any).total_min > 0 ? `${(ch as any).total_min} min` : '—'}</span>
+                          <span>{(ch as any).total_min != null && (ch as any).total_min > 0 ? `${(ch as any).total_min} min` : '-'}</span>
                         </div>
                       </div>
                       <div className="mt-3 flex items-center gap-2">
-                        <a href={(ch as any).continue_slug ? `/lesson/${encodeURIComponent((ch as any).continue_slug)}` : `/course/${encodeURIComponent(ch.course_slug)}`} className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:opacity-95">Continue</a>
-                        <a href={`/courses`} className="rounded-full border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Skip</a>
+                        <a href={(ch as any).continue_slug ? `/lesson/${encodeURIComponent((ch as any).continue_slug)}` : `/course/${encodeURIComponent(ch.course_slug)}`} className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:opacity-95">Learn</a>
+                        <button onClick={() => (ch as any).continue_slug && completeLesson((ch as any).continue_slug)} className="rounded-full border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Complete</button>
                       </div>
                     </div>
                   ))}
@@ -152,25 +172,23 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                       <div className="text-gray-600">XP</div>
                     </div>
                     <div className="rounded-xl border p-2">
-                      <div className="text-lg font-extrabold text-gray-900">{(data?.user as any)?.streakDays ?? '—'}</div>
+                      <div className="text-lg font-extrabold text-gray-900">{(data?.user as any)?.streakDays ?? '-'}</div>
                       <div className="text-gray-600">Streak</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* XP actions */}
+              {/* XP / Activity section */}
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-5 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="flex items-center justify-between">
+                <div className="mb-2 flex items-baseline justify-between">
                   <div>
                     <div className="text-sm text-gray-700">Total XP</div>
                     <div className="text-2xl font-extrabold text-indigo-700">{data?.user?.xp ?? 0} <span className="text-indigo-800">XP</span></div>
                   </div>
-                  <div className="flex gap-2">
-                    <button className="rounded-full border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Redeem</button>
-                    <button className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:opacity-95">Collect points</button>
-                  </div>
+                  <div className="text-xs text-gray-600">Last 7 days</div>
                 </div>
+                <MiniChart series={(data as any)?.series} />
               </div>
             </div>
 
@@ -184,7 +202,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                       <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-200 to-fuchsia-200 shadow-inner" />
                       <div>
                         <div className="font-semibold text-gray-900">{c.title}</div>
-                        <div className="text-xs text-gray-600 line-clamp-1">{c.description || "—"}</div>
+                        <div className="text-xs text-gray-600 line-clamp-1">{c.description || "-"}</div>
                       </div>
                     </a>
                   ))}
@@ -196,4 +214,55 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
       </div>
     </div>
   );
+}
+
+function MiniChart({ series }: { series?: { labels: string[]; xp7: number[]; min7: number[]; corr7: number[] } | null }) {
+  if (!series || !series.labels) {
+    return <div className="h-28 w-full animate-pulse rounded-xl bg-gray-100" /> as any;
+  }
+  const labels = series.labels;
+  const xp = series.xp7 || [];
+  const mn = series.min7 || [];
+  const cr = series.corr7 || [];
+  const maxY = Math.max(10, ...xp, ...mn, ...cr);
+  const W = 360, H = 120, P = 18; // width, height, padding
+  const n = labels.length;
+  const x = (i: number) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
+  const y = (v: number) => H - P - (v / maxY) * (H - 2 * P);
+  const line = (arr: number[]) => arr.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(v)}`).join(' ');
+  return (
+    <div className="relative">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-28">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.2" />
+          </linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#34d399" stopOpacity="0.2" />
+          </linearGradient>
+          <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#fcd34d" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <g>
+          <path d={line(mn)} fill="none" stroke="url(#g2)" strokeWidth="3" />
+          <path d={line(xp)} fill="none" stroke="url(#g1)" strokeWidth="3" />
+          <path d={line(cr)} fill="none" stroke="url(#g3)" strokeWidth="3" />
+        </g>
+        <g fontSize="8" fill="#6b7280">
+          {labels.map((lb, i) => (
+            <text key={i} x={x(i)} y={H - 4} textAnchor="middle">{lb.split(' ')[1]}</text>
+          ))}
+        </g>
+      </svg>
+      <div className="mt-2 flex items-center justify-center gap-3 text-[10px] text-gray-600">
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-indigo-500" /> XP</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-emerald-500" /> Minutes</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-amber-500" /> Correct</span>
+      </div>
+    </div>
+  ) as any;
 }
