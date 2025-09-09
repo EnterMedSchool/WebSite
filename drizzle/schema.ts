@@ -441,7 +441,8 @@ export const studySessions = pgTable(
   "study_sessions",
   {
     id: serial("id").primaryKey(),
-    creatorUserId: integer("creator_user_id").notNull(),
+    // Each user has exactly one personal room
+    creatorUserId: integer("creator_user_id").notNull().unique(),
     title: varchar("title", { length: 200 }).notNull(),
     description: text("description"),
     slug: varchar("slug", { length: 64 }).notNull().unique(),

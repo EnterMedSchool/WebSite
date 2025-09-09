@@ -2,9 +2,43 @@ import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
-import { users } from "@/drizzle/schema";
+import { users, studySessions } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+
+async function ensurePersonalStudyRoom(userId: number) {
+  try {
+    const existing = (await db
+      .select({ id: studySessions.id })
+      .from(studySessions)
+      .where(eq(studySessions.creatorUserId as any, userId))
+      .limit(1))[0];
+    if (existing?.id) return existing.id;
+    const u = (await db
+      .select({ username: users.username, name: users.name })
+      .from(users)
+      .where(eq(users.id as any, userId))
+      .limit(1))[0];
+    const rawBase = (u?.username || u?.name || `user-${userId}`).toLowerCase();
+    const base = rawBase.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    let slug = base ? `${base}-${userId}` : `u-${userId}`;
+    // On the off chance of collision, try a couple variants
+    for (let i = 0; i < 2; i++) {
+      const taken = (await db
+        .select({ id: studySessions.id })
+        .from(studySessions)
+        .where(eq(studySessions.slug as any, slug))
+        .limit(1))[0];
+      if (!taken?.id) break;
+      slug = `${base}-${userId}-${Math.floor(Math.random() * 1000)}`;
+    }
+    await db.insert(studySessions).values({ creatorUserId: userId, title: "My Study Room", description: "", slug });
+    return userId;
+  } catch {
+    // ignore background creation errors
+    return null;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -60,6 +94,11 @@ export const authOptions: NextAuthOptions = {
       }
       if (user && (user as any).id) {
         token.userId = (user as any).id;
+      }
+      // Ensure personal room exists for this user (idempotent)
+      const uid = Number((token as any)?.userId);
+      if (Number.isFinite(uid) && uid > 0) {
+        await ensurePersonalStudyRoom(uid);
       }
       return token;
     },

@@ -78,6 +78,32 @@ export async function POST(req: Request) {
   const items: Array<{ name: string; isCompleted?: boolean; parentItemId?: number | null; position?: number }> = Array.isArray(body?.items) ? body.items : [];
 
   try {
+    // Enforce single global list per user: if requesting global, return existing
+    if (isGlobal) {
+      const existing = (await db
+        .select({ id: studyTaskLists.id, title: studyTaskLists.title, userId: studyTaskLists.userId, sessionId: studyTaskLists.sessionId })
+        .from(studyTaskLists)
+        .where(and(eq(studyTaskLists.userId as any, userId), eq(studyTaskLists.isGlobal as any, true)))
+        .limit(1))[0];
+      if (existing?.id) {
+        const existingItems = await db
+          .select()
+          .from(studyTaskItems)
+          .where(eq(studyTaskItems.taskListId as any, existing.id))
+          .orderBy(asc(studyTaskItems.position), asc(studyTaskItems.id));
+        const payload = {
+          id: existing.id,
+          sessionId: existing.sessionId,
+          userId: existing.userId,
+          title: existing.title,
+          items: existingItems.map((it: any) => ({ id: it.id, taskListId: existing.id, name: it.name, isCompleted: it.isCompleted, parentItemId: it.parentItemId ?? null, position: it.position })),
+        };
+        const broadcast = Number.isFinite(sessionId) ? (sessionId as number) : null;
+        if (broadcast != null) await publish(broadcast, StudyEvents.TaskUpsert, payload);
+        return NextResponse.json({ data: payload });
+      }
+    }
+
     const [list] = await db
       .insert(studyTaskLists)
       .values({ title, sessionId: isGlobal ? (null as any) : (Number.isFinite(sessionId)? sessionId : null) as any, userId, isGlobal })
