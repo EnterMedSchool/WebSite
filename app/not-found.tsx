@@ -45,7 +45,7 @@ export default function NotFound() {
               <span className="mb-3 hidden rounded-full bg-fuchsia-100 px-2 py-1 text-xs font-semibold text-fuchsia-700 sm:inline">Lost</span>
             </div>
             <div className="mt-1 text-xl font-extrabold text-gray-900 sm:text-2xl">Page not found</div>
-            <p className="mt-2 max-w-xl text-sm text-gray-600">We couldn’t find that page. Try one of these popular destinations, or go back to the homepage.</p>
+            <p className="mt-2 max-w-xl text-sm text-gray-600">We could not find that page. Try one of these popular destinations, or go back to the homepage.</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href="/" className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-95">Back to Homepage</Link>
               <a href="mailto:hello@entermedschool.com?subject=404%20feedback" className="rounded-full border border-gray-300 bg-white/70 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Report issue</a>

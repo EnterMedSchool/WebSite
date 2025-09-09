@@ -28,19 +28,22 @@ export default async function ChapterGuidebookPage({ params }: { params: { slug:
     const session = await authGetServerSession();
     let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
     if (Number.isFinite(userId) && userId > 0) {
-      const cr = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND completed=true AND lesson_id = ANY(${lr.rows.map((r:any)=> Number(r.id))})`;
-      const done = new Set<number>(cr.rows.map((r:any)=> Number(r.lesson_id)));
+      const lessonIds = lr.rows.map((r: any) => Number(r.id));
+      const cr = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND completed=true AND lesson_id = ANY(${lessonIds as any})`;
+      const done = new Set<number>(cr.rows.map((r: any) => Number(r.lesson_id)));
       completedCnt = Array.from(done).length;
       pct = totalCnt ? Math.round((completedCnt / totalCnt) * 100) : 0;
       const ordered = lr.rows as any[];
-      const next = ordered.find((r:any)=> !done.has(Number(r.id)));
+      const next = ordered.find((r: any) => !done.has(Number(r.id)));
       nextSlug = next?.slug || null;
     }
   } catch {}
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <div className="mb-4 text-sm text-indigo-700"><Link href={`/course/${course.slug}`} className="hover:underline">← Back to course</Link></div>
+      <div className="mb-4 text-sm text-indigo-700">
+        <Link href={`/course/${course.slug}`} className="hover:underline">Back to course</Link>
+      </div>
       <div className="rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow ring-1 ring-indigo-900/20">
         <div className="text-xs font-semibold uppercase tracking-wide text-white/80">Guidebook</div>
         <h1 className="mt-1 text-2xl font-extrabold">{chapter.title}</h1>
@@ -50,9 +53,9 @@ export default async function ChapterGuidebookPage({ params }: { params: { slug:
             <>
               <span className="rounded-full bg-white/15 px-3 py-1 text-white/90">{completedCnt}/{totalCnt} lessons</span>
               {pct === 100 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-3 py-1 text-white shadow">🎁 Chapter chest claimed</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-3 py-1 text-white shadow">Chapter chest claimed</span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-white/90">Complete all lessons to unlock 🎁</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-white/90">Complete all lessons to unlock</span>
               )}
             </>
           ) : null}
@@ -86,3 +89,4 @@ export default async function ChapterGuidebookPage({ params }: { params: { slug:
     </div>
   );
 }
+
