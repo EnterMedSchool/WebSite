@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import CuteArticle from "@/components/blog/CuteArticle";
 
 export default async function BlogPost({ params }: { params: { slug: string } }) {
@@ -7,14 +8,7 @@ export default async function BlogPost({ params }: { params: { slug: string } })
   const proto = h.get("x-forwarded-proto") ?? "http";
   const origin = host ? `${proto}://${host}` : "";
   const res = await fetch(`${origin}/api/posts/${params.slug}`, { cache: "no-store" });
-  if (!res.ok) {
-    return (
-      <div>
-        <h1 className="text-2xl font-semibold">Not found</h1>
-        <p className="text-gray-600">The post you are looking for doesn’t exist.</p>
-      </div>
-    );
-  }
+  if (!res.ok) return notFound();
   const post = await res.json();
 
   return (
@@ -29,3 +23,4 @@ export default async function BlogPost({ params }: { params: { slug: string } })
     />
   );
 }
+
