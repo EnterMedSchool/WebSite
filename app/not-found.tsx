@@ -26,42 +26,59 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div ref={wrapRef} className="relative min-h-[70vh] w-full bg-gradient-to-br from-indigo-50 via-violet-50 to-fuchsia-50">
-      {/* Big rounded card */}
-      <div className="mx-auto my-10 w-[min(1100px,95%)] rounded-[28px] border border-violet-200/50 bg-white/90 p-6 shadow-[0_30px_90px_rgba(99,102,241,0.25)] backdrop-blur-xl">
-        <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-2">
-          {/* Left column */}
-          <div className="relative p-4 sm:p-6">
-            <div className="font-brand text-xl tracking-wider text-indigo-700">EnterMedSchool.com</div>
-            <div className="mt-4 select-none text-[88px] font-extrabold leading-none text-transparent sm:text-[120px]"
-                 style={{ WebkitTextStroke: "10px #7c3aed", backgroundImage: "linear-gradient(180deg,#f5f3ff,#f3e8ff)", WebkitBackgroundClip: "text" }}>404
+    <div ref={wrapRef} className="relative isolate min-h-[78vh] w-full overflow-hidden">
+      {/* Ambient gradients */}
+      <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(1200px_600px_at_70%_0%,rgba(129,140,248,0.18),transparent),radial-gradient(800px_400px_at_0%_80%,rgba(192,132,252,0.18),transparent)]" />
+      {/* Grid overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.18] [mask-image:radial-gradient(70%_60%_at_50%_40%,#000,transparent)]"
+        style={{ background: "linear-gradient(to right, rgba(99,102,241,.25) 1px, transparent 1px) 0 0/22px 22px, linear-gradient(to bottom, rgba(99,102,241,.25) 1px, transparent 1px) 0 0/22px 22px" }}
+      />
+
+      {/* Content */}
+      <section className="relative mx-auto my-8 w-[min(1200px,94%)] rounded-[28px] border border-white/30 bg-white/80 p-6 shadow-[0_30px_100px_rgba(79,70,229,0.25)] backdrop-blur-xl sm:my-10 sm:p-8">
+        <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-12">
+          {/* Left copy */}
+          <div className="relative md:col-span-7 lg:col-span-7">
+            <div className="font-brand text-sm tracking-wider text-indigo-700 sm:text-base">EnterMedSchool.com</div>
+            <div className="mt-3 flex items-end gap-3">
+              <h1 className="select-none text-[84px] font-extrabold leading-none text-transparent sm:text-[120px]" style={{ WebkitTextStroke: "10px #7c3aed", backgroundImage: "linear-gradient(180deg,#f5f3ff,#f3e8ff)", WebkitBackgroundClip: "text" }}>404</h1>
+              <span className="mb-3 hidden rounded-full bg-fuchsia-100 px-2 py-1 text-xs font-semibold text-fuchsia-700 sm:inline">Lost</span>
             </div>
-            <div className="mt-2 text-lg font-extrabold text-gray-800">Oops… page not found</div>
-            <p className="mt-1 max-w-md text-sm text-gray-600">We suggest going back to the homepage while we tidy things up. If you think this is a bug, please let us know.</p>
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-1 text-xl font-extrabold text-gray-900 sm:text-2xl">Page not found</div>
+            <p className="mt-2 max-w-xl text-sm text-gray-600">We couldn’t find that page. Try one of these popular destinations, or go back to the homepage.</p>
+            <div className="mt-5 flex flex-wrap gap-3">
               <Link href="/" className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-95">Back to Homepage</Link>
-              <a href="mailto:hello@entermedschool.com?subject=404%20feedback" className="rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Report issue</a>
+              <a href="mailto:hello@entermedschool.com?subject=404%20feedback" className="rounded-full border border-gray-300 bg-white/70 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Report issue</a>
             </div>
-            {/* Cute swirls */}
-            <Swirl className="absolute -left-6 top-8 text-fuchsia-400/70" delay={0} refCb={(n)=>n && (layersRef.current[0]=n)} />
-            <Swirl className="absolute left-40 top-24 text-indigo-400/70" delay={400} refCb={(n)=>n && (layersRef.current[1]=n)} />
+
+            {/* Suggestions */}
+            <div className="mt-6 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+              <Suggest href="/#universities" title="Universities Map" subtitle="Explore programs and cities" icon="map" />
+              <Suggest href="/imat-course" title="IMAT Course" subtitle="Ace the entrance exam" icon="star" />
+            </div>
+
+            {/* Swirls */}
+            <Swirl className="absolute -left-7 top-5 text-fuchsia-400/70" delay={0} refCb={(n)=>n && (layersRef.current[0]=n)} />
+            <Swirl className="absolute left-40 top-28 text-indigo-400/70" delay={400} refCb={(n)=>n && (layersRef.current[1]=n)} />
           </div>
 
-          {/* Right column: character */}
-          <div className="relative">
-            <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-3xl bg-fuchsia-100/60 blur-xl" />
-            <div className="pointer-events-none absolute -left-8 bottom-6 h-20 w-20 rounded-full bg-indigo-100/60 blur-xl" />
-            {/* Leo image (bundled asset) */}
-            <div className="mx-auto h-64 w-auto animate-[bob_4s_ease-in-out_infinite] drop-shadow-[0_12px_24px_rgba(99,102,241,0.25)]">
-              <Image src={LeoConfused} alt="Confused Leo" className="h-64 w-auto" />
+          {/* Right illustration */}
+          <div className="relative md:col-span-5 lg:col-span-5">
+            <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-3xl bg-fuchsia-100/60 blur-2xl" />
+            <div className="pointer-events-none absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-indigo-100/60 blur-2xl" />
+            <div className="relative mx-auto h-64 w-[260px] sm:h-72 sm:w-[300px]">
+              <div className="absolute inset-0 rounded-[28px] bg-gradient-to-br from-indigo-50 to-purple-50" />
+              <div className="relative flex h-full items-center justify-center">
+                <Image src={LeoConfused} alt="Confused Leo" className="h-56 w-auto sm:h-64" />
+              </div>
             </div>
-            {/* Floating question marks */}
-            <Question style={{ left: "12%", top: "16%" }} refCb={(n)=>n && (layersRef.current[2]=n)} />
-            <Question style={{ right: "10%", top: "8%" }} refCb={(n)=>n && (layersRef.current[3]=n)} />
-            <Question style={{ right: "20%", bottom: "12%" }} refCb={(n)=>n && (layersRef.current[4]=n)} />
+            <Question style={{ left: "10%", top: "8%" }} refCb={(n)=>n && (layersRef.current[2]=n)} />
+            <Question style={{ right: "12%", top: "12%" }} refCb={(n)=>n && (layersRef.current[3]=n)} />
+            <Question style={{ right: "20%", bottom: "8%" }} refCb={(n)=>n && (layersRef.current[4]=n)} />
           </div>
         </div>
-      </div>
+      </section>
 
       <style>{`
         @keyframes bob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
@@ -74,7 +91,6 @@ export default function NotFound() {
 function Swirl({ className, delay=0, refCb }: { className?: string; delay?: number; refCb?: (n: HTMLDivElement|null)=>void }) {
   return (
     <div ref={refCb as any} className={`${className||''} h-10 w-10 animate-[scribble_8s_linear_infinite]`} style={{ animationDelay: `${delay}ms` }}>
-      {/* Bundled swirl svg */}
       <Image src={Scribble} alt="swirl" width={40} height={40} />
     </div>
   );
@@ -90,3 +106,26 @@ function Question({ style, refCb }: { style?: React.CSSProperties; refCb?: (n: H
 
 // kept for reference if we ever need an inline fallback
 const inlineSwirlSVG = `<svg viewBox='0 0 24 24' width='40' height='40' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-width='1.8'><path d='M12 3c-5 0-8 4-8 7.5S6.5 18 11 18s6.5-2 6.5-4.5S15 9 12 9s-3.5 1-3.5 2.5S9.5 15 12 15s3.5-1 3.5-2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
+
+function Suggest({ href, title, subtitle, icon }: { href: string; title: string; subtitle: string; icon: 'map'|'star'|'book' }) {
+  return (
+    <Link href={href} className="group flex items-start gap-3 rounded-2xl border border-indigo-100 bg-white/80 p-3 shadow-sm ring-1 ring-white/40 backdrop-blur transition hover:shadow-md">
+      <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-sm">
+        {icon==='map' && (
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M9 3l6 2 6-2v16l-6 2-6-2-6 2V5l6-2zm0 2L5 6v12l4-1.333V5zm2 0v12l4 1.333V6L11 5zm6 0v12l2-.667V4.333L17 5z"/></svg>
+        )}
+        {icon==='star' && (
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        )}
+        {icon==='book' && (
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M18 2H9a3 3 0 00-3 3v14a3 3 0 013-3h9v-2H9a5 5 0 00-3 1V5a1 1 0 011-1h11v16a1 1 0 001 1h1V3a1 1 0 00-1-1z"/></svg>
+        )}
+      </span>
+      <span>
+        <div className="font-semibold text-gray-900">{title}</div>
+        <div className="text-xs text-gray-600">{subtitle}</div>
+      </span>
+    </Link>
+  );
+}
+
