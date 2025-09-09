@@ -33,8 +33,6 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
   const firstName = useMemo(() => {
     const n = data?.user?.name || "there";
     const f = n.split(" ")[0]?.trim();
@@ -42,6 +40,8 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   }, [data]);
 
   const examName = "your exam"; // placeholder until profile step
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[9998] grid place-items-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -71,13 +71,13 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
         {/* Main content */}
         <div className="pl-16">
           <div className="grid grid-cols-12 gap-6 p-6">
-            {/* Greeting and Today's course */}
+            {/* Greeting and Today\'s course */}
             <div className="col-span-7">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-sm">
                 <div className="text-2xl font-extrabold text-gray-900">Hello, {firstName} 👋</div>
-                <div className="mt-1 text-sm text-gray-600">Nice to have you back, let’s continue preparing for {examName}.</div>
+                <div className="mt-1 text-sm text-gray-600">Nice to have you back, let&apos;s continue preparing for {examName}.</div>
 
-                <div className="mt-5 text-base font-bold text-gray-800">Today's course</div>
+                <div className="mt-5 text-base font-bold text-gray-800">Today&apos;s course</div>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {(data?.chapters?.length ? data.chapters : []).slice(0, 2).map((ch) => (
                     <div key={ch.id} className="flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow-sm">
