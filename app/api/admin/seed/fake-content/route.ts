@@ -167,9 +167,39 @@ export async function POST(request: Request) {
         }
       }
     }
+    // Seed: University of Pavia -> School -> Harvey Course -> Organization
+    try {
+      const uni = await sql`SELECT id FROM universities WHERE lower(name) LIKE 'university of pavia%' LIMIT 1`;
+      const uniId = uni.rows[0]?.id ? Number(uni.rows[0].id) : null;
+      if (uniId) {
+        // Ensure a school exists
+        const schoolSlug = 'pavia-medicine';
+        const sch = await sql`INSERT INTO schools (university_id, slug, name)
+                               VALUES (${uniId}, ${schoolSlug}, 'School of Medicine')
+                               ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+                               RETURNING id`;
+        const schoolId = Number(sch.rows[0].id);
+
+        // Ensure Harvey Course exists
+        await sql`INSERT INTO medical_school_courses (university_id, school_id, slug, name, degree_type, language, duration_years)
+                  VALUES (${uniId}, ${schoolId}, 'harvey-course', 'Harvey Course', 'MD', 'English', 6)
+                  ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name, school_id=EXCLUDED.school_id`;
+
+        // Ensure organization
+        const org = await sql`INSERT INTO student_organizations (university_id, slug, name, description, website)
+                               VALUES (${uniId}, 'harveymed-organization', 'HarveyMed Organization', 'Student-led organization supporting Harvey Course students.', 'https://example.org/harveymed')
+                               ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name
+                               RETURNING id`;
+        const orgId = Number(org.rows[0].id);
+        // Link org to school
+        await sql`INSERT INTO student_organization_schools (organization_id, school_id)
+                  VALUES (${orgId}, ${schoolId})
+                  ON CONFLICT (organization_id, school_id) DO NOTHING`;
+      }
+    } catch {}
+
     return NextResponse.json({ ok: true, courses: courseCount, chapters: chapterCount, lessons: lessonCount, questions: questionCount, choices: choiceCount });
   } catch (e: any) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
   }
 }
-

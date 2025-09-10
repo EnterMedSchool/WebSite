@@ -26,6 +26,7 @@ type DashData = {
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [data, setData] = useState<DashData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mates, setMates] = useState<{ count: number; course?: string | null; school?: string | null; year?: number | null } | null>(null);
 
   // Load dashboard when opened
   useEffect(() => {
@@ -36,6 +37,18 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
         const r = await fetch("/api/me/dashboard", { credentials: "include" });
         setData(r.ok ? await r.json() : null);
       } finally { setLoading(false); }
+    })();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const r = await fetch('/api/course-mates/summary', { credentials: 'include' });
+        if (!r.ok) return;
+        const j = await r.json();
+        setMates({ count: Number(j?.matesCount || 0), course: j?.courseName || null, school: j?.schoolName || null, year: j?.studyYear || null });
+      } catch {}
     })();
   }, [open]);
 
@@ -173,6 +186,15 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                       </div>
                     );
                   })}
+                </div>
+                <div className="mt-6">
+                  <a href="/course-mates" className="flex items-center justify-between rounded-2xl border border-indigo-200/70 bg-indigo-50/60 px-4 py-3 text-indigo-800 transition hover:bg-indigo-50">
+                    <div>
+                      <div className="text-sm font-semibold">Your Course Mates</div>
+                      <div className="text-xs opacity-80">{mates ? (mates.year && mates.course ? `${mates.count} mates • ${mates.course} • Year ${mates.year}` : `${mates.count} mates • set course & year`) : 'Discover classmates by course'}</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 15-5-5 1.41-1.41L13 13.17l4.59-4.58L19 10Z"/></svg>
+                  </a>
                 </div>
               </div>
             </div>

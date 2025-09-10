@@ -80,6 +80,7 @@ export default async function Navbar() {
             <Link href={primary[1].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
             <Link href={primary[2].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>
             <Link href={primary[3].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[3].label}</Link>
+            <Link href="/course-mates" className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">Course Mates</Link>
             <ResourcesMenu />
           </nav>
 

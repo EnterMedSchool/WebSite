@@ -26,6 +26,11 @@ export const users = pgTable("users", {
   totalCorrectAnswers: integer("total_correct_answers").default(0).notNull(),
   isPremium: boolean("is_premium").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Course Mates profile fields
+  universityId: integer("university_id"),
+  schoolId: integer("school_id"),
+  medicalCourseId: integer("medical_course_id"),
+  studyYear: integer("study_year"),
 });
 
 export const courses = pgTable(
@@ -471,6 +476,76 @@ export const programYearStats = pgTable(
     programIdx: index("program_year_stats_program_idx").on(t.programId),
     yearIdx: index("program_year_stats_year_idx").on(t.year),
   })
+);
+
+// ==========================
+// Course Mates entities
+// ==========================
+
+export const schools = pgTable(
+  "schools",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ uniIdx: index("schools_university_idx").on(t.universityId) })
+);
+
+export const medicalSchoolCourses = pgTable(
+  "medical_school_courses",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    schoolId: integer("school_id"),
+    slug: varchar("slug", { length: 160 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    degreeType: varchar("degree_type", { length: 32 }),
+    language: varchar("language", { length: 24 }),
+    durationYears: integer("duration_years"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    mscUniIdx: index("msc_university_idx").on(t.universityId),
+    mscSchoolIdx: index("msc_school_idx").on(t.schoolId),
+  })
+);
+
+export const studentOrganizations = pgTable(
+  "student_organizations",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    slug: varchar("slug", { length: 160 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    website: varchar("website", { length: 300 }),
+    contactEmail: varchar("contact_email", { length: 200 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ orgUniIdx: index("orgs_university_idx").on(t.universityId) })
+);
+
+export const studentOrganizationSchools = pgTable(
+  "student_organization_schools",
+  {
+    organizationId: integer("organization_id").notNull(),
+    schoolId: integer("school_id").notNull(),
+  },
+  (t) => ({
+    orgSchSchoolIdx: index("org_schools_school_idx").on(t.schoolId),
+  })
+);
+
+export const studentOrganizationCourses = pgTable(
+  "student_organization_courses",
+  {
+    organizationId: integer("organization_id").notNull(),
+    courseId: integer("course_id").notNull(),
+  },
+  (t) => ({ orgCoursesCourseIdx: index("org_courses_course_idx").on(t.courseId) })
 );
 
 // ==========================
