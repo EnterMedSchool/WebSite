@@ -45,16 +45,27 @@ export default function CourseMatesPage() {
   async function update(field: string, value: number | null) {
     setSaving(true);
     try {
-      const payload: any = {
+      const next: any = {
         universityId: me.universityId ?? null,
         schoolId: me.schoolId ?? null,
         medicalCourseId: me.medicalCourseId ?? null,
         studyYear: me.studyYear ?? null,
       };
-      payload[field] = value;
-      if (field === "universityId") { payload.schoolId = null; payload.medicalCourseId = null; }
-      if (field === "schoolId") { payload.medicalCourseId = null; }
-      await fetch("/api/course-mates", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      next[field] = value;
+      if (field === "universityId") { next.schoolId = null; next.medicalCourseId = null; }
+      if (field === "schoolId") { next.medicalCourseId = null; }
+      setMe((m: any) => ({ ...m, ...next }));
+      await fetch("/api/course-mates", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
+      setAccess("pending");
+      try {
+        const rr = await fetch('/api/me/profile/edu', { credentials: 'include' });
+        if (rr.ok) {
+          const pj = await rr.json();
+          setUniversities(pj.universities || universities);
+          setSchools(pj.schools || schools);
+          setCourses(pj.courses || courses);
+        }
+      } catch {}
     } finally { setSaving(false); }
   }
 
@@ -82,10 +93,10 @@ export default function CourseMatesPage() {
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Select label="University" value={me.universityId ?? null} options={universities} onChange={(v)=>update("universityId", v)} placeholder="Choose university" disabled={access !== "verified"} />
-          <Select label="School" value={me.schoolId ?? null} options={schools} onChange={(v)=>update("schoolId", v)} placeholder="Choose school" disabled={!me.universityId || access !== "verified"} />
-          <Select label="Course" value={me.medicalCourseId ?? null} options={courses} onChange={(v)=>update("medicalCourseId", v)} placeholder="Choose course" disabled={!me.universityId || access !== "verified"} />
-          <Select label="Study Year" value={me.studyYear ?? null} options={[1,2,3,4,5,6].map((y)=>({ id: y, name: `Year ${y}` }))} onChange={(v)=>update("studyYear", v)} placeholder="Select year" disabled={!me.medicalCourseId || access !== "verified"} />
+          <Select label="University" value={me.universityId ?? null} options={universities} onChange={(v)=>update("universityId", v)} placeholder="Choose university" disabled={!isAuthed} />
+          <Select label="School" value={me.schoolId ?? null} options={schools} onChange={(v)=>update("schoolId", v)} placeholder="Choose school" disabled={!isAuthed || !me.universityId} />
+          <Select label="Course" value={me.medicalCourseId ?? null} options={courses} onChange={(v)=>update("medicalCourseId", v)} placeholder="Choose course" disabled={!isAuthed || !me.universityId} />
+          <Select label="Study Year" value={me.studyYear ?? null} options={[1,2,3,4,5,6].map((y)=>({ id: y, name: `Year ${y}` }))} onChange={(v)=>update("studyYear", v)} placeholder="Select year" disabled={!isAuthed || !me.medicalCourseId} />
         </div>
         {saving && <div className="mt-2 text-xs text-gray-500">Saving...</div>}
       </div>
@@ -167,4 +178,3 @@ function Select({ label, value, options, onChange, placeholder, disabled }: { la
     </label>
   );
 }
-
