@@ -8,7 +8,7 @@ type PlanMeta = { id: number; userId: number; startDate: string | null; currentD
 type DayTask = { id: number; label: string; isCompleted: boolean };
 type PlannerLink = { title: string; href: string };
 type PlannerVideo = { title: string; href: string; length?: string };
-type DayGroup = { day: number; title: string; rest?: boolean; tasks: DayTask[]; videos?: PlannerVideo[]; lessons?: PlannerLink[]; chapters?: PlannerLink[] };
+type DayGroup = { day: number; title: string; rest?: boolean; tasks: DayTask[]; videos?: PlannerVideo[]; lessons?: PlannerLink[]; chapters?: PlannerLink[]; done?: number; total?: number };
 
 export default function Planner({ totalDays }: Props) {
   const [loading, setLoading] = useState(true);
@@ -18,23 +18,35 @@ export default function Planner({ totalDays }: Props) {
   const [activeDay, setActiveDay] = useState<number>(1);
   const [savingDay, setSavingDay] = useState(false);
 
-  // Fetch or initialize planner
+  // Fetch or initialize planner (summary first, then lazy-load tasks per day)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        const r = await fetch("/api/imat/planner", { credentials: "include" });
+        const etag = typeof window !== 'undefined' ? localStorage.getItem('imat:sum:etag') || '' : '';
+        const r = await fetch("/api/imat/planner/summary", { credentials: "include", headers: etag ? { 'If-None-Match': etag } : undefined });
+        if (r.status === 304) {
+          const cached = localStorage.getItem('imat:sum:data');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (!cancelled) { setPlan(parsed.plan); setDaysData(parsed.days.map((d:any)=>({ ...d, tasks: [] })) as DayGroup[]); }
+            setLoading(false); return;
+          }
+        }
         const j = await r.json();
-        if (!r.ok) throw new Error(j?.error || "Failed to load planner");
-        if (!j?.data) {
+        if (!r.ok) throw new Error(j?.error || "Failed to load planner summary");
+        if (!j?.data?.plan || (Array.isArray(j?.data?.days) && j.data.days.every((d:any)=> (d.total||0) === 0))) {
           const init = await fetch("/api/imat/planner/init", { method: "POST", credentials: "include" });
           const ji = await init.json();
           if (!init.ok) throw new Error(ji?.error || "Failed to initialize planner");
           if (!cancelled) { setPlan(ji.data.plan); setDaysData(ji.data.days); }
         } else {
-          if (!cancelled) { setPlan(j.data.plan); setDaysData(j.data.days); }
+          const shaped: DayGroup[] = (j.data.days as any[]).map((d:any)=>({ day: d.day, title: d.title, rest: d.rest, tasks: [], videos: d.videos, lessons: d.lessons, chapters: d.chapters, done: d.done, total: d.total }));
+          if (!cancelled) { setPlan(j.data.plan); setDaysData(shaped); }
+          const newTag = r.headers.get('ETag'); if (newTag) localStorage.setItem('imat:sum:etag', newTag);
+          localStorage.setItem('imat:sum:data', JSON.stringify({ plan: j.data.plan, days: shaped }));
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Something went wrong");
@@ -54,6 +66,11 @@ export default function Planner({ totalDays }: Props) {
   }, [daysData, plan?.currentDay, totalDays]);
 
   useEffect(() => { if (initialDay) setActiveDay(initialDay); }, [initialDay]);
+  // Load tasks lazily when switching day
+  useEffect(() => {
+    const g = (daysData||[]).find((x)=> x.day === activeDay);
+    if (g && (!g.tasks || g.tasks.length === 0)) { ensureDayTasks(activeDay); }
+  }, [activeDay]);
 
   const groups = useMemo(() => {
     const map: Record<number, DayGroup> = {} as any;
@@ -61,6 +78,15 @@ export default function Planner({ totalDays }: Props) {
     return map;
   }, [daysData]);
   const days = useMemo(() => Object.keys(groups).map((k) => Number(k)).sort((a,b) => a - b), [groups]);
+
+  async function ensureDayTasks(day: number) {
+    setDaysData((prev) => prev); // noop to keep type
+    try {
+      const r = await fetch(`/api/imat/planner/day/${day}`, { credentials: 'include' });
+      const j = await r.json(); if (!r.ok) throw new Error(j?.error || 'Failed to load day');
+      setDaysData((prev) => prev ? prev.map((dg)=> dg.day===day ? { ...dg, tasks: (j?.data?.items||[]) } : dg) : prev);
+    } catch {}
+  }
 
   async function toggleItem(task: DayTask, checked: boolean) {
     try {
@@ -113,11 +139,17 @@ export default function Planner({ totalDays }: Props) {
 
     // Overall progress
   const overall = useMemo(() => {
-    const all = (daysData || []).flatMap((d) => d.tasks);
+    const days = (daysData || []);
+    const hasSummary = days.some((d)=> d.total != null);
+    if (hasSummary) {
+      const total = days.reduce((a,b)=> a + (b.total||0), 0) || 1;
+      const done = days.reduce((a,b)=> a + (b.done||0), 0);
+      return { done, total, pct: Math.round((done/total)*100) };
+    }
+    const all = days.flatMap((d)=> d.tasks||[]);
     const total = all.length || 1;
-    const done = all.filter((t) => t.isCompleted).length;
-    const pct = Math.round((done / total) * 100);
-    return { done, total, pct };
+    const done = all.filter((t)=> t.isCompleted).length;
+    return { done, total, pct: Math.round((done/total)*100) };
   }, [daysData]);
 
   if (loading) return <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">Loading planner...</div>;
@@ -163,7 +195,7 @@ export default function Planner({ totalDays }: Props) {
               return (
                 <li key={d}>
                   <button
-                    onClick={() => { setActiveDay(d); persistCurrentDay(d); }}
+                    onClick={() => { setActiveDay(d); ensureDayTasks(d); persistCurrentDay(d); }}
                     className={`w-full items-center rounded-xl border px-2 py-2 text-left text-sm transition ${done === total ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : activeDay === d ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-transparent hover:bg-slate-50'}`}
                   >
                     <div className="flex items-center justify-between gap-2">
