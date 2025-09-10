@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { imatUserPlan, imatUserPlanTasks } from "@/drizzle/schema";
 import { asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { IMAT_PLANNER } from "@/lib/imat/plan";
+import { IMAT_PLANNER, getDevResources } from "@/lib/imat/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ function groupTasks(rows: any[]) {
   for (const r of rows) {
     const dn = Number(r.dayNumber);
     const meta = IMAT_PLANNER.days.find((d) => d.day === dn);
-    if (!byDay[dn]) byDay[dn] = { day: dn, title: meta ? meta.title : `Day ${dn}`, rest: meta?.rest, tasks: [] };
+    const dev = getDevResources(dn); if (!byDay[dn]) byDay[dn] = { day: dn, title: meta ? meta.title : `Day ${dn}`, rest: meta?.rest, tasks: [], videos: meta?.videos || dev.videos, lessons: meta?.lessons || dev.lessons, chapters: meta?.chapters || dev.chapters };
     byDay[dn].tasks.push({ id: r.id, label: r.label, isCompleted: r.isCompleted });
   }
   return Object.values(byDay);

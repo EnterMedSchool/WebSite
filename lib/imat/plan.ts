@@ -347,3 +347,24 @@ export const IMAT_PLANNER: ImatPlanner = {
     ]},
   ],
 };
+
+// Development helper: fabricate resources when missing so the UI can be
+// styled and iterated quickly without wiring real lessons yet.
+export function getDevResources(day: number): { videos: PlannerVideo[]; lessons: PlannerLink[]; chapters: PlannerLink[] } {
+  const isChem = day >= 41;
+  const domain = isChem ? 'Chemistry' : 'Biology';
+  const len = `${8 + (day % 7) * 2}m`;
+  return {
+    videos: [
+      { title: `${domain} Focus — Day ${day}`, href: '/imat-course#features', length: len },
+      { title: 'IMAT Strategy — Time and Guessing', href: '/imat-course#features', length: `${6 + (day % 5)}m` },
+    ],
+    lessons: [
+      { title: `${domain} Key Concepts (dev)`, href: '/imat-course#features' },
+      { title: `Practice Set — ${domain} (dev)`, href: '/imat-course#features' },
+    ],
+    chapters: [
+      { title: `${domain} Chapter Review (dev)`, href: '/imat-course#features' },
+    ],
+  };
+}

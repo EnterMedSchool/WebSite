@@ -30,7 +30,7 @@ export async function PATCH(req: Request, { params }: { params: { taskId: string
     }
 
     if (Object.keys(updates).length > 0) {
-      await db.update(imatUserPlanTasks).set(updates).where(eq(imatUserPlanTasks.id as any, id));
+      await db.update(imatUserPlanTasks).set({ ...updates, updatedAt: new Date() as any }).where(eq(imatUserPlanTasks.id as any, id));
     }
 
     let progress: any = null;
@@ -59,4 +59,3 @@ export async function PATCH(req: Request, { params }: { params: { taskId: string
     return NextResponse.json({ error: e?.message || 'Failed to update task' }, { status: 500 });
   }
 }
-

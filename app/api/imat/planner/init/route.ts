@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { imatUserPlan, imatUserPlanTasks } from "@/drizzle/schema";
 import { asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
-import { IMAT_PLANNER } from "@/lib/imat/plan";
+import { IMAT_PLANNER, getDevResources } from "@/lib/imat/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

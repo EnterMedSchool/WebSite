@@ -605,6 +605,7 @@ export const imatUserPlanTasks = pgTable(
     completedAt: timestamp("completed_at"),
     xpAwarded: boolean("xp_awarded").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => ({
     planUserIdx: index("imat_plan_tasks_user_idx").on(t.userId),
