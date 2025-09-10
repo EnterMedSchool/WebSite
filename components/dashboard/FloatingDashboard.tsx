@@ -19,7 +19,7 @@ type DashData = {
   user: { id: number; name?: string | null; image?: string | null; xp: number; level: number; streakDays?: number };
   learning: { minutesToday: number; minutesTotal: number; correctToday: number; tasksToday?: number };
   chapters: ChapterCard[];
-  courses: { id: number; slug: string; title: string; description?: string | null }[];
+  courses: { id: number; slug: string; title: string; description?: string | null; progress_pct?: number | null }[];
   series?: Series;
 };
 
@@ -158,12 +158,21 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
                 <div className="text-base font-bold text-gray-800">Your class</div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {(data?.courses || []).map((c) => (
-                    <a key={c.id} href={`/course/${encodeURIComponent(c.slug)}`} className="flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition hover:-translate-y-[1px] hover:bg-indigo-50/40">
-                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-200 to-fuchsia-200 shadow-inner" />
-                      <div><div className="font-semibold text-gray-900">{c.title}</div><div className="text-xs text-gray-600 line-clamp-1">{c.description || '-'}</div></div>
-                    </a>
-                  ))}
+                  {(data?.courses || []).map((c) => {
+                    const pct = Math.max(0, Math.min(100, Math.round(Number(c.progress_pct ?? 0))));
+                    const col = pct >= 100 ? '#10b981' : '#6366f1';
+                    return (
+                      <div key={c.id} className="relative rounded-2xl p-[2px]" style={{ background: `conic-gradient(${col} ${pct}%, #e5e7eb 0)` }}>
+                        <a href={`/course/${encodeURIComponent(c.slug)}`} className="flex items-center gap-3 rounded-[14px] border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:bg-indigo-50/40">
+                          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-200 to-fuchsia-200 shadow-inner" />
+                          <div>
+                            <div className="font-semibold text-gray-900">{c.title}</div>
+                            <div className="text-xs text-gray-600 line-clamp-1">{c.description || '-'}</div>
+                          </div>
+                        </a>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

@@ -88,8 +88,26 @@ export async function GET() {
       LEFT JOIN stats s ON s.chapter_id = tc.id
       ORDER BY tc.last_viewed DESC`;
 
-    // Your class: all available courses (basic fields)
-    const cr = await sql`SELECT id, slug, title, description FROM courses ORDER BY created_at DESC LIMIT 8`;
+    // Your class: courses with user progress percentage
+    const cr = await sql`
+      WITH lessons_in_course AS (
+        SELECT c.id AS course_id, l.id AS lesson_id
+        FROM courses c
+        JOIN chapters ch ON ch.course_id = c.id
+        JOIN chapter_lessons cl ON cl.chapter_id = ch.id
+        JOIN lessons l ON l.id = cl.lesson_id
+      ), progress AS (
+        SELECT lic.course_id,
+               COALESCE(ROUND(AVG(COALESCE(ulp.progress, 0))::numeric), 0) AS progress_pct
+        FROM lessons_in_course lic
+        LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = lic.lesson_id AND ulp.user_id=${userId}
+        GROUP BY lic.course_id
+      )
+      SELECT c.id, c.slug, c.title, c.description, p.progress_pct
+      FROM courses c
+      LEFT JOIN progress p ON p.course_id = c.id
+      ORDER BY c.created_at DESC
+      LIMIT 8`;
 
     // Streak days (simple): consecutive days with any xp_awarded event
     let streakDays = 0;
