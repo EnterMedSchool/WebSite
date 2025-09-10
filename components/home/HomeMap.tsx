@@ -11,6 +11,8 @@ import UniversitiesListMobile from "@/components/home/UniversitiesListMobile";
 import BottomSheet from "@/components/ui/BottomSheet";
 import CompareFab from "@/components/home/CompareFab";
 import CompareDrawer from "@/components/home/CompareDrawer";
+import SavedFab from "@/components/home/SavedFab";
+import SavedDrawer from "@/components/home/SavedDrawer";
 import MapFiltersBar, { type MapFilters } from "@/components/home/MapFiltersBar";
 
 // DB-backed types (match /api/universities response)
