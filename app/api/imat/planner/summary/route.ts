@@ -13,19 +13,27 @@ export async function GET(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   try {
     const plan = (await db.select().from(imatUserPlan).where(eq(imatUserPlan.userId as any, userId)).limit(1))[0] || null;
-    // Compute ETag first and honor If-None-Match
-    const et = await sql`SELECT MAX(updated_at) AS m FROM imat_user_plan_tasks WHERE user_id=${userId}`;
-    const latest = et?.rows?.[0]?.m ? String(new Date(et.rows[0].m as any).getTime()) : String(plan?.updatedAt || 0);
+    // Compute ETag from rollups first, fallback to tasks
+    const et1 = await sql`SELECT MAX(updated_at) AS m FROM imat_user_day_rollups WHERE user_id=${userId}`;
+    const et2 = await sql`SELECT MAX(updated_at) AS m FROM imat_user_plan_tasks WHERE user_id=${userId}`;
+    const maxTs = (et1.rows[0]?.m as any) || (et2.rows[0]?.m as any) || plan?.updatedAt || null;
+    const latest = maxTs ? String(new Date(maxTs).getTime()) : '';
     const inm = (req.headers.get('if-none-match') || '').replace(/^W\//, '').trim();
     if (inm && latest && inm === latest) {
       return new NextResponse(null, { status: 304, headers: { ETag: latest } });
     }
 
-    // Aggregate per-day counts
-    const q = await sql`SELECT day_number AS day, COUNT(*) AS total, SUM(CASE WHEN is_completed THEN 1 ELSE 0 END) AS done
-                        FROM imat_user_plan_tasks WHERE user_id=${userId}
-                        GROUP BY day_number ORDER BY day_number`;
-    const rows: any[] = q.rows.map((r: any) => ({ day: Number(r.day), total: Number(r.total), done: Number(r.done || 0) }));
+    // Prefer rollups; fallback to GROUP BY if rollups not present
+    let rows: any[] = [];
+    const qr = await sql`SELECT day_number AS day, total, done FROM imat_user_day_rollups WHERE user_id=${userId} ORDER BY day_number`;
+    if (qr.rowCount && qr.rowCount > 0) {
+      rows = qr.rows.map((r:any)=> ({ day: Number(r.day), total: Number(r.total||0), done: Number(r.done||0) }));
+    } else {
+      const q = await sql`SELECT day_number AS day, COUNT(*) AS total, SUM(CASE WHEN is_completed THEN 1 ELSE 0 END) AS done
+                          FROM imat_user_plan_tasks WHERE user_id=${userId}
+                          GROUP BY day_number ORDER BY day_number`;
+      rows = q.rows.map((r: any) => ({ day: Number(r.day), total: Number(r.total), done: Number(r.done || 0) }));
+    }
     // Fill missing days with zeros to 60
     const totals: Record<number, { day: number; total: number; done: number }> = {} as any;
     rows.forEach((r) => (totals[r.day] = r));
