@@ -348,6 +348,10 @@ export const universities = pgTable(
     photos: jsonb("photos"), // string[]
     orgs: jsonb("orgs"), // string[]
     article: jsonb("article"), // { title, href? }
+    hasDorms: boolean("has_dorms"),
+    hasScholarships: boolean("has_scholarships"),
+    // Optional seed tag for bulk fake-content cleanup
+    seedTag: varchar("seed_tag", { length: 64 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
@@ -369,6 +373,38 @@ export const universityScores = pgTable(
   (t) => ({
     uniIdx: index("scores_university_idx").on(t.universityId),
     yearIdx: index("scores_year_idx").on(t.year),
+  })
+);
+
+// Per-university cost hints (optional)
+export const universityCosts = pgTable(
+  "university_costs",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    rentEur: integer("rent_eur"),
+    foodIndex: integer("food_index"),
+    transportEur: integer("transport_eur"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({ uniIdx: index("uni_costs_uni_idx").on(t.universityId) })
+);
+
+// Admissions timeline per year
+export const universityAdmissions = pgTable(
+  "university_admissions",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    year: integer("year").notNull(),
+    opensMonth: integer("opens_month"),
+    deadlineMonth: integer("deadline_month"),
+    resultsMonth: integer("results_month"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    uniIdx: index("uni_adm_uni_idx").on(t.universityId),
+    yearIdx: index("uni_adm_year_idx").on(t.year),
   })
 );
 
@@ -798,3 +834,5 @@ export const termComments = pgTable(
     userIdx: index("term_comments_user_idx").on(t.userId),
   })
 );
+
+

@@ -30,6 +30,12 @@ type City = {
   photos?: string[];
   orgs?: string[];
   article?: { title: string; href?: string };
+  costRent?: number;
+  costFoodIndex?: number;
+  costTransport?: number;
+  admOpens?: string;
+  admDeadline?: string;
+  admResults?: string;
 };
 type CountryCities = Record<string, City[]>;
 

@@ -19,6 +19,21 @@ export async function middleware(req: NextRequest) {
   // Allow only CORS preflight to pass for API (if any)
   if (req.method === 'OPTIONS') return NextResponse.next();
 
+  // Bypass admin auth if an explicit seed key matches for seeding endpoints
+  try {
+    const isSeedPath = pathname.startsWith('/api/admin/seed');
+    if (isSeedPath) {
+      const url = req.nextUrl;
+      const qp = url.searchParams.get('key');
+      const headerKey = req.headers.get('x-seed-key');
+      const key = String((qp ?? headerKey ?? '')).trim().replace(/^['"]|['"]$/g, '');
+      const secret = String(process.env.SEED_SECRET ?? '').trim().replace(/^['"]|['"]$/g, '');
+      if (secret && key && key === secret) {
+        return NextResponse.next();
+      }
+    }
+  } catch {}
+
   // Require NextAuth token (JWT strategy) and admin email allowlist
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const email = (token as any)?.email as string | undefined;
@@ -49,4 +64,3 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: ['/admin/:path*', '/api/admin/:path*'],
 };
-

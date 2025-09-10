@@ -18,6 +18,12 @@ type City = {
   photos?: string[];
   orgs?: string[];
   article?: { title: string; href?: string };
+  costRent?: number;
+  costFoodIndex?: number;
+  costTransport?: number;
+  admOpens?: string;
+  admDeadline?: string;
+  admResults?: string;
 };
 
 export default function UniversitiesPanel({ selectedName, items, topOffset = 4, onAddCompare, compareSet, onHover, savedSet, onToggleSave }: { selectedName: string; items: City[]; topOffset?: number; onAddCompare?: (item: City & { country?: string }) => void; compareSet?: Set<string>; onHover?: (item: City | null) => void; savedSet?: Set<string>; onToggleSave?: (item: City & { country?: string }) => void }) {
@@ -136,8 +142,8 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
 
             {/* Decision aids (placeholders) */}
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <DeadlineStrip />
-              <CostTile city={c.city} />
+              <DeadlineStrip opens={(c as any).admOpens} deadline={(c as any).admDeadline} results={(c as any).admResults} />
+              <CostTile city={c.city} rent={(c as any).costRent} foodIndex={(c as any).costFoodIndex} transport={(c as any).costTransport} />
             </div>
 
             <div className="mt-3 flex items-center gap-2">

@@ -12,6 +12,8 @@ import {
   universityTestimonials,
   universityMedia,
   universityArticles,
+  universityCosts,
+  universityAdmissions,
 } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { universityPages } from "@/drizzle/schema";
@@ -35,8 +37,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
         kind: universities.kind,
         lat: universities.lat,
         lng: universities.lng,
-        logoUrl: universities.logoUrl,
-        country: countries.name,
+        logoUrl: universities.logoUrl,\n        hasDorms: universities.hasDorms,\n        hasScholarships: universities.hasScholarships,\n        country: countries.name,
       })
       .from(universities)
       .leftJoin(countries, eq(universities.countryId, countries.id));
@@ -44,13 +45,15 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     const uni = uniRows.find((u) => slugify(u.name) === slug);
     if (!uni) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const [scores, seats, testimonials, media, articles, page] = await Promise.all([
+    const [scores, seats, testimonials, media, articles, page, costs, admissions] = await Promise.all([
       db.select().from(universityScores).where(eq(universityScores.universityId, uni.id)).then((r) => r.sort((a,b)=>a.year-b.year)),
       db.select().from(universitySeats).where(eq(universitySeats.universityId, uni.id)).then((r) => r.sort((a,b)=>a.year-b.year)),
       db.select().from(universityTestimonials).where(eq(universityTestimonials.universityId, uni.id)).then((r)=>r.slice(-6)),
       db.select().from(universityMedia).where(eq(universityMedia.universityId, uni.id)).then((r)=>r.slice(-8)),
       db.select().from(universityArticles).where(eq(universityArticles.universityId, uni.id)).then((r)=>r.slice(-6)),
       db.select().from(universityPages).where(eq(universityPages.universityId, uni.id)).then((r)=> r[0] ?? null),
+      db.select().from(universityCosts).where(eq(universityCosts.universityId, uni.id)),
+      db.select().from(universityAdmissions).where(eq(universityAdmissions.universityId, uni.id)),
     ]);
 
     // Derived rating: average of testimonials
@@ -60,8 +63,13 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     const best = [...scores].sort((a,b)=> b.year - a.year || rank(b.candidateType as any) - rank(a.candidateType as any))[0];
     const lastScore = best ? Number(best.minScore) : undefined;
 
-    return NextResponse.json({ university: { ...uni, rating: avgRating, lastScore }, scores, seats, testimonials, media, articles, page });
+    return NextResponse.json({ university: { ...uni, rating: avgRating, lastScore }, scores, seats, testimonials, media, articles, page, costs, admissions });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 }
+
+
+
+
+
