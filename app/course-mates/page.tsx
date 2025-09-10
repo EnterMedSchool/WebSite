@@ -96,6 +96,150 @@ export default function CourseMatesPage() {
           Please sign in to access Your Course Mates.
         </div>
       )}
+
+      {/* Signed-out preview: show a fake hub with CTA overlay */}
+      {!loading && isAuthed === false && (
+        <div className="relative">
+          <div className="mt-6 space-y-6 opacity-90">
+            <div className="overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-md">
+              <div className="relative px-6 py-8 sm:px-8">
+                <div className="absolute inset-0 opacity-20 [background:radial-gradient(ellipse_at_top_left,white_0%,transparent_60%),radial-gradient(ellipse_at_bottom_right,white_0%,transparent_60%)]" />
+                <div className="relative">
+                  <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-white/80">Course Hub</div>
+                      <h2 className="mt-1 text-2xl font-extrabold leading-tight text-white sm:text-3xl">Your Course</h2>
+                      <div className="mt-1 text-sm text-indigo-100">All years</div>
+                      <div className="mt-2 flex items-center gap-3 text-xs text-indigo-100">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 font-semibold text-white backdrop-blur">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                          128 members
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 font-semibold text-white backdrop-blur">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+                          Community growing
+                        </span>
+                      </div>
+                    </div>
+                    <div className="hidden sm:flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30">Share photo</span>
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30">Create event</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="space-y-6 lg:col-span-2">
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-lg font-semibold">Highlights</div>
+                    <span className="text-xs font-semibold text-indigo-700">See feed</span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Active now</div>
+                      <div className="mt-1 text-2xl font-extrabold text-indigo-900">12</div>
+                      <div className="text-xs text-indigo-800/80">classmates online</div>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/60 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Study vibe</div>
+                      <div className="mt-1 text-2xl font-extrabold text-emerald-900">Calm & Focused</div>
+                      <div className="text-xs text-emerald-800/80">based on recent activity</div>
+                    </div>
+                    <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">This week</div>
+                      <div className="mt-1 text-2xl font-extrabold text-amber-900">8,420 XP</div>
+                      <div className="text-xs text-amber-800/80">earned by the course</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 text-lg font-semibold">Course Feed</div>
+                  <ul className="space-y-3">
+                    {[{user:'Alex', text:'Your course feed will appear here.', time:'2h ago'}, {user:'Priya', text:'Events, resources and photos – everything in one place.', time:'1d ago'}].map((p, i) => (
+                      <li key={i} className="rounded-xl border border-gray-200 p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{initials(p.user)}</div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium text-gray-900">{p.user}</div>
+                              <div className="text-xs text-gray-500">{p.time}</div>
+                            </div>
+                            <div className="mt-1 text-sm text-gray-800">{p.text}</div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 text-lg font-semibold">Photos from Events</div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {['Welcome','Workshop','Study Night','Seminar','Meetup','Outreach'].map((t,i)=> (
+                      <div key={i} className="aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-indigo-200 to-fuchsia-300 ring-1 ring-black/5">
+                        <div className="flex h-full items-end bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.35),transparent_40%)] p-2">
+                          <span className="rounded bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-gray-800 shadow">{t}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="mb-2 text-lg font-semibold">Leaderboard</div>
+                  <ul className="space-y-1 text-sm">
+                    {[1,2,3,4,5].map((n) => (
+                      <li key={n} className="flex items-center justify-between rounded-lg border px-3 py-1.5">
+                        <div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">#{n}</span><span className="font-medium text-gray-800">Top Student {n}</span></div>
+                        <span className="text-xs text-indigo-700">{1100 - n*41} XP</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="mb-2 text-lg font-semibold">Upcoming Events</div>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-center justify-between rounded-lg border px-3 py-2">
+                      <div>
+                        <div className="font-semibold">Welcome Meetup</div>
+                        <div className="text-xs text-gray-600">Sep 15 • Student Center</div>
+                      </div>
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Remind me</span>
+                    </li>
+                    <li className="flex items-center justify-between rounded-lg border px-3 py-2">
+                      <div>
+                        <div className="font-semibold">Cardio Workshop</div>
+                        <div className="text-xs text-gray-600">Sep 22 • Anatomy Lab</div>
+                      </div>
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Interested</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Overlay CTA */}
+          <div className="pointer-events-auto absolute inset-0 z-10 grid place-items-center bg-white/70 backdrop-blur-[1.5px]">
+            <div className="max-w-lg rounded-2xl border border-indigo-200 bg-white/95 p-6 text-center shadow-xl">
+              <div className="text-lg font-extrabold text-gray-900">Sign in to access your Course Hub</div>
+              <div className="mt-1 text-sm text-gray-700">See classmates, events, photos, leaderboards and more — tailored to your course.</div>
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signin' } }))} className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">Sign in</button>
+                <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))} className="rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Create free account</button>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">It takes under a minute — then choose your university and course.</div>
+            </div>
+          </div>
+        </div>
+      )}
       {!loading && isAuthed && access === "pending" && (
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800">
           Your access is pending manual verification. Update your details in <a href="/me/profile" className="font-semibold underline">Edit profile</a>.
@@ -223,10 +367,10 @@ export default function CourseMatesPage() {
                       Post update
                     </button>
                     <button className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 transition hover:bg-white/25">
-                      📷 Share photo
+                      Share photo
                     </button>
                     <button className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 transition hover:bg-white/25">
-                      📅 Create event
+                      Create event
                     </button>
                   </div>
                 </div>
