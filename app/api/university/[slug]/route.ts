@@ -37,7 +37,10 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
         kind: universities.kind,
         lat: universities.lat,
         lng: universities.lng,
-        logoUrl: universities.logoUrl,\n        hasDorms: universities.hasDorms,\n        hasScholarships: universities.hasScholarships,\n        country: countries.name,
+        logoUrl: universities.logoUrl,
+        hasDorms: universities.hasDorms,
+        hasScholarships: universities.hasScholarships,
+        country: countries.name,
       })
       .from(universities)
       .leftJoin(countries, eq(universities.countryId, countries.id));
