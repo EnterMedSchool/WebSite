@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { termRatings, terms } from "@/drizzle/schema";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { rateAllow } from "@/lib/rate-limit";
 
@@ -28,26 +29,41 @@ export async function GET(_req: Request, ctx: { params: { slug: string } }) {
   if (!exists) return NextResponse.json({ error: "term_not_found" }, { status: 404 });
   const userId = await requireUserId(_req).catch(() => null);
 
-  const rows = await db
-    .select({ stars: termRatings.stars })
-    .from(termRatings)
-    .where(eq(termRatings.termSlug as any, slug));
-  const { avg, count } = computeStats(rows.map((r) => Number(r.stars || 0)));
-
+  // Aggregate efficiently with SQL (count/avg/max updated)
+  const agg = await db.execute(sql`
+    select coalesce(count(*)::int,0) as count,
+           coalesce(avg(stars)::float,0) as avg,
+           coalesce(max(updated_at), to_timestamp(0)) as max_updated
+    from term_ratings where term_slug = ${slug}
+  `);
+  const row: any = (agg as any)?.rows?.[0] || { count: 0, avg: 0, max_updated: null };
+  const count = Number(row.count || 0);
+  const avg = Number(row.avg || 0);
   let mine: number | null = null;
   if (userId) {
     const r = (
       await db
         .select({ stars: termRatings.stars })
         .from(termRatings)
-        .where(
-          and(eq(termRatings.termSlug as any, slug), eq(termRatings.userId as any, userId))
-        )
+        .where(and(eq(termRatings.termSlug as any, slug), eq(termRatings.userId as any, userId)))
         .limit(1)
     )[0];
     if (r?.stars != null) mine = Number(r.stars);
   }
-  return NextResponse.json({ avg, count, mine });
+  const tag = `W/"${slug}:${count}:${Math.round(avg * 100)}:${mine ?? -1}:${String(row.max_updated || '')}"`;
+  const inm = (_req as any).headers?.get?.("if-none-match") || (new Headers((_req as any).headers)).get("if-none-match");
+  if (inm && inm === tag) {
+    const res304 = new NextResponse(null, { status: 304 });
+    res304.headers.set("ETag", tag);
+    res304.headers.set("Cache-Control", "private, max-age=180");
+    res304.headers.set("Vary", "Authorization, If-None-Match");
+    return res304;
+  }
+  const res = NextResponse.json({ avg, count, mine });
+  res.headers.set("ETag", tag);
+  res.headers.set("Cache-Control", "private, max-age=180");
+  res.headers.set("Vary", "Authorization, If-None-Match");
+  return res;
 }
 
 export async function POST(req: Request, ctx: { params: { slug: string } }) {
@@ -78,13 +94,20 @@ export async function POST(req: Request, ctx: { params: { slug: string } }) {
     .values({ termSlug: slug, userId, stars })
     .onConflictDoUpdate({ target: [termRatings.termSlug, termRatings.userId], set: { stars, updatedAt: new Date() as any } });
 
-  // Return updated snapshot
-  const rows = await db
-    .select({ stars: termRatings.stars })
-    .from(termRatings)
-    .where(eq(termRatings.termSlug as any, slug));
-  const { avg, count } = computeStats(rows.map((r) => Number(r.stars || 0)));
+  // Return updated snapshot (aggregate via SQL)
+  const agg = await db.execute(sql`
+    select coalesce(count(*)::int,0) as count,
+           coalesce(avg(stars)::float,0) as avg,
+           coalesce(max(updated_at), to_timestamp(0)) as max_updated
+    from term_ratings where term_slug = ${slug}
+  `);
+  const row: any = (agg as any)?.rows?.[0] || { count: 0, avg: 0, max_updated: null };
+  const count = Number(row.count || 0);
+  const avg = Number(row.avg || 0);
+  const tag = `W/"${slug}:${count}:${Math.round(avg * 100)}:${stars}:${String(row.max_updated || '')}"`;
   const res = NextResponse.json({ avg, count, mine: stars });
   res.headers.set("Cache-Control", "no-store");
+  res.headers.set("ETag", tag);
+  res.headers.set("Vary", "Authorization, If-None-Match");
   return res;
 }

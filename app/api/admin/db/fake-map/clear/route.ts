@@ -22,22 +22,40 @@ export async function DELETE(request: Request) {
   const tag = url.searchParams.get("tag") || "FAKE_MAP_BULK_2025_09_10";
   try {
     const res: Record<string, number> = {};
-    const ids = await sql`SELECT id FROM universities WHERE seed_tag=${tag}`;
-    const idList = ids.rows.map((r: any) => Number(r.id)).filter((n: any) => Number.isFinite(n));
-    if (idList.length === 0) {
-      return NextResponse.json({ ok: true, cleared: res, note: "no universities matched seed_tag" });
-    }
-    // Cascade-style cleanup by foreign key
-    const idArray = sql.array(idList, 'int4');
-    res.scores = (await sql`DELETE FROM university_scores WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.seats = (await sql`DELETE FROM university_seats WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.costs = (await sql`DELETE FROM university_costs WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.admissions = (await sql`DELETE FROM university_admissions WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.programs = (await sql`DELETE FROM university_programs WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.media = (await sql`DELETE FROM university_media WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.articles = (await sql`DELETE FROM university_articles WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.testimonials = (await sql`DELETE FROM university_testimonials WHERE university_id = ANY(${idArray})`).rowCount ?? 0;
-    res.universities = (await sql`DELETE FROM universities WHERE id = ANY(${idArray})`).rowCount ?? 0;
+    // Cascade-style cleanup joined by seed_tag without sending arrays
+    res.scores = (await sql`
+      DELETE FROM university_scores s USING universities u
+      WHERE s.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.seats = (await sql`
+      DELETE FROM university_seats s USING universities u
+      WHERE s.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.costs = (await sql`
+      DELETE FROM university_costs c USING universities u
+      WHERE c.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.admissions = (await sql`
+      DELETE FROM university_admissions a USING universities u
+      WHERE a.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.programs = (await sql`
+      DELETE FROM university_programs p USING universities u
+      WHERE p.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.media = (await sql`
+      DELETE FROM university_media m USING universities u
+      WHERE m.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.articles = (await sql`
+      DELETE FROM university_articles a USING universities u
+      WHERE a.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.testimonials = (await sql`
+      DELETE FROM university_testimonials t USING universities u
+      WHERE t.university_id = u.id AND u.seed_tag = ${tag}
+    `).rowCount ?? 0;
+    res.universities = (await sql`DELETE FROM universities WHERE seed_tag = ${tag}`).rowCount ?? 0;
     return NextResponse.json({ ok: true, cleared: res, tag });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message ?? err) }, { status: 500 });

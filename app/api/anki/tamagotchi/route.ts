@@ -31,9 +31,20 @@ export async function POST(req: Request) {
   }
   // Limit updates to 12/min per user (best-effort)
   if (!rateAllow(`anki:tama:update:user:${userId}`, 12, 60_000)) {
-    return NextResponse.json({ error: "too_many_requests" }, { status: 429 });
+    const res429 = NextResponse.json({ error: "too_many_requests" }, { status: 429 });
+    res429.headers.set("Retry-After", "5");
+    return res429;
   }
   try {
+    // Skip write if state is unchanged recently
+    const existing = (
+      await db.select({ s: ankiTamagotchi.state, t: ankiTamagotchi.updatedAt }).from(ankiTamagotchi).where(eq(ankiTamagotchi.userId as any, userId)).limit(1)
+    )[0] as any;
+    try {
+      if (existing && JSON.stringify(existing.s ?? null) === JSON.stringify(state ?? null)) {
+        return NextResponse.json({ state: existing.s ?? null, updatedAt: existing.t ?? null });
+      }
+    } catch {}
     const [saved] = await db
       .insert(ankiTamagotchi)
       .values({ userId, state })
