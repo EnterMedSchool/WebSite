@@ -6,7 +6,9 @@ type Props = { totalDays: number };
 
 type PlanMeta = { id: number; userId: number; startDate: string | null; currentDay: number | null };
 type DayTask = { id: number; label: string; isCompleted: boolean };
-type DayGroup = { day: number; title: string; rest?: boolean; tasks: DayTask[] };
+type PlannerLink = { title: string; href: string };
+type PlannerVideo = { title: string; href: string; length?: string };
+type DayGroup = { day: number; title: string; rest?: boolean; tasks: DayTask[]; videos?: PlannerVideo[]; lessons?: PlannerLink[]; chapters?: PlannerLink[] };
 
 export default function Planner({ totalDays }: Props) {
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,8 @@ export default function Planner({ totalDays }: Props) {
           if (!g) return cur;
           const [done, total] = progressOf(g.tasks);
           if (done === total) {
+            // Fireworks celebration for completing a day
+            try { launchFireworks(); } catch {}
             const next = Math.min(totalDays, activeDay + 1);
             setActiveDay(next);
             persistCurrentDay(next);
@@ -142,6 +146,12 @@ export default function Planner({ totalDays }: Props) {
         </div>
       </div>
 
+      {/* Quick Actions */}
+      <div className="md:col-span-2 -mt-3 mb-1 flex flex-wrap items-center gap-2">
+        <a href="/imat-course" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">IMAT Course</a>
+        <a href="/" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50">Home</a>
+      </div>
+
       {/* Sidebar: day picker */}
       <aside className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
         <div className="mb-2 text-sm font-semibold text-slate-800">Days</div>
@@ -154,14 +164,14 @@ export default function Planner({ totalDays }: Props) {
                 <li key={d}>
                   <button
                     onClick={() => { setActiveDay(d); persistCurrentDay(d); }}
-                    className={`w-full items-center rounded-xl border px-2 py-2 text-left text-sm transition ${activeDay === d ? 'border-indigo-200 bg-indigo-50 text-indigo-900 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
+                    className={`w-full items-center rounded-xl border px-2 py-2 text-left text-sm transition ${done === total ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : activeDay === d ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-transparent hover:bg-slate-50'}`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">{d}</span>
+                        <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${done===total ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>{d}</span>
                         <span className="truncate">{parent?.title?.replace(/^DAY\s+\d+\s*:?\s*/i, '').slice(0, 42) || `Day ${d}`}</span>
                       </div>
-                      <span className="ml-2 shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{Math.round((done/Math.max(1,total))*100)}%</span>
+                      <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${done===total ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{Math.round((done/Math.max(1,total))*100)}%</span>
                     </div>
                   </button>
                 </li>
@@ -189,17 +199,16 @@ export default function Planner({ totalDays }: Props) {
               </div>
               <ul className="space-y-2">
                 {g.tasks.map((it) => (
-                  <li key={it.id} id={`task-${it.id}`} className="group flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      checked={!!it.isCompleted}
-                      onChange={(e) => toggleItem(it, e.target.checked)}
-                    />
-                    <div className={`text-sm leading-relaxed ${it.isCompleted ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{it.label}</div>
-                  </li>
+                  <TaskRow key={it.id} task={it} onToggle={toggleItem} />
                 ))}
               </ul>
+
+              {(g.videos?.length || g.lessons?.length || g.chapters?.length) ? (
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <ResourceCard title="Recommended Videos" items={(g.videos||[]).map(v=>({ title: v.length ? `${v.title} · ${v.length}` : v.title, href: v.href }))} />
+                  <ResourceCard title="Related Lessons" items={[...(g.lessons||[]), ...(g.chapters||[])]} />
+                </div>
+              ) : null}
             </div>
           );
         })()}
@@ -212,4 +221,72 @@ function progressOf(children: DayTask[]): [number, number] {
   const total = children.length || 1;
   const done = children.filter((c) => c.isCompleted).length;
   return [done, total];
+}
+
+// Single task row with pending spinner for crisp feedback
+function TaskRow({ task, onToggle }: { task: DayTask; onToggle: (t: DayTask, checked: boolean) => void }) {
+  const [pending, setPending] = useState(false);
+  const handle = async (checked: boolean) => { if (pending) return; setPending(true); try { await onToggle(task, checked); } finally { setPending(false); } };
+  return (
+    <li id={`task-${task.id}`} className={`group flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md ${pending ? 'opacity-70' : ''}`}>
+      {pending ? (
+        <span className="mt-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" aria-label="loading" />
+      ) : (
+        <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" checked={!!task.isCompleted} onChange={(e)=>handle(e.target.checked)} />
+      )}
+      <div className={`text-sm leading-relaxed ${task.isCompleted ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{task.label}</div>
+    </li>
+  );
+}
+
+function ResourceCard({ title, items }: { title: string; items: { title: string; href: string }[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="mb-2 text-sm font-semibold text-slate-900">{title}</div>
+      <ul className="space-y-1">
+        {items.map((it, i) => (
+          <li key={i}>
+            <a className="group inline-flex max-w-full items-center gap-2 truncate rounded-lg px-2 py-1 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-800" href={it.href} target="_self" rel="nofollow">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-400 group-hover:bg-indigo-600" />
+              <span className="truncate">{it.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Lightweight fireworks animation
+function launchFireworks() {
+  const root = document.createElement('div');
+  root.style.position = 'fixed';
+  root.style.inset = '0';
+  root.style.pointerEvents = 'none';
+  root.style.zIndex = '9999';
+  document.body.appendChild(root);
+  const center = { x: window.innerWidth / 2, y: window.innerHeight / 3 };
+  const colors = ['#22c55e', '#60a5fa', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const N = 28;
+  for (let i = 0; i < N; i++) {
+    const p = document.createElement('span');
+    p.style.position = 'fixed';
+    p.style.left = `${center.x}px`;
+    p.style.top = `${center.y}px`;
+    p.style.width = '6px'; p.style.height = '6px';
+    p.style.borderRadius = '9999px';
+    p.style.background = colors[i % colors.length];
+    p.style.boxShadow = '0 0 12px rgba(0,0,0,.15)';
+    root.appendChild(p);
+    const angle = (i / N) * Math.PI * 2;
+    const dist = 80 + Math.random() * 80;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    (p as any).animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(${dx - 3}px, ${dy - 3}px) scale(0.6)`, opacity: 0 }
+    ], { duration: 900 + Math.random()*300, easing: 'cubic-bezier(.22,1,.36,1)' }).onfinish = () => p.remove();
+  }
+  setTimeout(() => root.remove(), 1200);
 }

@@ -1,11 +1,17 @@
 // IMAT 8-week study planner data (54 days + optional revision buffer)
 // Each day has a title and a list of task strings. "rest" marks rest days.
 
+export type PlannerLink = { title: string; href: string };
+export type PlannerVideo = { title: string; href: string; length?: string };
+
 export type PlannerDay = {
   day: number;
   title: string;
   tasks: string[];
   rest?: boolean;
+  videos?: PlannerVideo[];
+  lessons?: PlannerLink[];
+  chapters?: PlannerLink[];
 };
 
 export type ImatPlanner = {
@@ -29,7 +35,18 @@ export const IMAT_PLANNER: ImatPlanner = {
       "Pearson’s Biology: Chapters 1–2 (pp. 52–64, 76–89). Solve Concept Checks",
       ANKI,
       DAILY,
-    ]},
+    ],
+      videos: [
+        { title: "How To Use This Planner", href: "/imat-course#features" },
+        { title: "Smart Note-taking For IMAT", href: "/imat-course#features" },
+      ],
+      lessons: [
+        { title: "IMAT Biology: Foundations", href: "/imat-course#features" },
+      ],
+      chapters: [
+        { title: "Biology Basics – Start Here", href: "/imat-course#features" },
+      ],
+    },
     { day: 2, title: "DAY 2", tasks: [
       REVISE,
       "Pearson’s Biology: Chapters 3–4 (pp. 92–101, 104–110). Solve Concept Checks",
@@ -67,7 +84,7 @@ export const IMAT_PLANNER: ImatPlanner = {
       "Cambridge Biology: Chapter 4 (pp. 73–92). Solve end‑of‑chapter questions",
       ANKI,
       DAILY,
-    ]},
+    ], lessons: [{ title: "Membranes and Transport", href: "/imat-course#features" }] },
     { day: 9, title: "DAY 9", tasks: [
       REVISE,
       "Pearson’s Biology: Chapter 16 (pp. 364–384). Solve Concept Checks",
@@ -240,7 +257,7 @@ export const IMAT_PLANNER: ImatPlanner = {
       "Cambridge IGCSE Chemistry: Chapters 1–2 (pp. 2–24). Solve end‑of‑chapter questions (skip chromatography)",
       ANKI,
       DAILY,
-    ]},
+    ], videos: [{ title: "Chemistry Refresher: Atoms and Ions", href: "/imat-course#features", length: "14m" }] },
     { day: 42, title: "DAY 42", tasks: [
       "Cambridge IGCSE Chemistry: Chapter 3 (pp. 26–40). Solve end‑of‑chapter questions",
       "Pearson’s Chemistry: Chapter 2 (pp. 58–85). Solve exercises",
@@ -330,4 +347,3 @@ export const IMAT_PLANNER: ImatPlanner = {
     ]},
   ],
 };
-

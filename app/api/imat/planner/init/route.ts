@@ -75,12 +75,12 @@ export async function POST(req: Request) {
 }
 
 function groupTasks(rows: any[]) {
-  const byDay: Record<number, { day: number; title: string; rest?: boolean; tasks: any[] }> = {} as any;
+  const byDay: Record<number, { day: number; title: string; rest?: boolean; tasks: any[]; videos?: any[]; lessons?: any[]; chapters?: any[] }> = {} as any;
   for (const r of rows) {
     const dn = Number(r.dayNumber);
     const meta = IMAT_PLANNER.days.find((d) => d.day === dn);
     if (!byDay[dn]) {
-      byDay[dn] = { day: dn, title: meta ? meta.title : `Day ${dn}`, rest: meta?.rest, tasks: [] };
+      byDay[dn] = { day: dn, title: meta ? meta.title : `Day ${dn}`, rest: meta?.rest, tasks: [], videos: meta?.videos || [], lessons: meta?.lessons || [], chapters: meta?.chapters || [] };
     }
     byDay[dn].tasks.push({ id: r.id, label: r.label, isCompleted: r.isCompleted });
   }

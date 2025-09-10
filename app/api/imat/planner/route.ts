@@ -58,7 +58,7 @@ export async function GET(req: Request) {
 }
 
 function groupTasks(rows: any[]) {
-  const byDay: Record<number, { day: number; title: string; rest?: boolean; tasks: any[] }> = {} as any;
+  const byDay: Record<number, { day: number; title: string; rest?: boolean; tasks: any[]; videos?: any[]; lessons?: any[]; chapters?: any[] }> = {} as any;
   for (const r of rows) {
     const dn = Number(r.dayNumber);
     const meta = IMAT_PLANNER.days.find((d) => d.day === dn);
