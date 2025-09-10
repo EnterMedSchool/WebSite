@@ -27,7 +27,7 @@ export async function GET() {
                          FROM user_education_requests
                          WHERE user_id=${userId} AND status='pending'
                          ORDER BY created_at DESC LIMIT 1`;
-    const pending = pr.rows[0] ? {
+    let pending = pr.rows[0] ? {
       id: Number(pr.rows[0].id),
       universityId: pr.rows[0].university_id,
       schoolId: pr.rows[0].school_id,
@@ -36,6 +36,17 @@ export async function GET() {
       status: pr.rows[0].status,
       createdAt: pr.rows[0].created_at,
     } : null;
+
+    // Hide pending if it matches approved values exactly
+    if (
+      pending &&
+      pending.universityId === approved.universityId &&
+      pending.schoolId === approved.schoolId &&
+      pending.medicalCourseId === approved.medicalCourseId &&
+      pending.studyYear === approved.studyYear
+    ) {
+      pending = null;
+    }
 
     const universities = (await sql`SELECT id, name FROM universities ORDER BY name ASC`).rows;
 
@@ -101,6 +112,34 @@ export async function POST(request: Request) {
       if (!ok) return NextResponse.json({ error: 'course_parent_mismatch' }, { status: 400 });
     }
 
+    // Fetch current approved/verified mapping
+    const curR = await sql`SELECT university_id, school_id, medical_course_id, study_year, mates_verified FROM users WHERE id=${userId} LIMIT 1`;
+    const cur = curR.rows[0] || {} as any;
+    const isVerified = !!cur?.mates_verified;
+
+    // If already verified and only year changes (same uni/school/course), allow immediate year update
+    const sameUni = universityId == null || Number(universityId) === Number(cur.university_id || 0);
+    const sameSchool = schoolId == null || Number(schoolId) === Number(cur.school_id || 0);
+    const sameCourse = medicalCourseId == null || Number(medicalCourseId) === Number(cur.medical_course_id || 0);
+    const yearChanged = studyYear != null && Number(studyYear) !== Number(cur.study_year || 0);
+
+    if (isVerified && sameUni && sameSchool && sameCourse && yearChanged) {
+      await sql`UPDATE users SET study_year=${studyYear} WHERE id=${userId}`;
+      // Supersede pending request that only targeted year for same mapping
+      try {
+        const p = await sql`SELECT id FROM user_education_requests
+                             WHERE user_id=${userId} AND status='pending'
+                               AND (university_id IS NOT DISTINCT FROM ${cur.university_id})
+                               AND (school_id IS NOT DISTINCT FROM ${cur.school_id})
+                               AND (medical_course_id IS NOT DISTINCT FROM ${cur.medical_course_id})
+                             ORDER BY created_at DESC LIMIT 1`;
+        if (p.rows[0]?.id) {
+          await sql`UPDATE user_education_requests SET status='superseded', reviewed_at=now(), note='auto-superseded: year changed by user' WHERE id=${Number(p.rows[0].id)}`;
+        }
+      } catch {}
+      return await GET();
+    }
+
     // Upsert pending request: if latest pending exists, update; else insert
     const pr = await sql`SELECT id FROM user_education_requests WHERE user_id=${userId} AND status='pending' ORDER BY created_at DESC LIMIT 1`;
     if (pr.rows[0]?.id) {
@@ -118,4 +157,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
   }
 }
-
