@@ -18,78 +18,73 @@ export async function PATCH(req: Request, { params }: { params: { taskId: string
     let xpAwardedTotal = 0;
     let progress: any = null;
 
-    await (sql as any).begin(async (tx: any) => {
-      // Lock the task row first
-      const lock = await tx`SELECT id, user_id, day_number, is_completed, xp_awarded FROM imat_user_plan_tasks WHERE id=${id} AND user_id=${userId} FOR UPDATE`;
-      const t = lock.rows[0];
-      if (!t) throw new Error('Not found');
+    // 1) Update completion and timestamps
+    await sql`UPDATE imat_user_plan_tasks
+              SET is_completed=${checked},
+                  completed_at=CASE WHEN ${checked} THEN COALESCE(completed_at, NOW()) ELSE completed_at END,
+                  updated_at=NOW()
+              WHERE id=${id} AND user_id=${userId}`;
 
-      const willAward = checked && t.xp_awarded === false;
-      const xpDelta = willAward ? 2 : 0;
-
-      await tx`UPDATE imat_user_plan_tasks
-               SET is_completed=${checked},
-                   completed_at=CASE WHEN ${checked} THEN NOW() ELSE completed_at END,
-                   xp_awarded=CASE WHEN ${willAward} THEN true ELSE xp_awarded END,
-                   updated_at=NOW()
-               WHERE id=${id}`;
-
-      // If day fully complete now, emit event once and add a small bonus
-      const dayNumber = Number(t.day_number);
-      let dayBonus = 0;
-      if (checked) {
-        const agg = await tx`SELECT COUNT(*) AS total, SUM(CASE WHEN is_completed THEN 1 ELSE 0 END) AS done
-                              FROM imat_user_plan_tasks WHERE user_id=${userId} AND day_number=${dayNumber}`;
-        const total = Number(agg.rows[0]?.total || 0);
-        const done = Number(agg.rows[0]?.done || 0);
-        if (total > 0 && done === total) {
-          const ins = await tx`
-            WITH ins AS (
-              INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-              SELECT ${userId}, 'imat_day', ${dayNumber}, 'day_completed', '{}'::jsonb
-              WHERE NOT EXISTS (
-                SELECT 1 FROM lms_events WHERE user_id=${userId} AND subject_type='imat_day' AND subject_id=${dayNumber} AND action='day_completed'
-              )
-              RETURNING 1
-            ) SELECT COUNT(*) AS n FROM ins`;
-          const inserted = Number(ins.rows[0]?.n || 0) > 0;
-          if (inserted) {
-            dayBonus = 5;
-            await tx`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                     VALUES (${userId}, 'imat_day', ${dayNumber}, 'xp_awarded', ${JSON.stringify({ amount: 5, subject: 'Day Bonus' })}::jsonb)`;
-          }
-        }
+    // 2) Award per-task XP once (idempotent)
+    let dayNumber: number | null = null;
+    if (checked) {
+      const aw = await sql`UPDATE imat_user_plan_tasks
+                           SET xp_awarded=true, updated_at=NOW()
+                           WHERE id=${id} AND user_id=${userId} AND xp_awarded=false
+                           RETURNING day_number`;
+      if (aw.rowCount && aw.rows[0]?.day_number != null) {
+        xpAwardedTotal += 2;
+        dayNumber = Number(aw.rows[0].day_number);
       }
+    }
+    if (dayNumber == null) {
+      const r = await sql`SELECT day_number FROM imat_user_plan_tasks WHERE id=${id} AND user_id=${userId} LIMIT 1`;
+      if (r.rowCount) dayNumber = Number(r.rows[0].day_number);
+    }
 
-      const totalDelta = xpDelta + dayBonus;
-      if (totalDelta > 0) {
-        // Update XP + level atomically
-        const cur = await tx`SELECT xp FROM users WHERE id=${userId} FOR UPDATE`;
-        const nextXp = Number(cur.rows[0]?.xp || 0) + totalDelta;
-        const newLevel = levelFromXp(nextXp);
-        await tx`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
-        if (xpDelta > 0) {
-          await tx`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                   VALUES (${userId}, 'imat_task', ${id}, 'xp_awarded', ${JSON.stringify({ amount: xpDelta, totalXp: nextXp, subject: 'Planner Task' })}::jsonb)`;
-        }
-        // Build progress for UI
-        if (newLevel >= MAX_LEVEL) {
-          progress = { level: MAX_LEVEL, pct: 100, inLevel: 0, span: 1 };
-        } else {
-          const start = GOAL_XP[newLevel - 1];
-          const { toNext, nextLevelGoal } = xpToNext(nextXp);
-          const span = Math.max(1, nextLevelGoal - start);
-          const inLevel = Math.max(0, Math.min(span, span - toNext));
-          const pct = Math.round((inLevel / span) * 100);
-          progress = { level: newLevel, pct, inLevel, span };
-        }
-        xpAwardedTotal = totalDelta;
+    // 3) Attempt day-complete event + bonus guarded by unique index
+    let dayBonus = 0;
+    if (checked && dayNumber != null) {
+      const insDay = await sql`
+        WITH d AS (SELECT ${dayNumber}::int AS dn)
+        INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+        SELECT ${userId}, 'imat_day', d.dn, 'day_completed', '{}'::jsonb FROM d
+        WHERE NOT EXISTS (
+          SELECT 1 FROM imat_user_plan_tasks t WHERE t.user_id=${userId} AND t.day_number=d.dn AND t.is_completed=false
+        )
+        ON CONFLICT (user_id, subject_type, subject_id) WHERE action='day_completed' DO NOTHING
+        RETURNING subject_id`;
+      if (insDay.rowCount) {
+        dayBonus = 5;
+        await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                  VALUES (${userId}, 'imat_day', ${dayNumber}, 'xp_awarded', ${JSON.stringify({ amount: 5, subject: 'Day Bonus' })}::jsonb)`;
       }
-    });
+    }
 
-    return NextResponse.json({ ok: true, xpAwarded: xpAwardedTotal, progress });
+    const totalDelta = xpAwardedTotal + dayBonus;
+    if (totalDelta > 0) {
+      const cur = await sql`SELECT xp FROM users WHERE id=${userId} LIMIT 1`;
+      const nextXp = Number(cur.rows[0]?.xp || 0) + totalDelta;
+      const newLevel = levelFromXp(nextXp);
+      await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
+      if (xpAwardedTotal > 0) {
+        await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                  VALUES (${userId}, 'imat_task', ${id}, 'xp_awarded', ${JSON.stringify({ amount: xpAwardedTotal, totalXp: nextXp, subject: 'Planner Task' })}::jsonb)`;
+      }
+      if (newLevel >= MAX_LEVEL) {
+        progress = { level: MAX_LEVEL, pct: 100, inLevel: 0, span: 1 };
+      } else {
+        const start = GOAL_XP[newLevel - 1];
+        const { toNext, nextLevelGoal } = xpToNext(nextXp);
+        const span = Math.max(1, nextLevelGoal - start);
+        const inLevel = Math.max(0, Math.min(span, span - toNext));
+        const pct = Math.round((inLevel / span) * 100);
+        progress = { level: newLevel, pct, inLevel, span };
+      }
+    }
+
+    return NextResponse.json({ ok: true, xpAwarded: totalDelta || 0, progress });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Failed to update task' }, { status: 500 });
   }
 }
-
