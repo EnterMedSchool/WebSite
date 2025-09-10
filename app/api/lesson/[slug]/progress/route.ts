@@ -42,13 +42,19 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed)
                 VALUES (${userId}, ${lesson.id}, ${progressToSet}, ${completed})
                 ON CONFLICT (user_id, lesson_id) DO UPDATE SET
-                  completed=${completed},
-                  progress=GREATEST(user_lesson_progress.progress, EXCLUDED.progress)`;
+                  completed=EXCLUDED.completed,
+                  progress=CASE
+                             WHEN EXCLUDED.completed THEN GREATEST(user_lesson_progress.progress, EXCLUDED.progress)
+                             ELSE EXCLUDED.progress
+                           END`;
     } catch {
       // Manual upsert: try update first; if rowcount 0, insert
       const upd = await sql`UPDATE user_lesson_progress
                              SET completed=${completed},
-                                 progress=CASE WHEN ${progressToSet} > 0 THEN GREATEST(COALESCE(progress,0), ${progressToSet}) ELSE progress END
+                                 progress=CASE WHEN ${completed}
+                                               THEN GREATEST(COALESCE(progress,0), ${progressToSet})
+                                               ELSE ${progressToSet}
+                                          END
                              WHERE user_id=${userId} AND lesson_id=${lesson.id}`;
       if ((upd as any)?.rowCount === 0) {
         try { await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed) VALUES (${userId}, ${lesson.id}, ${progressToSet}, ${completed})`; } catch {}
