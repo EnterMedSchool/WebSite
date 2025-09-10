@@ -25,14 +25,24 @@ function parseICS(ics: string) {
   }
   // Map to normalized objects
   return events.map((e) => {
+    let allDay = false;
     function parseDate(v?: string) {
       if (!v) return null;
-      // Format examples: 20240924T090000Z or 20240924T090000
-      const m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
-      if (!m) return null;
-      const [_, Y, M, D, h, m2, s, z] = m;
-      if (z) return new Date(Date.UTC(+Y, +M - 1, +D, +h, +m2, +s));
-      return new Date(+Y, +M - 1, +D, +h, +m2, +s);
+      // Date-time: 20240924T090000Z or 20240924T090000
+      let m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+      if (m) {
+        const [_, Y, M, D, h, m2, s, z] = m;
+        if (z) return new Date(Date.UTC(+Y, +M - 1, +D, +h, +m2, +s));
+        return new Date(+Y, +M - 1, +D, +h, +m2, +s);
+      }
+      // All-day: 20240924
+      m = v.match(/^(\d{4})(\d{2})(\d{2})$/);
+      if (m) {
+        const [_, Y, M, D] = m;
+        allDay = true;
+        return new Date(+Y, +M - 1, +D, 0, 0, 0);
+      }
+      return null;
     }
     const start = parseDate(e.DTSTART);
     const end = parseDate(e.DTEND);
@@ -47,7 +57,7 @@ function parseICS(ics: string) {
       description,
       start: start ? start.toISOString() : null,
       end: end ? end.toISOString() : null,
-      allDay: false,
+      allDay,
     };
   }).filter((e) => !!e.start);
 }
@@ -72,12 +82,27 @@ function resolveIcsUrl({ schoolName, courseName, year }: { schoolName: string | 
   return null;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     const edu = await getUserEdu(userId);
-    const url = resolveIcsUrl(edu);
+    const { searchParams } = new URL(req.url);
+    const override = searchParams.get('u');
+    const demo = searchParams.get('demo') === '1' || searchParams.get('mock') === '1';
+
+    function allowed(u?: string | null) {
+      if (!u) return null;
+      try {
+        const parsed = new URL(u);
+        if (parsed.protocol !== 'https:') return null;
+        const host = parsed.hostname.toLowerCase();
+        if (host.endsWith('.cineca.it') || host === 'unipv.prod.up.cineca.it') return parsed.toString();
+        return null;
+      } catch { return null; }
+    }
+
+    const url = allowed(override) || resolveIcsUrl(edu);
 
     // If no configured URL yet, send a pretty placeholder payload
     if (!url) {
@@ -94,14 +119,25 @@ export async function GET() {
     const resp = await fetch(url, {
       cache: "no-store",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win32; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
         "Accept": "text/calendar, text/plain, */*",
+        "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+        "Referer": "https://unipv.prod.up.cineca.it/",
       },
     });
     const text = await resp.text();
     const events = parseICS(text);
-    const debug = { status: resp.status, length: text.length, url };
+    const debug = { status: resp.status, length: text.length, url, rawHead: text.slice(0, 240) };
     if (!Array.isArray(events) || events.length === 0) {
+      if (demo) {
+        const now = new Date();
+        const day = 24 * 60 * 60 * 1000;
+        const mock = [
+          { uid: "m1", title: "Anatomy – Upper Limb", start: new Date(now.getTime() + day).toISOString(), end: new Date(now.getTime() + day + 2*60*60*1000).toISOString(), location: "Room A1", allDay: false },
+          { uid: "m2", title: "Physiology – Membrane Potentials", start: new Date(now.getTime() + 2*day + 9*60*60*1000).toISOString(), end: new Date(now.getTime() + 2*day + 11*60*60*1000).toISOString(), location: "Auditorium", allDay: false },
+        ];
+        return NextResponse.json({ source: "ics-empty-mock", edu, events: mock, debug });
+      }
       return NextResponse.json({ source: "ics-empty", edu, events: [], debug });
     }
     return NextResponse.json({ source: "ics", edu, events, debug });
