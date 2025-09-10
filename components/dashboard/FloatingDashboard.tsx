@@ -156,7 +156,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             {/* Courses */}
             <div className="col-span-12">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="text-base font-bold text-gray-800">Your class</div>
+                <div className="text-base font-bold text-gray-800">Your Courses</div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {(data?.courses || []).map((c) => {
                     const pct = Math.max(0, Math.min(100, Math.round(Number(c.progress_pct ?? 0))));
