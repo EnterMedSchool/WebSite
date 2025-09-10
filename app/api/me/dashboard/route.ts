@@ -1,22 +1,29 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { requireUserId } from "@/lib/study/auth";
 import { sql } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions as any);
-    const email = String((session as any)?.user?.email || "").toLowerCase();
-    if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-
-    // Resolve user id and basic profile
-    const ur = await sql`SELECT id, name, image, xp, level FROM users WHERE lower(email)=${email} LIMIT 1`;
-    const u = ur.rows[0];
-    if (!u?.id) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-    const userId = Number(u.id);
+    // Prefer mobile bearer token; fallback to NextAuth session
+    let userId = await requireUserId(req);
+    let u: any = null;
+    if (!userId) {
+      const session = await getServerSession(authOptions as any);
+      const email = String((session as any)?.user?.email || "").toLowerCase();
+      if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+      const ur = await sql`SELECT id, name, image, xp, level FROM users WHERE lower(email)=${email} LIMIT 1`;
+      u = ur.rows[0];
+      if (!u?.id) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+      userId = Number(u.id);
+    } else {
+      const ur = await sql`SELECT id, name, image, xp, level FROM users WHERE id=${userId} LIMIT 1`;
+      u = ur.rows[0];
+    }
 
     // Learning activity metrics
     const todayRow = await sql`SELECT COALESCE(SUM(time_spent_sec),0) AS sec

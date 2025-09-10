@@ -75,7 +75,7 @@ export async function GET() {
 
     // Mates: users in same course + study year
     let mates: any[] = [];
-    if (isVerified && courseId && year) {
+    if (false && isVerified && courseId && year) {
       const mr = await sql`
         SELECT id, name, username, image
         FROM users
@@ -83,6 +83,22 @@ export async function GET() {
         ORDER BY id ASC
         LIMIT 50`;
       mates = mr.rows;
+    }
+
+    // Correct mates query (executes while old block is disabled)
+    if (isVerified && courseId && year) {
+      try {
+        const mr2 = await sql`
+          SELECT id, name, username, image
+          FROM users
+          WHERE id <> ${userId}
+            AND medical_course_id = ${courseId}
+            AND study_year = ${year}
+            AND COALESCE(mates_verified, false) = true
+          ORDER BY id ASC
+          LIMIT 50`;
+        mates = mr2.rows;
+      } catch {}
     }
 
     return NextResponse.json({

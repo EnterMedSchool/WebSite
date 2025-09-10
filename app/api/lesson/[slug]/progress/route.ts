@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { resolveUserIdFromSession } from "@/lib/user";
+import { requireUserId } from "@/lib/study/auth";
 import { levelFromXp, MAX_LEVEL, GOAL_XP } from "@/lib/xp";
 
 export const runtime = "nodejs";
@@ -17,8 +17,8 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const hasProgress = Object.prototype.hasOwnProperty.call(body, "progress");
     const progressInput = hasProgress ? Math.max(0, Math.min(100, Number(body.progress))) : null;
     const hasCompleted = Object.prototype.hasOwnProperty.call(body, "completed");
-    // Resolve user id from session (fallback to lookup by email)
-    const userId = await resolveUserIdFromSession();
+    // Resolve user id (supports mobile Bearer token and web cookies)
+    const userId = await requireUserId(req);
     if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
 
     const lr = await sql`SELECT id, length_min FROM lessons WHERE slug=${params.slug} LIMIT 1`;
@@ -171,13 +171,13 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
   }
 }
 
-export async function GET(_req: Request, { params }: { params: { slug: string } }) {
+export async function GET(req: Request, { params }: { params: { slug: string } }) {
   try {
     const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
     if (!isAuthConfigured) {
       return NextResponse.json({ error: 'auth_not_configured' }, { status: 401 });
     }
-    const userId = await resolveUserIdFromSession();
+    const userId = await requireUserId(req);
     if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
 
     const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;

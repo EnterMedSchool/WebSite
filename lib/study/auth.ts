@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
+import jwt from "jsonwebtoken";
 import type { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -29,6 +30,19 @@ export async function getOrCreateUserIdByEmail(email: string, name?: string | nu
 // Returns the authenticated user id or null. Tries NextAuth session first,
 // then falls back to decoding the JWT cookie via getToken.
 export async function requireUserId(req: Request): Promise<number | null> {
+  // 0) Mobile: Authorization: Bearer <jwt>
+  try {
+    const auth = (req as any)?.headers?.get?.("authorization") || (req as any).headers?.authorization;
+    if (auth && typeof auth === "string" && auth.startsWith("Bearer ")) {
+      const token = auth.slice(7).trim();
+      if (token) {
+        const decoded: any = jwt.verify(token, process.env.NEXTAUTH_SECRET as string);
+        const uid = Number(decoded?.userId || decoded?.sub);
+        if (Number.isFinite(uid) && uid > 0) return uid;
+      }
+    }
+  } catch {}
+
   // 1) Try NextAuth server session first
   try {
     const session = await getServerSession(authOptions);

@@ -181,8 +181,13 @@ export default function CourseMatesPage() {
           )}
         </div>
       </div>
-      {access === "verified" && (
+      {(access === "verified" || access === "pending") && (
         <div className="mt-6 space-y-6">
+          {access === 'pending' && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Preview while verification is pending. Some info is mocked until approved.
+            </div>
+          )}
           {/* Hero / Header */}
           <div className="overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-md">
             <div className="relative px-6 py-8 sm:px-8">
