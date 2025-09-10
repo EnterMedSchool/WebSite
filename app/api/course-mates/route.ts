@@ -17,8 +17,17 @@ export async function GET() {
     const year = me?.study_year || null;
 
     const universities = (await sql`SELECT id, name FROM universities ORDER BY name ASC`).rows;
-    const schools = uniId ? (await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`).rows : [];
-    const courses = courseId || schoolId || uniId
+
+    // Feature detection: if new tables aren't migrated yet, avoid 500s and return empty feature data
+    const reg = (await sql`SELECT
+        to_regclass('public.schools')                       AS schools,
+        to_regclass('public.medical_school_courses')        AS msc,
+        to_regclass('public.student_organizations')         AS orgs,
+        to_regclass('public.student_organization_schools')  AS org_schools`).rows[0] || {} as any;
+    const hasSchools = !!reg?.schools; const hasMsc = !!reg?.msc; const hasOrgs = !!reg?.orgs; const hasOrgSchools = !!reg?.org_schools;
+
+    const schools = hasSchools && uniId ? (await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`).rows : [];
+    const courses = hasMsc && (courseId || schoolId || uniId)
       ? (await sql`SELECT id, name, slug
                    FROM medical_school_courses
                    WHERE (${schoolId} IS NULL OR school_id = ${schoolId})
@@ -27,13 +36,25 @@ export async function GET() {
       : [];
 
     // Organizations at university, optionally also linked to this school
-    const orgs = uniId ? (await sql`
-      SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
-      FROM student_organizations so
-      LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
-      WHERE so.university_id=${uniId} AND (${schoolId} IS NULL OR sos.school_id=${schoolId})
-      ORDER BY so.name ASC
-    `).rows : [];
+    let orgs: any[] = [];
+    if (hasOrgs && uniId) {
+      if (hasOrgSchools) {
+        const r = await sql`
+          SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
+          FROM student_organizations so
+          LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
+          WHERE so.university_id=${uniId} AND (${schoolId} IS NULL OR sos.school_id=${schoolId})
+          ORDER BY so.name ASC`;
+        orgs = r.rows;
+      } else {
+        const r = await sql`
+          SELECT so.id, so.name, so.slug, so.website, so.description
+          FROM student_organizations so
+          WHERE so.university_id=${uniId}
+          ORDER BY so.name ASC`;
+        orgs = r.rows;
+      }
+    }
 
     // Mates: users in same course + study year
     let mates: any[] = [];

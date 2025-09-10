@@ -34,6 +34,11 @@ const nextConfig = {
       },
     ];
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      "app/api/admin/db/migrate/route.ts": ["./drizzle/migrations/**"],
+    },
+  },
 };
 
 module.exports = nextConfig;
