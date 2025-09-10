@@ -67,7 +67,7 @@ export default function HomeMap() {
       if (filters.country && c.country !== filters.country) return false;
       if (filters.language && (c.language ?? "") !== filters.language) return false;
       if (filters.exam && (c.exam ?? "") !== filters.exam) return false;
-      if (filters.kind && filters.kind !== '' && (c.kind ?? '') !== filters.kind) return false;
+      if (filters.kind && (c.kind ?? '') !== filters.kind) return false;
       if (q && !(c.uni.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.country.toLowerCase().includes(q))) return false;
       return true;
     });
