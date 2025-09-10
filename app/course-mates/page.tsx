@@ -91,11 +91,7 @@ export default function CourseMatesPage() {
       <h1 className="text-2xl font-semibold">Your Course Mates</h1>
       <p className="text-gray-600">Connect with students from your university, school and course. Set your details to see your mates and relevant student organizations.</p>
 
-      {!loading && isAuthed === false && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Please sign in to access Your Course Mates.
-        </div>
-      )}
+      {/* Removed the old signed-out alert; the preview hub has its own CTA overlay */}
 
       {/* Signed-out preview: show a fake hub with CTA overlay */}
       {!loading && isAuthed === false && (
@@ -246,85 +242,15 @@ export default function CourseMatesPage() {
         </div>
       )}
 
-      {access !== "verified" && (
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Select label="University" value={me.universityId ?? null} options={universities} onChange={(v)=>update("universityId", v)} placeholder="Choose university" disabled={!isAuthed} />
-          <Select label="School" value={me.schoolId ?? null} options={schools} onChange={(v)=>update("schoolId", v)} placeholder="Choose school" disabled={!isAuthed || !me.universityId} />
-          <Select label="Course" value={me.medicalCourseId ?? null} options={courses} onChange={(v)=>update("medicalCourseId", v)} placeholder="Choose course" disabled={!isAuthed || !me.universityId} />
-          <Select label="Study Year" value={me.studyYear ?? null} options={[1,2,3,4,5,6].map((y)=>({ id: y, name: `Year ${y}` }))} onChange={(v)=>update("studyYear", v)} placeholder="Select year" disabled={!isAuthed || !me.medicalCourseId} />
-        </div>
-        {saving && <div className="mt-2 text-xs text-gray-500">Saving...</div>}
-      </div>
-      )}
-
-      {access === "verified" && (
-        <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-fuchsia-50 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="text-xs uppercase tracking-wide text-indigo-700">Your Course</div>
-              <div className="text-2xl font-extrabold text-gray-900">{summary?.courseName || 'Your Course'} <span className="text-base font-semibold text-gray-600">• {summary?.schoolName || 'School'} • Year {summary?.studyYear ?? me.studyYear ?? '-'}</span></div>
-              <div className="mt-1 text-sm text-gray-600">Welcome to your course space. Discover classmates, organizations, events and more.</div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-xl border border-indigo-200 bg-white px-4 py-2"><div className="text-xl font-bold text-indigo-700">{summary?.matesCount ?? 0}</div><div className="text-[11px] text-gray-600">Mates</div></div>
-              <div className="rounded-xl border border-indigo-200 bg-white px-4 py-2"><div className="text-xl font-bold text-indigo-700">{organizations.length}</div><div className="text-[11px] text-gray-600">Organizations</div></div>
-              <a href="/me/profile" className="grid place-items-center rounded-xl border border-indigo-200 bg-white px-4 py-2 text-[11px] font-semibold text-indigo-700">Edit Profile</a>
-            </div>
-          </div>
+      {isAuthed && access === "unset" && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
+          Set your university, school, course and study year in <a href="/me/profile" className="font-semibold underline">Edit profile</a> to unlock your Course Hub.
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Mates in your course</h2>
-            {loading && <span className="text-xs text-gray-500">Loading...</span>}
-          </div>
-          {!me.medicalCourseId || !me.studyYear || access !== "verified" ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">Set your course and study year to see your mates.</div>
-          ) : mates.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">No mates found yet. Invite your classmates!</div>
-          ) : (
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {mates.map((m) => (
-                <li key={m.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                  {m.image ? (
-                    <img src={m.image} alt={m.name || m.username || "mate"} className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{initials(m.name || m.username)}</div>
-                  )}
-                  <div>
-                    <div className="font-medium text-gray-900">{m.name || m.username || `User #${m.id}`}</div>
-                    <div className="text-xs text-gray-600">Same course • Year {me.studyYear}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {/* Removed the small verified header strip; the full hub below is the main view */}
 
-        <div>
-          <h2 className="mb-2 text-lg font-semibold">Student Organizations</h2>
-          {organizations.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">No organizations yet. They will appear once you select your university/school.</div>
-          ) : (
-            <ul className="space-y-2">
-              {organizations.map((o) => (
-                <li key={o.id} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                  <div className="font-medium text-gray-900">{o.name}</div>
-                  {o.description && <div className="mt-0.5 line-clamp-2 text-xs text-gray-600">{o.description}</div>}
-                  {o.website && (
-                    <a href={o.website} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs font-semibold text-indigo-600 hover:underline">
-                      Visit website
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      {/* Removed the mates list + organizations blocks per new UX */}
       {(access === "verified" || access === "pending") && (
         <div className="mt-6 space-y-6">
           {access === 'pending' && (
