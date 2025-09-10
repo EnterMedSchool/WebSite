@@ -27,25 +27,41 @@ export async function GET() {
     const hasSchools = !!reg?.schools; const hasMsc = !!reg?.msc; const hasOrgs = !!reg?.orgs; const hasOrgSchools = !!reg?.org_schools;
 
     const schools = hasSchools && uniId ? (await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`).rows : [];
-    const courses = hasMsc && (courseId || schoolId || uniId)
-      ? (await sql`SELECT id, name, slug
-                   FROM medical_school_courses
-                   WHERE (${schoolId} IS NULL OR school_id = ${schoolId})
-                     AND (${uniId} IS NULL OR university_id = ${uniId})
-                   ORDER BY name ASC`).rows
-      : [];
+    let courses: any[] = [];
+    if (hasMsc && (courseId || schoolId || uniId)) {
+      if (schoolId && uniId) {
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE school_id=${schoolId} AND university_id=${uniId} ORDER BY name ASC`;
+        courses = r.rows;
+      } else if (schoolId) {
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE school_id=${schoolId} ORDER BY name ASC`;
+        courses = r.rows;
+      } else if (uniId) {
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE university_id=${uniId} ORDER BY name ASC`;
+        courses = r.rows;
+      }
+    }
 
     // Organizations at university, optionally also linked to this school
     let orgs: any[] = [];
     if (hasOrgs && uniId) {
       if (hasOrgSchools) {
-        const r = await sql`
-          SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
-          FROM student_organizations so
-          LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
-          WHERE so.university_id=${uniId} AND (${schoolId} IS NULL OR sos.school_id=${schoolId})
-          ORDER BY so.name ASC`;
-        orgs = r.rows;
+        if (schoolId) {
+          const r = await sql`
+            SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
+            FROM student_organizations so
+            LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
+            WHERE so.university_id=${uniId} AND sos.school_id=${schoolId}
+            ORDER BY so.name ASC`;
+          orgs = r.rows;
+        } else {
+          const r = await sql`
+            SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
+            FROM student_organizations so
+            LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
+            WHERE so.university_id=${uniId}
+            ORDER BY so.name ASC`;
+          orgs = r.rows;
+        }
       } else {
         const r = await sql`
           SELECT so.id, so.name, so.slug, so.website, so.description
@@ -121,13 +137,18 @@ export async function POST(request: Request) {
       if (!x.rows[0]) return NextResponse.json({ error: 'school_university_mismatch' }, { status: 400 });
     }
     if (medicalCourseId && (schoolId || universityId)) {
-      const x = await sql`SELECT 1
-                          FROM medical_school_courses
-                          WHERE id=${medicalCourseId}
-                            AND (${schoolId} IS NULL OR school_id=${schoolId})
-                            AND (${universityId} IS NULL OR university_id=${universityId})
-                          LIMIT 1`;
-      if (!x.rows[0]) return NextResponse.json({ error: 'course_parent_mismatch' }, { status: 400 });
+      let ok = false;
+      if (schoolId && universityId) {
+        const x = await sql`SELECT 1 FROM medical_school_courses WHERE id=${medicalCourseId} AND school_id=${schoolId} AND university_id=${universityId} LIMIT 1`;
+        ok = !!x.rows[0];
+      } else if (schoolId) {
+        const x = await sql`SELECT 1 FROM medical_school_courses WHERE id=${medicalCourseId} AND school_id=${schoolId} LIMIT 1`;
+        ok = !!x.rows[0];
+      } else if (universityId) {
+        const x = await sql`SELECT 1 FROM medical_school_courses WHERE id=${medicalCourseId} AND university_id=${universityId} LIMIT 1`;
+        ok = !!x.rows[0];
+      }
+      if (!ok) return NextResponse.json({ error: 'course_parent_mismatch' }, { status: 400 });
     }
 
     await sql`UPDATE users SET university_id=${universityId}, school_id=${schoolId}, medical_course_id=${medicalCourseId}, study_year=${studyYear} WHERE id=${userId}`;
