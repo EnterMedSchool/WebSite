@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signIn, signOut } from "next-auth/react";
 import MenuXpBar from "@/components/xp/MenuXpBar";
+import FloatingDashboard from "@/components/dashboard/FloatingDashboard";
 import CalendarModal from "@/components/calendar/CalendarModal";
 
 type Props = {
