@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     }
     const body = await req.json().catch(()=>({}));
     const hasProgress = Object.prototype.hasOwnProperty.call(body, "progress");
-    const progress = hasProgress ? Math.max(0, Math.min(100, Number(body.progress))) : 0;
+    const progressInput = hasProgress ? Math.max(0, Math.min(100, Number(body.progress))) : null;
     const hasCompleted = Object.prototype.hasOwnProperty.call(body, "completed");
     // Resolve user id from session (fallback to lookup by email)
     const userId = await resolveUserIdFromSession();
@@ -34,16 +34,24 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       completed = existing.rows.length ? !!existing.rows[0].completed : progress === 100;
     }
 
+    // Compute progress to persist: completion implies 100%
+    const progressToSet = completed ? 100 : Number(progressInput ?? 0);
+
     // Insert or update. Some environments may not yet have the unique constraint; fall back gracefully.
     try {
       await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed)
-                VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})
-                ON CONFLICT (user_id, lesson_id) DO UPDATE SET completed=${completed}`;
+                VALUES (${userId}, ${lesson.id}, ${progressToSet}, ${completed})
+                ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+                  completed=${completed},
+                  progress=GREATEST(user_lesson_progress.progress, EXCLUDED.progress)`;
     } catch {
       // Manual upsert: try update first; if rowcount 0, insert
-      const upd = await sql`UPDATE user_lesson_progress SET completed=${completed} WHERE user_id=${userId} AND lesson_id=${lesson.id}`;
+      const upd = await sql`UPDATE user_lesson_progress
+                             SET completed=${completed},
+                                 progress=CASE WHEN ${progressToSet} > 0 THEN GREATEST(COALESCE(progress,0), ${progressToSet}) ELSE progress END
+                             WHERE user_id=${userId} AND lesson_id=${lesson.id}`;
       if ((upd as any)?.rowCount === 0) {
-        try { await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed) VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})`; } catch {}
+        try { await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed) VALUES (${userId}, ${lesson.id}, ${progressToSet}, ${completed})`; } catch {}
       }
     }
 

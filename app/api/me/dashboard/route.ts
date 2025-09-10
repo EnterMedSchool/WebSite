@@ -60,7 +60,17 @@ export async function GET() {
       stats AS (
         SELECT tc.id AS chapter_id,
                SUM(COALESCE(l.length_min, 0)) AS total_min,
-               COALESCE(ROUND(AVG(COALESCE(ulp.progress,0))::numeric), 0) AS progress_pct,
+               COALESCE(
+                 ROUND(
+                   AVG(
+                     CASE WHEN COALESCE(ulp.completed,false)
+                          THEN 100
+                          ELSE COALESCE(ulp.progress,0)
+                     END
+                   )::numeric
+                 ),
+                 0
+               ) AS progress_pct,
                (
                  SELECT le.slug FROM chapter_lessons cl2
                  JOIN lessons le ON le.id = cl2.lesson_id
@@ -98,7 +108,16 @@ export async function GET() {
         JOIN lessons l ON l.id = cl.lesson_id
       ), progress AS (
         SELECT lic.course_id,
-               COALESCE(ROUND(AVG(COALESCE(ulp.progress, 0))::numeric), 0) AS progress_pct
+               COALESCE(
+                 ROUND(
+                   AVG(
+                     CASE WHEN COALESCE(ulp.completed,false)
+                          THEN 100
+                          ELSE COALESCE(ulp.progress,0)
+                     END
+                   )::numeric
+                 ), 0
+               ) AS progress_pct
         FROM lessons_in_course lic
         LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = lic.lesson_id AND ulp.user_id=${userId}
         GROUP BY lic.course_id
