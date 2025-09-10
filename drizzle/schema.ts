@@ -600,15 +600,29 @@ export const imatUserPlanTasks = pgTable(
     userId: integer("user_id").notNull(),
     dayNumber: integer("day_number").notNull(),
     taskIndex: integer("task_index").notNull(),
-    label: varchar("label", { length: 500 }).notNull(),
+    label: varchar("label", { length: 500 }),
     isCompleted: boolean("is_completed").default(false).notNull(),
     completedAt: timestamp("completed_at"),
     xpAwarded: boolean("xp_awarded").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    templateId: integer("template_id"),
   },
   (t) => ({
     planUserIdx: index("imat_plan_tasks_user_idx").on(t.userId),
     planDayIdx: index("imat_plan_tasks_day_idx").on(t.userId, t.dayNumber),
+  })
+);
+
+export const imatTaskTemplates = pgTable(
+  "imat_task_templates",
+  {
+    id: serial("id").primaryKey(),
+    dayNumber: integer("day_number").notNull(),
+    taskIndex: integer("task_index").notNull(),
+    label: text("label").notNull(),
+  },
+  (t) => ({
+    dayIdx: index("imat_templates_day_idx").on(t.dayNumber, t.taskIndex),
   })
 );

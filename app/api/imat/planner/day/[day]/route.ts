@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { imatUserPlanTasks } from "@/drizzle/schema";
+import { imatUserPlanTasks, imatTaskTemplates } from "@/drizzle/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 
@@ -14,11 +14,19 @@ export async function GET(req: Request, { params }: { params: { day: string } })
   if (!Number.isFinite(day) || day < 1) return NextResponse.json({ error: "Invalid day" }, { status: 400 });
   try {
     const items = await db
-      .select({ id: imatUserPlanTasks.id, label: imatUserPlanTasks.label, isCompleted: imatUserPlanTasks.isCompleted, taskIndex: imatUserPlanTasks.taskIndex })
+      .select({
+        id: imatUserPlanTasks.id,
+        isCompleted: imatUserPlanTasks.isCompleted,
+        taskIndex: imatUserPlanTasks.taskIndex,
+        label: imatUserPlanTasks.label,
+        tLabel: imatTaskTemplates.label,
+      })
       .from(imatUserPlanTasks)
+      .leftJoin(imatTaskTemplates, eq(imatTaskTemplates.id as any, imatUserPlanTasks.templateId as any))
       .where(and(eq(imatUserPlanTasks.userId as any, userId), eq(imatUserPlanTasks.dayNumber as any, day)))
       .orderBy(asc(imatUserPlanTasks.taskIndex), asc(imatUserPlanTasks.id));
-    return NextResponse.json({ data: { day, items } });
+    const shaped = items.map((r:any)=> ({ id: r.id, isCompleted: r.isCompleted, taskIndex: r.taskIndex, label: r.label || r.tLabel }));
+    return NextResponse.json({ data: { day, items: shaped } });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to load" }, { status: 500 });
   }

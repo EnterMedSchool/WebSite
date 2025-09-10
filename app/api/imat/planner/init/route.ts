@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { imatUserPlan, imatUserPlanTasks } from "@/drizzle/schema";
-import { asc, eq } from "drizzle-orm";
+import { imatUserPlan, imatUserPlanTasks, imatTaskTemplates } from "@/drizzle/schema";
+import { and, asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { IMAT_PLANNER, getDevResources } from "@/lib/imat/plan";
 
@@ -25,13 +25,26 @@ export async function POST(req: Request) {
         for (const d of IMAT_PLANNER.days) {
           let idx = 0;
           for (const label of d.tasks) {
+            const tpl = await db
+              .select({ id: imatTaskTemplates.id })
+              .from(imatTaskTemplates)
+              .where(and(eq(imatTaskTemplates.dayNumber as any, d.day as any), eq(imatTaskTemplates.taskIndex as any, idx as any)))
+              .limit(1);
+            let templateId: number;
+            if (tpl[0]?.id) templateId = Number(tpl[0].id);
+            else {
+              const ins = await db.insert(imatTaskTemplates).values({ dayNumber: d.day as any, taskIndex: idx as any, label }).returning({ id: imatTaskTemplates.id });
+              templateId = Number(ins[0].id);
+            }
             await db.insert(imatUserPlanTasks).values({
               userId,
               dayNumber: d.day as any,
-              taskIndex: idx++ as any,
+              taskIndex: idx as any,
               label,
+              templateId: templateId as any,
               isCompleted: false,
             });
+            idx++;
           }
         }
         tasks = await db
@@ -53,13 +66,26 @@ export async function POST(req: Request) {
     for (const d of IMAT_PLANNER.days) {
       let idx = 0;
       for (const label of d.tasks) {
+        const tpl = await db
+          .select({ id: imatTaskTemplates.id })
+          .from(imatTaskTemplates)
+          .where(and(eq(imatTaskTemplates.dayNumber as any, d.day as any), eq(imatTaskTemplates.taskIndex as any, idx as any)))
+          .limit(1);
+        let templateId: number;
+        if (tpl[0]?.id) templateId = Number(tpl[0].id);
+        else {
+          const ins = await db.insert(imatTaskTemplates).values({ dayNumber: d.day as any, taskIndex: idx as any, label }).returning({ id: imatTaskTemplates.id });
+          templateId = Number(ins[0].id);
+        }
         await db.insert(imatUserPlanTasks).values({
           userId,
           dayNumber: d.day as any,
-          taskIndex: idx++ as any,
+          taskIndex: idx as any,
           label,
+          templateId: templateId as any,
           isCompleted: false,
         });
+        idx++;
       }
     }
 

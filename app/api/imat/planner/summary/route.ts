@@ -13,6 +13,14 @@ export async function GET(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized", code: "NO_SESSION" }, { status: 401 });
   try {
     const plan = (await db.select().from(imatUserPlan).where(eq(imatUserPlan.userId as any, userId)).limit(1))[0] || null;
+    // Compute ETag first and honor If-None-Match
+    const et = await sql`SELECT MAX(updated_at) AS m FROM imat_user_plan_tasks WHERE user_id=${userId}`;
+    const latest = et?.rows?.[0]?.m ? String(new Date(et.rows[0].m as any).getTime()) : String(plan?.updatedAt || 0);
+    const inm = (req.headers.get('if-none-match') || '').replace(/^W\//, '').trim();
+    if (inm && latest && inm === latest) {
+      return new NextResponse(null, { status: 304, headers: { ETag: latest } });
+    }
+
     // Aggregate per-day counts
     const q = await sql`SELECT day_number AS day, COUNT(*) AS total, SUM(CASE WHEN is_completed THEN 1 ELSE 0 END) AS done
                         FROM imat_user_plan_tasks WHERE user_id=${userId}
@@ -27,12 +35,9 @@ export async function GET(req: Request) {
       const agg = totals[d] || { day: d, total: 0, done: 0 };
       return { day: d, title: meta?.title || `Day ${d}`, rest: meta?.rest, total: agg.total, done: agg.done, videos: meta?.videos || dev.videos, lessons: meta?.lessons || dev.lessons, chapters: meta?.chapters || dev.chapters };
     });
-    // Basic ETag from max updated_at of user's tasks (optional; clients can use If-None-Match)
-    const et = await sql`SELECT MAX(updated_at) AS m FROM imat_user_plan_tasks WHERE user_id=${userId}`;
-    const etag = et?.rows?.[0]?.m ? String(new Date(et.rows[0].m).getTime()) : String(plan?.updatedAt || 0);
-    return NextResponse.json({ data: { plan, days }, etag }, { headers: { ETag: etag } });
+    // Return with ETag header
+    return NextResponse.json({ data: { plan, days }, etag: latest }, { headers: { ETag: latest } });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed to load" }, { status: 500 });
   }
 }
-
