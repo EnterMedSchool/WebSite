@@ -21,7 +21,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
 
-    const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
+    const lr = await sql`SELECT id, length_min FROM lessons WHERE slug=${params.slug} LIMIT 1`;
     const lesson = lr.rows[0];
     if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -44,6 +44,16 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       const upd = await sql`UPDATE user_lesson_progress SET completed=${completed} WHERE user_id=${userId} AND lesson_id=${lesson.id}`;
       if ((upd as any)?.rowCount === 0) {
         try { await sql`INSERT INTO user_lesson_progress (user_id, lesson_id, progress, completed) VALUES (${userId}, ${lesson.id}, ${progress}, ${completed})`; } catch {}
+      }
+    }
+
+    // If just completed, ensure last_viewed_at set and minimal time accounted
+    if (completed) {
+      const lenMin = Number(lesson?.length_min || 0);
+      if (lenMin > 0) {
+        try { await sql`UPDATE user_lesson_progress SET last_viewed_at=NOW(), time_spent_sec=CASE WHEN COALESCE(time_spent_sec,0)=0 THEN ${lenMin * 60} ELSE time_spent_sec END WHERE user_id=${userId} AND lesson_id=${lesson.id}`; } catch {}
+      } else {
+        try { await sql`UPDATE user_lesson_progress SET last_viewed_at=NOW() WHERE user_id=${userId} AND lesson_id=${lesson.id}`; } catch {}
       }
     }
 

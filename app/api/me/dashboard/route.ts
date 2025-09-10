@@ -99,10 +99,7 @@ export async function GET() {
     } catch {}
 
     // Past 7-day series
-    const labels: string[] = [];
-    const xp7: number[] = [];
-    const min7: number[] = [];
-    const corr7: number[] = [];
+    const labels: string[] = [];\n    const xp7: number[] = [];\n    const min7: number[] = [];\n    const corr7: number[] = [];\n    const tasks7: number[] = [];
     for (let i = 6; i >= 0; i--) {
       const day = new Date(); day.setHours(0,0,0,0); day.setDate(day.getDate() - i);
       const next = new Date(day.getTime() + 86400000);
@@ -118,10 +115,10 @@ export async function GET() {
 
     return NextResponse.json({
       user: { id: userId, name: u.name, image: u.image, xp: Number(u.xp||0), level: Number(u.level||1), streakDays },
-      learning: { minutesToday, minutesTotal, correctToday },
+      learning: { minutesToday, minutesTotal, correctToday, tasksToday },
       chapters: ch.rows,
       courses: cr.rows,
-      series: { labels, xp7, min7, corr7 },
+      series: { labels, xp7, min7, corr7, tasks7 },
     });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });

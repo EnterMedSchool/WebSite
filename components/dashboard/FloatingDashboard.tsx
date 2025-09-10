@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Types for dashboard payload
-type Series = { labels: string[]; xp7: number[]; min7: number[]; corr7: number[] };
+type Series = { labels: string[]; xp7: number[]; min7: number[]; corr7: number[]; tasks7?: number[] };
 type ChapterCard = {
   id: number;
   slug: string;
@@ -17,7 +17,7 @@ type ChapterCard = {
 };
 type DashData = {
   user: { id: number; name?: string | null; image?: string | null; xp: number; level: number; streakDays?: number };
-  learning: { minutesToday: number; minutesTotal: number; correctToday: number };
+  learning: { minutesToday: number; minutesTotal: number; correctToday: number; tasksToday?: number };
   chapters: ChapterCard[];
   courses: { id: number; slug: string; title: string; description?: string | null }[];
   series?: Series;
@@ -90,13 +90,11 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
                 <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName} 👋</div>
                 <div className="mt-1 text-[13px] text-gray-600">Nice to have you back, let&apos;s continue preparing for your exam.</div>
-                <div className="mt-5 text-base font-bold text-gray-800">Today&apos;s course</div>
+                <div className="mt-5 text-base font-bold text-gray-800">Latest chapters</div>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {(data?.chapters ?? []).slice(0, 2).map((ch) => (
-                    <div key={ch.id} className="relative flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
-                      <div>
-                        {/* Progress ring */}
-                        <div className="absolute -left-3 -top-3 h-8 w-8 rounded-full bg-white shadow" style={{ background: `conic-gradient(#6366f1 ${Math.max(0, Math.min(100, Math.round(ch.progress_pct ?? 0)))}%, #e5e7eb 0)` }}><div className="absolute inset-1 rounded-full bg-white" /></div>
+                    <div key={ch.id} className="relative rounded-2xl p-[2px]" style={{ background: `conic-gradient(${(ch.progress_pct ?? 0) >= 100 ? '#10b981' : '#6366f1'} ${Math.max(0, Math.min(100, Math.round(ch.progress_pct ?? 0)))}%, #e5e7eb 0)` }}>
+                      <div className="flex h-full flex-col justify-between rounded-[14px] border border-gray-100 bg-white p-4 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
                         <div className="text-sm font-semibold text-indigo-700">{ch.course_title}</div>
                         <div className="mt-1 line-clamp-2 text-base font-bold text-gray-900">{ch.title}</div>
                         <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
@@ -104,10 +102,9 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                           <span className="opacity-60">-</span>
                           <span>{(ch.total_min ?? 0) > 0 ? `${ch.total_min} min` : '-'}</span>
                         </div>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <a href={ch.continue_slug ? `/lesson/${encodeURIComponent(ch.continue_slug)}` : `/course/${encodeURIComponent(ch.course_slug)}`} className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:opacity-95">Learn</a>
-                        <button disabled={!ch.continue_slug || !!ch.continue_completed} onClick={() => ch.continue_slug && completeLesson(ch.continue_slug)} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${ch.continue_completed ? 'border border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{ch.continue_completed ? 'Completed' : 'Complete'}</button>
+                        <div className="mt-3 flex items-center gap-2">
+                          <a href={ch.continue_slug ? `/lesson/${encodeURIComponent(ch.continue_slug)}` : `/course/${encodeURIComponent(ch.course_slug)}`} className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:opacity-95">Learn</a>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -120,7 +117,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
               {/* Learning activity */}
               <div className="mt-6 rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
                 <div className="text-base font-bold text-gray-800">Learning activity</div>
-                <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+                <div className="mt-3 grid grid-cols-4 gap-3 text-center">
                   <div className="rounded-2xl border p-4 shadow-sm"><div className="text-2xl font-extrabold text-indigo-700">{data?.learning?.minutesToday ?? (loading ? 0 : 0)}m</div><div className="text-xs text-gray-600">Studied today</div></div>
                   <div className="rounded-2xl border p-4 shadow-sm"><div className="text-2xl font-extrabold text-indigo-700">{data?.learning?.minutesTotal ?? (loading ? 0 : 0)}m</div><div className="text-xs text-gray-600">Total minutes</div></div>
                   <div className="rounded-2xl border p-4 shadow-sm"><div className="text-2xl font-extrabold text-indigo-700">{data?.learning?.correctToday ?? (loading ? 0 : 0)}</div><div className="text-xs text-gray-600">Correct today</div></div>
@@ -141,7 +138,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                       <button className="text-xs font-semibold text-indigo-700 underline" onClick={() => alert("Profile editing coming soon")}>Edit profile</button>
                     </div>
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
                     <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{data?.user?.level ?? 1}</div><div className="text-gray-600">Level</div></div>
                     <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{data?.user?.xp ?? 0}</div><div className="text-gray-600">XP</div></div>
                     <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{data?.user?.streakDays ?? '-'}</div><div className="text-gray-600">Streak</div></div>
@@ -216,7 +213,7 @@ function MiniChart({ series }: { series?: Series | null }) {
       {tip && (
         <div className="pointer-events-none absolute -translate-x-1/2 rounded-xl border bg-white/95 px-2 py-1 text-[10px] shadow" style={{ left: `${ax! / 3.6}%`, top: 0 }}>
           <div className="font-semibold text-gray-800">{tip.day}</div>
-          <div className="mt-0.5 grid grid-cols-3 gap-2"><span className="text-indigo-600">{tip.xp} XP</span><span className="text-emerald-600">{tip.min}m</span><span className="text-amber-600">{tip.corr}</span></div>
+          <div className="mt-0.5 grid grid-cols-4 gap-2"><span className="text-indigo-600">{tip.xp} XP</span><span className="text-emerald-600">{tip.min}m</span><span className="text-amber-600">{tip.corr}</span></div>
         </div>
       )}
       <div className="mt-2 flex items-center justify-center gap-2 text-[10px]">
@@ -227,4 +224,3 @@ function MiniChart({ series }: { series?: Series | null }) {
     </div>
   );
 }
-
