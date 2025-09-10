@@ -19,7 +19,11 @@ export async function GET() {
     const universities = (await sql`SELECT id, name FROM universities ORDER BY name ASC`).rows;
     const schools = uniId ? (await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`).rows : [];
     const courses = courseId || schoolId || uniId
-      ? (await sql`SELECT id, name, slug FROM medical_school_courses WHERE ${schoolId?sql`school_id=${schoolId}`:sql`1=1`} AND ${uniId?sql`university_id=${uniId}`:sql`1=1`} ORDER BY name ASC`).rows
+      ? (await sql`SELECT id, name, slug
+                   FROM medical_school_courses
+                   WHERE (${schoolId} IS NULL OR school_id = ${schoolId})
+                     AND (${uniId} IS NULL OR university_id = ${uniId})
+                   ORDER BY name ASC`).rows
       : [];
 
     // Organizations at university, optionally also linked to this school
@@ -96,7 +100,12 @@ export async function POST(request: Request) {
       if (!x.rows[0]) return NextResponse.json({ error: 'school_university_mismatch' }, { status: 400 });
     }
     if (medicalCourseId && (schoolId || universityId)) {
-      const x = await sql`SELECT 1 FROM medical_school_courses WHERE id=${medicalCourseId} AND (${schoolId?sql`school_id=${schoolId}`:sql`1=1`}) AND (${universityId?sql`university_id=${universityId}`:sql`1=1`}) LIMIT 1`;
+      const x = await sql`SELECT 1
+                          FROM medical_school_courses
+                          WHERE id=${medicalCourseId}
+                            AND (${schoolId} IS NULL OR school_id=${schoolId})
+                            AND (${universityId} IS NULL OR university_id=${universityId})
+                          LIMIT 1`;
       if (!x.rows[0]) return NextResponse.json({ error: 'course_parent_mismatch' }, { status: 400 });
     }
 
@@ -106,4 +115,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
-
