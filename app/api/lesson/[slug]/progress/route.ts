@@ -31,7 +31,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       completed = !!(body as any).completed;
     } else {
       const existing = await sql`SELECT completed FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id=${lesson.id} LIMIT 1`;
-      completed = existing.rows.length ? !!existing.rows[0].completed : progress === 100;
+      completed = existing.rows.length ? !!existing.rows[0].completed : (progressInput === 100);
     }
 
     // Compute progress to persist: completion implies 100%
@@ -77,7 +77,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
         // Record completion event (idempotent due to unique index)
         try {
           await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                    VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({ progress })}::jsonb)`;
+                    VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({ progress: 100 })}::jsonb)`;
         } catch {}
 
         // Load current XP/level, award 10 XP, compute new level
