@@ -31,6 +31,8 @@ export async function GET() {
     const minutesToday = Math.round(Number(todayRow.rows?.[0]?.sec || 0) / 60);
     const minutesTotal = Math.round(Number(totalRow.rows?.[0]?.sec || 0) / 60);
     const correctToday = Number(correctTodayRow.rows?.[0]?.cnt || 0);
+    // Placeholder until tasks metric is implemented
+    const tasksToday = 0;
 
     // Latest two chapters the user is working on (by last viewed lesson),
     // plus stats: total minutes (sum length_min), average progress, and a continue slug
@@ -99,7 +101,11 @@ export async function GET() {
     } catch {}
 
     // Past 7-day series
-    const labels: string[] = [];\n    const xp7: number[] = [];\n    const min7: number[] = [];\n    const corr7: number[] = [];\n    const tasks7: number[] = [];
+    const labels: string[] = [];
+    const xp7: number[] = [];
+    const min7: number[] = [];
+    const corr7: number[] = [];
+    const tasks7: number[] = [];
     for (let i = 6; i >= 0; i--) {
       const day = new Date(); day.setHours(0,0,0,0); day.setDate(day.getDate() - i);
       const next = new Date(day.getTime() + 86400000);
