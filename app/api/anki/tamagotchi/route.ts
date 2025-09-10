@@ -29,8 +29,8 @@ export async function POST(req: Request) {
   if (typeof state !== "object" || state === null) {
     return NextResponse.json({ error: "state must be an object" }, { status: 400 });
   }
-  // Limit updates to 60/min per user (best-effort)
-  if (!rateAllow(`anki:tama:update:user:${userId}`, 60, 60_000)) {
+  // Limit updates to 12/min per user (best-effort)
+  if (!rateAllow(`anki:tama:update:user:${userId}`, 12, 60_000)) {
     return NextResponse.json({ error: "too_many_requests" }, { status: 429 });
   }
   try {
