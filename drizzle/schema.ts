@@ -726,6 +726,25 @@ export const imatTaskTemplates = pgTable(
   })
 );
 
+// ---------------- Glossary terms (for EMS add-on + site) ----------------
+
+export const terms = pgTable(
+  "terms",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 160 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    data: jsonb("data"),
+    tags: jsonb("tags"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    slugIdx: index("terms_slug_idx").on(t.slug),
+    slugUnique: uniqueIndex("terms_slug_unique").on(t.slug),
+  })
+);
+
 // ---------------- Anki Integration (shared user accounts) ----------------
 
 // Per-user JSON state for the Leo Tamagotchi feature used by the Anki add-on

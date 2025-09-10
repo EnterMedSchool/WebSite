@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { termRatings } from "@/drizzle/schema";
+import { termRatings, terms } from "@/drizzle/schema";
 import { and, eq, desc } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { rateAllow } from "@/lib/rate-limit";
@@ -21,6 +21,11 @@ export async function GET(_req: Request, ctx: { params: { slug: string } }) {
   if (!/^[a-z0-9][a-z0-9-_]{0,159}$/i.test(slug)) {
     return NextResponse.json({ error: "invalid_slug" }, { status: 400 });
   }
+  // Enforce existence of term record (seed first)
+  const exists = (
+    await db.select({ id: terms.id }).from(terms).where(eq(terms.slug as any, slug)).limit(1)
+  )[0];
+  if (!exists) return NextResponse.json({ error: "term_not_found" }, { status: 404 });
   const userId = await requireUserId(_req).catch(() => null);
 
   const rows = await db
@@ -51,6 +56,10 @@ export async function POST(req: Request, ctx: { params: { slug: string } }) {
   if (!/^[a-z0-9][a-z0-9-_]{0,159}$/i.test(slug)) {
     return NextResponse.json({ error: "invalid_slug" }, { status: 400 });
   }
+  const exists = (
+    await db.select({ id: terms.id }).from(terms).where(eq(terms.slug as any, slug)).limit(1)
+  )[0];
+  if (!exists) return NextResponse.json({ error: "term_not_found" }, { status: 404 });
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
