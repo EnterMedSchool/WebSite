@@ -79,7 +79,7 @@ export async function GET() {
       const mr = await sql`
         SELECT id, name, username, image
         FROM users
-        WHERE id <> ${userId} AND medical_course_id=${courseId} AND study_year=${year}
+        WHERE id <> \\n          AND medical_course_id=\\n          AND study_year=\\n          AND COALESCE(mates_verified, false) = true
         ORDER BY id ASC
         LIMIT 50`;
       mates = mr.rows;
@@ -169,3 +169,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
+

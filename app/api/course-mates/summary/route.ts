@@ -20,7 +20,7 @@ export async function GET() {
         const s = await sql`SELECT name FROM schools WHERE id=${sid} LIMIT 1`;
         schoolName = s.rows[0]?.name ?? null;
       }
-      const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id<>${userId} AND medical_course_id=${cid} AND study_year=${yr}`;
+      const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id<>\ AND medical_course_id=\ AND study_year=\ AND COALESCE(mates_verified, false) = true`;
       matesCount = Number(r.rows[0]?.n || 0);
     }
     return NextResponse.json({ matesCount, courseName, schoolName, studyYear: yr ?? null, isVerified });
@@ -28,3 +28,4 @@ export async function GET() {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
+
