@@ -9,6 +9,7 @@ type Mate = { id: number; name?: string | null; username?: string | null; image?
 export default function CourseMatesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [universities, setUniversities] = useState<Option[]>([]);
   const [schools, setSchools] = useState<Option[]>([]);
   const [courses, setCourses] = useState<Option[]>([]);
@@ -20,7 +21,8 @@ export default function CourseMatesPage() {
     setLoading(true);
     try {
       const r = await fetch('/api/course-mates', { credentials: 'include' });
-      if (r.status === 401) { setMe({}); setUniversities([]); setSchools([]); setCourses([]); setOrganizations([]); setMates([]); return; }
+      if (r.status === 401) { setIsAuthed(false); setMe({}); setUniversities([]); setSchools([]); setCourses([]); setOrganizations([]); setMates([]); return; }
+      setIsAuthed(true);
       if (!r.ok) return;
       const j = await r.json();
       setUniversities(j.universities || []);
@@ -71,7 +73,7 @@ export default function CourseMatesPage() {
       <h1 className="text-2xl font-semibold">Your Course Mates</h1>
       <p className="text-gray-600">Connect with students from your university, school and course. Set your details to see your mates and relevant student organizations.</p>
 
-      {!loading && !me?.id && (
+      {!loading && isAuthed === false && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           Please sign in to access Your Course Mates.
         </div>
