@@ -107,11 +107,7 @@ export default function Planner({ totalDays }: Props) {
     finally { setSavingDay(false); }
   }
 
-  if (loading) return <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">Loading planner…</div>;
-  if (error) return <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</div>;
-  if (!daysData || days.length === 0) return <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">Planner is empty.</div>;
-
-  // Overall progress
+    // Overall progress
   const overall = useMemo(() => {
     const all = (daysData || []).flatMap((d) => d.tasks);
     const total = all.length || 1;
@@ -119,6 +115,10 @@ export default function Planner({ totalDays }: Props) {
     const pct = Math.round((done / total) * 100);
     return { done, total, pct };
   }, [daysData]);
+
+  if (loading) return <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">Loading planner...</div>;
+  if (error) return <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</div>;
+  if (!daysData || days.length === 0) return <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">Planner is empty.</div>;
 
   return (
     <div className="grid gap-6 md:grid-cols-[280px_1fr]">
