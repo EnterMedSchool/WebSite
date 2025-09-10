@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import MiniTrend from "@/components/home/MiniTrend";
+import DeadlineStrip from "@/components/home/DeadlineStrip";
+import CostTile from "@/components/home/CostTile";
 
 type City = {
   city: string;
@@ -9,6 +11,7 @@ type City = {
   lng: number;
   uni: string;
   kind?: "public" | "private";
+  country?: string;
   logo?: string;
   rating?: number;
   lastScore?: number;
@@ -17,20 +20,25 @@ type City = {
   article?: { title: string; href?: string };
 };
 
-export default function UniversitiesPanel({ selectedName, items, topOffset = 4, onAddCompare, compareSet }: { selectedName: string; items: City[]; topOffset?: number; onAddCompare?: (item: City & { country?: string }) => void; compareSet?: Set<string> }) {
+export default function UniversitiesPanel({ selectedName, items, topOffset = 4, onAddCompare, compareSet, onHover, savedSet, onToggleSave }: { selectedName: string; items: City[]; topOffset?: number; onAddCompare?: (item: City & { country?: string }) => void; compareSet?: Set<string>; onHover?: (item: City | null) => void; savedSet?: Set<string>; onToggleSave?: (item: City & { country?: string }) => void }) {
   const router = useRouter();
   const PANEL_GUTTER = 8;
   const PANEL_TOP_GAP = topOffset;
 
   return (
     <div
-      className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
+      className="pointer-events-auto absolute right-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
       style={{ top: PANEL_TOP_GAP, bottom: PANEL_GUTTER, maxHeight: `calc(100% - ${PANEL_TOP_GAP + PANEL_GUTTER}px)` }}
     >
       <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selectedName}</div>
       <div className="space-y-3 max-h-full overflow-auto pr-1">
         {items.map((c, i) => (
-          <div key={`${c.city}-${i}`} className="group rounded-xl border p-3 hover:bg-gray-50 transition-all">
+          <div
+            key={`${c.city}-${i}`}
+            className="group rounded-xl border p-3 hover:bg-gray-50 transition-all"
+            onMouseEnter={() => onHover?.(c)}
+            onMouseLeave={() => onHover?.(null)}
+          >
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
                 {c.logo ? (
@@ -117,6 +125,12 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               </div>
             )}
 
+            {/* Decision aids (placeholders) */}
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <DeadlineStrip />
+              <CostTile city={c.city} />
+            </div>
+
             <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
@@ -129,6 +143,17 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               >
                 {compareSet?.has(c.uni) ? "Added to Compare" : "Add to Compare"}
               </button>
+              <button
+                type="button"
+                onClick={() => onToggleSave?.({ ...c, country: selectedName })}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
+                  (typeof savedSet !== 'undefined' && savedSet?.has(c.uni))
+                    ? 'bg-pink-600 text-white hover:bg-pink-700'
+                    : 'bg-white text-pink-600 ring-1 ring-pink-200 hover:bg-pink-50'
+                }`}
+              >
+                {savedSet?.has(c.uni) ? 'Saved' : 'Save'}
+              </button>
             </div>
           </div>
         ))}
@@ -136,4 +161,3 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
     </div>
   );
 }
-

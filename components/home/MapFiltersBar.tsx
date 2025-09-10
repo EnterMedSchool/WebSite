@@ -7,6 +7,7 @@ export type MapFilters = {
   country: string;
   language: string;
   exam: string;
+  sort?: string; // ui-only for now
 };
 
 type Props = {
@@ -138,10 +139,45 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
         )}
       </div>
 
-      <div className={`mt-3 flex items-center gap-3 ${compact ? 'justify-between' : ''}`}>
+      <div className={`mt-3 flex flex-wrap items-center gap-3 ${compact ? 'justify-between' : ''}`}>
         {typeof resultCount === 'number' && (
           <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">{resultCount} results</div>
         )}
+        {/* Sort by (ui only for now) */}
+        <div className="flex items-center gap-2 text-xs">
+          <span className="hidden sm:inline-block text-indigo-100/90">Sort by</span>
+          <select
+            value={filters.sort || ''}
+            onChange={(e) => onChange({ sort: e.target.value })}
+            className="rounded-lg border border-white/20 bg-white/95 px-2 py-1 text-[11px] text-gray-900 shadow-sm"
+          >
+            <option value="">Popularity</option>
+            <option value="tuition-asc">Tuition (low to high)</option>
+            <option value="seats-desc">Seats (high to low)</option>
+            <option value="deadline-asc">Deadline (soonest)</option>
+          </select>
+        </div>
+        {/* Legend */}
+        <div className="ml-auto flex items-center gap-2 text-[10px]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 font-semibold">
+            <span className="h-2 w-2 rounded-full bg-indigo-300" /> IMAT
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 font-semibold">
+            <span className="h-2 w-2 rounded-full bg-emerald-300" /> English
+          </span>
+        </div>
+        <button
+          type="button"
+          className="rounded-lg bg-white/15 px-3 py-1 text-xs font-semibold text-white hover:bg-white/25"
+          onClick={() => {
+            try {
+              const url = window.location.href;
+              if (navigator?.clipboard?.writeText) navigator.clipboard.writeText(url);
+            } catch {}
+          }}
+        >
+          Share search
+        </button>
         {hasFilters && (
           <button
             type="button"

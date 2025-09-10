@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
+import ExplorerRail from "@/components/home/ExplorerRail";
 import { useRouter, useSearchParams } from "next/navigation";
 import UniversitiesPanel from "@/components/home/UniversitiesPanel";
 import UniversitiesListMobile from "@/components/home/UniversitiesListMobile";
@@ -69,6 +70,24 @@ export default function HomeMap() {
     });
   }, [allCityDataRaw, filters]);
   const cityData = useMemo(() => (selected ? allCityData.filter((c) => c.country === selected.name) : []), [selected, allCityData]);
+  const cityDataSorted = useMemo(() => {
+    const arr = [...cityData];
+    const s = (filters as any)?.sort || '';
+    if (!s) return arr;
+    if (s === 'tuition-asc') {
+      // placeholder: sort by rating ascending (proxy)
+      return arr.sort((a: any, b: any) => (a.rating ?? 999) - (b.rating ?? 999));
+    }
+    if (s === 'seats-desc') {
+      // placeholder: sort by lastScore descending (proxy)
+      return arr.sort((a: any, b: any) => (b.lastScore ?? -1) - (a.lastScore ?? -1));
+    }
+    if (s === 'deadline-asc') {
+      // placeholder: alphabetical by uni (proxy)
+      return arr.sort((a: any, b: any) => (a.uni || '').localeCompare(b.uni || ''));
+    }
+    return arr;
+  }, [cityData, (filters as any)?.sort]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -77,6 +96,10 @@ export default function HomeMap() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<Array<any>>([]);
   const compareSet = useMemo(() => new Set(compare.map((i) => i.uni)), [compare]);
+  // Saved shortlist
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [saved, setSaved] = useState<Array<any>>([]);
+  const savedSet = useMemo(() => new Set(saved.map((i) => i.uni)), [saved]);
   // Mobile results control
   const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
   const [isSmall, setIsSmall] = useState(false);
@@ -88,6 +111,8 @@ export default function HomeMap() {
     if (stored) {
       try { setCompare(JSON.parse(stored)); } catch {}
     }
+    const s2 = typeof window !== 'undefined' ? window.localStorage.getItem('ems_saved') : null;
+    if (s2) { try { setSaved(JSON.parse(s2)); } catch {} }
   }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') window.localStorage.setItem('ems_compare', JSON.stringify(compare));
@@ -122,6 +147,12 @@ export default function HomeMap() {
   function clearCompare() {
     setCompare([]);
   }
+  function toggleSaved(item: any) {
+    setSaved((arr) => {
+      if (arr.some((x) => x.uni === item.uni)) return arr.filter((x) => x.uni !== item.uni);
+      return [...arr, { uni: item.uni, country: item.country, city: item.city, kind: item.kind, logo: item.logo }];
+    });
+  }
 
   // Deep-link: read on first render
   useEffect(() => {
@@ -129,7 +160,8 @@ export default function HomeMap() {
     const country = searchParams?.get('country') ?? '';
     const language = searchParams?.get('language') ?? '';
     const exam = searchParams?.get('exam') ?? '';
-    setFilters({ q, country, language, exam });
+    const sort = searchParams?.get('sort') ?? '';
+    setFilters({ q, country, language, exam, sort });
     if (country) {
       // try to preselect country view
       const found = allCityDataRaw.find((c) => c.country === country);
@@ -165,6 +197,7 @@ export default function HomeMap() {
       if (filters.country) params.set('country', filters.country);
       if (filters.language) params.set('language', filters.language);
       if (filters.exam) params.set('exam', filters.exam);
+      if (filters.sort) params.set('sort', filters.sort);
       const qs = params.toString();
       router.replace(qs ? `?${qs}` : `?`, { scroll: false });
     }, 300);
@@ -357,7 +390,14 @@ export default function HomeMap() {
                 const rimR = 5.5;
                 const emblemR = 4.0;
                 const isPrivate = c.kind === "private";
-                const accent = isPrivate ? "#F59E0B" : "#6C63FF"; // amber for private, indigo for public
+                // Color mapping by exam/language (wow factor)
+                let accent = "#6C63FF"; // default indigo
+                const exam = (c as any).exam?.toLowerCase() || "";
+                const lang = (c as any).language?.toLowerCase() || "";
+                if (exam.includes('imat')) accent = '#6366F1';
+                else if (exam.includes('ucat')) accent = '#10B981';
+                else if (lang.includes('english')) accent = '#14B8A6';
+                else if (isPrivate) accent = '#F59E0B';
                 const clipId = `logo-${(c.country || selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
                 const yJitter = 0; // keep precise alignment; jitter removed
                 const isSelectedCountry = selected?.name === c.country;
@@ -433,47 +473,57 @@ export default function HomeMap() {
         </ComposableMap>
         </div>
 
-        {/* Filters bar overlay docked at top-right, shrinks when panel open */}
-        {/* Filters overlay: top-left on desktop, bottom-center on small screens */}
-        <div
-          className={isSmall ? "pointer-events-none absolute inset-x-0 z-30 flex justify-center" : "pointer-events-none absolute left-3 z-30"}
-          style={
-            isSmall
-              ? { bottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)" }
-              : { top: 76, width: "min(520px, 42vw)" }
-          }
-        >
-          <motion.div
-            ref={overlayRef}
-            className={isSmall ? "pointer-events-auto" : "pointer-events-auto"}
-            initial={{ opacity: 0, y: isSmall ? 10 : -10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 180, damping: 18 }}
-            style={isSmall ? { width: "min(calc(100vw - 24px), 560px)" } : undefined}
-          >
+        {/* Filters rail (desktop) or floating compact bar (mobile) */}
+        {isSmall ? (
+          <div className="pointer-events-none absolute inset-x-0 z-30 flex justify-center" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)" }}>
+            <motion.div
+              ref={overlayRef}
+              className="pointer-events-auto"
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 180, damping: 18 }}
+              style={{ width: "min(calc(100vw - 24px), 560px)" }}
+            >
+              <MapFiltersBar
+                compact={true}
+                filters={filters}
+                onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+                countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
+                languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
+                exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
+                resultCount={allCityData.length}
+                onViewMobile={() => {
+                  if (filters.country) {
+                    const found = allCityDataRaw.find((c)=> c.country === filters.country);
+                    if (found) { setSelected({ name: filters.country, center: position.center, baseCenter: position.center }); setSheetCustomItems(null); setSheetOpen(true); }
+                  } else { setSheetCustomItems(allCityData); setSheetOpen(true); }
+                }}
+                suggestions={
+                  filters.q.trim().length >= 1
+                    ? Array.from(new Set([
+                        ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
+                        ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
+                        ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
+                      ].map((s) => `${s.kind}:${s.label}`)))
+                        .map((key) => { const [kind, label] = key.split(':'); return { kind: kind as 'uni'|'city'|'country', label, value: label }; })
+                        .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
+                        .slice(0, 12)
+                    : []
+                }
+                onPick={(s) => { if (s.kind === 'country') { setFilters((f) => ({ ...f, country: s.value })); setSelected({ name: s.value, center: position.center, baseCenter: position.center }); } else if (s.kind === 'uni') { const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {} } else { setFilters((f) => ({ ...f, q: s.value })); } }}
+              />
+            </motion.div>
+          </div>
+        ) : (
+          <ExplorerRail ref={overlayRef as any}>
             <MapFiltersBar
-              compact={isSmall}
+              compact={false}
               filters={filters}
               onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
               countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
               languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
               exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
               resultCount={allCityData.length}
-              onViewMobile={isSmall ? () => {
-                if (filters.country) {
-                  // Zoom and open selected country
-                  const found = allCityDataRaw.find((c)=> c.country === filters.country);
-                  if (found) {
-                    setSelected({ name: filters.country, center: position.center, baseCenter: position.center });
-                    setSheetCustomItems(null);
-                    setSheetOpen(true);
-                  }
-                } else {
-                  // Show all filtered results in sheet
-                  setSheetCustomItems(allCityData);
-                  setSheetOpen(true);
-                }
-              } : undefined}
               suggestions={
                 filters.q.trim().length >= 1
                   ? Array.from(new Set([
@@ -481,28 +531,15 @@ export default function HomeMap() {
                       ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
                       ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
                     ].map((s) => `${s.kind}:${s.label}`)))
-                      .map((key) => {
-                        const [kind, label] = key.split(':');
-                        return { kind: kind as 'uni'|'city'|'country', label, value: label };
-                      })
+                      .map((key) => { const [kind, label] = key.split(':'); return { kind: kind as 'uni'|'city'|'country', label, value: label }; })
                       .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
                       .slice(0, 12)
                   : []
               }
-              onPick={(s) => {
-                if (s.kind === 'country') {
-                  setFilters((f) => ({ ...f, country: s.value }));
-                  setSelected({ name: s.value, center: position.center, baseCenter: position.center });
-                } else if (s.kind === 'uni') {
-                  const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                  try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
-                } else {
-                  setFilters((f) => ({ ...f, q: s.value }));
-                }
-              }}
+              onPick={(s) => { if (s.kind === 'country') { setFilters((f) => ({ ...f, country: s.value })); setSelected({ name: s.value, center: position.center, baseCenter: position.center }); } else if (s.kind === 'uni') { const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {} } else { setFilters((f) => ({ ...f, q: s.value })); } }}
             />
-          </motion.div>
-        </div>
+          </ExplorerRail>
+        )}
 
         {/* Soft top/bottom gradient to blend edges on mobile */}
         {isSmall && (
@@ -579,18 +616,33 @@ export default function HomeMap() {
             title={sheetCustomItems ? (filters.country || 'Results') : (selected!.name)}
             height="70vh"
           >
-            <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityData) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
+            <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityDataSorted) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
           </BottomSheet>
         )}
         {(!isSmall && selected && cityData.length>0) && (
           <div ref={panelRef}>
-            <UniversitiesPanel selectedName={selected!.name} items={cityData as any} topOffset={panelOffset} onAddCompare={(c)=> addToCompare(c)} compareSet={compareSet} />
+            <UniversitiesPanel
+              selectedName={selected!.name}
+              items={cityDataSorted as any}
+              topOffset={panelOffset}
+              onAddCompare={(c)=> addToCompare(c)}
+              compareSet={compareSet}
+              savedSet={savedSet}
+              onToggleSave={(c)=> toggleSaved(c)}
+              onHover={(c) => {
+                if (!c) { setHoveredKey(null); return; }
+                const key = `${(c as any).country || selected!.name}-${c.city}-${c.uni}`;
+                setHoveredKey(key);
+              }}
+            />
           </div>
         )}
 
         {/* Compare FAB + Drawer */}
         <CompareFab count={compare.length} onOpen={() => setCompareOpen(true)} />
         <CompareDrawer open={compareOpen} items={compare as any} onClose={() => setCompareOpen(false)} onRemove={removeFromCompare} onClear={clearCompare} />
+        <SavedFab count={saved.length} onOpen={() => setSavedOpen(true)} />
+        <SavedDrawer open={savedOpen} items={saved as any} onClose={() => setSavedOpen(false)} onRemove={(u)=> setSaved(s=>s.filter(x=>x.uni!==u))} onClear={()=> setSaved([])} />
       </div>
 
     </div>
