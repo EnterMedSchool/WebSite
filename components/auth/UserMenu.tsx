@@ -6,7 +6,6 @@ import Link from "next/link";
 import { signIn, signOut } from "next-auth/react";
 import MenuXpBar from "@/components/xp/MenuXpBar";
 import FloatingDashboard from "@/components/dashboard/FloatingDashboard";
-import CalendarModal from "@/components/calendar/CalendarModal";
 
 type Props = {
   isAuthed: boolean;
@@ -131,9 +130,7 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
               <li>
                 <Link href="/leaderboard" onClick={() => setOpen(false)} className="block w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Leaderboard</Link>
               </li>
-              <li>
-                <button onClick={() => window.dispatchEvent(new CustomEvent('calendar:open' as any))} className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Calendar</button>
-              </li>
+              
               <li>
                 <button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Settings</button>
               </li>
@@ -148,7 +145,6 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
 
       <AuthModal />
       <FloatingDashboard open={dashOpen} onClose={() => setDashOpen(false)} />
-      <CalendarRoot />
     </div>
   );
 }
@@ -217,13 +213,5 @@ function AuthModal() {
 
 function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
 
-function CalendarRoot() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const onOpen = () => setOpen(true);
-    window.addEventListener('calendar:open' as any, onOpen as any);
-    return () => window.removeEventListener('calendar:open' as any, onOpen as any);
-  }, []);
-  return <CalendarModal open={open} onClose={() => setOpen(false)} />;
-}
+ 
 
