@@ -65,6 +65,7 @@ export default function HomeMap() {
       if (filters.country && c.country !== filters.country) return false;
       if (filters.language && (c.language ?? "") !== filters.language) return false;
       if (filters.exam && (c.exam ?? "") !== filters.exam) return false;
+      if (filters.kind && filters.kind !== '' && (c.kind ?? '') !== filters.kind) return false;
       if (q && !(c.uni.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.country.toLowerCase().includes(q))) return false;
       return true;
     });
@@ -161,7 +162,9 @@ export default function HomeMap() {
     const language = searchParams?.get('language') ?? '';
     const exam = searchParams?.get('exam') ?? '';
     const sort = searchParams?.get('sort') ?? '';
-    setFilters({ q, country, language, exam, sort });
+    const colorMode = (searchParams?.get('color') as any) as ('exam'|'language'|'type') ?? undefined;
+    const kind = (searchParams?.get('kind') as any) as ('public'|'private'|'') ?? '';
+    setFilters({ q, country, language, exam, sort, colorMode, kind });
     if (country) {
       // try to preselect country view
       const found = allCityDataRaw.find((c) => c.country === country);
@@ -198,6 +201,8 @@ export default function HomeMap() {
       if (filters.language) params.set('language', filters.language);
       if (filters.exam) params.set('exam', filters.exam);
       if (filters.sort) params.set('sort', filters.sort);
+      if (filters.colorMode) params.set('color', String(filters.colorMode));
+      if (filters.kind) params.set('kind', String(filters.kind));
       const qs = params.toString();
       router.replace(qs ? `?${qs}` : `?`, { scroll: false });
     }, 300);
@@ -390,14 +395,22 @@ export default function HomeMap() {
                 const rimR = 5.5;
                 const emblemR = 4.0;
                 const isPrivate = c.kind === "private";
-                // Color mapping by exam/language (wow factor)
-                let accent = "#6C63FF"; // default indigo
+                // Color mapping by current mode (exam | language | type)
+                const colorMode = (filters as any)?.colorMode || 'exam';
                 const exam = (c as any).exam?.toLowerCase() || "";
                 const lang = (c as any).language?.toLowerCase() || "";
-                if (exam.includes('imat')) accent = '#6366F1';
-                else if (exam.includes('ucat')) accent = '#10B981';
-                else if (lang.includes('english')) accent = '#14B8A6';
-                else if (isPrivate) accent = '#F59E0B';
+                let accent = "#6C63FF";
+                if (colorMode === 'exam') {
+                  if (exam.includes('imat')) accent = '#6366F1';
+                  else if (exam.includes('ucat')) accent = '#10B981';
+                  else accent = '#6C63FF';
+                } else if (colorMode === 'language') {
+                  if (lang.includes('english')) accent = '#14B8A6';
+                  else if (lang.includes('italian')) accent = '#38BDF8';
+                  else accent = '#6C63FF';
+                } else if (colorMode === 'type') {
+                  accent = isPrivate ? '#F59E0B' : '#6366F1';
+                }
                 const clipId = `logo-${(c.country || selected?.name || "").replace(/\s/g, "-")}-${idx}-clip`;
                 const yJitter = 0; // keep precise alignment; jitter removed
                 const isSelectedCountry = selected?.name === c.country;
@@ -491,7 +504,7 @@ export default function HomeMap() {
                 countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
                 languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
                 exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-                resultCount={allCityData.length}
+                resultCount={allCityData.length} onOpenSaved={() => setSavedOpen(true)} onOpenCompare={() => setCompareOpen(true)} savedCount={saved.length} compareCount={compare.length}
                 onViewMobile={() => {
                   if (filters.country) {
                     const found = allCityDataRaw.find((c)=> c.country === filters.country);
@@ -523,7 +536,7 @@ export default function HomeMap() {
               countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
               languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
               exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-              resultCount={allCityData.length}
+              resultCount={allCityData.length} onOpenSaved={() => setSavedOpen(true)} onOpenCompare={() => setCompareOpen(true)} savedCount={saved.length} compareCount={compare.length}
               suggestions={
                 filters.q.trim().length >= 1
                   ? Array.from(new Set([
@@ -648,4 +661,5 @@ export default function HomeMap() {
     </div>
   );
 }
+
 

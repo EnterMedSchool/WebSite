@@ -154,6 +154,13 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               >
                 {savedSet?.has(c.uni) ? 'Saved' : 'Save'}
               </button>
+              <button
+                type="button"
+                onClick={() => { const slug = (c.uni || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); try { window.location.href = `/university/${encodeURIComponent(slug)}`; } catch {} }}
+                className="rounded-xl px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-50"
+              >
+                Visit page
+              </button>
             </div>
           </div>
         ))}
@@ -161,3 +168,6 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
     </div>
   );
 }
+
+
+

@@ -9,6 +9,7 @@ import {
   jsonb,
   index,
   doublePrecision,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Core domain tables (minimal starting point)
@@ -722,5 +723,59 @@ export const imatTaskTemplates = pgTable(
   },
   (t) => ({
     dayIdx: index("imat_templates_day_idx").on(t.dayNumber, t.taskIndex),
+  })
+);
+
+// ---------------- Anki Integration (shared user accounts) ----------------
+
+// Per-user JSON state for the Leo Tamagotchi feature used by the Anki add-on
+export const ankiTamagotchi = pgTable(
+  "anki_tamagotchi",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    state: jsonb("state").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("anki_tamagotchi_user_idx").on(t.userId),
+    userUnique: uniqueIndex("anki_tamagotchi_user_unique").on(t.userId),
+  })
+);
+
+// User star rating per glossary term
+export const termRatings = pgTable(
+  "term_ratings",
+  {
+    id: serial("id").primaryKey(),
+    termSlug: varchar("term_slug", { length: 160 }).notNull(),
+    userId: integer("user_id").notNull(),
+    stars: integer("stars").notNull(), // 1..5
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    slugIdx: index("term_ratings_slug_idx").on(t.termSlug),
+    userIdx: index("term_ratings_user_idx").on(t.userId),
+    slugUserUnique: uniqueIndex("term_ratings_slug_user_unique").on(
+      t.termSlug,
+      t.userId
+    ),
+  })
+);
+
+// User comments per glossary term
+export const termComments = pgTable(
+  "term_comments",
+  {
+    id: serial("id").primaryKey(),
+    termSlug: varchar("term_slug", { length: 160 }).notNull(),
+    userId: integer("user_id").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    slugIdx: index("term_comments_slug_idx").on(t.termSlug),
+    userIdx: index("term_comments_user_idx").on(t.userId),
   })
 );

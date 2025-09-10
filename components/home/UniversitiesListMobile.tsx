@@ -56,3 +56,5 @@ export default function UniversitiesListMobile({ selectedName, items, onAddCompa
   );
 }
 
+
+
