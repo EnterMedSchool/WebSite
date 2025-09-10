@@ -19,6 +19,8 @@ function fmtDayKey(d: Date) { return d.toISOString().slice(0, 10); }
 export default function CalendarModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [events, setEvents] = useState<CalEvent[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<string | null>(null);
+  const [debug, setDebug] = useState<any>(null);
   const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selected, setSelected] = useState<Date | null>(new Date());
   const ref = useRef<HTMLDivElement>(null);
@@ -32,6 +34,8 @@ export default function CalendarModal({ open, onClose }: { open: boolean; onClos
         const r = await fetch('/api/calendar', { credentials: 'include' });
         const j = await r.json();
         setEvents(Array.isArray(j?.events) ? j.events : []);
+        setSource(j?.source || null);
+        setDebug(j?.debug || null);
       } catch { setEvents([]); }
       finally { setLoading(false); }
     })();
@@ -111,6 +115,12 @@ export default function CalendarModal({ open, onClose }: { open: boolean; onClos
           {/* Right rail: events list */}
           <div>
             <div className="mb-2 text-lg font-semibold">{selected ? selected.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : 'Selected Day'}</div>
+            {source === 'ics-empty' && (
+              <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800">
+                No events returned from your school feed yet. If this looks wrong, share your ICS URL and we’ll map it.
+                {debug && (<span className="ml-2 text-amber-700/70">status {debug.status}, bytes {debug.length}</span>)}
+              </div>
+            )}
             {loading ? (
               <div className="h-32 animate-pulse rounded-xl bg-gray-100" />
             ) : (
@@ -141,4 +151,3 @@ export default function CalendarModal({ open, onClose }: { open: boolean; onClos
     </div>
   );
 }
-

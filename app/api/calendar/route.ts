@@ -90,13 +90,22 @@ export async function GET() {
       return NextResponse.json({ source: "mock", edu, events: mock });
     }
 
-    // Fetch ICS
-    const resp = await fetch(url, { cache: "no-store" });
+    // Fetch ICS with a browser-like UA; some gateways return empty bodies without it
+    const resp = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/calendar, text/plain, */*",
+      },
+    });
     const text = await resp.text();
     const events = parseICS(text);
-    return NextResponse.json({ source: "ics", edu, events });
+    const debug = { status: resp.status, length: text.length, url };
+    if (!Array.isArray(events) || events.length === 0) {
+      return NextResponse.json({ source: "ics-empty", edu, events: [], debug });
+    }
+    return NextResponse.json({ source: "ics", edu, events, debug });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
-
