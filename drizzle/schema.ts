@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   schoolId: integer("school_id"),
   medicalCourseId: integer("medical_course_id"),
   studyYear: integer("study_year"),
+  matesVerified: boolean("mates_verified").default(false).notNull(),
 });
 
 export const courses = pgTable(
@@ -546,6 +547,28 @@ export const studentOrganizationCourses = pgTable(
     courseId: integer("course_id").notNull(),
   },
   (t) => ({ orgCoursesCourseIdx: index("org_courses_course_idx").on(t.courseId) })
+);
+
+// Pending education requests requiring manual approval
+export const userEducationRequests = pgTable(
+  "user_education_requests",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    universityId: integer("university_id"),
+    schoolId: integer("school_id"),
+    medicalCourseId: integer("medical_course_id"),
+    studyYear: integer("study_year"),
+    status: varchar("status", { length: 16 }).notNull().default("pending"),
+    note: text("note"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    reviewedAt: timestamp("reviewed_at"),
+    reviewedBy: integer("reviewed_by"),
+  },
+  (t) => ({
+    uerUserIdx: index("uer_user_idx").on(t.userId),
+    uerStatusIdx: index("uer_status_idx").on(t.status),
+  })
 );
 
 // ==========================

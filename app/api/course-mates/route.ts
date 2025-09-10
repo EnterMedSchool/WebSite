@@ -9,12 +9,13 @@ export async function GET() {
     const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-    const ur = await sql`SELECT id, university_id, school_id, medical_course_id, study_year, name, username, image FROM users WHERE id=${userId} LIMIT 1`;
+    const ur = await sql`SELECT id, university_id, school_id, medical_course_id, study_year, mates_verified, name, username, image FROM users WHERE id=${userId} LIMIT 1`;
     const me = ur.rows[0] || {};
     const uniId = me?.university_id || null;
     const schoolId = me?.school_id || null;
     const courseId = me?.medical_course_id || null;
     const year = me?.study_year || null;
+    const isVerified = !!me?.mates_verified;
 
     const universities = (await sql`SELECT id, name FROM universities ORDER BY name ASC`).rows;
 
@@ -74,7 +75,7 @@ export async function GET() {
 
     // Mates: users in same course + study year
     let mates: any[] = [];
-    if (courseId && year) {
+    if (isVerified && courseId && year) {
       const mr = await sql`
         SELECT id, name, username, image
         FROM users
@@ -87,13 +88,14 @@ export async function GET() {
     return NextResponse.json({
       me: {
         id: me?.id, name: me?.name, username: me?.username, image: me?.image,
-        universityId: uniId, schoolId, medicalCourseId: courseId, studyYear: year,
+        universityId: uniId, schoolId, medicalCourseId: courseId, studyYear: year, isVerified,
       },
       universities,
       schools,
       courses,
       organizations: orgs,
       mates,
+      access: isVerified ? 'verified' : (courseId && year ? 'pending' : 'unset'),
     });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
@@ -151,8 +153,18 @@ export async function POST(request: Request) {
       if (!ok) return NextResponse.json({ error: 'course_parent_mismatch' }, { status: 400 });
     }
 
-    await sql`UPDATE users SET university_id=${universityId}, school_id=${schoolId}, medical_course_id=${medicalCourseId}, study_year=${studyYear} WHERE id=${userId}`;
-    return await GET();
+    // Privacy-first: do NOT set users.* directly. Create/update a pending request instead.
+    const pr = await sql`SELECT id FROM user_education_requests WHERE user_id=${userId} AND status='pending' ORDER BY created_at DESC LIMIT 1`;
+    if (pr.rows[0]?.id) {
+      const reqId = Number(pr.rows[0].id);
+      await sql`UPDATE user_education_requests
+                SET university_id=${universityId}, school_id=${schoolId}, medical_course_id=${medicalCourseId}, study_year=${studyYear}, created_at=now()
+                WHERE id=${reqId}`;
+    } else {
+      await sql`INSERT INTO user_education_requests (user_id, university_id, school_id, medical_course_id, study_year, status)
+                VALUES (${userId}, ${universityId}, ${schoolId}, ${medicalCourseId}, ${studyYear}, 'pending')`;
+    }
+    return NextResponse.json({ ok: true, pending: true });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }

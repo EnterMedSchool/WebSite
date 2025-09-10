@@ -7,8 +7,8 @@ type Org = { id: number; name: string; slug: string; website?: string | null; de
 type Mate = { id: number; name?: string | null; username?: string | null; image?: string | null };
 
 export default function CourseMatesPage() {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [Loading... setLoading... = useState(true);
+  const [Saving... setSaving... = useState(false);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [universities, setUniversities] = useState<Option[]>([]);
   const [schools, setSchools] = useState<Option[]>([]);
@@ -16,9 +16,10 @@ export default function CourseMatesPage() {
   const [organizations, setOrganizations] = useState<Org[]>([]);
   const [mates, setMates] = useState<Mate[]>([]);
   const [me, setMe] = useState<any>({});
+  const [access, setAccess] = useState<"verified" | "pending" | "unset" | null>(null);
 
   async function load() {
-    setLoading(true);
+    setLoading...true);
     try {
       const r = await fetch('/api/course-mates', { credentials: 'include' });
       if (r.status === 401) { setIsAuthed(false); setMe({}); setUniversities([]); setSchools([]); setCourses([]); setOrganizations([]); setMates([]); return; }
@@ -31,13 +32,14 @@ export default function CourseMatesPage() {
       setOrganizations(j.organizations || []);
       setMates(j.mates || []);
       setMe(j.me || {});
-    } finally { setLoading(false); }
+      setAccess(j.access || null);
+    } finally { setLoading...false); }
   }
 
   useEffect(() => { load(); }, []);
 
   async function update(field: string, value: number | null) {
-    setSaving(true);
+    setSaving...true);
     try {
       const payload: any = {
         universityId: me.universityId ?? null,
@@ -59,7 +61,7 @@ export default function CourseMatesPage() {
         setMates(j.mates || []);
         setMe(j.me || {});
       }
-    } finally { setSaving(false); }
+    } finally { setSaving...false); }
   }
 
   const initials = useMemo(() => (name?: string | null) => {
@@ -73,9 +75,14 @@ export default function CourseMatesPage() {
       <h1 className="text-2xl font-semibold">Your Course Mates</h1>
       <p className="text-gray-600">Connect with students from your university, school and course. Set your details to see your mates and relevant student organizations.</p>
 
-      {!loading && isAuthed === false && (
+      {!Loading...&& isAuthed === false && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           Please sign in to access Your Course Mates.
+        </div>
+      )}
+      {!Loading...&& isAuthed && access === 'pending' && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800">
+          Your access is pending manual verification. Update your details in <a href="/me/profile" className="font-semibold underline">Edit profile</a>.
         </div>
       )}
 
@@ -87,6 +94,7 @@ export default function CourseMatesPage() {
             options={universities}
             onChange={(v)=>update('universityId', v)}
             placeholder="Choose university"
+            disabled={access !== 'verified'}
           />
           <Select
             label="School"
@@ -94,7 +102,7 @@ export default function CourseMatesPage() {
             options={schools}
             onChange={(v)=>update('schoolId', v)}
             placeholder="Choose school"
-            disabled={!me.universityId}
+            disabled={!me.universityId || access !== 'verified'}
           />
           <Select
             label="Course"
@@ -102,7 +110,7 @@ export default function CourseMatesPage() {
             options={courses}
             onChange={(v)=>update('medicalCourseId', v)}
             placeholder="Choose course"
-            disabled={!me.universityId}
+            disabled={!me.universityId || access !== 'verified'}
           />
           <Select
             label="Study Year"
@@ -110,20 +118,19 @@ export default function CourseMatesPage() {
             options={[1,2,3,4,5,6].map((y)=>({ id: y, name: `Year ${y}` }))}
             onChange={(v)=>update('studyYear', v)}
             placeholder="Select year"
-            disabled={!me.medicalCourseId}
+            disabled={!me.medicalCourseId || access !== 'verified'}
           />
         </div>
-        {saving && <div className="mt-2 text-xs text-gray-500">Saving…</div>}
+        {saving && <div className="mt-2 text-xs text-gray-500">Saving...</div>}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Mates in your course</h2>
-            {loading && <span className="text-xs text-gray-500">Loading…</span>}
-          </div>
-          {!me.medicalCourseId || !me.studyYear ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">Set your course and study year to see your mates.</div>
+            {loading && <span className="text-xs text-gray-500">Loading...</span>}
+            {loading && <span className="text-xs text-gray-500">Loading...</span>}
+          {!me.medicalCourseId || !me.studyYear || access !== "verified" ? (
           ) : mates.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">No mates found yet. Invite your classmates!</div>
           ) : (
@@ -137,8 +144,8 @@ export default function CourseMatesPage() {
                   )}
                   <div>
                     <div className="font-medium text-gray-900">{m.name || m.username || `User #${m.id}`}</div>
-                    <div className="text-xs text-gray-600">Same course • Year {me.studyYear}</div>
-                  </div>
+                    <div className="text-xs text-gray-600">Same course ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Year {me.studyYear}</div>
+                    <div className="text-xs text-gray-600">Same course â€¢ Year {me.studyYear}</div>
                 </li>
               ))}
             </ul>
@@ -148,7 +155,7 @@ export default function CourseMatesPage() {
         <div>
           <h2 className="mb-2 text-lg font-semibold">Student Organizations</h2>
           {organizations.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">No organizations yet. They’ll appear once you select your university/school.</div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">No organizations yet. They will appear once you select your university/school.</div>
           ) : (
             <ul className="space-y-2">
               {organizations.map((o)=> (

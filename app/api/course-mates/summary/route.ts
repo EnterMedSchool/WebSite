@@ -8,10 +8,11 @@ export async function GET() {
   try {
     const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    const me = (await sql`SELECT medical_course_id, study_year FROM users WHERE id=${userId} LIMIT 1`).rows[0] || {};
+    const me = (await sql`SELECT medical_course_id, study_year, mates_verified FROM users WHERE id=${userId} LIMIT 1`).rows[0] || {};
     const cid = me?.medical_course_id || null; const yr = me?.study_year || null;
+    const isVerified = !!me?.mates_verified;
     let matesCount = 0, courseName: string | null = null, schoolName: string | null = null;
-    if (cid && yr) {
+    if (isVerified && cid && yr) {
       const c = await sql`SELECT name, school_id FROM medical_school_courses WHERE id=${cid} LIMIT 1`;
       courseName = c.rows[0]?.name ?? null;
       const sid = c.rows[0]?.school_id || null;
@@ -22,9 +23,8 @@ export async function GET() {
       const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id<>${userId} AND medical_course_id=${cid} AND study_year=${yr}`;
       matesCount = Number(r.rows[0]?.n || 0);
     }
-    return NextResponse.json({ matesCount, courseName, schoolName, studyYear: yr ?? null });
+    return NextResponse.json({ matesCount, courseName, schoolName, studyYear: yr ?? null, isVerified });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
-

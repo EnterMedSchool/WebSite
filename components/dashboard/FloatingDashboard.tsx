@@ -148,7 +148,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                     <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">{data?.user?.image ? (<img src={data.user.image} alt="User" className="h-12 w-12 object-cover" />) : (<span className="text-base font-semibold text-indigo-700">{firstName.slice(0,1).toUpperCase()}</span>)}</span>
                     <div>
                       <div className="font-semibold text-gray-900">{data?.user?.name ?? "Your Name"}</div>
-                      <button className="text-xs font-semibold text-indigo-700 underline" onClick={() => alert("Profile editing coming soon")}>Edit profile</button>
+                      <a href="/me/profile" className="text-xs font-semibold text-indigo-700 underline">Edit profile</a>
                     </div>
                   </div>
                   <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
