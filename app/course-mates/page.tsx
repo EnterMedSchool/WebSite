@@ -17,6 +17,7 @@ export default function CourseMatesPage() {
   const [mates, setMates] = useState<Mate[]>([]);
   const [me, setMe] = useState<any>({});
   const [access, setAccess] = useState<"verified" | "pending" | "unset" | null>(null);
+  const [summary, setSummary] = useState<{ matesCount: number; courseName?: string | null; schoolName?: string | null; studyYear?: number | null } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -41,6 +42,16 @@ export default function CourseMatesPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (access !== "verified") return;
+    (async () => {
+      try {
+        const r = await fetch('/api/course-mates/summary', { credentials: 'include' });
+        if (r.ok) setSummary(await r.json());
+      } catch {}
+    })();
+  }, [access]);
 
   async function update(field: string, value: number | null) {
     setSaving(true);
@@ -91,6 +102,7 @@ export default function CourseMatesPage() {
         </div>
       )}
 
+      {access !== "verified" && (
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Select label="University" value={me.universityId ?? null} options={universities} onChange={(v)=>update("universityId", v)} placeholder="Choose university" disabled={!isAuthed} />
@@ -100,6 +112,24 @@ export default function CourseMatesPage() {
         </div>
         {saving && <div className="mt-2 text-xs text-gray-500">Saving...</div>}
       </div>
+      )}
+
+      {access === "verified" && (
+        <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-fuchsia-50 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-indigo-700">Your Course</div>
+              <div className="text-2xl font-extrabold text-gray-900">{summary?.courseName || 'Your Course'} <span className="text-base font-semibold text-gray-600">• {summary?.schoolName || 'School'} • Year {summary?.studyYear ?? me.studyYear ?? '-'}</span></div>
+              <div className="mt-1 text-sm text-gray-600">Welcome to your course space. Discover classmates, organizations, events and more.</div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-xl border border-indigo-200 bg-white px-4 py-2"><div className="text-xl font-bold text-indigo-700">{summary?.matesCount ?? 0}</div><div className="text-[11px] text-gray-600">Mates</div></div>
+              <div className="rounded-xl border border-indigo-200 bg-white px-4 py-2"><div className="text-xl font-bold text-indigo-700">{organizations.length}</div><div className="text-[11px] text-gray-600">Organizations</div></div>
+              <a href="/me/profile" className="grid place-items-center rounded-xl border border-indigo-200 bg-white px-4 py-2 text-[11px] font-semibold text-indigo-700">Edit Profile</a>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
@@ -151,6 +181,33 @@ export default function CourseMatesPage() {
           )}
         </div>
       </div>
+      {access === "verified" && (
+        <div className="mt-6 grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 text-lg font-semibold">Course Leaderboard (Coming Soon)</div>
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {[1,2,3,4,5].map((n) => (
+                  <li key={n} className="flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">#{n}</span><span className="font-medium text-gray-800">Top Student {n}</span></div>
+                    <span className="text-xs text-indigo-700">{1000 - n*37} XP</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 text-lg font-semibold">Upcoming Events (Mock)</div>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="rounded-lg border px-3 py-2"><div className="font-semibold">Welcome Meetup</div><div className="text-xs text-gray-600">Sep 15 • Student Center</div></li>
+                <li className="rounded-lg border px-3 py-2"><div className="font-semibold">Cardio Workshop</div><div className="text-xs text-gray-600">Sep 22 • Anatomy Lab</div></li>
+                <li className="rounded-lg border px-3 py-2"><div className="font-semibold">Study Night</div><div className="text-xs text-gray-600">Oct 1 • Library</div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -178,4 +235,6 @@ function Select({ label, value, options, onChange, placeholder, disabled }: { la
     </label>
   );
 }
+
+
 
