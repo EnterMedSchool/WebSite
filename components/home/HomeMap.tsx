@@ -448,6 +448,8 @@ export default function HomeMap() {
                     >
                       {/* Emblem-only dot (logo inside if available) */}
                       <g>
+                        {isSelectedCountry && <circle r={rimR + 3} fill={accent} opacity={0.12} />}
+                        {hoveredKey === key && <circle r={rimR + 5} fill={accent} opacity={0.18} />}
                         <circle r={rimR} fill="#ffffff" />
                         {c.logo ? (
                           <>
@@ -663,5 +665,6 @@ export default function HomeMap() {
     </div>
   );
 }
+
 
 

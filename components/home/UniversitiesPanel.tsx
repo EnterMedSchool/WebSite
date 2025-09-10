@@ -24,13 +24,22 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
   const router = useRouter();
   const PANEL_GUTTER = 8;
   const PANEL_TOP_GAP = topOffset;
+  const langs = new Set((items || []).map((i: any) => (i as any).language || '').filter(Boolean));
+  const exams = new Set((items || []).map((i: any) => (i as any).exam || '').filter(Boolean));
 
   return (
     <div
       className="pointer-events-auto absolute right-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
       style={{ top: PANEL_TOP_GAP, bottom: PANEL_GUTTER, maxHeight: `calc(100% - ${PANEL_TOP_GAP + PANEL_GUTTER}px)` }}
     >
-      <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selectedName}</div>
+      <div className="mb-3">
+        <div className="text-sm font-semibold uppercase tracking-wide text-indigo-600">{selectedName}</div>
+        <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Universities</div><div className="text-base font-bold text-gray-900">{items.length}</div></div>
+          <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Languages</div><div className="text-base font-bold text-gray-900">{langs.size}</div></div>
+          <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Exams</div><div className="text-base font-bold text-gray-900">{exams.size}</div></div>
+        </div>
+      </div>
       <div className="space-y-3 max-h-full overflow-auto pr-1">
         {items.map((c, i) => (
           <div
@@ -79,7 +88,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
                     <img key={idx} src={src} alt="photo" className="h-12 w-12 rounded object-cover" />
                   ))}
                   {(!c.photos || c.photos.length === 0) && (
-                    <div className="h-12 w-full min-w-[6rem] rounded bg-gray-100 text-[10px] text-gray-500 grid place-items-center">
+                    <div className="min-h-[28px] w-full min-w-[6rem] rounded bg-gray-100/70 px-2 py-1 text-[10px] text-gray-500 grid place-items-center">
                       No images
                     </div>
                   )}
