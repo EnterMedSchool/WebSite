@@ -191,7 +191,15 @@ export default function Planner({ totalDays }: Props) {
           <ul className="space-y-1">
             {days.map((d) => {
               const parent = groups[d];
-              const [done, total] = progressOf(parent.tasks);
+              let done = 0, total = 0;
+              if (parent && parent.total != null) {
+                total = Math.max(1, parent.total || 0);
+                done = Math.min(total, parent.done || 0);
+              } else {
+                const dt = progressOf(parent.tasks);
+                done = dt[0];
+                total = Math.max(1, dt[1]);
+              }
               return (
                 <li key={d}>
                   <button
