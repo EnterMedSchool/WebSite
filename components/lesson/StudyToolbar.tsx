@@ -56,36 +56,38 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   function printPage() { try { window.print(); } catch {} onPrint?.(); }
   function askAI() { try { window.dispatchEvent(new CustomEvent('ai:open')); } catch {} onAskAI?.(); }
 
+  const segBtn = (active: boolean) => `inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`;
+  const ghostBtn = `inline-flex h-9 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
+  const primaryBtn = `inline-flex h-9 items-center gap-1 rounded-full bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700`;
+  const toggleBtn = focus
+    ? `inline-flex h-9 items-center gap-1 rounded-full bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700`
+    : `inline-flex h-9 items-center gap-1 rounded-full bg-white px-3 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-50`;
+
   return (
-    <div className="sticky top-24 z-[5] rounded-2xl border bg-white/95 p-2 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="sticky top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {!focus ? (
           <>
-            {/* Mode switch with icons and labels */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-300">
-              <button onClick={() => onMode('learn')} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold transition ${mode==='learn' ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`}>
-                <IconBook /> <span>Learn</span>
-              </button>
-              <button onClick={() => onMode('practice')} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold transition ${mode==='practice' ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`}>
-                <IconQuiz /> <span>Practice</span>
-              </button>
+            {/* Mode switch */}
+            <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+              <button onClick={() => onMode('learn')} className={segBtn(mode==='learn')}><IconBook /><span>Learn</span></button>
+              <button onClick={() => onMode('practice')} className={segBtn(mode==='practice')}><IconQuiz /><span>Practice</span></button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button onClick={share} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100"><IconShare /><span>Share</span></button>
-              <button onClick={printPage} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100"><IconPrint /><span>Print</span></button>
-              <button onClick={askAI} className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"><IconGPT /><span>ChatGPT</span></button>
+            {/* Actions cluster */}
+            <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+              <button onClick={share} className={ghostBtn}><IconShare /><span>Share</span></button>
+              <button onClick={printPage} className={ghostBtn}><IconPrint /><span>Print</span></button>
+              <button onClick={askAI} className={primaryBtn}><IconGPT /><span>ChatGPT</span></button>
+              <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
             </div>
           </>
         ) : (
-          <div className="text-[12px] font-semibold text-indigo-900">Focus mode</div>
+          <div className="flex w-full items-center justify-between">
+            <div className="text-[12px] font-semibold text-indigo-900">Focus mode</div>
+            <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
+          </div>
         )}
-
-        <div className="ml-auto">
-          <button onClick={onFocusToggle} className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${focus ? 'bg-indigo-600 text-white ring-indigo-600 hover:bg-indigo-700' : 'bg-white text-indigo-700 ring-indigo-200 hover:bg-indigo-50'}`}>
-            {focus ? 'Exit focus' : 'Focus'}
-          </button>
-        </div>
       </div>
       {!focus && copied && <div className="mt-1 text-center text-[11px] text-indigo-700">Link copied to clipboard</div>}
     </div>
