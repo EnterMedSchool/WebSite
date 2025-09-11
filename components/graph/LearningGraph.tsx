@@ -117,10 +117,13 @@ function GraphInner({ data }: { data: GraphJSON }) {
   }, [focus]);
 
   // Register click events to update focus
-  useRegisterEvents({
-    clickNode: (e) => setFocus(e.node),
-    clickStage: () => setFocus(null),
-  });
+  const registerEvents = useRegisterEvents();
+  useEffect(() => {
+    registerEvents({
+      clickNode: (e) => setFocus(e.node),
+      clickStage: () => setFocus(null),
+    });
+  }, [registerEvents]);
 
   // Reducers configured through settings
   useEffect(() => {
@@ -351,15 +354,18 @@ function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: stri
     setHighlightSet(visited);
   }, [focus]);
 
-  useRegisterEvents({
-    clickNode: (e) => {
-      const g = gRef.current!;
-      const t = g.getNodeAttribute(e.node, "type");
-      if (t === "course") expandCourse(g.getNodeAttribute(e.node, "courseId"));
-      else setFocus(e.node);
-    },
-    clickStage: () => setFocus(null),
-  });
+  const registerEvents2 = useRegisterEvents();
+  useEffect(() => {
+    registerEvents2({
+      clickNode: (e) => {
+        const g = gRef.current!;
+        const t = g.getNodeAttribute(e.node, "type");
+        if (t === "course") expandCourse(g.getNodeAttribute(e.node, "courseId"));
+        else setFocus(e.node);
+      },
+      clickStage: () => setFocus(null),
+    });
+  }, [registerEvents2]);
 
   useEffect(() => {
     setSettings({
