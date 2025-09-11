@@ -1,4 +1,4 @@
-export type Milestone = {
+ï»¿export type Milestone = {
   id: string;
   title: string;
   subtitle: string;
@@ -15,7 +15,7 @@ export const MILESTONES: Milestone[] = [
     subtitle:
       "We provided free live classes and coaching to help students succeed in admission exams.",
     metric: { label: 'Students supported', value: 700, suffix: '+' },
-    year: '2020–2024',
+    year: '2020â€“2024',
     accent: '#6366F1', // indigo-500
     link: '/classes',
   },
@@ -63,10 +63,11 @@ export const MILESTONES: Milestone[] = [
     id: 'impact',
     title: 'Real Outcomes, Real Impact',
     subtitle:
-      'From first lesson to acceptance letters — a mission powered by kindness and grit.',
+      'From first lesson to acceptance letters â€” a mission powered by kindness and grit.',
     metric: { label: 'Admissions supported', value: 1000, suffix: '+' },
     year: 'Every year',
     accent: '#60A5FA', // blue-400
     link: '/impact',
   },
 ];
+

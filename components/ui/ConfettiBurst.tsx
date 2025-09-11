@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
@@ -59,3 +59,4 @@ export default function ConfettiBurst({ count = 36, duration = 1.9 }: { count?: 
     </div>
   );
 }
+

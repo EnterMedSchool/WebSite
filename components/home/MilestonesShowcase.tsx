@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import ImpactCard from "../ui/ImpactCard";
@@ -189,3 +189,4 @@ export default function MilestonesShowcase() {
     </section>
   );
 }
+

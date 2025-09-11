@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEffect } from "react";
 
@@ -47,3 +47,4 @@ export default function AnimatedCounter({
     </motion.span>
   );
 }
+

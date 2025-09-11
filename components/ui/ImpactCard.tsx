@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import AnimatedCounter from "./AnimatedCounter";
@@ -26,7 +26,8 @@ export default function ImpactCard({
   onFocus?: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [shinePos, setShinePos] = useState({ x: 50, y: 50 });\n  const [hovered, setHovered] = useState(false);
+  const [shinePos, setShinePos] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
 
   const handlePointer = (e: React.PointerEvent) => {
     const el = cardRef.current;
@@ -43,13 +44,18 @@ export default function ImpactCard({
       role="button"
       tabIndex={0}
       onFocus={onFocus}
-      onPointerMove={handlePointer} onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
+      onPointerMove={handlePointer}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       onClick={() => onOpen(item)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item); } }}
       className="group relative h-[360px] w-[520px] cursor-pointer select-none rounded-3xl border border-white/10 bg-gradient-to-b from-white/10 to-white/5 p-6 text-left shadow-[0_10px_40px_rgba(49,46,129,0.15)] backdrop-blur-xl outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
       style={{
         background:
           `radial-gradient(1200px 220px at 50% 0%, rgba(99,102,241,0.10), transparent 70%), radial-gradient(150px 150px at ${shinePos.x}% ${shinePos.y}%, rgba(255,255,255,0.25), transparent 40%)`,
+        transformPerspective: 900,
+        rotateX: hovered ? -(shinePos.y - 50) / 8 : 0,
+        rotateY: hovered ? (shinePos.x - 50) / 8 : 0,
       }}
       initial={{ opacity: 0, y: 30, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: focused ? 1 : 0.99 }}
@@ -89,12 +95,12 @@ export default function ImpactCard({
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full blur-2xl"
-        style={{\n        background: adial-gradient(1200px 220px at 50% 0%, rgba(99,102,241,0.10), transparent 70%), radial-gradient(150px 150px at % %, rgba(255,255,255,0.25), transparent 40%),\n        transformPerspective: 900,\n        rotateX: hovered ? -(shinePos.y - 50) / 8 : 0,\n        rotateY: hovered ? (shinePos.x - 50) / 8 : 0,\n      }}
+        style={{ background: item.accent, opacity: focused ? 0.6 : 0.25 }}
       />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -bottom-10 -left-10 h-28 w-28 rounded-full blur-2xl"
-        style={{\n        background: adial-gradient(1200px 220px at 50% 0%, rgba(99,102,241,0.10), transparent 70%), radial-gradient(150px 150px at % %, rgba(255,255,255,0.25), transparent 40%),\n        transformPerspective: 900,\n        rotateX: hovered ? -(shinePos.y - 50) / 8 : 0,\n        rotateY: hovered ? (shinePos.x - 50) / 8 : 0,\n      }}
+        style={{ background: item.accent, opacity: focused ? 0.5 : 0.2 }}
       />
       <div className="absolute bottom-4 right-4 flex items-center gap-2 text-indigo-50/80">
         <span className="text-xs">Learn more</span>
@@ -105,5 +111,4 @@ export default function ImpactCard({
     </motion.div>
   );
 }
-
 
