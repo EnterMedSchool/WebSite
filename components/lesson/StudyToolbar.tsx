@@ -75,10 +75,10 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
 
             {/* Actions cluster */}
             <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
-              <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
               <button onClick={share} className={ghostBtn}><IconShare /><span>Share</span></button>
               <button onClick={printPage} className={ghostBtn}><IconPrint /><span>Print</span></button>
               <button onClick={askAI} className={ghostBtn}><IconGPT /><span>ChatGPT</span></button>
+              <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
             </div>
           </>
         ) : (
