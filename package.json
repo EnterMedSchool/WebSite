@@ -32,7 +32,7 @@
     "graphology-layout-forceatlas2": "^0.10.1",
     "sigma": "^3.0.2",
     "@react-sigma/core": "^5.0.4",
-    "react-force-graph": "^1.48.3"
+    "react-force-graph": "^1.48.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
