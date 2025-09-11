@@ -33,7 +33,7 @@ export default function LessonPage() {
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [tab, setTab] = useState<"learn" | "practice" | "notes">("learn");
+  const [tab, setTab] = useState<"learn" | "practice">("learn");
   const [qs, setQs] = useState<any[]>([]);
   const [ansState, setAnsState] = useState<Record<number, "correct" | "wrong">>({});
   const [idx, setIdx] = useState(0);
@@ -58,7 +58,7 @@ export default function LessonPage() {
   // Initialize tab and question index from URL on slug change
   useEffect(() => {
     const t = (searchParams.get('tab') || '').toLowerCase();
-    if (t === 'learn' || t === 'practice' || t === 'notes') setTab(t as any);
+    if (t === 'learn' || t === 'practice') setTab(t as any);
     const qParam = Number(searchParams.get('q') || NaN);
     if (Number.isFinite(qParam) && qParam > 0) setIdx(Math.max(0, qParam - 1));
     try {
@@ -108,7 +108,7 @@ export default function LessonPage() {
     if (!isAuthed) return;
     fetch(`/api/lesson/${slug}/progress`, {
       method: "POST",
-      body: JSON.stringify({ progress: tab === "learn" ? 40 : tab === "practice" ? 70 : 30 }),
+      body: JSON.stringify({ progress: tab === "learn" ? 40 : 70 }),
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
@@ -215,17 +215,7 @@ export default function LessonPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{lesson?.title}</h1>
-            <div className="mt-2 flex gap-2">
-              {["learn", "practice", "notes"].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t as any)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${tab === t ? "bg-white text-indigo-700" : "bg-white/15 text-white hover:bg-white/25"}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            {/* removed tiny pills; mode switcher moved below */}
             {/* Compact status instead of a full bar */}
             <div className="mt-3 w-full max-w-md text-xs font-medium text-white/90">
               {isAuthed ? (
@@ -271,7 +261,15 @@ export default function LessonPage() {
       {/* Chapter navigator (UI-only) */}
       <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-indigo-900">Chapter progress</div>
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-semibold text-indigo-900">Chapter progress</div>
+            {/* Segmented mode switcher */}
+            <div className="hidden sm:inline-flex rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-300">
+              {(["learn","practice"] as const).map((m) => (
+                <button key={m} onClick={() => setTab(m)} className={`px-3 py-1 text-xs font-semibold rounded-full transition ${tab===m ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`}>{m === 'learn' ? 'Learn' : 'Practice'}</button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-1 items-center gap-3 sm:pl-4">
             {(() => {
               const lessons = timeline?.lessons || [];
@@ -285,6 +283,14 @@ export default function LessonPage() {
                 </>
               );
             })()}
+          </div>
+          {/* Mobile mode switcher */}
+          <div className="sm:hidden">
+            <div className="inline-flex rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-300">
+              {(["learn","practice"] as const).map((m) => (
+                <button key={m} onClick={() => setTab(m)} className={`px-3 py-1 text-xs font-semibold rounded-full transition ${tab===m ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`}>{m === 'learn' ? 'Learn' : 'Practice'}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -312,7 +318,7 @@ export default function LessonPage() {
                       {i + 1}
                     </span>
                     <Link
-                      href={`/lesson/${t.slug}${isCurr && (tab==='practice' || tab==='notes') ? `?tab=${tab}${tab==='practice' ? `&q=${idx+1}`:''}` : ''}`}
+                      href={`/lesson/${t.slug}${isCurr && (tab==='practice') ? `?tab=${tab}&q=${idx+1}` : ''}`}
                       className={`block rounded-lg px-2 py-1.5 text-sm transition ${isCurr ? "bg-indigo-50 text-indigo-800" : "hover:bg-gray-50 text-gray-800"}`}
                     >
                       <div className="line-clamp-2 pr-6">{t.title}</div>
@@ -524,24 +530,7 @@ export default function LessonPage() {
             </div>
           )}
 
-          {tab === "notes" && (
-            <div className="space-y-3">
-              {blocks
-                .filter((b) => b.kind === "note")
-                .map((b, i) => (
-                  <motion.article
-                    key={b.id}
-                    className="prose prose-indigo max-w-none rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5"
-                    initial={{ opacity: 0, y: 8 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.03 }}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.content}</ReactMarkdown>
-                  </motion.article>
-                ))}
-            </div>
-          )}
+          {/* notes tab removed */}
 
           {/* Lesson meta moved to header; no bottom prev/next */}
         </section>
