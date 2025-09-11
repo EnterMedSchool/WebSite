@@ -48,6 +48,7 @@ export default function LessonPage() {
   const [lessonProg, setLessonProg] = useState<LessonProg>(null);
   const [timeline, setTimeline] = useState<Timeline>(null);
   const [uniSynced, setUniSynced] = useState<boolean>(false);
+  const [unlockDemoVideo, setUnlockDemoVideo] = useState<boolean>(false);
 
   const q = qs[idx];
 
@@ -65,6 +66,7 @@ export default function LessonPage() {
       const u = searchParams.get('uni');
       const saved = typeof window !== 'undefined' ? window.localStorage.getItem('ems:uniSynced') : null;
       setUniSynced(u === '1' || saved === '1');
+      setUnlockDemoVideo((searchParams.get('demo') || '') === '1');
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
@@ -208,7 +210,7 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-7xl p-6">
       {/* Hero header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex items-start justify-between gap-4">
@@ -225,29 +227,16 @@ export default function LessonPage() {
                 </button>
               ))}
             </div>
-            {/* Lesson progress bar (complete lesson + solve all questions) */}
-            <div className="mt-3 w-full max-w-md">
-              <div
-                className={`relative h-3 overflow-hidden rounded-full ${isAuthed ? "bg-white/20" : "bg-white/10"}`}
-                title={isAuthed ? `Lesson progress: ${(lessonProg?.lessonPct ?? 0)}%` : "Sign in to track lesson progress"}
-              >
-                <div
-                  className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-300 to-emerald-200 transition-all`}
-                  style={{ width: `${isAuthed ? (lessonProg?.lessonPct ?? 0) : 0}%`, opacity: isAuthed ? 1 : 0.5 }}
-                />
-              </div>
+            {/* Compact status instead of a full bar */}
+            <div className="mt-3 w-full max-w-md text-xs font-medium text-white/90">
               {isAuthed ? (
-                <div className="mt-1 text-xs font-medium text-white/90">
-                  {lessonProg ? (
-                    <span>
-                      {lessonProg.completed ? "Completed" : "Incomplete"} - Questions: {lessonProg.qCorrect}/{lessonProg.qTotal} - {lessonProg.lessonPct}%
-                    </span>
-                  ) : (
-                    <span>Lesson progress: 0%</span>
-                  )}
-                </div>
+                lessonProg ? (
+                  <span>{lessonProg.completed ? "Completed" : "Incomplete"} • {lessonProg.qCorrect}/{lessonProg.qTotal} questions</span>
+                ) : (
+                  <span>Progress will appear here</span>
+                )
               ) : (
-                <div className="mt-1 text-xs font-medium text-white/60">Sign in to track lesson progress</div>
+                <span className="text-white/70">Sign in to track lesson progress</span>
               )}
             </div>
           </div>
@@ -290,14 +279,12 @@ export default function LessonPage() {
       </div>
 
       {/* Content */}
-      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[260px,1fr,280px]">
+      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[280px,1fr,320px]">
         {/* Timeline sidebar */}
         <aside className="hidden lg:block">
           <div className="sticky top-20 rounded-2xl border border-indigo-100 bg-white/90 p-4 shadow-sm ring-1 ring-black/5">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Chapter Progress</div>
-            <div className="mb-3 h-2 w-full rounded-full bg-gray-200">
-              <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${courseProg?.pct ?? 0}%` }} />
-            </div>
+            {/* Removed sidebar progress bar to reduce duplication */}
             <ul className="relative mt-2">
               {timeline?.lessons?.map((t, i) => {
                 const isCurr = t.slug === slug;
@@ -348,6 +335,24 @@ export default function LessonPage() {
         <section>
           {tab === "learn" && (
             <div className="space-y-4">
+              {/* Ensure a video appears for demo even if lesson lacks one */}
+              {(() => {
+                const hasVideo = blocks.some((b) => b.kind === 'video');
+                if (!hasVideo) {
+                  return (
+                    <div key="demo-video" className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+                      <VideoPanel
+                        src="https://www.youtube.com/watch?v=yO9oj2ScR-g"
+                        locked={!isAuthed && !unlockDemoVideo}
+                        lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
+                        onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                        subtitles={[{ lang: 'en', label: 'English' }]}
+                      />
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               {blocks.map((b, i) => (
                 <motion.div
                   key={b.id}
@@ -361,7 +366,7 @@ export default function LessonPage() {
                     <VideoPanel
                       src={JSON.parse(b.content || "{}")?.src || ""}
                       poster={JSON.parse(b.content || "{}")?.poster || ""}
-                      locked={!isAuthed}
+                      locked={!isAuthed && !unlockDemoVideo}
                       lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
                       onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
                       subtitles={[{ lang: 'en', label: 'English' }, { lang: 'it', label: 'Italiano' }]}
@@ -384,11 +389,7 @@ export default function LessonPage() {
 
           {tab === "practice" && (
             <div className="space-y-4">
-              {/* progress */}
-              <div className="h-2 w-full rounded-full bg-gray-200">
-                <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${progressPct}%` }} />
-              </div>
-              {/* quick nav bubbles */}
+              {/* question nav bubbles only (progress bar removed) */}
               {qs.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {qs.map((qq, i) => {
@@ -518,7 +519,7 @@ export default function LessonPage() {
             </div>
           </div>
         </section>
-        <Glossary />
+        {tab === 'learn' ? <Glossary /> : <div className="hidden lg:block" />}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import SubtitlesPanel, { SubtitleTrack } from "./SubtitlesPanel";
 
 type Props = {
-  src?: string;
+  src?: string; // can be file or YouTube URL
   poster?: string;
   locked?: boolean;
   lockReason?: string;
@@ -11,12 +11,43 @@ type Props = {
   subtitles?: SubtitleTrack[];
 };
 
+function toYouTubeEmbed(url?: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (/youtu\.be$/.test(u.hostname)) {
+      const id = u.pathname.replace(/^\//, "");
+      return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+    }
+    if (/youtube\.com$/.test(u.hostname)) {
+      const id = u.searchParams.get("v");
+      if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
+      const m = u.pathname.match(/\/embed\/([^/]+)/);
+      if (m?.[1]) return `https://www.youtube-nocookie.com/embed/${m[1]}`;
+    }
+  } catch {}
+  return null;
+}
+
 export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, subtitles }: Props) {
+  const yt = toYouTubeEmbed(src);
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video src={src} poster={poster} className="block w-full" controls={!locked} playsInline />
+        {yt ? (
+          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={yt}
+              title="Lesson video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        ) : (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video src={src} poster={poster} className="block w-full" controls={!locked} playsInline />
+        )}
         {locked && (
           <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
             <div className="max-w-sm rounded-2xl bg-white p-4 text-center shadow ring-1 ring-black/5">
@@ -34,4 +65,3 @@ export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, 
     </div>
   );
 }
-
