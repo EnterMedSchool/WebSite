@@ -56,6 +56,17 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
           <div className="mt-2 text-xs text-gray-500">Loading details…</div>
         )}
       </div>
+      {items.length > 60 ? (
+        <VirtualList
+          items={items}
+          selectedName={selectedName}
+          onAddCompare={onAddCompare}
+          compareSet={compareSet}
+          onHover={onHover}
+          savedSet={savedSet}
+          onToggleSave={onToggleSave}
+        />
+      ) : (
       <div className="space-y-3 max-h-full overflow-auto pr-1" ref={listRef}>
         {items.map((c, i) => (
           <div
@@ -195,6 +206,82 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
           </div>
         ))}
       </div>
+      )}
+    </div>
+  );
+}
+
+function VirtualList({ items, selectedName, onAddCompare, compareSet, onHover, savedSet, onToggleSave }: any) {
+  const router = useRouter();
+  const outerRef = useRef<HTMLDivElement | null>(null);
+  const [height, setHeight] = useState(520);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setHeight(el.clientHeight || 520);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener('resize', measure);
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+  return (
+    <div className="max-h-full overflow-hidden pr-1" ref={containerRef}>
+      <List height={height} width={'100%'} itemCount={items.length} itemSize={260} outerRef={outerRef} itemData={{ items, selectedName, onAddCompare, compareSet, onHover, savedSet, onToggleSave, router }}>
+        {({ index, style, data }: ListChildComponentProps) => {
+          const c = data.items[index];
+          return (
+            <div style={style as any} className="group rounded-xl border p-3 hover:bg-gray-50 transition-all mb-3" onMouseEnter={() => data.onHover?.(c)} onMouseLeave={() => data.onHover?.(null)}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
+                  {c.logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.logo} alt="logo" className="h-full w-full object-cover" loading="lazy" decoding="async" fetchPriority="low" />
+                  ) : (
+                    <span className="text-lg font-semibold text-indigo-700">{c.city[0]}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{c.uni}</div>
+                  <div className="text-sm text-gray-500">
+                    {c.city}
+                    {c.kind && (<>
+                      {" A� "}
+                      {c.kind === 'private' ? 'Private' : 'Public'}
+                    </>)}
+                  </div>
+                </div>
+                {typeof c.rating === 'number' && (
+                  <div className="ml-auto text-sm font-semibold text-gray-700">�-? {c.rating.toFixed(1)}</div>
+                )}
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="col-span-3 rounded-lg bg-gray-50 p-2">
+                  <div className="mb-1 text-xs font-semibold text-gray-700">Gallery</div>
+                  <div className="flex gap-1">
+                    {(c.photos ?? []).slice(0,3).map((src: string, idx: number) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={idx} src={src} alt="photo" className="h-12 w-12 rounded object-cover" loading="lazy" decoding="async" fetchPriority="low" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 cursor-pointer rounded-2xl bg-gray-50 p-2 transition-all hover:ring-2 hover:ring-indigo-200" onClick={() => { const slug = (c.uni || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); try { data.router.push(`/university/${encodeURIComponent(slug)}`); } catch {} }}>
+                <MiniTrend uni={c.uni} id={c.id} root={outerRef.current} prefetch={{ points: (c as any).trendPoints, seats: (c as any).trendSeats }} />
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <DeadlineStrip opens={(c as any).admOpens} deadline={(c as any).admDeadline} results={(c as any).admResults} />
+                <CostTile city={c.city} rent={(c as any).costRent} foodIndex={(c as any).costFoodIndex} transport={(c as any).costTransport} />
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <button type="button" onClick={() => data.onAddCompare?.({ ...c, country: data.selectedName })} className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${data.compareSet?.has(c.uni) ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700'}`}>{data.compareSet?.has(c.uni) ? 'Added to Compare' : 'Add to Compare'}</button>
+                <button type="button" onClick={() => data.onToggleSave?.({ ...c, country: data.selectedName })} className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${ (typeof data.savedSet !== 'undefined' && data.savedSet?.has(c.uni)) ? 'bg-pink-600 text-white hover:bg-pink-700' : 'bg-white text-pink-600 ring-1 ring-pink-200 hover:bg-pink-50' }`}>{data.savedSet?.has(c.uni) ? 'Saved' : 'Save'}</button>
+              </div>
+            </div>
+          );
+        }}
+      </List>
     </div>
   );
 }

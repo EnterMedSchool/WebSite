@@ -467,8 +467,8 @@ export default function HomeMap() {
 
             {/* City markers when a country is selected */}
             <AnimatePresence>
-              {/* Render markers for all countries with data; scale up for selected country */}
-              {allCityData.map((c, idx) => {
+              {/* Render markers only for the selected country to cap DOM size */}
+              {(selected ? cityDataSorted : []).map((c, idx) => {
                 const label = c.city;
                 const rimR = 5.5;
                 const emblemR = 4.0;
