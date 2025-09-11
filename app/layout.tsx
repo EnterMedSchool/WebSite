@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
         <Providers>
           <Navbar />
-          <main className="mx-auto max-w-6xl p-6">{children}</main>
+          <main className="mx-auto max-w-[1400px] p-6">{children}</main>
           {STUDY_ENABLED ? <QuickDock /> : null}
           <RewardsOverlay />
         </Providers>
