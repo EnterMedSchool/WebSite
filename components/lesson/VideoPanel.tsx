@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import SubtitlesPanel, { SubtitleTrack } from "./SubtitlesPanel";
 
 type Anchor = { pos: number; id: string; label: string };
@@ -36,8 +37,8 @@ function toYouTubeEmbed(url?: string): string | null {
 
 export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, subtitles, prev, next, anchors }: Props) {
   const yt = toYouTubeEmbed(src);
-  const [progress, setProgress] = React.useState(0);
-  React.useEffect(() => {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
     const id = window.setInterval(() => setProgress((p) => (p >= 100 ? 0 : p + 0.6)), 80);
     return () => window.clearInterval(id);
   }, []);
