@@ -1,0 +1,7 @@
+# lesson_slug, requires_slug[, kind]
+# Sample manual edges to demonstrate the workflow. Slug values must exist in the lessons table.
+biochemistry-2, biochemistry-1, required
+biochemistry-1, cell-biology-basics, required
+neurophysiology, physiology-membranes, required
+physiology-membranes, cell-biology-basics, required
+

@@ -28,14 +28,52 @@ async function fetchData() {
   `;
   const coursesRes = await sql`SELECT id, slug, title FROM courses`;
 
+  // Optional: merge manual edges from repository CSV/JSON (slug-based)
+  const manualEdges = [];
+  try {
+    const base = path.join(process.cwd(), "data", "graph");
+    const csvPath = path.join(base, "edges.csv");
+    const jsonPath = path.join(base, "edges.json");
+    const slugToId = new Map(lessonsRes.rows.map((r) => [String(r.slug), Number(r.id)]));
+    const pushEdge = (srcSlug, tgtSlug, kind = "required") => {
+      const sId = slugToId.get(String(srcSlug));
+      const tId = slugToId.get(String(tgtSlug));
+      if (!sId || !tId) {
+        console.warn(`[graph] manual edge skipped: ${srcSlug} -> ${tgtSlug} (slug not found)`);
+        return;
+      }
+      manualEdges.push({ requiresLessonId: sId, lessonId: tId, kind });
+    };
+    if (fs.existsSync(csvPath)) {
+      const raw = fs.readFileSync(csvPath, "utf8");
+      raw.split(/\r?\n/).forEach((line) => {
+        const t = line.trim();
+        if (!t || t.startsWith("#")) return;
+        const [lessonSlug, requiresSlug, kind] = t.split(",").map((s) => s.trim());
+        // CSV order: lesson_slug, requires_slug[, kind]
+        pushEdge(requiresSlug, lessonSlug, kind || "required");
+      });
+    }
+    if (fs.existsSync(jsonPath)) {
+      const arr = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+      for (const e of arr) {
+        // JSON format: { lessonSlug, requiresSlug, kind? }
+        pushEdge(e.requiresSlug, e.lessonSlug, e.kind || "required");
+      }
+    }
+  } catch (e) {
+    console.warn("[graph] manual edges load error:", e.message);
+  }
+
   return {
     lessons: lessonsRes.rows,
-    edges: edgesRes.rows,
+    edgesDb: edgesRes.rows,
+    manualEdges,
     courses: coursesRes.rows,
   };
 }
 
-function buildGraph({ lessons, edges, courses }) {
+function buildGraph({ lessons, edgesDb, manualEdges, courses }) {
   const nodes = [];
   const edgesOut = [];
 
@@ -85,9 +123,15 @@ function buildGraph({ lessons, edges, courses }) {
 
   // Edges are directed: prerequisite -> lesson
   let eid = 0;
-  for (const e of edges) {
-    edgesOut.push({ id: String(eid++), source: String(e.requiresLessonId), target: String(e.lessonId), kind: "required" });
-  }
+  const seen = new Set();
+  const addEdge = (s, t, kind = "required") => {
+    const key = `${s}:${t}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    edgesOut.push({ id: String(eid++), source: String(s), target: String(t), kind });
+  };
+  for (const e of edgesDb) addEdge(e.requiresLessonId, e.lessonId, "required");
+  for (const e of manualEdges) addEdge(e.requiresLessonId, e.lessonId, e.kind || "required");
 
   const out = {
     version: 1,

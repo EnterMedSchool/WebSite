@@ -12,7 +12,29 @@ type GraphJSON = {
   meta?: any;
 };
 
+type Manifest = {
+  version: number;
+  courses: { id: number; slug: string; title: string; size: number; x: number; y: number; r: number }[];
+  cross: { from: number; to: number; count: number }[];
+};
+
 export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: string }) {
+  const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [mode, setMode] = useState<"pending"|"sharded"|"full">("pending");
+  useEffect(() => {
+    let cancelled = false;
+    fetch(src.replace("graph.json","manifest.json"))
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
+      .then(j => { if (!cancelled) { setManifest(j); setMode("sharded"); } })
+      .catch(() => { if (!cancelled) setMode("full"); });
+    return () => { cancelled = true; };
+  }, [src]);
+  if (mode === 'pending') return <div className="p-4 text-gray-500">Loading…</div>;
+  if (mode === 'sharded' && manifest) return <WowShardedGraph baseSrc={src.replace("graph.json","")} manifest={manifest}/>;
+  return <WowFullGraph src={src}/>;
+}
+
+function WowFullGraph({ src }: { src: string }) {
   const [data, setData] = useState<GraphJSON | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const ref = useRef<any>(null);
@@ -259,6 +281,111 @@ export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: strin
             {hover.href && (
               <a href={hover.href} className="pointer-events-auto rounded-full bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Open</a>
             )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =========================
+// Sharded animated viewer
+// =========================
+function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Manifest }) {
+  const ref = useRef<any>(null);
+  const [focus, setFocus] = useState<string | null>(null);
+  const [hover, setHover] = useState<any | null>(null);
+  const mouse = useRef<{x:number;y:number}>({x:0,y:0});
+  const tRef = useRef(0);
+
+  // Graph state
+  const [nodes, setNodes] = useState<any[]>(() => manifest.courses.map(c => ({ id: `c:${c.id}`, course: true, courseId: c.id, name: c.title })));
+  const [links, setLinks] = useState<any[]>(() => manifest.cross.map((e, i) => ({ id:`ce:${i}`, source: `c:${e.from}`, target: `c:${e.to}`, weight: e.count })));
+
+  // Incoming adjacency for lessons only
+  const inMapRef = useRef<Map<string,string[]>>(new Map());
+
+  // helpers
+  function colorForCourse(courseId?: number) {
+    if (!courseId) return "#9aa3af";
+    const hues = [0,24,48,72,96,150,180,210,260,300];
+    const h = hues[Math.abs(courseId)%hues.length];
+    return `hsl(${h} 70% 52%)`;
+  }
+
+  // expand a course into its lessons
+  async function expandCourse(courseId: number) {
+    const existing = nodes.find(n => n.id === `c:${courseId}`);
+    if (!existing) return; // already expanded
+    const res = await fetch(`${baseSrc}course-${courseId}.json`);
+    const data: GraphJSON = await res.json();
+    // remove the course node and any aggregated cross links touching it
+    setNodes(prev => prev.filter(n => n.id !== `c:${courseId}`).concat(
+      data.nodes.map((n:any) => ({ id: n.id, name: n.label, courseId: n.courseId, href: n.slug ? `/lesson/${n.slug}`:undefined }))
+    ));
+    setLinks(prev => prev.filter(l => l.source !== `c:${courseId}` && l.target !== `c:${courseId}`).concat(
+      data.edges.map((e:any) => ({ id: e.id, source: e.source, target: e.target }))
+    ));
+    // update inMap
+    for (const e of data.edges) {
+      const arr = inMapRef.current.get(String(e.target)) || [];
+      arr.push(String(e.source));
+      inMapRef.current.set(String(e.target), arr);
+    }
+  }
+
+  // rope refresh
+  useEffect(() => {
+    let raf:number; const loop=()=>{ tRef.current += 0.02; if (ref.current) ref.current.refresh(); raf=requestAnimationFrame(loop);}; raf=requestAnimationFrame(loop); return ()=>cancelAnimationFrame(raf);
+  }, []);
+
+  // highlight computation (lessons only, among loaded ones)
+  useEffect(() => {
+    if (!focus) return; if (!ref.current) return;
+    const depth = new Map<string,number>(); const q=[focus]; depth.set(focus,0);
+    while(q.length){ const t=q.shift()!; const d=depth.get(t)!; const parents=inMapRef.current.get(t)||[]; for(const p of parents) if(!depth.has(p)){ depth.set(p,d+1); q.push(p);} }
+    // wave along links
+    let step=0; const maxTier=Math.max(...Array.from(depth.values()));
+    const id=setInterval(()=>{ if(!ref.current) return; (links as any[]).forEach((l:any)=>{ const s=String((l.source as any)?.id ?? l.source); const t=String((l.target as any)?.id ?? l.target); const ds=depth.get(s); const dt=depth.get(t); l.__on = ds!==undefined && dt!==undefined && ds===dt+1; l.__tier = dt; if(l.__on && (l.__tier??0)===step){ try{ ref.current.emitParticle(l); ref.current.emitParticle(l);}catch{} } }); step=(step+1)%Math.max(1,maxTier+1); },250);
+    return ()=>clearInterval(id);
+  }, [focus, links]);
+
+  // fit on first render
+  useEffect(()=>{ if(!ref.current) return; const t=setTimeout(()=>ref.current.zoomToFit(400,50),0); return ()=>clearTimeout(t); }, []);
+
+  return (
+    <div className="relative h-full w-full" onMouseMove={(e)=>{const r=(e.currentTarget as HTMLDivElement).getBoundingClientRect(); mouse.current={x:e.clientX-r.left,y:e.clientY-r.top};}}>
+      <ForceGraph2D
+        ref={ref}
+        graphData={{ nodes, links }}
+        cooldownTicks={200}
+        linkColor={(l:any)=> l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)"}
+        linkDirectionalParticles={(l:any)=> l.__on ? 2 : 0}
+        linkDirectionalParticleWidth={(l:any)=> l.__on ? 2.0 : 0}
+        linkDirectionalParticleSpeed={(l:any)=> l.__on ? 0.01 : 0}
+        nodeRelSize={5}
+        nodeLabel={(n:any)=> n.course ? n.name : ""}
+        onNodeClick={(n:any)=>{ if(n.course) expandCourse(n.courseId); else setFocus(String(n.id)); }}
+        onNodeHover={(n:any)=> setHover(n || null)}
+        linkCanvasObjectMode={()=>"replace"}
+        linkCanvasObject={(l:any, ctx:CanvasRenderingContext2D, scale:number)=>{ const s=(l.source as any); const t=(l.target as any); if(!s||!t) return; const x1=s.x,y1=s.y,x2=t.x,y2=t.y; const dx=x2-x1,dy=y2-y1; const len=Math.max(1,Math.hypot(dx,dy)); const nx=-dy/len, ny=dx/len; const baseAmp=Math.min(20,len*0.08)/Math.sqrt(scale); const amp=l.__on?baseAmp:baseAmp*0.5; const phase=tRef.current*(l.__on?1.2:0.6)+(l.__tier||0)*0.5; const cx=(x1+x2)/2 + nx*amp*Math.sin(phase); const cy=(y1+y2)/2 + ny*amp*Math.sin(phase); ctx.lineWidth=(l.__on?2.5:1)/Math.sqrt(scale); ctx.strokeStyle=l.__on?"rgba(245,158,11,0.9)":"rgba(99,102,241,0.15)"; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(cx,cy,x2,y2); ctx.stroke(); }}
+        nodeCanvasObject={(n:any, ctx:CanvasRenderingContext2D, scale:number)=>{ if(n.course){ const r=8; ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fillStyle="#ffffff"; ctx.fill(); ctx.lineWidth=2/Math.sqrt(scale); ctx.strokeStyle=colorForCourse(n.courseId); ctx.stroke(); ctx.fillStyle="#111827"; ctx.font=`${12/Math.sqrt(scale)}px Inter, system-ui`; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(n.name, n.x + r + 4, n.y); return; } const r=4 + 2; const color = n.completed ? "#22c55e" : colorForCourse(n.courseId); ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 2/Math.sqrt(scale); ctx.strokeStyle = n.__on?"#f59e0b":"rgba(0,0,0,0.08)"; ctx.stroke(); if(n.completed){ ctx.strokeStyle="white"; ctx.lineWidth=2/Math.sqrt(scale); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(n.x-r*0.6,n.y+r*0.05); ctx.lineTo(n.x-r*0.15,n.y+r*0.5); ctx.lineTo(n.x+r*0.7,n.y-r*0.4); ctx.stroke(); } }}
+        width={undefined}
+        height={undefined}
+        style={{ width:"100%", height:"100%" }}
+      />
+
+      {hover && !hover.course && (
+        <div style={{ left: mouse.current.x + 14, top: mouse.current.y + 14 }} className="pointer-events-none absolute z-10 w-72 rounded-xl border border-black/5 bg-white/95 p-3 text-xs shadow-xl ring-1 ring-black/10 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${hover.completed ? 'bg-green-500' : 'bg-indigo-500'}`}></div>
+            <div className="font-semibold text-gray-900 truncate">{hover.name}</div>
+          </div>
+          {hover.courseTitle && (<div className="mt-0.5 text-[11px] text-gray-500">{hover.courseTitle}{hover.lengthMin ? ` • ${hover.lengthMin} min` : ''}</div>)}
+          {hover.excerpt && (<div className="mt-2 line-clamp-4 text-[11px] text-gray-600">{hover.excerpt}</div>)}
+          <div className="mt-2 flex items-center justify-between">
+            <div className={`text-[11px] ${hover.completed ? 'text-green-600' : 'text-gray-600'}`}>{hover.completed ? 'Completed' : 'Not completed'}</div>
+            {hover.href && (<a href={hover.href} className="pointer-events-auto rounded-full bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Open</a>)}
           </div>
         </div>
       )}
