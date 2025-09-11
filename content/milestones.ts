@@ -6,6 +6,7 @@
   year?: string;
   accent: string; // tailwind color token or hex
   link?: string;
+  image?: { src: string; alt: string };
 };
 
 export const MILESTONES: Milestone[] = [
@@ -18,6 +19,7 @@ export const MILESTONES: Milestone[] = [
     year: '2020–2024',
     accent: '#6366F1', // indigo-500
     link: '/classes',
+    image: { src: '/milestones/live-classes.svg', alt: 'Students in a live online class, abstract' },
   },
   {
     id: 'past-papers',
@@ -28,6 +30,7 @@ export const MILESTONES: Milestone[] = [
     year: 'Ongoing',
     accent: '#4F46E5', // indigo-600
     link: '/practice',
+    image: { src: '/milestones/past-papers.svg', alt: 'Past papers and solutions, abstract' },
   },
   {
     id: 'coaching',
@@ -38,6 +41,7 @@ export const MILESTONES: Milestone[] = [
     year: 'Ongoing',
     accent: '#3B82F6', // blue-500
     link: '/coaching',
+    image: { src: '/milestones/coaching.svg', alt: 'Coaching support, abstract' },
   },
   {
     id: 'materials',
@@ -48,6 +52,7 @@ export const MILESTONES: Milestone[] = [
     year: 'Ongoing',
     accent: '#22D3EE', // cyan-400
     link: '/resources',
+    image: { src: '/milestones/materials.svg', alt: 'Study materials and tools, abstract' },
   },
   {
     id: 'community',
@@ -58,6 +63,7 @@ export const MILESTONES: Milestone[] = [
     year: 'Ongoing',
     accent: '#06B6D4', // cyan-500
     link: '/community',
+    image: { src: '/milestones/community.svg', alt: 'Community of learners, abstract' },
   },
   {
     id: 'impact',
@@ -68,6 +74,6 @@ export const MILESTONES: Milestone[] = [
     year: 'Every year',
     accent: '#60A5FA', // blue-400
     link: '/impact',
+    image: { src: '/milestones/impact.svg', alt: 'Impact celebration, abstract' },
   },
 ];
-
