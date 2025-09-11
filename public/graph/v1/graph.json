@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "generatedAt": "dev-placeholder",
+  "nodes": [
+    { "id": "1", "label": "Cell Biology Basics", "slug": "cell-biology-basics", "courseId": 1, "x": 0, "y": 0, "size": 3 },
+    { "id": "2", "label": "Biochemistry I", "slug": "biochemistry-1", "courseId": 1, "x": 200, "y": 80, "size": 2 },
+    { "id": "3", "label": "Biochemistry II", "slug": "biochemistry-2", "courseId": 1, "x": 380, "y": 160, "size": 2 },
+    { "id": "4", "label": "Physiology: Membranes", "slug": "physiology-membranes", "courseId": 2, "x": -180, "y": 220, "size": 2 },
+    { "id": "5", "label": "Neurophysiology", "slug": "neurophysiology", "courseId": 2, "x": -360, "y": 320, "size": 2 }
+  ],
+  "edges": [
+    { "id": "e1", "source": "1", "target": "2", "kind": "required" },
+    { "id": "e2", "source": "2", "target": "3", "kind": "required" },
+    { "id": "e3", "source": "1", "target": "4", "kind": "required" },
+    { "id": "e4", "source": "4", "target": "5", "kind": "required" }
+  ],
+  "meta": { "courses": { "1": { "id": 1, "slug": "foundations", "title": "Foundations" }, "2": { "id": 2, "slug": "physiology", "title": "Physiology" } } },
+  "layout": { "type": "dev" }
+}
+

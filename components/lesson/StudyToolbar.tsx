@@ -78,6 +78,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
               <button onClick={share} className={ghostBtn}><IconShare /><span>Share</span></button>
               <button onClick={printPage} className={ghostBtn}><IconPrint /><span>Print</span></button>
               <button onClick={askAI} className={ghostBtn}><IconGPT /><span>ChatGPT</span></button>
+              <a href="/graph" className={ghostBtn}><span>Mind Map</span></a>
               <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
             </div>
           </>
