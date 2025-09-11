@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
@@ -68,7 +68,7 @@ export default async function Navbar() {
   return (
     <header className="sticky top-0 z-50">
       {/* Single condensed gradient bar */}
-      <div className="w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_10px_30px_rgba(99,102,241,0.35)]">
+      <div className="w-full bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700 text-white shadow-[0_10px_30px_rgba(49,46,129,0.30)]">
         <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-4 px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
@@ -101,3 +101,4 @@ export default async function Navbar() {
     </header>
   );
 }
+
