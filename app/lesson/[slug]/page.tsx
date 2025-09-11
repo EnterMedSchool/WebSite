@@ -273,7 +273,7 @@ export default function LessonPage() {
       </div>
 
       {/* Chapter path bar (UI only, sticky) */}
-      <div className="sticky top-16 z-30 mt-3 rounded-2xl border bg-white/90 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="sticky top-16 z-30 mt-3 rounded-2xl border bg-white/90 p-4 shadow-md ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-sm font-semibold text-indigo-900">Chapter path</div>
           {courseProg && (
@@ -338,7 +338,7 @@ export default function LessonPage() {
         {/* Timeline sidebar */}
         {!focusMode && (
         <aside className="hidden lg:block">
-          <div className="sticky top-20 rounded-2xl border border-indigo-100 bg-white/90 p-4 shadow-sm ring-1 ring-black/5">
+          <div className="sticky top-36 rounded-2xl border border-indigo-100 bg-white/90 p-4 shadow-sm ring-1 ring-black/5">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Chapter Progress</div>
             {/* Removed sidebar progress bar to reduce duplication */}
             <ul className="relative mt-2">
