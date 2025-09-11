@@ -65,7 +65,7 @@ export default function MilestonesShowcase() {
       }
       setCelebrated(true);
     }
-  }, [index, celebrated]);
+  }, [index, celebrated, bg]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight') { to(Math.min(index + 1, MILESTONES.length - 1)); }
@@ -88,7 +88,7 @@ export default function MilestonesShowcase() {
       <header className="mb-4 flex items-end justify-between px-2">
         <div>
           <h2 id="milestones-title" className="text-2xl font-semibold text-slate-900 dark:text-white">Our Major Milestones</h2>
-          <p className="text-sm text-slate-600/80 dark:text-slate-300/80">What we've done so far</p>
+          <p className="text-sm text-slate-600/80 dark:text-slate-300/80">What we&apos;ve done so far</p>
         </div>
         <div className="hidden md:flex items-center gap-2 pr-2">
           {MILESTONES.map((m, i) => (
@@ -189,4 +189,8 @@ export default function MilestonesShowcase() {
     </section>
   );
 }
+
+
+
+
 
