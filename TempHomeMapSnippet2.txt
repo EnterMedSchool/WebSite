@@ -1,0 +1,37 @@
+            height="70vh"
+          >
+            <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityDataSorted) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
+          </BottomSheet>
+        )}
+        {(!isSmall && selected && cityData.length>0) && (
+          <div ref={panelRef}>
+            <UniversitiesPanel
+              selectedName={selected!.name}
+              items={cityDataSorted as any}
+              topOffset={panelOffset}
+              onAddCompare={(c)=> addToCompare(c)}
+              compareSet={compareSet}
+              savedSet={savedSet}
+              onToggleSave={(c)=> toggleSaved(c)}
+              onHover={(c) => {
+                if (!c) { setHoveredKey(null); return; }
+                const key = `${(c as any).country || selected!.name}-${c.city}-${c.uni}`;
+                setHoveredKey(key);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Compare FAB + Drawer */}
+        <CompareFab count={compare.length} onOpen={() => setCompareOpen(true)} />
+        <CompareDrawer open={compareOpen} items={compare as any} onClose={() => setCompareOpen(false)} onRemove={removeFromCompare} onClear={clearCompare} />
+        <SavedFab count={saved.length} onOpen={() => setSavedOpen(true)} />
+        <SavedDrawer open={savedOpen} items={saved as any} onClose={() => setSavedOpen(false)} onRemove={(u)=> setSaved(s=>s.filter(x=>x.uni!==u))} onClear={()=> setSaved([])} />
+      </div>
+
+    </div>
+  );
+}
+
+
+

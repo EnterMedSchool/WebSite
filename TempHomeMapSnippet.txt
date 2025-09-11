@@ -1,0 +1,27 @@
+      router.replace(qs ? `?${qs}` : `?`, { scroll: false });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [filters, router]);
+
+  // Load data from API (DB only; if it fails, show nothing instead of static demo)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/universities?ts=${Date.now()}` , { cache: "no-store" });
+        const json = await res.json();
+        if (!cancelled) setUniData(json.data as CountryCities);
+      } catch {
+        if (!cancelled) setUniData({});
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // No header measurement needed; panel is anchored inside the map container.
+  // Detect small screens (sm/md) for sheet behavior
+  useEffect(() => {
+    function check() {
+      const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
+      setIsSmall(w < 1024); // match < lg
+    }

@@ -15,6 +15,8 @@ type City = {
   photos?: string[];
   orgs?: string[];
   article?: { title: string; href?: string };
+  trendPoints?: Array<{ year: number; type: string; score: number }>;
+  trendSeats?: Array<{ year: number; type: string; seats: number }>;
 };
 
 export default function UniversitiesListMobile({ selectedName, items, onAddCompare, compareSet }: { selectedName: string; items: City[]; onAddCompare?: (item: City) => void; compareSet?: Set<string> }) {
@@ -27,7 +29,12 @@ export default function UniversitiesListMobile({ selectedName, items, onAddCompa
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {c.logo ? <img src={c.logo} alt="logo" className="h-full w-full object-cover" /> : <span className="text-sm font-semibold text-indigo-700">{c.city[0]}</span>}
+                {c.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.logo} alt="logo" className="h-full w-full object-cover" loading="lazy" decoding="async" fetchPriority="low" />
+                ) : (
+                  <span className="text-sm font-semibold text-indigo-700">{c.city[0]}</span>
+                )}
               </div>
               <div className="min-w-0">
                 <div className="truncate font-medium">{c.uni}</div>
@@ -38,7 +45,8 @@ export default function UniversitiesListMobile({ selectedName, items, onAddCompa
               )}
             </div>
             <div className="mt-2">
-              <MiniTrend uni={c.uni} />
+              {/* Use viewport root for the sheet; pass prefetched mini trend */}
+              <MiniTrend uni={c.uni} prefetch={{ points: (c as any).trendPoints, seats: (c as any).trendSeats }} />
             </div>
             <div className="mt-3 flex items-center gap-2">
               <button

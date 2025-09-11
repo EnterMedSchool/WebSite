@@ -81,7 +81,7 @@ export default function CompareDrawer({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/compare/scores?unis=${encodeURIComponent(slugs)}`, { cache: "no-store" });
+        const res = await fetch(`/api/compare/scores?unis=${encodeURIComponent(slugs)}`);
         if (!res.ok) return;
         const json = await res.json();
         if (!cancelled) setSeries(json.series || []);

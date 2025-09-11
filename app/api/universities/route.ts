@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions } from "@/drizzle/schema";
+import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions, universitySeats } from "@/drizzle/schema";
 import { inArray } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 
@@ -26,11 +26,16 @@ export type City = {
   admOpens?: string;
   admDeadline?: string;
   admResults?: string;
+  // Lightweight 3-year trend for mini charts (prevents per-card API calls)
+  trendPoints?: Array<{ year: number; type: string; score: number }>;
+  trendSeats?: Array<{ year: number; type: string; seats: number }>;
 };
 export type CountryCities = Record<string, City[]>;
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// This endpoint is expensive to compute but rarely changes.
+// Cache the whole response at the CDN for 1 day and allow SWR for a week.
+export const dynamic = "force-static";
+export const revalidate = 86400; // 24h
 
 export async function GET() {
   try {
@@ -62,6 +67,8 @@ export async function GET() {
     const ids = rows.map(r => r.id as number).filter(Boolean);
     let avgById = new Map<number, number>();
     let lastScoreById = new Map<number, number>();
+    let miniTrendPointsById = new Map<number, Array<{ year: number; type: string; score: number }>>();
+    let miniTrendSeatsById = new Map<number, Array<{ year: number; type: string; seats: number }>>();
     let costsById = new Map<number, { rent?: number|null; food?: number|null; transport?: number|null }>();
     let admissionsById = new Map<number, { opens?: number|null; deadline?: number|null; results?: number|null }>();
     if (ids.length) {
@@ -81,6 +88,9 @@ export async function GET() {
         .from(universityScores)
         .where(inArray(universityScores.universityId, ids));
       const best: Record<number, { year: number; score: number; type: string }> = {} as any;
+      const nowYear = new Date().getUTCFullYear();
+      const cutoff = nowYear - 2; // last 3 years
+      const pts: Record<number, Array<{ year: number; type: string; score: number }>> = {} as any;
       for (const s of sRows) {
         const uid = s.universityId as number;
         const cand = s.candidateType as string;
@@ -92,8 +102,28 @@ export async function GET() {
         if (!cur || yr > cur.year || (yr === cur.year && rank(cand) > rank(cur.type))) {
           best[uid] = { year: yr, score: sc, type: cand };
         }
+        if (yr >= cutoff && (cand === 'EU' || cand === 'NonEU')) {
+          (pts[uid] ||= []).push({ year: yr, type: cand, score: sc });
+        }
       }
       lastScoreById = new Map(Object.entries(best).map(([k,v]) => [Number(k), v.score]));
+      miniTrendPointsById = new Map(Object.entries(pts).map(([k,v]) => [Number(k), (v as any[]).sort((a,b)=> a.year-b.year)]));
+
+      // Seats for last 3 years
+      const seatRows = await db
+        .select({ universityId: universitySeats.universityId, year: universitySeats.year, candidateType: universitySeats.candidateType, seats: universitySeats.seats })
+        .from(universitySeats)
+        .where(inArray(universitySeats.universityId, ids));
+      const seatMap: Record<number, Array<{ year: number; type: string; seats: number }>> = {} as any;
+      for (const s of seatRows) {
+        const uid = Number(s.universityId);
+        const yr = Number(s.year);
+        const cand = String(s.candidateType);
+        if (yr >= cutoff && (cand === 'EU' || cand === 'NonEU')) {
+          (seatMap[uid] ||= []).push({ year: yr, type: cand, seats: Number(s.seats) });
+        }
+      }
+      miniTrendSeatsById = new Map(Object.entries(seatMap).map(([k,v]) => [Number(k), (v as any[]).sort((a,b)=> a.year-b.year)]));
 
       // Latest costs by updated_at (or by id if equal)
       const cRows = await db
@@ -168,25 +198,31 @@ export async function GET() {
         admOpens: (() => { const m = admissionsById.get(r.id as number)?.opens; return m ? MONTHS[(m-1)%12] : undefined; })(),
         admDeadline: (() => { const m = admissionsById.get(r.id as number)?.deadline; return m ? MONTHS[(m-1)%12] : undefined; })(),
         admResults: (() => { const m = admissionsById.get(r.id as number)?.results; return m ? MONTHS[(m-1)%12] : undefined; })(),
+        trendPoints: miniTrendPointsById.get(r.id as number),
+        trendSeats: miniTrendSeatsById.get(r.id as number),
       });
     }
 
-    return NextResponse.json({ data }, {
-      headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+    return NextResponse.json(
+      { data },
+      {
+        headers: {
+          // Public CDN cache; serve cached for 24h, then revalidate in background for a week
+          // Dramatically reduces edge/function usage on Vercel.
+          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+        },
+      }
+    );
   } catch (err) {
     // Fallback to demo JSON if DB is not configured
     const { demoUniversities } = await import("@/data/universities");
-    return NextResponse.json({ data: demoUniversities }, {
-      headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+    return NextResponse.json(
+      { data: demoUniversities },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+        },
+      }
+    );
   }
 }

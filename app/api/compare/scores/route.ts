@@ -1,6 +1,8 @@
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Cache per unique URL (query string) for 1 day with SWR for a week.
+// This keeps MiniTrend/Compare calls cheap even with many slugs.
+export const dynamic = "force-static";
+export const revalidate = 86400; // 24h
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -72,5 +74,12 @@ export async function GET(req: Request) {
     };
   });
 
-  return NextResponse.json({ series });
+  return NextResponse.json(
+    { series },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+      },
+    }
+  );
 }

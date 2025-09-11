@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import MiniTrend from "@/components/home/MiniTrend";
 import DeadlineStrip from "@/components/home/DeadlineStrip";
@@ -24,6 +25,8 @@ type City = {
   admOpens?: string;
   admDeadline?: string;
   admResults?: string;
+  trendPoints?: Array<{ year: number; type: string; score: number }>;
+  trendSeats?: Array<{ year: number; type: string; seats: number }>;
 };
 
 export default function UniversitiesPanel({ selectedName, items, topOffset = 4, onAddCompare, compareSet, onHover, savedSet, onToggleSave }: { selectedName: string; items: City[]; topOffset?: number; onAddCompare?: (item: City & { country?: string }) => void; compareSet?: Set<string>; onHover?: (item: City | null) => void; savedSet?: Set<string>; onToggleSave?: (item: City & { country?: string }) => void }) {
@@ -32,6 +35,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
   const PANEL_TOP_GAP = topOffset;
   const langs = new Set((items || []).map((i: any) => (i as any).language || '').filter(Boolean));
   const exams = new Set((items || []).map((i: any) => (i as any).exam || '').filter(Boolean));
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <div
@@ -46,7 +50,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
           <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Exams</div><div className="text-base font-bold text-gray-900">{exams.size}</div></div>
         </div>
       </div>
-      <div className="space-y-3 max-h-full overflow-auto pr-1">
+      <div className="space-y-3 max-h-full overflow-auto pr-1" ref={listRef}>
         {items.map((c, i) => (
           <div
             key={`${c.city}-${i}`}
@@ -58,7 +62,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
               <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
                 {c.logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.logo} alt="logo" className="h-full w-full object-cover" />
+                  <img src={c.logo} alt="logo" className="h-full w-full object-cover" loading="lazy" decoding="async" fetchPriority="low" />
                 ) : (
                   <span className="text-lg font-semibold text-indigo-700">{c.city[0]}</span>
                 )}
@@ -91,7 +95,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
                 <div className="flex gap-1">
                   {(c.photos ?? []).slice(0, 3).map((src, idx) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={idx} src={src} alt="photo" className="h-12 w-12 rounded object-cover" />
+                    <img key={idx} src={src} alt="photo" className="h-12 w-12 rounded object-cover" loading="lazy" decoding="async" fetchPriority="low" />
                   ))}
                   {(!c.photos || c.photos.length === 0) && (
                     <div className="min-h-[28px] w-full min-w-[6rem] rounded bg-gray-100/70 px-2 py-1 text-[10px] text-gray-500 grid place-items-center">
@@ -112,7 +116,11 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
                 } catch {}
               }}
             >
-              <MiniTrend uni={c.uni} />
+              <MiniTrend
+                uni={c.uni}
+                root={listRef.current}
+                prefetch={{ points: (c as any).trendPoints, seats: (c as any).trendSeats }}
+              />
             </div>
 
             {/* Orgs + article */}

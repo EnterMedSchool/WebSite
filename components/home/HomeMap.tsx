@@ -36,6 +36,8 @@ type City = {
   admOpens?: string;
   admDeadline?: string;
   admResults?: string;
+  trendPoints?: Array<{ year: number; type: string; score: number }>;
+  trendSeats?: Array<{ year: number; type: string; seats: number }>;
 };
 type CountryCities = Record<string, City[]>;
 
@@ -222,7 +224,8 @@ export default function HomeMap() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/universities?ts=${Date.now()}` , { cache: "no-store" });
+        // Let the browser/CDN cache aggressively; server sets Cache-Control
+        const res = await fetch(`/api/universities`);
         const json = await res.json();
         if (!cancelled) setUniData(json.data as CountryCities);
       } catch {
