@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Graph from "graphology";
-import { SigmaContainer, useLoadGraph, useRegisterEvents, useSetSettings } from "react-sigma-v2";
+import { SigmaContainer, useLoadGraph, useRegisterEvents, useSetSettings } from "@react-sigma/core";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { inferSettings as inferFA2 } from "graphology-layout-forceatlas2";
-import "react-sigma-v2/lib/react-sigma-v2.css";
+import "@react-sigma/core/lib/style.css";
 
 type GraphJSON = {
   version: number;
