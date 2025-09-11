@@ -234,6 +234,13 @@ export default function LessonPage() {
             <div className="flex items-center gap-2">
               <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
               <button
+                onClick={() => { try { const k=`ems:fav:${slug}`; const v=localStorage.getItem(k)==='1'?'0':'1'; localStorage.setItem(k,v); } catch {} }}
+                title="Favorite"
+                className="rounded-full bg-white/20 px-2 py-1 text-xs font-semibold text-white/90 hover:bg-white/30"
+              >
+                ♥
+              </button>
+              <button
               ref={completeBtnRef}
               onClick={markCompleteToggle}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
@@ -259,10 +266,10 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {/* Chapter navigator (UI-only) */}
+      {/* Navigator (range only) */}
       <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-indigo-900">Chapter progress</div>
+          <div className="text-sm font-semibold text-indigo-900">Navigator</div>
           <div className="flex flex-1 items-center gap-3 sm:pl-4">
             {(() => {
               const lessons = timeline?.lessons || [];
@@ -270,10 +277,7 @@ export default function LessonPage() {
               const max = Math.max(1, lessons.length);
               const val = Math.max(1, pos + 1);
               return (
-                <>
-                  <input type="range" min={1} max={max} defaultValue={val} className="w-full accent-indigo-600" onChange={() => {}} />
-                  <a href={lessons[pos]?.slug ? `/lesson/${lessons[pos].slug}` : '#'} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Study this chapter</a>
-                </>
+                <input type="range" min={1} max={max} defaultValue={val} className="w-full accent-indigo-600" onChange={() => {}} />
               );
             })()}
           </div>
@@ -310,22 +314,27 @@ export default function LessonPage() {
                       <div className="line-clamp-2 pr-6">{t.title}</div>
                     </Link>
                     {t.qCount && t.qCount > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1 pl-1 lg:hidden">
-                        {Array.from({ length: t.qCount }).map((_, qi) => {
-                          const active = isCurr && tab === 'practice' && idx === qi;
-                          const href = `/lesson/${t.slug}?tab=practice&q=${qi + 1}`;
-                          return (
-                            <Link
-                              key={qi}
-                              href={href}
-                              className={`grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold ring-1 ring-inset ${active? 'bg-indigo-600 text-white ring-indigo-300' : 'bg-white text-gray-700 hover:bg-gray-50 ring-gray-200'}`}
-                              title={`Question ${qi+1}`}
-                              onClick={(e)=>{ if (isCurr) { e.preventDefault(); setTab('practice'); setIdx(qi); setPicked(null); } }}
-                            >
-                              {qi+1}
-                            </Link>
-                          );
-                        })}
+                      <div className="mt-1 space-y-1 pl-1">
+                        {isCurr && <div className="text-[10px] font-semibold text-indigo-700">Questions</div>}
+                        <div className="flex flex-wrap gap-1">
+                          {Array.from({ length: t.qCount }).map((_, qi) => {
+                            const active = isCurr && tab === 'practice' && idx === qi;
+                            const state = isCurr ? ansState[Number((qs[qi]?.id) || -1)] : undefined;
+                            const cls = active ? 'bg-indigo-600 text-white ring-indigo-300' : state==='correct' ? 'bg-emerald-600 text-white ring-emerald-300' : state==='wrong' ? 'bg-rose-100 text-rose-700 ring-rose-200' : 'bg-white text-gray-700 hover:bg-gray-50 ring-gray-200';
+                            const href = `/lesson/${t.slug}?tab=practice&q=${qi + 1}`;
+                            return (
+                              <Link
+                                key={qi}
+                                href={href}
+                                className={`grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold ring-1 ring-inset ${cls}`}
+                                title={`Question ${qi+1}`}
+                                onClick={(e)=>{ if (isCurr) { e.preventDefault(); setTab('practice'); setIdx(qi); setPicked(null); } }}
+                              >
+                                {qi+1}
+                              </Link>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </li>
@@ -357,20 +366,10 @@ export default function LessonPage() {
                         lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
                         onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
                         subtitles={[{ lang: 'en', label: 'English' }]}
+                        prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
+                        next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
+                        anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
                       />
-                      {/* Inline, minimal prev/next under video when no native video block exists */}
-                      <div className="-mt-2 flex items-center justify-between px-1">
-                        <div>
-                          {nav?.prev ? (
-                            <Link href={`/lesson/${nav.prev.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Prev: {nav.prev.title}</Link>
-                          ) : (<span />)}
-                        </div>
-                        <div>
-                          {nav?.next ? (
-                            <Link href={`/lesson/${nav.next.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Next: {nav.next.title}</Link>
-                          ) : (<span />)}
-                        </div>
-                      </div>
                     </div>
                   );
                 }
@@ -397,29 +396,19 @@ export default function LessonPage() {
                             lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
                             onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
                             subtitles={[{ lang: 'en', label: 'English' }]}
+                            prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
+                            next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
+                            anchors={[{ pos: 20, id: 'note-1', label: 'Key idea' }, { pos: 55, id: 'note-2', label: 'Labs' }, { pos: 85, id: 'note-3', label: 'Management' }]}
                           />
                         ) : b.kind === 'note' ? (
-                          <article className="prose prose-indigo max-w-none text-sm">
+                          <article className="prose prose-indigo max-w-none text-sm" data-lesson-anchor={`note-${i+1}`}>
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.content}</ReactMarkdown>
                           </article>
                         ) : (
                           <div className="rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">{b.content}</div>
                         )}
                       </motion.div>
-                      {isVideo && !navShown && (navShown = true) && (
-                        <div key={`nav-${b.id}`} className="-mt-2 flex items-center justify-between px-1">
-                          <div>
-                            {nav?.prev ? (
-                              <Link href={`/lesson/${nav.prev.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Prev: {nav.prev.title}</Link>
-                            ) : (<span />)}
-                          </div>
-                          <div>
-                            {nav?.next ? (
-                              <Link href={`/lesson/${nav.next.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Next: {nav.next.title}</Link>
-                            ) : (<span />)}
-                          </div>
-                        </div>
-                      )}
+                      {isVideo && !navShown && (navShown = true) && (<div />)}
                     </div>
                   );
                 });

@@ -40,15 +40,15 @@ const demoSrt = `1\n00:00:00,000 --> 00:00:02,000\nDisseminated intravascular co
 
 export default function SubtitlesPanel({ tracks, className }: Props) {
   const [activeLang, setActiveLang] = useState(tracks?.[0]?.lang || "en");
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(true);
   const [visible, setVisible] = useState(true);
   const hasProvidedTracks = !!(tracks && tracks.length);
   const lines = useMemo(() => {
     const pick = tracks?.find((t) => t.lang === activeLang);
-    const s = pick?.srt;
-    if (!hasProvidedTracks) return [];
-    return parseSrt(s || "");
-  }, [tracks, activeLang, hasProvidedTracks]);
+    // Use provided SRT if available, otherwise show demo preview so designers can see the animation
+    const s = pick?.srt || demoSrt;
+    return parseSrt(s);
+  }, [tracks, activeLang]);
   const [idx, setIdx] = useState(0);
   const timerRef = useRef<number | null>(null);
 
@@ -95,7 +95,7 @@ export default function SubtitlesPanel({ tracks, className }: Props) {
       </div>
 
       {visible && (
-        hasProvidedTracks && lines.length > 0 ? (
+        lines.length > 0 ? (
           <div className="relative mt-2 h-24 overflow-hidden">
             <div className="absolute inset-0 pointer-events-none" style={{ maskImage: "linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)" }} />
             <div className="flex h-full flex-col items-center justify-center gap-1 transition-transform duration-500" style={{ transform: `translateY(-${8}px)` }}>

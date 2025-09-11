@@ -2,6 +2,8 @@
 
 import SubtitlesPanel, { SubtitleTrack } from "./SubtitlesPanel";
 
+type Anchor = { pos: number; id: string; label: string };
+
 type Props = {
   src?: string; // can be file or YouTube URL
   poster?: string;
@@ -9,6 +11,9 @@ type Props = {
   lockReason?: string;
   onUnlock?: () => void;
   subtitles?: SubtitleTrack[];
+  prev?: { href: string; title: string } | null;
+  next?: { href: string; title: string } | null;
+  anchors?: Anchor[];
 };
 
 function toYouTubeEmbed(url?: string): string | null {
@@ -29,8 +34,23 @@ function toYouTubeEmbed(url?: string): string | null {
   return null;
 }
 
-export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, subtitles }: Props) {
+export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, subtitles, prev, next, anchors }: Props) {
   const yt = toYouTubeEmbed(src);
+  const [progress, setProgress] = React.useState(0);
+  React.useEffect(() => {
+    const id = window.setInterval(() => setProgress((p) => (p >= 100 ? 0 : p + 0.6)), 80);
+    return () => window.clearInterval(id);
+  }, []);
+  function highlight(id?: string) {
+    if (!id) return;
+    try {
+      const el = document.querySelector(`[data-lesson-anchor="${id}"]`) as HTMLElement | null;
+      if (!el) return;
+      el.classList.add('ring-2','ring-indigo-300','bg-indigo-50');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => el.classList.remove('ring-2','ring-indigo-300','bg-indigo-50'), 1800);
+    } catch {}
+  }
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
@@ -61,7 +81,46 @@ export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, 
           </div>
         )}
       </div>
+
+      {/* Animated timeline with anchor dots */}
+      <div className="rounded-full bg-gray-200 p-1">
+        <div className="relative h-2 w-full rounded-full bg-gray-200">
+          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${progress}%` }} />
+          {(anchors || [{ pos: 15, id: 'a1', label: 'Pathogenesis' }, { pos: 45, id: 'a2', label: 'Labs' }, { pos: 80, id: 'a3', label: 'Treatment' }]).map((a) => (
+            <button key={a.id} title={a.label} onMouseEnter={() => highlight(a.id)} onClick={() => highlight(a.id)}
+              className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white ring-2 ring-indigo-600 transition hover:scale-110"
+              style={{ left: `${Math.max(0, Math.min(100, a.pos))}%` }} />
+          ))}
+        </div>
+        <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500">
+          <span>Intro</span>
+          <span>Summary</span>
+        </div>
+      </div>
+
       <SubtitlesPanel tracks={subtitles} />
+
+      {/* Prev/Next navigation integrated for the whole panel */}
+      {(prev || next) && (
+        <div className="flex items-center justify-between">
+          <div>
+            {prev ? (
+              <a href={prev.href} className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span className="truncate max-w-[200px]">{prev.title}</span>
+              </a>
+            ) : <span />}
+          </div>
+          <div>
+            {next ? (
+              <a href={next.href} className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">
+                <span className="truncate max-w-[200px]">{next.title}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </a>
+            ) : <span />}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
