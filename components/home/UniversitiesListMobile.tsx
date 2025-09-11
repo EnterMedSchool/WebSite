@@ -20,9 +20,13 @@ type City = {
 };
 
 export default function UniversitiesListMobile({ selectedName, items, onAddCompare, compareSet }: { selectedName: string; items: City[]; onAddCompare?: (item: City) => void; compareSet?: Set<string> }) {
+  const enriched = (items || []).some((i: any) => Array.isArray((i as any).trendPoints) && (i as any).trendPoints.length > 0);
   return (
     <div className="px-1">
       <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selectedName}</div>
+      {!enriched && (
+        <div className="mb-2 text-xs text-gray-500">Loading details…</div>
+      )}
       <div className="space-y-3">
         {items.map((c, i) => (
           <div key={`${c.city}-${i}`} className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">

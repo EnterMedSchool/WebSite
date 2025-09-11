@@ -1,8 +1,7 @@
 export const runtime = "nodejs";
-// Cache per unique URL (query string) for 1 day with SWR for a week.
-// This keeps MiniTrend/Compare calls cheap even with many slugs.
-export const dynamic = "force-static";
-export const revalidate = 86400; // 24h
+// Dynamic route with strong CDN caching per URL (query string)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

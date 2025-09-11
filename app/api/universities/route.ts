@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions, universitySeats } from "@/drizzle/schema";
 import { inArray } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 
 // Types reused by the map UI
 export type City = {
@@ -32,15 +32,29 @@ export type City = {
 };
 export type CountryCities = Record<string, City[]>;
 
-// This endpoint is expensive to compute but rarely changes.
-// Cache the whole response at the CDN for 1 day and allow SWR for a week.
-export const dynamic = "force-static";
-export const revalidate = 86400; // 24h
+// Serve via dynamic handler but let the CDN cache by URL for a long time.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // Join universities with countries to get country names
-    const rows = await db
+    const { searchParams } = new URL(req.url);
+    const scope = (searchParams.get("scope") || "markers").toLowerCase();
+    const countryName = searchParams.get("name") || undefined;
+    const includeHeavy = scope === "country";
+    // Pre-aggregate program language/exam (one row per university)
+    const progAgg = db
+      .select({
+        universityId: universityPrograms.universityId,
+        language: sql<string>`max(${universityPrograms.language})`,
+        admissionExam: sql<string>`max(${universityPrograms.admissionExam})`,
+      })
+      .from(universityPrograms)
+      .groupBy(universityPrograms.universityId)
+      .as("progAgg");
+
+    // Join universities with countries and aggregated program data to get a single row per uni
+    let baseQuery = db
       .select({
         id: universities.id,
         country: countries.name,
@@ -50,28 +64,35 @@ export async function GET() {
         uni: universities.name,
         kind: universities.kind,
         logo: universities.logoUrl,
-        photos: universities.photos,
-        orgs: universities.orgs,
-        article: universities.article,
-        progLang: universityPrograms.language,
-        progExam: universityPrograms.admissionExam,
+        ...(includeHeavy ? { photos: universities.photos, orgs: universities.orgs, article: universities.article } : {}),
+        progLang: progAgg.language,
+        progExam: progAgg.admissionExam,
         uniLang: universities.language,
         uniExam: universities.admissionExam,
       })
       .from(universities)
       .leftJoin(countries, eq(universities.countryId, countries.id))
-      .leftJoin(universityPrograms, eq(universityPrograms.universityId, universities.id));
+      .leftJoin(progAgg, eq(progAgg.universityId, universities.id));
+
+    if (countryName) {
+      // Narrow query to a single country when enriching
+      baseQuery = (baseQuery as any).where(eq(countries.name, countryName));
+    }
+
+    const rows = await baseQuery;
 
     // Compute derived rating (avg testimonials), lastScore (latest NonEU>EU>Any),
     // latest costs and current year's admissions months.
-    const ids = rows.map(r => r.id as number).filter(Boolean);
+    const ids = rows.map((r) => r.id as number).filter(Boolean);
     let avgById = new Map<number, number>();
     let lastScoreById = new Map<number, number>();
     let miniTrendPointsById = new Map<number, Array<{ year: number; type: string; score: number }>>();
     let miniTrendSeatsById = new Map<number, Array<{ year: number; type: string; seats: number }>>();
-    let costsById = new Map<number, { rent?: number|null; food?: number|null; transport?: number|null }>();
-    let admissionsById = new Map<number, { opens?: number|null; deadline?: number|null; results?: number|null }>();
-    if (ids.length) {
+    let costsById = new Map<number, { rent?: number | null; food?: number | null; transport?: number | null }>();
+    let admissionsById = new Map<number, { opens?: number | null; deadline?: number | null; results?: number | null }>();
+
+    if (ids.length && includeHeavy) {
+      // Ratings (avg)
       const tRows = await db
         .select({ uid: universityTestimonials.universityId, rating: universityTestimonials.rating })
         .from(universityTestimonials)
@@ -79,10 +100,14 @@ export async function GET() {
       const agg: Record<number, { sum: number; n: number }> = {} as any;
       for (const t of tRows) {
         if (t.rating == null) continue;
-        const uid = t.uid as number; (agg[uid] ||= { sum: 0, n: 0 }); agg[uid].sum += Number(t.rating); agg[uid].n += 1;
+        const uid = t.uid as number;
+        (agg[uid] ||= { sum: 0, n: 0 });
+        agg[uid].sum += Number(t.rating);
+        agg[uid].n += 1;
       }
-      avgById = new Map(Object.entries(agg).map(([k,v]) => [Number(k), v.n ? v.sum / v.n : 0]));
+      avgById = new Map(Object.entries(agg).map(([k, v]) => [Number(k), v.n ? v.sum / v.n : 0]));
 
+      // Scores/trend
       const sRows = await db
         .select()
         .from(universityScores)
@@ -97,21 +122,27 @@ export async function GET() {
         const yr = s.year as number;
         const sc = Number(s.minScore);
         const cur = best[uid];
-        // Prefer latest year; for same year prefer NonEU, then EU, then other.
-        const rank = (t: string) => (t === 'NonEU' ? 2 : t === 'EU' ? 1 : 0);
+        const rank = (t: string) => (t === "NonEU" ? 2 : t === "EU" ? 1 : 0);
         if (!cur || yr > cur.year || (yr === cur.year && rank(cand) > rank(cur.type))) {
           best[uid] = { year: yr, score: sc, type: cand };
         }
-        if (yr >= cutoff && (cand === 'EU' || cand === 'NonEU')) {
+        if (yr >= cutoff && (cand === "EU" || cand === "NonEU")) {
           (pts[uid] ||= []).push({ year: yr, type: cand, score: sc });
         }
       }
-      lastScoreById = new Map(Object.entries(best).map(([k,v]) => [Number(k), v.score]));
-      miniTrendPointsById = new Map(Object.entries(pts).map(([k,v]) => [Number(k), (v as any[]).sort((a,b)=> a.year-b.year)]));
+      lastScoreById = new Map(Object.entries(best).map(([k, v]) => [Number(k), v.score]));
+      miniTrendPointsById = new Map(
+        Object.entries(pts).map(([k, v]) => [Number(k), (v as any[]).sort((a, b) => a.year - b.year)])
+      );
 
-      // Seats for last 3 years
+      // Seats trend
       const seatRows = await db
-        .select({ universityId: universitySeats.universityId, year: universitySeats.year, candidateType: universitySeats.candidateType, seats: universitySeats.seats })
+        .select({
+          universityId: universitySeats.universityId,
+          year: universitySeats.year,
+          candidateType: universitySeats.candidateType,
+          seats: universitySeats.seats,
+        })
         .from(universitySeats)
         .where(inArray(universitySeats.universityId, ids));
       const seatMap: Record<number, Array<{ year: number; type: string; seats: number }>> = {} as any;
@@ -119,13 +150,15 @@ export async function GET() {
         const uid = Number(s.universityId);
         const yr = Number(s.year);
         const cand = String(s.candidateType);
-        if (yr >= cutoff && (cand === 'EU' || cand === 'NonEU')) {
+        if (yr >= cutoff && (cand === "EU" || cand === "NonEU")) {
           (seatMap[uid] ||= []).push({ year: yr, type: cand, seats: Number(s.seats) });
         }
       }
-      miniTrendSeatsById = new Map(Object.entries(seatMap).map(([k,v]) => [Number(k), (v as any[]).sort((a,b)=> a.year-b.year)]));
+      miniTrendSeatsById = new Map(
+        Object.entries(seatMap).map(([k, v]) => [Number(k), (v as any[]).sort((a, b) => a.year - b.year)])
+      );
 
-      // Latest costs by updated_at (or by id if equal)
+      // Latest costs
       const cRows = await db
         .select({
           uid: universityCosts.universityId,
@@ -137,18 +170,28 @@ export async function GET() {
         })
         .from(universityCosts)
         .where(inArray(universityCosts.universityId, ids));
-      const latest: Record<number, { rent?: number|null; food?: number|null; transport?: number|null; updatedAt: any; id: number }>
-        = {} as any;
+      const latest: Record<
+        number,
+        { rent?: number | null; food?: number | null; transport?: number | null; updatedAt: any; id: number }
+      > = {} as any;
       for (const c of cRows) {
         const uid = Number(c.uid);
         const cur = latest[uid];
         if (!cur || (c.updatedAt as any) > cur.updatedAt || (c.updatedAt === cur.updatedAt && Number(c.id) > cur.id)) {
-          latest[uid] = { rent: c.rent as any, food: c.food as any, transport: c.transport as any, updatedAt: c.updatedAt, id: Number(c.id) };
+          latest[uid] = {
+            rent: c.rent as any,
+            food: c.food as any,
+            transport: c.transport as any,
+            updatedAt: c.updatedAt,
+            id: Number(c.id),
+          };
         }
       }
-      costsById = new Map(Object.entries(latest).map(([k,v]) => [Number(k), { rent: v.rent ?? null, food: v.food ?? null, transport: v.transport ?? null }]));
+      costsById = new Map(
+        Object.entries(latest).map(([k, v]) => [Number(k), { rent: v.rent ?? null, food: v.food ?? null, transport: v.transport ?? null }])
+      );
 
-      // Admissions: prefer current year, else latest available
+      // Admissions months
       const year = new Date().getUTCFullYear();
       const aRows = await db
         .select({
@@ -160,7 +203,7 @@ export async function GET() {
         })
         .from(universityAdmissions)
         .where(inArray(universityAdmissions.universityId, ids));
-      const pick: Record<number, { year: number; opens?: number|null; deadline?: number|null; results?: number|null }> = {} as any;
+      const pick: Record<number, { year: number; opens?: number | null; deadline?: number | null; results?: number | null }> = {} as any;
       for (const a of aRows) {
         const uid = Number(a.uid);
         const yr = Number(a.year);
@@ -169,7 +212,9 @@ export async function GET() {
           pick[uid] = { year: yr, opens: a.opens as any, deadline: a.deadline as any, results: a.results as any };
         }
       }
-      admissionsById = new Map(Object.entries(pick).map(([k,v]) => [Number(k), { opens: v.opens ?? null, deadline: v.deadline ?? null, results: v.results ?? null }]));
+      admissionsById = new Map(
+        Object.entries(pick).map(([k, v]) => [Number(k), { opens: v.opens ?? null, deadline: v.deadline ?? null, results: v.results ?? null }])
+      );
     }
 
     const data: CountryCities = {};
@@ -187,19 +232,19 @@ export async function GET() {
         language: ((r.progLang as any) ?? (r.uniLang as any)) ?? undefined,
         exam: ((r.progExam as any) ?? (r.uniExam as any)) ?? undefined,
         logo: (r.logo as string) ?? undefined,
-        rating: avgById.get(r.id as number) ?? undefined,
-        lastScore: lastScoreById.get(r.id as number) ?? undefined,
-        photos: (r.photos as string[]) ?? undefined,
-        orgs: (r.orgs as string[]) ?? undefined,
-        article: (r.article as any) ?? undefined,
-        costRent: costsById.get(r.id as number)?.rent ?? undefined,
-        costFoodIndex: costsById.get(r.id as number)?.food ?? undefined,
-        costTransport: costsById.get(r.id as number)?.transport ?? undefined,
-        admOpens: (() => { const m = admissionsById.get(r.id as number)?.opens; return m ? MONTHS[(m-1)%12] : undefined; })(),
-        admDeadline: (() => { const m = admissionsById.get(r.id as number)?.deadline; return m ? MONTHS[(m-1)%12] : undefined; })(),
-        admResults: (() => { const m = admissionsById.get(r.id as number)?.results; return m ? MONTHS[(m-1)%12] : undefined; })(),
-        trendPoints: miniTrendPointsById.get(r.id as number),
-        trendSeats: miniTrendSeatsById.get(r.id as number),
+        rating: includeHeavy ? (avgById.get(r.id as number) ?? undefined) : undefined,
+        lastScore: includeHeavy ? (lastScoreById.get(r.id as number) ?? undefined) : undefined,
+        photos: includeHeavy ? ((r.photos as string[]) ?? undefined) : undefined,
+        orgs: includeHeavy ? ((r.orgs as string[]) ?? undefined) : undefined,
+        article: includeHeavy ? ((r.article as any) ?? undefined) : undefined,
+        costRent: includeHeavy ? (costsById.get(r.id as number)?.rent ?? undefined) : undefined,
+        costFoodIndex: includeHeavy ? (costsById.get(r.id as number)?.food ?? undefined) : undefined,
+        costTransport: includeHeavy ? (costsById.get(r.id as number)?.transport ?? undefined) : undefined,
+        admOpens: includeHeavy ? (() => { const m = admissionsById.get(r.id as number)?.opens; return m ? MONTHS[(m-1)%12] : undefined; })() : undefined,
+        admDeadline: includeHeavy ? (() => { const m = admissionsById.get(r.id as number)?.deadline; return m ? MONTHS[(m-1)%12] : undefined; })() : undefined,
+        admResults: includeHeavy ? (() => { const m = admissionsById.get(r.id as number)?.results; return m ? MONTHS[(m-1)%12] : undefined; })() : undefined,
+        trendPoints: includeHeavy ? miniTrendPointsById.get(r.id as number) : undefined,
+        trendSeats: includeHeavy ? miniTrendSeatsById.get(r.id as number) : undefined,
       });
     }
 

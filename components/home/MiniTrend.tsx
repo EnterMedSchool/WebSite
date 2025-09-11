@@ -81,7 +81,7 @@ export default function MiniTrend({ uni, root, prefetch }: { uni: string; root?:
 
   // Defer network work until item is near visible
   useEffect(() => {
-    if (shouldLoad) return;
+    if (shouldLoad || prefetch) return;
     const el = holderRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(

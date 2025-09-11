@@ -14,6 +14,9 @@ type Item = {
   rating?: number;
   lastScore?: number;
   logo?: string;
+  // Optional prefetched mini trend data attached by HomeMap
+  trendPoints?: Array<{ year: number; type: string; score: number }>;
+  trendSeats?: Array<{ year: number; type: string; seats: number }>;
 };
 
 function insights(items: Item[]): string {
@@ -78,19 +81,40 @@ export default function CompareDrawer({
       setSeries([]);
       return;
     }
+    const byLocal = items
+      .filter((i) => (i.trendPoints && i.trendPoints.length) || (i.trendSeats && i.trendSeats.length))
+      .map((i) => ({
+        uni: i.uni,
+        country: i.country ?? null,
+        points: (i.trendPoints || []).sort((a,b)=>a.year-b.year),
+        seats: (i.trendSeats || []).sort((a,b)=>a.year-b.year),
+      }));
+    const haveLocal = new Set(byLocal.map((s) => s.uni));
+    const missing = items.filter((i) => !haveLocal.has(i.uni));
+
     let cancelled = false;
+    const done = (data: Series[]) => { if (!cancelled) setSeries(data); };
+
+    if (missing.length === 0) {
+      done(byLocal);
+      return () => { cancelled = true; };
+    }
+    // Fetch only missing; merge with local
     (async () => {
       try {
-        const res = await fetch(`/api/compare/scores?unis=${encodeURIComponent(slugs)}`);
-        if (!res.ok) return;
+        const qs = missing
+          .map((i) => i.uni.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""))
+          .join(",");
+        const res = await fetch(`/api/compare/scores?unis=${encodeURIComponent(qs)}`);
         const json = await res.json();
-        if (!cancelled) setSeries(json.series || []);
-      } catch {}
+        const merged: Series[] = [...byLocal, ...(json.series || [])];
+        done(merged);
+      } catch {
+        done(byLocal);
+      }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, slugs, items.length]);
+    return () => { cancelled = true; };
+  }, [open, slugs, items]);
 
   return (
     <AnimatePresence>

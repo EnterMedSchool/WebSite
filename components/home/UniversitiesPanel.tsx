@@ -36,6 +36,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
   const langs = new Set((items || []).map((i: any) => (i as any).language || '').filter(Boolean));
   const exams = new Set((items || []).map((i: any) => (i as any).exam || '').filter(Boolean));
   const listRef = useRef<HTMLDivElement | null>(null);
+  const enriched = (items || []).some((i: any) => Array.isArray((i as any).trendPoints) && (i as any).trendPoints.length > 0);
 
   return (
     <div
@@ -49,6 +50,9 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
           <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Languages</div><div className="text-base font-bold text-gray-900">{langs.size}</div></div>
           <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Exams</div><div className="text-base font-bold text-gray-900">{exams.size}</div></div>
         </div>
+        {!enriched && (
+          <div className="mt-2 text-xs text-gray-500">Loading details…</div>
+        )}
       </div>
       <div className="space-y-3 max-h-full overflow-auto pr-1" ref={listRef}>
         {items.map((c, i) => (

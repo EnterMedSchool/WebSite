@@ -61,6 +61,8 @@ export default function HomeMap() {
   const PANEL_TOP_GAP = 4;   // small gap under menu
 
   const [uniData, setUniData] = useState<CountryCities | null>(null);
+  const [enrichedCountries, setEnrichedCountries] = useState<Set<string>>(new Set());
+  const [enriching, setEnriching] = useState<string | null>(null);
   const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "" });
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
@@ -225,7 +227,9 @@ export default function HomeMap() {
     (async () => {
       try {
         // Let the browser/CDN cache aggressively; server sets Cache-Control
-        const res = await fetch(`/api/universities`);
+        // Attach optional version to bust CDN when reseeding (set NEXT_PUBLIC_UNIS_DATA_V)
+        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `?v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
+        const res = await fetch(`/api/universities${v ? `${v}&` : `?`}scope=markers`);
         const json = await res.json();
         if (!cancelled) setUniData(json.data as CountryCities);
       } catch {
@@ -234,6 +238,38 @@ export default function HomeMap() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // On country selection, fetch enriched data for that country once, then cache in memory
+  useEffect(() => {
+    const name = selected?.name;
+    if (!name || !uniData) return;
+    if (enrichedCountries.has(name) || enriching === name) return;
+    // If current list items already have trendPoints (from a previous enrichment), skip
+    const hasTrends = (uniData[name] || []).some((c: any) => Array.isArray((c as any).trendPoints) && (c as any).trendPoints.length > 0);
+    if (hasTrends) {
+      setEnrichedCountries((s) => new Set(s).add(name));
+      return;
+    }
+    let cancelled = false;
+    setEnriching(name);
+    (async () => {
+      try {
+        const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}`);
+        if (!res.ok) throw new Error("bad");
+        const json = await res.json();
+        if (cancelled) return;
+        const next: CountryCities = { ...(uniData || {}) } as any;
+        // Replace only the selected country's array
+        next[name] = (json.data?.[name] || []) as any;
+        setUniData(next);
+        setEnrichedCountries((s) => new Set(s).add(name));
+      } catch {}
+      finally {
+        if (!cancelled) setEnriching((s) => (s === name ? null : s));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selected?.name, uniData, enrichedCountries, enriching]);
 
   // No header measurement needed; panel is anchored inside the map container.
   // Detect small screens (sm/md) for sheet behavior
