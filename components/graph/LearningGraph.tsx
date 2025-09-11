@@ -79,45 +79,45 @@ function colorForCourse(courseId?: number) {
 }
 
 function GraphInner({ data }: { data: GraphJSON }) {
+  return (
+    <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
+      <div className="relative h-full w-full">
+        <SigmaContainer style={{ height: "100%", width: "100%" }}>
+          <FullGraphController data={data} />
+        </SigmaContainer>
+      </div>
+    </div>
+  );
+}
+
+function FullGraphController({ data }: { data: GraphJSON }) {
   const loadGraph = useLoadGraph();
   const setSettings = useSetSettings();
+  const registerEvents = useRegisterEvents();
   const gRef = useRef<Graph | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; label: string }[]>([]);
 
-  // Build the graph once
+  // Build the graph once inside the Sigma context
   useEffect(() => {
     const g = buildGraphology(data);
-    // Base colors
-    g.forEachNode((n, a) => {
-      a.color = colorForCourse(a.courseId);
-    });
+    g.forEachNode((n, a) => { a.color = colorForCourse(a.courseId); });
     gRef.current = g;
     loadGraph(g);
-    // Nice defaults
     setSettings({
       defaultNodeColor: "#607d8b",
       labelRenderedSizeThreshold: 6,
       labelDensity: 0.07,
       zIndex: true,
-      allowInvalidContainer: true,
     });
-    // Light force settle for nicer placement (fallback mode only)
     try {
-      const iter = Math.min(200, Math.max(60, Math.floor(60000 / Math.max(1, g.order)))) as number; // fewer iterations when large
+      const iter = Math.min(200, Math.max(60, Math.floor(60000 / Math.max(1, g.order)))) as number;
       setTimeout(() => forceAtlas2.assign(g, { iterations: iter, settings: inferFA2(g) as any }), 0);
     } catch {}
   }, [data, loadGraph, setSettings]);
 
-  // Highlight via reducers
-  const [highlightSet, setHighlightSet] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    if (!gRef.current) return;
-    if (!focus) { setHighlightSet(new Set()); return; }
-    setHighlightSet(computeAncestors(gRef.current, focus));
-  }, [focus]);
-
-  // Register click events to update focus
-  const registerEvents = useRegisterEvents();
+  // Events
   useEffect(() => {
     registerEvents({
       clickNode: (e) => setFocus(e.node),
@@ -125,74 +125,54 @@ function GraphInner({ data }: { data: GraphJSON }) {
     });
   }, [registerEvents]);
 
-  // Reducers configured through settings
+  // Compute highlight when focus changes
   useEffect(() => {
+    if (!gRef.current) return;
+    const g = gRef.current;
+    const set = focus ? computeAncestors(g, focus) : new Set<string>();
     setSettings({
       nodeReducer: (n, data) => {
-        if (!highlightSet.size) return data;
-        const inSet = highlightSet.has(n);
-        return {
-          ...data,
-          color: inSet ? (n === focus ? "#f59e0b" : data.color) : "#d1d5db",
-          size: inSet ? (n === focus ? (data.size ?? 2) + 3 : (data.size ?? 2) + 1) : (data.size ?? 2) * 0.8,
-          zIndex: inSet ? 2 : 0,
-        } as any;
+        if (!set.size) return data;
+        const inSet = set.has(n);
+        return { ...data, color: inSet ? (n === focus ? "#f59e0b" : data.color) : "#d1d5db", size: inSet ? (data.size ?? 2) + (n === focus ? 3 : 1) : (data.size ?? 2) * 0.8 } as any;
       },
       edgeReducer: (e, data) => {
-        if (!highlightSet.size) return data;
-        const g = gRef.current!;
-        const s = g.source(e);
-        const t = g.target(e);
-        const onPath = highlightSet.has(s) && highlightSet.has(t);
-        return {
-          ...data,
-          color: onPath ? "#f59e0b" : "#e5e7eb",
-          size: onPath ? 2 : 0.5,
-          hidden: !onPath,
-        } as any;
+        if (!set.size) return data;
+        const s = g.source(e), t = g.target(e);
+        const onPath = set.has(s) && set.has(t);
+        return { ...data, color: onPath ? "#f59e0b" : "#e5e7eb", size: onPath ? 2 : 0.5, hidden: !onPath } as any;
       },
     });
-  }, [highlightSet, focus, setSettings]);
+  }, [focus, setSettings]);
 
-  // Simple search box
-  const [query, setQuery] = useState("");
-  const results = useMemo(() => {
-    if (!gRef.current || !query) return [] as { id: string; label: string }[];
-    const q = query.toLowerCase();
+  // Search
+  useEffect(() => {
+    if (!gRef.current) return setResults([]);
+    const q = query.trim().toLowerCase();
+    if (!q) return setResults([]);
     const out: { id: string; label: string }[] = [];
-    gRef.current.forEachNode((n, a) => {
-      if ((a.label as string)?.toLowerCase().includes(q)) out.push({ id: n, label: a.label });
-    });
-    return out.slice(0, 10);
+    gRef.current.forEachNode((n, a) => { if ((a.label as string)?.toLowerCase().includes(q)) out.push({ id: n, label: a.label }); });
+    setResults(out.slice(0, 10));
   }, [query]);
 
+  // Overlay UI rendered inside the container
   return (
-    <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
-      <div className="z-10 m-2 flex gap-2 rounded-xl bg-white/90 p-2 shadow ring-1 ring-black/10">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search lessons…"
-          className="w-72 rounded-md border px-2 py-1 text-sm"
-        />
-        {results.length > 0 && (
-          <div className="absolute mt-8 max-h-64 w-96 overflow-y-auto rounded-md border bg-white p-2 text-sm shadow">
-            {results.map((r) => (
-              <div key={r.id} className="cursor-pointer rounded px-1 py-0.5 hover:bg-indigo-50" onClick={() => setFocus(r.id)}>
-                {r.label}
-              </div>
-            ))}
-          </div>
-        )}
-        {focus && (
-          <div className="ml-4 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
-            Showing prerequisites for: {gRef.current?.getNodeAttribute(focus, "label")}
-          </div>
-        )}
-      </div>
-      <div className="relative h-full w-full">
-        <SigmaContainer style={{ height: "100%", width: "100%" }} />
-      </div>
+    <div className="absolute left-2 top-2 z-10 flex gap-2 rounded-xl bg-white/90 p-2 shadow ring-1 ring-black/10">
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search lessons…" className="w-72 rounded-md border px-2 py-1 text-sm" />
+      {results.length > 0 && (
+        <div className="absolute left-0 top-10 max-h-64 w-96 overflow-y-auto rounded-md border bg-white p-2 text-sm shadow">
+          {results.map((r) => (
+            <div key={r.id} className="cursor-pointer rounded px-1 py-0.5 hover:bg-indigo-50" onClick={() => setFocus(r.id)}>
+              {r.label}
+            </div>
+          ))}
+        </div>
+      )}
+      {focus && (
+        <div className="ml-4 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+          Showing prerequisites for: {gRef.current?.getNodeAttribute(focus, "label")}
+        </div>
+      )}
     </div>
   );
 }
@@ -227,8 +207,21 @@ export default function LearningGraph({ src = "/graph/v1/graph.json" }: { src?: 
 // Sharded (by course) viewer
 // =====================
 function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: string }) {
+  return (
+    <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
+      <div className="relative h-full w-full">
+        <SigmaContainer style={{ height: "100%", width: "100%" }}>
+          <ShardedGraphController manifest={manifest} baseSrc={baseSrc} />
+        </SigmaContainer>
+      </div>
+    </div>
+  );
+}
+
+function ShardedGraphController({ manifest, baseSrc }: { manifest: Manifest; baseSrc: string }) {
   const loadGraph = useLoadGraph();
   const setSettings = useSetSettings();
+  const registerEvents = useRegisterEvents();
   const gRef = useRef<Graph | null>(null);
   const expanded = useRef<Set<number>>(new Set());
   const [focus, setFocus] = useState<string | null>(null);
@@ -373,12 +366,7 @@ function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: stri
         const t = data.type as string | undefined;
         if (!highlightSet.size || t !== "lesson") return data;
         const inSet = highlightSet.has(n);
-        return {
-          ...data,
-          color: inSet ? (n === focus ? "#f59e0b" : data.color) : (t === "lesson" ? "#e5e7eb" : data.color),
-          size: inSet ? (n === focus ? (data.size ?? 2) + 3 : (data.size ?? 2) + 1) : (data.size ?? 2) * 0.85,
-          zIndex: inSet ? 2 : 0,
-        } as any;
+        return { ...data, color: inSet ? (n === focus ? "#f59e0b" : data.color) : (t === "lesson" ? "#e5e7eb" : data.color), size: inSet ? (n === focus ? (data.size ?? 2) + 3 : (data.size ?? 2) + 1) : (data.size ?? 2) * 0.85, zIndex: inSet ? 2 : 0 } as any;
       },
       edgeReducer: (e, data) => {
         if (!highlightSet.size) return data;
@@ -392,19 +380,14 @@ function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: stri
   }, [highlightSet, focus, setSettings]);
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
-      <div className="z-10 m-2 flex items-center gap-2 rounded-xl bg-white/90 p-2 shadow ring-1 ring-black/10">
-        <button className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700" onClick={collapseAll}>Overview</button>
-        <div className="text-xs text-gray-600">Click a course to expand. Click a lesson to highlight its prerequisites (loaded courses only).</div>
-        {focus && (
-          <div className="ml-4 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
-            Focus: {gRef.current?.getNodeAttribute(focus, "label")}
-          </div>
-        )}
-      </div>
-      <div className="relative h-full w-full">
-        <SigmaContainer style={{ height: "100%", width: "100%" }} />
-      </div>
+    <div className="absolute left-2 top-2 z-10 m-2 flex items-center gap-2 rounded-xl bg-white/90 p-2 shadow ring-1 ring-black/10">
+      <button className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700" onClick={collapseAll}>Overview</button>
+      <div className="text-xs text-gray-600">Click a course to expand. Click a lesson to highlight its prerequisites (loaded courses only).</div>
+      {focus && (
+        <div className="ml-4 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+          Focus: {gRef.current?.getNodeAttribute(focus, "label")}
+        </div>
+      )}
     </div>
   );
 }
