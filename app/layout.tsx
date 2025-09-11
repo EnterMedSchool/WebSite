@@ -4,7 +4,6 @@ import { Baloo_2, Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
 import Providers from "./providers";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "WebSite",
@@ -28,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {STUDY_ENABLED ? <QuickDock /> : null}
           <RewardsOverlay />
         </Providers>
-        <SpeedInsights />
+        {null}
       </body>
     </html>
   );

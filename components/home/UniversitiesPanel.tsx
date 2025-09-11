@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import MiniTrend from "@/components/home/MiniTrend";
 import DeadlineStrip from "@/components/home/DeadlineStrip";
 import CostTile from "@/components/home/CostTile";
+import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 
 type City = {
   id?: number;
