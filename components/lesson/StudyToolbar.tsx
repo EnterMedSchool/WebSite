@@ -59,9 +59,8 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   const segBtn = (active: boolean) => `inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`;
   const ghostBtn = `inline-flex h-9 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
   const primaryBtn = `inline-flex h-9 items-center gap-1 rounded-full bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700`;
-  const toggleBtn = focus
-    ? `inline-flex h-9 items-center gap-1 rounded-full bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700`
-    : `inline-flex h-9 items-center gap-1 rounded-full bg-white px-3 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-50`;
+  // Focus should be primary (blue) in both states
+  const toggleBtn = primaryBtn;
 
   return (
     <div className="sticky top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -76,10 +75,10 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
 
             {/* Actions cluster */}
             <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+              <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
               <button onClick={share} className={ghostBtn}><IconShare /><span>Share</span></button>
               <button onClick={printPage} className={ghostBtn}><IconPrint /><span>Print</span></button>
-              <button onClick={askAI} className={primaryBtn}><IconGPT /><span>ChatGPT</span></button>
-              <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
+              <button onClick={askAI} className={ghostBtn}><IconGPT /><span>ChatGPT</span></button>
             </div>
           </>
         ) : (
