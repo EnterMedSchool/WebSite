@@ -13,6 +13,7 @@ import AnkiDownload from "@/components/lesson/AnkiDownload";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
 import BackgroundMap from "@/components/lesson/BackgroundMap";
 import Glossary from "@/components/lesson/Glossary";
+import StudyToolbar from "@/components/lesson/StudyToolbar";
 
 type Block = { id: number; kind: string; content: string };
 type Lesson = { id: number; slug: string; title: string };
@@ -261,15 +262,7 @@ export default function LessonPage() {
       {/* Chapter navigator (UI-only) */}
       <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-sm font-semibold text-indigo-900">Chapter progress</div>
-            {/* Segmented mode switcher */}
-            <div className="hidden sm:inline-flex rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-300">
-              {(["learn","practice"] as const).map((m) => (
-                <button key={m} onClick={() => setTab(m)} className={`px-3 py-1 text-xs font-semibold rounded-full transition ${tab===m ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`}>{m === 'learn' ? 'Learn' : 'Practice'}</button>
-              ))}
-            </div>
-          </div>
+          <div className="text-sm font-semibold text-indigo-900">Chapter progress</div>
           <div className="flex flex-1 items-center gap-3 sm:pl-4">
             {(() => {
               const lessons = timeline?.lessons || [];
@@ -284,14 +277,7 @@ export default function LessonPage() {
               );
             })()}
           </div>
-          {/* Mobile mode switcher */}
-          <div className="sm:hidden">
-            <div className="inline-flex rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-300">
-              {(["learn","practice"] as const).map((m) => (
-                <button key={m} onClick={() => setTab(m)} className={`px-3 py-1 text-xs font-semibold rounded-full transition ${tab===m ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`}>{m === 'learn' ? 'Learn' : 'Practice'}</button>
-              ))}
-            </div>
-          </div>
+          
         </div>
       </div>
 
@@ -350,6 +336,13 @@ export default function LessonPage() {
         </aside>
 
         <section>
+          {/* Study toolbar with clear mode switch + tools */}
+          <div className="mb-4">
+            <StudyToolbar
+              mode={tab}
+              onMode={(m)=> setTab(m)}
+            />
+          </div>
           {tab === "learn" && (
             <div className="space-y-4">
               {/* Ensure a video appears for demo even if lesson lacks one */}
