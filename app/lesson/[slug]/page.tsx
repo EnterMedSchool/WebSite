@@ -51,6 +51,7 @@ export default function LessonPage() {
   const [timeline, setTimeline] = useState<Timeline>(null);
   const [uniSynced, setUniSynced] = useState<boolean>(false);
   const [unlockDemoVideo, setUnlockDemoVideo] = useState<boolean>(false);
+  const [focusMode, setFocusMode] = useState<boolean>(false);
 
   const q = qs[idx];
 
@@ -333,8 +334,9 @@ export default function LessonPage() {
       </div>
 
       {/* Content */}
-      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[280px,1fr,320px]">
+      <div className={`mt-5 grid grid-cols-1 gap-6 ${focusMode ? 'lg:grid-cols-1' : 'lg:grid-cols-[280px,1fr,320px]'}`}>
         {/* Timeline sidebar */}
+        {!focusMode && (
         <aside className="hidden lg:block">
           <div className="sticky top-20 rounded-2xl border border-indigo-100 bg-white/90 p-4 shadow-sm ring-1 ring-black/5">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Chapter Progress</div>
@@ -390,6 +392,7 @@ export default function LessonPage() {
             </ul>
           </div>
         </aside>
+        )}
 
         <section>
           {/* Study toolbar with clear mode switch + tools */}
@@ -397,6 +400,8 @@ export default function LessonPage() {
             <StudyToolbar
               mode={tab}
               onMode={(m)=> setTab(m)}
+              focus={focusMode}
+              onFocusToggle={()=> setFocusMode((v)=> !v)}
             />
           </div>
           {tab === "learn" && (
@@ -461,17 +466,20 @@ export default function LessonPage() {
                 });
               })()}
 
-              {/* Background knowledge */}
-              <BackgroundMap comingSoon />
-
-              {/* Comments placeholder */}
-              <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-                <div className="mb-1 text-sm font-semibold text-indigo-900">Comments</div>
-                <div className="text-[12px] text-gray-600">Discussion, highlights and Q&A — coming soon.</div>
-                <div className="mt-3 grid gap-2">
-                  {[0,1].map((i)=>(<div key={i} className="rounded-xl bg-gray-50 p-3 text-[12px] text-gray-500 ring-1 ring-inset ring-gray-200">Sign in to leave a comment…</div>))}
-                </div>
-              </div>
+              {!focusMode && (
+                <>
+                  {/* Background knowledge */}
+                  <BackgroundMap comingSoon />
+                  {/* Comments placeholder */}
+                  <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+                    <div className="mb-1 text-sm font-semibold text-indigo-900">Comments</div>
+                    <div className="text-[12px] text-gray-600">Discussion, highlights and Q&A — coming soon.</div>
+                    <div className="mt-3 grid gap-2">
+                      {[0,1].map((i)=>(<div key={i} className="rounded-xl bg-gray-50 p-3 text-[12px] text-gray-500 ring-1 ring-inset ring-gray-200">Sign in to leave a comment…</div>))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -563,17 +571,18 @@ export default function LessonPage() {
 
           {/* Lesson meta moved to header; no bottom prev/next */}
         </section>
-        {/* Right rail with glossary and tools */}
-        <aside className="hidden lg:block space-y-4">
-          <Glossary />
-          <UniResources enabled={uniSynced} comingSoon />
-          <AnkiDownload comingSoon />
-          <ConceptChecklist items={["Why D-dimer increases", "Consumption coagulopathy vs. primary fibrinolysis", "Triggers in sepsis", "Management priorities"]} comingSoon />
-          <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-            <div className="text-sm font-semibold text-indigo-900">Credits & resources</div>
-            <div className="mt-1 text-[12px] text-gray-600">Images, icons, references • coming soon</div>
-          </div>
-        </aside>
+        {!focusMode && (
+          <aside className="hidden lg:block space-y-4">
+            <Glossary />
+            <UniResources enabled={uniSynced} comingSoon />
+            <AnkiDownload comingSoon />
+            <ConceptChecklist items={["Why D-dimer increases", "Consumption coagulopathy vs. primary fibrinolysis", "Triggers in sepsis", "Management priorities"]} comingSoon />
+            <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+              <div className="text-sm font-semibold text-indigo-900">Credits & resources</div>
+              <div className="mt-1 text-[12px] text-gray-600">Images, icons, references • coming soon</div>
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );
