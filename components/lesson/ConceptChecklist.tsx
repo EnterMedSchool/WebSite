@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 
-export default function ConceptChecklist({ items }: { items: string[] }) {
+export default function ConceptChecklist({ items, comingSoon }: { items: string[]; comingSoon?: boolean }) {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
       <div className="mb-2 text-sm font-semibold text-indigo-900">Concept check</div>
+      {comingSoon && <div className="-mt-1 mb-2 text-[11px] text-gray-500">Smart concepts & syncing • coming soon</div>}
       <ul className="grid gap-2">
         {items.map((t, i) => (
           <li key={i} className="flex items-start gap-3">
@@ -24,4 +25,3 @@ export default function ConceptChecklist({ items }: { items: string[] }) {
     </div>
   );
 }
-

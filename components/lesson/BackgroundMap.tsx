@@ -1,11 +1,12 @@
 "use client";
 
-export default function BackgroundMap() {
+export default function BackgroundMap({ comingSoon }: { comingSoon?: boolean }) {
   // Simple mini mind-map using SVG
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
       <div className="mb-2 text-sm font-semibold text-indigo-900">Background knowledge</div>
       <div className="text-[12px] text-gray-600">A high-level path to this lesson</div>
+      {comingSoon && <div className="mt-1 text-[11px] text-gray-500">Interactive map • coming soon</div>}
       <div className="mt-3 overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-sky-50">
         <svg viewBox="0 0 400 200" className="block w-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -35,4 +36,3 @@ export default function BackgroundMap() {
     </div>
   );
 }
-

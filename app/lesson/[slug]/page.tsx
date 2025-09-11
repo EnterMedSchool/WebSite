@@ -13,7 +13,6 @@ import AnkiDownload from "@/components/lesson/AnkiDownload";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
 import BackgroundMap from "@/components/lesson/BackgroundMap";
 import Glossary from "@/components/lesson/Glossary";
-import LessonMeta from "@/components/lesson/LessonMeta";
 
 type Block = { id: number; kind: string; content: string };
 type Lesson = { id: number; slug: string; title: string };
@@ -210,7 +209,7 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
+    <div className="mx-auto max-w-[1400px] p-6">
       {/* Hero header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex items-start justify-between gap-4">
@@ -240,9 +239,10 @@ export default function LessonPage() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
-            <button
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
+              <button
               ref={completeBtnRef}
               onClick={markCompleteToggle}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
@@ -253,6 +253,17 @@ export default function LessonPage() {
             >
               {isComplete ? "Mark as incomplete" : "Mark as complete"}
             </button>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[11px] text-white/85">
+              <span>Author —</span>
+              <span className="hidden sm:inline">•</span>
+              <span>Reviewed by —</span>
+              <span className="hidden sm:inline">•</span>
+              <span>Recently completed</span>
+              <span className="flex -space-x-2 overflow-hidden">
+                {[0,1,2,3].map((i)=> (<span key={i} className="inline-block h-5 w-5 rounded-full bg-white/30 ring-2 ring-white/20" />))}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -348,42 +359,84 @@ export default function LessonPage() {
                         onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
                         subtitles={[{ lang: 'en', label: 'English' }]}
                       />
+                      {/* Inline, minimal prev/next under video when no native video block exists */}
+                      <div className="-mt-2 flex items-center justify-between px-1">
+                        <div>
+                          {nav?.prev ? (
+                            <Link href={`/lesson/${nav.prev.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Prev: {nav.prev.title}</Link>
+                          ) : (<span />)}
+                        </div>
+                        <div>
+                          {nav?.next ? (
+                            <Link href={`/lesson/${nav.next.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Next: {nav.next.title}</Link>
+                          ) : (<span />)}
+                        </div>
+                      </div>
                     </div>
                   );
                 }
                 return null;
               })()}
-              {blocks.map((b, i) => (
-                <motion.div
-                  key={b.id}
-                  className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5"
-                  initial={{ opacity: 0, y: 8 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.03 }}
-                >
-                  {b.kind === "video" ? (
-                    <VideoPanel
-                      src={JSON.parse(b.content || "{}")?.src || ""}
-                      poster={JSON.parse(b.content || "{}")?.poster || ""}
-                      locked={!isAuthed && !unlockDemoVideo}
-                      lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
-                      onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
-                      subtitles={[{ lang: 'en', label: 'English' }, { lang: 'it', label: 'Italiano' }]}
-                    />
-                  ) : b.kind === "note" ? (
-                    <article className="prose prose-indigo max-w-none text-sm">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.content}</ReactMarkdown>
-                    </article>
-                  ) : (
-                    <div className="rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">{b.content}</div>
-                  )}
-                </motion.div>
-              ))}
-              <UniResources enabled={uniSynced} />
-              <AnkiDownload />
-              <ConceptChecklist items={["Why D-dimer increases", "Consumption coagulopathy vs. primary fibrinolysis", "Triggers in sepsis", "Management priorities"]} />
-              <BackgroundMap />
+              {(() => {
+                let navShown = false;
+                return blocks.map((b, i) => {
+                  const isVideo = b.kind === 'video';
+                  return (
+                    <div key={`wrap-${b.id}`}>
+                      <motion.div
+                        className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5"
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.03 }}
+                      >
+                        {isVideo ? (
+                          <VideoPanel
+                            src={JSON.parse(b.content || "{}")?.src || ""}
+                            poster={JSON.parse(b.content || "{}")?.poster || ""}
+                            locked={!isAuthed && !unlockDemoVideo}
+                            lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
+                            onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                            subtitles={[{ lang: 'en', label: 'English' }]}
+                          />
+                        ) : b.kind === 'note' ? (
+                          <article className="prose prose-indigo max-w-none text-sm">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.content}</ReactMarkdown>
+                          </article>
+                        ) : (
+                          <div className="rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">{b.content}</div>
+                        )}
+                      </motion.div>
+                      {isVideo && !navShown && (navShown = true) && (
+                        <div key={`nav-${b.id}`} className="-mt-2 flex items-center justify-between px-1">
+                          <div>
+                            {nav?.prev ? (
+                              <Link href={`/lesson/${nav.prev.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Prev: {nav.prev.title}</Link>
+                            ) : (<span />)}
+                          </div>
+                          <div>
+                            {nav?.next ? (
+                              <Link href={`/lesson/${nav.next.slug}`} className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">Next: {nav.next.title}</Link>
+                            ) : (<span />)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Background knowledge */}
+              <BackgroundMap comingSoon />
+
+              {/* Comments placeholder */}
+              <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+                <div className="mb-1 text-sm font-semibold text-indigo-900">Comments</div>
+                <div className="text-[12px] text-gray-600">Discussion, highlights and Q&A — coming soon.</div>
+                <div className="mt-3 grid gap-2">
+                  {[0,1].map((i)=>(<div key={i} className="rounded-xl bg-gray-50 p-3 text-[12px] text-gray-500 ring-1 ring-inset ring-gray-200">Sign in to leave a comment…</div>))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -490,36 +543,19 @@ export default function LessonPage() {
             </div>
           )}
 
-          <LessonMeta />
-          {/* Prev/Next navigation */}
-          <div className="mt-8 flex items-center justify-between">
-            <div>
-              {nav?.prev ? (
-                <Link
-                  href={`/lesson/${nav.prev.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50"
-                >
-                  Prev: {nav.prev.title}
-                </Link>
-              ) : (
-                <span />
-              )}
-            </div>
-            <div>
-              {nav?.next ? (
-                <Link
-                  href={`/lesson/${nav.next.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50"
-                >
-                  Next: {nav.next.title}
-                </Link>
-              ) : (
-                <span />
-              )}
-            </div>
-          </div>
+          {/* Lesson meta moved to header; no bottom prev/next */}
         </section>
-        {tab === 'learn' ? <Glossary /> : <div className="hidden lg:block" />}
+        {/* Right rail with glossary and tools */}
+        <aside className="hidden lg:block space-y-4">
+          <Glossary />
+          <UniResources enabled={uniSynced} comingSoon />
+          <AnkiDownload comingSoon />
+          <ConceptChecklist items={["Why D-dimer increases", "Consumption coagulopathy vs. primary fibrinolysis", "Triggers in sepsis", "Management priorities"]} comingSoon />
+          <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+            <div className="text-sm font-semibold text-indigo-900">Credits & resources</div>
+            <div className="mt-1 text-[12px] text-gray-600">Images, icons, references • coming soon</div>
+          </div>
+        </aside>
       </div>
     </div>
   );

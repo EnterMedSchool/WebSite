@@ -4,9 +4,10 @@ type Props = {
   count?: number;
   tags?: string[];
   updatedAt?: string;
+  comingSoon?: boolean;
 };
 
-export default function AnkiDownload({ count = 42, tags = ["hematology", "coagulation"], updatedAt = "2 days ago" }: Props) {
+export default function AnkiDownload({ count = 42, tags = ["hematology", "coagulation"], updatedAt = "2 days ago", comingSoon }: Props) {
   return (
     <div className="relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
       <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-indigo-50" />
@@ -17,6 +18,7 @@ export default function AnkiDownload({ count = 42, tags = ["hematology", "coagul
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold text-indigo-900">Download Anki Cards</div>
+          {comingSoon && <div className="mt-0.5 text-[11px] text-gray-500">Decks & tags • coming soon</div>}
           <div className="mt-1 text-[12px] text-gray-600">{count} cards • updated {updatedAt}</div>
           <div className="mt-2 flex flex-wrap gap-1">
             {tags.map((t) => (
@@ -29,4 +31,3 @@ export default function AnkiDownload({ count = 42, tags = ["hematology", "coagul
     </div>
   );
 }
-

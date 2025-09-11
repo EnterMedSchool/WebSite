@@ -2,7 +2,7 @@
 
 type Resource = { type: 'pdf' | 'slides'; title: string; href?: string; by?: string };
 
-export default function UniResources({ enabled, resources }: { enabled?: boolean; resources?: Resource[] }) {
+export default function UniResources({ enabled, resources, comingSoon }: { enabled?: boolean; resources?: Resource[]; comingSoon?: boolean }) {
   const items: Resource[] = resources && resources.length ? resources : [
     { type: 'pdf', title: 'Official chapter PDF', href: undefined, by: 'Prof. —' },
     { type: 'slides', title: 'Lecture slides', href: undefined, by: 'Prof. —' },
@@ -13,6 +13,9 @@ export default function UniResources({ enabled, resources }: { enabled?: boolean
         <div className="text-sm font-semibold text-indigo-900">Resources from your university</div>
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${enabled ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'}`}>{enabled ? 'Synced' : 'Sync required'}</span>
       </div>
+      {comingSoon && (
+        <div className="mb-2 text-[11px] text-gray-500">Upload & moderation • coming soon</div>
+      )}
       {!enabled && (
         <div className="mb-3 rounded-lg bg-indigo-50 p-3 text-[12px] text-indigo-900">
           Sync your university in <a href="/me/profile" className="underline">/me/profile</a> to see professor-provided PDFs and slides here.
@@ -39,4 +42,3 @@ export default function UniResources({ enabled, resources }: { enabled?: boolean
     </div>
   );
 }
-
