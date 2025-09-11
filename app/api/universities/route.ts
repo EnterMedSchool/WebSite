@@ -33,6 +33,15 @@ export type City = {
 };
 export type CountryCities = Record<string, City[]>;
 
+// Small helper shared across this module
+function slugify(input: string): string {
+  return (input || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 // Serve via dynamic handler but let the CDN cache by URL for a long time.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -272,12 +281,5 @@ export async function GET(req: Request) {
         },
       }
     );
-function slugify(input: string): string {
-  return (input || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
   }
 }
