@@ -84,19 +84,39 @@ export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, 
       </div>
 
       {/* Animated timeline with anchor dots */}
-      <div className="rounded-full bg-gray-200 p-1">
-        <div className="relative h-2 w-full rounded-full bg-gray-200">
-          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${progress}%` }} />
-          {(anchors || [{ pos: 15, id: 'a1', label: 'Pathogenesis' }, { pos: 45, id: 'a2', label: 'Labs' }, { pos: 80, id: 'a3', label: 'Treatment' }]).map((a) => (
-            <button key={a.id} title={a.label} onMouseEnter={() => highlight(a.id)} onClick={() => highlight(a.id)}
-              className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white ring-2 ring-indigo-600 transition hover:scale-110"
-              style={{ left: `${Math.max(0, Math.min(100, a.pos))}%` }} />
+      <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 p-3 ring-1 ring-inset ring-indigo-100">
+        <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/70 shadow-inner ring-1 ring-indigo-100">
+          <div className="fill absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" style={{ width: `${progress}%` }} />
+          {(anchors || [
+            { pos: 12, id: 'a1', label: 'Overview' },
+            { pos: 42, id: 'a2', label: 'Key labs' },
+            { pos: 68, id: 'a3', label: 'Differentials' },
+            { pos: 86, id: 'a4', label: 'Management' },
+          ]).map((a) => (
+            <button
+              key={a.id}
+              aria-label={a.label}
+              onMouseEnter={() => highlight(a.id)}
+              onClick={() => highlight(a.id)}
+              className="dot pulse group absolute top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-white text-indigo-700 ring-2 ring-indigo-600 transition-transform hover:scale-110"
+              style={{ left: `${Math.max(0, Math.min(100, a.pos))}%` }}
+            >
+              <span className="pointer-events-none tooltip absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">{a.label}</span>
+            </button>
           ))}
         </div>
-        <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500">
+        <div className="mt-1 flex items-center justify-between text-[11px] text-indigo-800/70">
           <span>Intro</span>
           <span>Summary</span>
         </div>
+        <style jsx>{`
+          .fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); transform: translateX(-100%); animation: sheen 2.5s linear infinite; }
+          @keyframes sheen { from { transform: translateX(-100%);} to { transform: translateX(100%);} }
+          .pulse { animation: pulse 2s ease-out infinite; }
+          @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,.35);} 70% { box-shadow: 0 0 0 10px rgba(99,102,241,0);} 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0);} }
+          .dot:hover .tooltip { opacity: 1; }
+          .tooltip { opacity: 0; transition: opacity .15s ease; }
+        `}</style>
       </div>
 
       <SubtitlesPanel tracks={subtitles} />
