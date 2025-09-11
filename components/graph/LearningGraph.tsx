@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Graph from "graphology";
 import { SigmaContainer, useLoadGraph, useRegisterEvents, useSetSettings } from "react-sigma-v2";
+import forceAtlas2 from "graphology-layout-forceatlas2";
+import { inferSettings as inferFA2 } from "graphology-layout-forceatlas2";
 import "react-sigma-v2/lib/react-sigma-v2.css";
 
 type GraphJSON = {
@@ -99,6 +101,11 @@ function GraphInner({ data }: { data: GraphJSON }) {
       zIndex: true,
       allowInvalidContainer: true,
     });
+    // Light force settle for nicer placement (fallback mode only)
+    try {
+      const iter = Math.min(200, Math.max(60, Math.floor(60000 / Math.max(1, g.order)))) as number; // fewer iterations when large
+      setTimeout(() => forceAtlas2.assign(g, { iterations: iter, settings: inferFA2(g) as any }), 0);
+    } catch {}
   }, [data, loadGraph, setSettings]);
 
   // Highlight via reducers
@@ -289,6 +296,18 @@ function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: stri
     // Edges (within course only)
     for (const e of data.edges) g.addDirectedEdgeWithKey(e.id, e.source, e.target, { size: 0.8, color: "#d1d5db" });
     expanded.current.add(courseId);
+    // Quick local FA2 settle for this course's nodes
+    try {
+      // Collect ids of nodes we just added
+      const ids: string[] = [];
+      for (const n of data.nodes) ids.push(n.id);
+      // Run FA2 on a temporary subgraph for better speed
+      const sub = new Graph({ type: "directed" });
+      for (const id of ids) sub.addNode(id, { x: g.getNodeAttribute(id, "x"), y: g.getNodeAttribute(id, "y") });
+      for (const e of data.edges) if (sub.hasNode(e.source) && sub.hasNode(e.target)) sub.addDirectedEdge(e.source, e.target);
+      forceAtlas2.assign(sub, { iterations: Math.min(200, 40 + Math.floor(ids.length / 4)), settings: inferFA2(sub) as any });
+      sub.forEachNode((id, a) => { g.setNodeAttribute(id, "x", a.x); g.setNodeAttribute(id, "y", a.y); });
+    } catch {}
   }
 
   // Collapses everything back to overview
