@@ -195,25 +195,29 @@ function GraphInner({ data }: { data: GraphJSON }) {
 }
 
 export default function LearningGraph({ src = "/graph/v1/graph.json" }: { src?: string }) {
-  // Try sharded mode first
+  // Always prepare full-graph loader (hook must not be conditional)
+  const full = useStaticGraph(src);
+
+  // Try sharded mode first by attempting to load manifest
   const [manifest, setManifest] = useState<Manifest | null>(null);
-  const [manErr, setManErr] = useState<string | null>(null);
+  const [mode, setMode] = useState<"pending" | "sharded" | "full">("pending");
   useEffect(() => {
     let cancelled = false;
+    setMode("pending");
     fetch(src.replace("graph.json", "manifest.json"))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
-      .then((j) => { if (!cancelled) setManifest(j); })
-      .catch((e) => { if (!cancelled) setManErr(String(e)); });
+      .then((j) => { if (!cancelled) { setManifest(j); setMode("sharded"); } })
+      .catch(() => { if (!cancelled) setMode("full"); });
     return () => { cancelled = true; };
   }, [src]);
 
-  if (manifest) return <ShardedGraph manifest={manifest} baseSrc={src.replace("graph.json", "")} />;
-  if (!manErr) return <div className="p-4 text-gray-500">Loading graph…</div>;
-  // Fallback to full graph if manifest not found
-  const { data, error } = useStaticGraph(src);
-  if (error) return <div className="p-4 text-red-600">Failed to load graph: {error}</div>;
-  if (!data) return <div className="p-4 text-gray-500">Loading full graph…</div>;
-  return <GraphInner data={data} />;
+  if (mode === "pending") return <div className="p-4 text-gray-500">Loading graph...</div>;
+  if (mode === "sharded" && manifest) return <ShardedGraph manifest={manifest} baseSrc={src.replace("graph.json", "")} />;
+
+  // Full-graph fallback
+  if (full.error) return <div className="p-4 text-red-600">Failed to load graph: {full.error}</div>;
+  if (!full.data) return <div className="p-4 text-gray-500">Loading full graph...</div>;
+  return <GraphInner data={full.data} />;
 }
 
 // =====================
