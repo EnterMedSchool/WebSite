@@ -1,0 +1,12 @@
+{
+  "nodes": [
+    { "id": "1", "label": "Cell Biology Basics", "slug": "cell-biology-basics", "courseId": 1, "x": 0, "y": 0, "size": 3 },
+    { "id": "2", "label": "Biochemistry I", "slug": "biochemistry-1", "courseId": 1, "x": 200, "y": 80, "size": 2 },
+    { "id": "3", "label": "Biochemistry II", "slug": "biochemistry-2", "courseId": 1, "x": 380, "y": 160, "size": 2 }
+  ],
+  "edges": [
+    { "id": "e1", "source": "1", "target": "2", "kind": "required" },
+    { "id": "e2", "source": "2", "target": "3", "kind": "required" }
+  ]
+}
+

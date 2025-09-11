@@ -12,6 +12,12 @@ type GraphJSON = {
   meta?: any;
 };
 
+type Manifest = {
+  version: number;
+  courses: { id: number; slug: string; title: string; size: number; x: number; y: number; r: number }[];
+  cross: { from: number; to: number; count: number }[];
+};
+
 function useStaticGraph(url: string) {
   const [data, setData] = useState<GraphJSON | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -182,9 +188,194 @@ function GraphInner({ data }: { data: GraphJSON }) {
 }
 
 export default function LearningGraph({ src = "/graph/v1/graph.json" }: { src?: string }) {
+  // Try sharded mode first
+  const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [manErr, setManErr] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(src.replace("graph.json", "manifest.json"))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
+      .then((j) => { if (!cancelled) setManifest(j); })
+      .catch((e) => { if (!cancelled) setManErr(String(e)); });
+    return () => { cancelled = true; };
+  }, [src]);
+
+  if (manifest) return <ShardedGraph manifest={manifest} baseSrc={src.replace("graph.json", "")} />;
+  if (!manErr) return <div className="p-4 text-gray-500">Loading graph…</div>;
+  // Fallback to full graph if manifest not found
   const { data, error } = useStaticGraph(src);
   if (error) return <div className="p-4 text-red-600">Failed to load graph: {error}</div>;
-  if (!data) return <div className="p-4 text-gray-500">Loading graph…</div>;
+  if (!data) return <div className="p-4 text-gray-500">Loading full graph…</div>;
   return <GraphInner data={data} />;
 }
 
+// =====================
+// Sharded (by course) viewer
+// =====================
+function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: string }) {
+  const loadGraph = useLoadGraph();
+  const setSettings = useSetSettings();
+  const gRef = useRef<Graph | null>(null);
+  const expanded = useRef<Set<number>>(new Set());
+  const [focus, setFocus] = useState<string | null>(null);
+
+  function colorForCourse(courseId?: number) {
+    if (!courseId) return "#9aa3af";
+    const hues = [0, 24, 48, 72, 96, 150, 180, 210, 260, 300];
+    const h = hues[Math.abs(courseId) % hues.length];
+    return `hsl(${h} 70% 52%)`;
+  }
+
+  useEffect(() => {
+    const g = new Graph({ type: "directed" });
+    // Course nodes
+    for (const c of manifest.courses) {
+      const id = `c:${c.id}`;
+      g.addNode(id, {
+        type: "course",
+        label: c.title,
+        courseId: c.id,
+        size: Math.max(6, Math.log2(1 + c.size) * 3),
+        x: c.x,
+        y: c.y,
+        color: colorForCourse(c.id),
+      });
+    }
+    // Aggregated cross edges between courses
+    let i = 0;
+    for (const e of manifest.cross) {
+      const k = `ce:${i++}`;
+      const s = `c:${e.from}`;
+      const t = `c:${e.to}`;
+      if (g.hasNode(s) && g.hasNode(t)) {
+        g.addDirectedEdgeWithKey(k, s, t, { size: Math.min(5, 0.5 + Math.log10(1 + e.count)), color: "#c0c4cc" });
+      }
+    }
+    gRef.current = g;
+    loadGraph(g);
+    setSettings({
+      labelRenderedSizeThreshold: 6,
+      labelDensity: 0.07,
+      zIndex: true,
+      allowInvalidContainer: true,
+      renderEdgeLabels: false,
+    });
+  }, [manifest, loadGraph, setSettings]);
+
+  // Expand a course into its lessons
+  async function expandCourse(courseId: number) {
+    if (expanded.current.has(courseId)) return;
+    const res = await fetch(`${baseSrc}course-${courseId}.json`);
+    const data: GraphJSON = await res.json();
+    const g = gRef.current!;
+    const courseNodeId = `c:${courseId}`;
+    const cx = g.getNodeAttribute(courseNodeId, "x");
+    const cy = g.getNodeAttribute(courseNodeId, "y");
+    const color = colorForCourse(courseId);
+    g.dropNode(courseNodeId);
+    // Add lessons
+    for (const n of data.nodes) {
+      g.addNode(n.id, {
+        type: "lesson",
+        label: n.label,
+        slug: n.slug,
+        courseId: n.courseId,
+        x: n.x ?? cx + (Math.random() * 2 - 1) * 300,
+        y: n.y ?? cy + (Math.random() * 2 - 1) * 300,
+        size: 2,
+        color,
+      });
+    }
+    // Edges (within course only)
+    for (const e of data.edges) g.addDirectedEdgeWithKey(e.id, e.source, e.target, { size: 0.8, color: "#d1d5db" });
+    expanded.current.add(courseId);
+  }
+
+  // Collapses everything back to overview
+  function collapseAll() {
+    const g = gRef.current!;
+    g.clear();
+    expanded.current = new Set();
+    // Rebuild overview quickly
+    for (const c of manifest.courses) {
+      const id = `c:${c.id}`;
+      g.addNode(id, { type: "course", label: c.title, courseId: c.id, size: Math.max(6, Math.log2(1 + c.size) * 3), x: c.x, y: c.y, color: colorForCourse(c.id) });
+    }
+    let i = 0;
+    for (const e of manifest.cross) {
+      const k = `ce:${i++}`;
+      const s = `c:${e.from}`;
+      const t = `c:${e.to}`;
+      if (g.hasNode(s) && g.hasNode(t)) g.addDirectedEdgeWithKey(k, s, t, { size: Math.min(5, 0.5 + Math.log10(1 + e.count)), color: "#c0c4cc" });
+    }
+  }
+
+  // Highlight prerequisites for lessons within expanded area
+  const [highlightSet, setHighlightSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!gRef.current) return;
+    if (!focus) { setHighlightSet(new Set()); return; }
+    const g = gRef.current;
+    const visited = new Set<string>();
+    const stack = [focus];
+    while (stack.length) {
+      const t = stack.pop()!;
+      g.forEachInNeighbor(t, (src) => {
+        if (!visited.has(src)) { visited.add(src); stack.push(src); }
+      });
+    }
+    visited.add(focus);
+    setHighlightSet(visited);
+  }, [focus]);
+
+  useRegisterEvents({
+    clickNode: (e) => {
+      const g = gRef.current!;
+      const t = g.getNodeAttribute(e.node, "type");
+      if (t === "course") expandCourse(g.getNodeAttribute(e.node, "courseId"));
+      else setFocus(e.node);
+    },
+    clickStage: () => setFocus(null),
+  });
+
+  useEffect(() => {
+    setSettings({
+      nodeReducer: (n, data) => {
+        const t = data.type as string | undefined;
+        if (!highlightSet.size || t !== "lesson") return data;
+        const inSet = highlightSet.has(n);
+        return {
+          ...data,
+          color: inSet ? (n === focus ? "#f59e0b" : data.color) : (t === "lesson" ? "#e5e7eb" : data.color),
+          size: inSet ? (n === focus ? (data.size ?? 2) + 3 : (data.size ?? 2) + 1) : (data.size ?? 2) * 0.85,
+          zIndex: inSet ? 2 : 0,
+        } as any;
+      },
+      edgeReducer: (e, data) => {
+        if (!highlightSet.size) return data;
+        const g = gRef.current!;
+        const s = g.source(e);
+        const t = g.target(e);
+        const onPath = highlightSet.has(s) && highlightSet.has(t);
+        return { ...data, color: onPath ? "#f59e0b" : "#e5e7eb", size: onPath ? 2 : 0.5, hidden: !onPath } as any;
+      },
+    });
+  }, [highlightSet, focus, setSettings]);
+
+  return (
+    <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
+      <div className="z-10 m-2 flex items-center gap-2 rounded-xl bg-white/90 p-2 shadow ring-1 ring-black/10">
+        <button className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700" onClick={collapseAll}>Overview</button>
+        <div className="text-xs text-gray-600">Click a course to expand. Click a lesson to highlight its prerequisites (loaded courses only).</div>
+        {focus && (
+          <div className="ml-4 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+            Focus: {gRef.current?.getNodeAttribute(focus, "label")}
+          </div>
+        )}
+      </div>
+      <div className="relative h-full w-full">
+        <SigmaContainer style={{ height: "100%", width: "100%" }} />
+      </div>
+    </div>
+  );
+}

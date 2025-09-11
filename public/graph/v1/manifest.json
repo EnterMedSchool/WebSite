@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "generatedAt": "dev-placeholder",
+  "totalNodes": 5,
+  "totalEdges": 4,
+  "courses": [
+    { "id": 1, "slug": "foundations", "title": "Foundations", "size": 3, "x": 4000, "y": 0, "r": 500 },
+    { "id": 2, "slug": "physiology", "title": "Physiology", "size": 2, "x": -4000, "y": 0, "r": 500 }
+  ],
+  "cross": [
+    { "from": 1, "to": 2, "count": 1 }
+  ]
+}
+
