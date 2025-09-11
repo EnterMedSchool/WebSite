@@ -82,7 +82,7 @@ function GraphInner({ data }: { data: GraphJSON }) {
   return (
     <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
       <div className="relative h-full w-full">
-        <SigmaContainer initialSettings={{ allowInvalidContainer: true }} style={{ height: "100%", width: "100%" }}>
+        <SigmaContainer settings={{ allowInvalidContainer: true }} style={{ height: "100%", width: "100%" }}>
           <FullGraphController data={data} />
         </SigmaContainer>
       </div>
@@ -134,7 +134,7 @@ function FullGraphController({ data }: { data: GraphJSON }) {
       nodeReducer: (n, data) => {
         if (!set.size) return data;
         const inSet = set.has(n);
-        return { ...data, color: inSet ? (n === focus ? "#f59e0b" : data.color) : "#d1d5db", size: inSet ? (data.size ?? 2) + (n === focus ? 3 : 1) : (data.size ?? 2) * 0.8 } as any;
+        return { ...data, type: undefined, color: inSet ? (n === focus ? "#f59e0b" : data.color) : "#d1d5db", size: inSet ? (data.size ?? 2) + (n === focus ? 3 : 1) : (data.size ?? 2) * 0.8 } as any;
       },
       edgeReducer: (e, data) => {
         if (!set.size) return data;
@@ -210,7 +210,7 @@ function ShardedGraph({ manifest, baseSrc }: { manifest: Manifest; baseSrc: stri
   return (
     <div className="flex h-[calc(100vh-8rem)] w-full flex-col">
       <div className="relative h-full w-full">
-        <SigmaContainer initialSettings={{ allowInvalidContainer: true }} style={{ height: "100%", width: "100%" }}>
+        <SigmaContainer settings={{ allowInvalidContainer: true }} style={{ height: "100%", width: "100%" }}>
           <ShardedGraphController manifest={manifest} baseSrc={baseSrc} />
         </SigmaContainer>
       </div>
@@ -318,7 +318,7 @@ function ShardedGraphController({ manifest, baseSrc }: { manifest: Manifest; bas
     // Rebuild overview quickly
     for (const c of manifest.courses) {
       const id = `c:${c.id}`;
-      g.addNode(id, { type: "course", label: c.title, courseId: c.id, size: Math.max(6, Math.log2(1 + c.size) * 3), x: c.x, y: c.y, color: colorForCourse(c.id) });
+      g.addNode(id, { kind: "course", label: c.title, courseId: c.id, size: Math.max(6, Math.log2(1 + c.size) * 3), x: c.x, y: c.y, color: colorForCourse(c.id) });
     }
     let i = 0;
     for (const e of manifest.cross) {
@@ -366,7 +366,7 @@ function ShardedGraphController({ manifest, baseSrc }: { manifest: Manifest; bas
         const t = (data as any).kind as string | undefined;
         if (!highlightSet.size || t !== "lesson") return data;
         const inSet = highlightSet.has(n);
-        return { ...data, color: inSet ? (n === focus ? "#f59e0b" : data.color) : (t === "lesson" ? "#e5e7eb" : data.color), size: inSet ? (n === focus ? (data.size ?? 2) + 3 : (data.size ?? 2) + 1) : (data.size ?? 2) * 0.85, zIndex: inSet ? 2 : 0 } as any;
+        return { ...data, type: undefined, color: inSet ? (n === focus ? "#f59e0b" : data.color) : (t === "lesson" ? "#e5e7eb" : data.color), size: inSet ? (n === focus ? (data.size ?? 2) + 3 : (data.size ?? 2) + 1) : (data.size ?? 2) * 0.85, zIndex: inSet ? 2 : 0 } as any;
       },
       edgeReducer: (e, data) => {
         if (!highlightSet.size) return data;
