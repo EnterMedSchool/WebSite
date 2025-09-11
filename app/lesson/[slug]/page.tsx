@@ -7,6 +7,13 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
+import VideoPanel from "@/components/lesson/VideoPanel";
+import UniResources from "@/components/lesson/UniResources";
+import AnkiDownload from "@/components/lesson/AnkiDownload";
+import ConceptChecklist from "@/components/lesson/ConceptChecklist";
+import BackgroundMap from "@/components/lesson/BackgroundMap";
+import Glossary from "@/components/lesson/Glossary";
+import LessonMeta from "@/components/lesson/LessonMeta";
 
 type Block = { id: number; kind: string; content: string };
 type Lesson = { id: number; slug: string; title: string };
@@ -40,6 +47,7 @@ export default function LessonPage() {
   const [courseProg, setCourseProg] = useState<CourseProg>(null);
   const [lessonProg, setLessonProg] = useState<LessonProg>(null);
   const [timeline, setTimeline] = useState<Timeline>(null);
+  const [uniSynced, setUniSynced] = useState<boolean>(false);
 
   const q = qs[idx];
 
@@ -53,6 +61,11 @@ export default function LessonPage() {
     if (t === 'learn' || t === 'practice' || t === 'notes') setTab(t as any);
     const qParam = Number(searchParams.get('q') || NaN);
     if (Number.isFinite(qParam) && qParam > 0) setIdx(Math.max(0, qParam - 1));
+    try {
+      const u = searchParams.get('uni');
+      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('ems:uniSynced') : null;
+      setUniSynced(u === '1' || saved === '1');
+    } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
@@ -255,12 +268,33 @@ export default function LessonPage() {
         </div>
       </div>
 
+      {/* Chapter navigator (UI-only) */}
+      <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm font-semibold text-indigo-900">Chapter progress</div>
+          <div className="flex flex-1 items-center gap-3 sm:pl-4">
+            {(() => {
+              const lessons = timeline?.lessons || [];
+              const pos = Math.max(0, lessons.findIndex((l) => l.slug === slug));
+              const max = Math.max(1, lessons.length);
+              const val = Math.max(1, pos + 1);
+              return (
+                <>
+                  <input type="range" min={1} max={max} defaultValue={val} className="w-full accent-indigo-600" onChange={() => {}} />
+                  <a href={lessons[pos]?.slug ? `/lesson/${lessons[pos].slug}` : '#'} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Study this chapter</a>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[260px,1fr]">
+      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[260px,1fr,280px]">
         {/* Timeline sidebar */}
         <aside className="hidden lg:block">
           <div className="sticky top-20 rounded-2xl border border-indigo-100 bg-white/90 p-4 shadow-sm ring-1 ring-black/5">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Course Progress</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Chapter Progress</div>
             <div className="mb-3 h-2 w-full rounded-full bg-gray-200">
               <div className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600" style={{ width: `${courseProg?.pct ?? 0}%` }} />
             </div>
@@ -286,7 +320,7 @@ export default function LessonPage() {
                       <div className="line-clamp-2 pr-6">{t.title}</div>
                     </Link>
                     {t.qCount && t.qCount > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1 pl-1">
+                      <div className="mt-1 flex flex-wrap gap-1 pl-1 lg:hidden">
                         {Array.from({ length: t.qCount }).map((_, qi) => {
                           const active = isCurr && tab === 'practice' && idx === qi;
                           const href = `/lesson/${t.slug}?tab=practice&q=${qi + 1}`;
@@ -324,12 +358,13 @@ export default function LessonPage() {
                   transition={{ delay: i * 0.03 }}
                 >
                   {b.kind === "video" ? (
-                    // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video
-                      src={JSON.parse(b.content || "{}").src || ""}
-                      poster={JSON.parse(b.content || "{}").poster || ""}
-                      className="w-full rounded-xl ring-1 ring-black/10"
-                      controls
+                    <VideoPanel
+                      src={JSON.parse(b.content || "{}")?.src || ""}
+                      poster={JSON.parse(b.content || "{}")?.poster || ""}
+                      locked={!isAuthed}
+                      lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
+                      onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                      subtitles={[{ lang: 'en', label: 'English' }, { lang: 'it', label: 'Italiano' }]}
                     />
                   ) : b.kind === "note" ? (
                     <article className="prose prose-indigo max-w-none text-sm">
@@ -340,6 +375,10 @@ export default function LessonPage() {
                   )}
                 </motion.div>
               ))}
+              <UniResources enabled={uniSynced} />
+              <AnkiDownload />
+              <ConceptChecklist items={["Why D-dimer increases", "Consumption coagulopathy vs. primary fibrinolysis", "Triggers in sepsis", "Management priorities"]} />
+              <BackgroundMap />
             </div>
           )}
 
@@ -450,6 +489,7 @@ export default function LessonPage() {
             </div>
           )}
 
+          <LessonMeta />
           {/* Prev/Next navigation */}
           <div className="mt-8 flex items-center justify-between">
             <div>
@@ -478,6 +518,7 @@ export default function LessonPage() {
             </div>
           </div>
         </section>
+        <Glossary />
       </div>
     </div>
   );
@@ -512,7 +553,7 @@ function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceI
         <div className="mb-1 text-[11px] text-indigo-700/90">Login to save your progress <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="ml-1 rounded-full bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700 hover:bg-indigo-100">Sign in</button></div>
       )}
       <div className="grid gap-2">
-        {q.choices.map((c: any) => {
+        {q.choices.map((c: any, i: number) => {
           const isPicked = picked === c.id;
           const state = picked == null ? 'idle' : (solved && c.correct) ? 'correct' : isPicked && !c.correct ? 'wrong' : isPicked && c.correct ? 'correct' : 'idle';
           const cls = state === "correct" ? "border-green-600 bg-green-50" : state === "wrong" ? "border-rose-600 bg-rose-50" : "hover:bg-gray-50";
@@ -521,9 +562,12 @@ function QuestionChoices({ q, onChoice, isAuthed }: { q: any; onChoice: (choiceI
               key={c.id}
               onClick={(e) => onPick(e, c.id)}
               disabled={locked || gated}
-              className={`rounded-lg border px-3 py-2 text-left transition ${cls}`}
+              className={`flex items-start gap-3 rounded-xl border px-3 py-2 text-left transition ${cls}`}
             >
-              {c.text}
+              <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ring-1 ring-inset ${state==='correct' ? 'bg-emerald-600 text-white ring-emerald-300' : state==='wrong' ? 'bg-rose-600 text-white ring-rose-300' : 'bg-white text-gray-700 ring-gray-200'}`}>
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="text-sm text-gray-900">{c.text}</span>
             </button>
           );
         })}
