@@ -1,0 +1,68 @@
+    // Mates: users in same course + study year
+
+    }
+      }
+        orgs = r.rows;
+          ORDER BY so.name ASC`;
+          WHERE so.university_id=${uniId}
+          FROM student_organizations so
+          SELECT so.id, so.name, so.slug, so.website, so.description
+        const r = await sql`
+      } else {
+        }
+          orgs = r.rows;
+            ORDER BY so.name ASC`;
+            WHERE so.university_id=${uniId}
+            LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
+            FROM student_organizations so
+            SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
+          const r = await sql`
+        } else {
+          orgs = r.rows;
+            ORDER BY so.name ASC`;
+            WHERE so.university_id=${uniId} AND sos.school_id=${schoolId}
+            LEFT JOIN student_organization_schools sos ON sos.organization_id = so.id
+            FROM student_organizations so
+            SELECT DISTINCT so.id, so.name, so.slug, so.website, so.description
+          const r = await sql`
+        if (schoolId) {
+      if (hasOrgSchools) {
+    if (hasOrgs && uniId) {
+    let orgs: any[] = [];
+    // Organizations at university, optionally also linked to this school
+
+    }
+      }
+        courses = r.rows;
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE university_id=${uniId} ORDER BY name ASC`;
+      } else if (uniId) {
+        courses = r.rows;
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE school_id=${schoolId} ORDER BY name ASC`;
+      } else if (schoolId) {
+        courses = r.rows;
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE school_id=${schoolId} AND university_id=${uniId} ORDER BY name ASC`;
+      if (schoolId && uniId) {
+    if (hasMsc && (courseId || schoolId || uniId)) {
+    let courses: any[] = [];
+    const schools = hasSchools && uniId ? (await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`).rows : [];
+
+    const hasSchools = !!reg?.schools; const hasMsc = !!reg?.msc; const hasOrgs = !!reg?.orgs; const hasOrgSchools = !!reg?.org_schools;
+        to_regclass('public.student_organization_schools')  AS org_schools`).rows[0] || {} as any;
+        to_regclass('public.student_organizations')         AS orgs,
+        to_regclass('public.medical_school_courses')        AS msc,
+        to_regclass('public.schools')                       AS schools,
+    const reg = (await sql`SELECT
+    // Feature detection: if new tables aren't migrated yet, avoid 500s and return empty feature data
+
+    const universities = (await sql`SELECT id, name FROM universities ORDER BY name ASC`).rows;
+
+    const isVerified = !!me?.mates_verified;
+    const year = me?.study_year || null;
+    const courseId = me?.medical_course_id || null;
+    const schoolId = me?.school_id || null;
+    const uniId = me?.university_id || null;
+    const me = ur.rows[0] || {};
+    const ur = await sql`SELECT id, university_id, school_id, medical_course_id, study_year, mates_verified, name, username, image FROM users WHERE id=${userId} LIMIT 1`;
+
+    if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const userId = await resolveUserIdFromSession();

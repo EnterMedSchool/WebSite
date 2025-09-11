@@ -38,20 +38,12 @@ export default function CourseMatesPage() {
       setMates(j.mates || []);
       setMe(j.me || {});
       setAccess(j.access || null);
+      setSummary(j.summary || null);
     } finally { setLoading(false); }
   }
 
   useEffect(() => { load(); }, []);
-
-  useEffect(() => {
-    if (access !== "verified") return;
-    (async () => {
-      try {
-        const r = await fetch('/api/course-mates/summary', { credentials: 'include' });
-        if (r.ok) setSummary(await r.json());
-      } catch {}
-    })();
-  }, [access]);
+  
 
   async function update(field: string, value: number | null) {
     setSaving(true);

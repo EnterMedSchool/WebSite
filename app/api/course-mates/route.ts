@@ -75,6 +75,7 @@ export async function GET() {
 
     // Mates: users in same course + study year
     let mates: any[] = [];
+    let matesCount = 0, courseName: string | null = null, schoolName: string | null = null;
     if (false && isVerified && courseId && year) {
       const mr = await sql`
         SELECT id, name, username, image
@@ -98,6 +99,18 @@ export async function GET() {
           ORDER BY id ASC
           LIMIT 50`;
         mates = mr2.rows;
+        // Also compute lightweight summary used by dashboard/page
+        try {
+          const c = await sql`SELECT name, school_id FROM medical_school_courses WHERE id=${courseId} LIMIT 1`;
+          courseName = c.rows[0]?.name ?? null;
+          const sid = c.rows[0]?.school_id || null;
+          if (sid) {
+            const s = await sql`SELECT name FROM schools WHERE id=${sid} LIMIT 1`;
+            schoolName = s.rows[0]?.name ?? null;
+          }
+          const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id <> ${userId} AND medical_course_id = ${courseId} AND study_year = ${year} AND COALESCE(mates_verified, false) = true`;
+          matesCount = Number(r.rows[0]?.n || 0);
+        } catch {}
       } catch {}
     }
 
@@ -112,6 +125,7 @@ export async function GET() {
       organizations: orgs,
       mates,
       access: isVerified ? 'verified' : (courseId && year ? 'pending' : 'unset'),
+      summary: isVerified ? { matesCount, courseName, schoolName, studyYear: year ?? null } : null,
     });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
