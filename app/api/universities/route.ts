@@ -264,9 +264,8 @@ export async function GET(req: Request) {
       { data },
       {
         headers: {
-          // Public CDN cache; serve cached for 24h, then revalidate in background for a week
-          // Dramatically reduces edge/function usage on Vercel.
-          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+          // Browser + CDN cache; serve cached for 24h, then allow SWR for a week
+          "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
         },
       }
     );
@@ -277,7 +276,7 @@ export async function GET(req: Request) {
       { data: demoUniversities },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+          "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
         },
       }
     );

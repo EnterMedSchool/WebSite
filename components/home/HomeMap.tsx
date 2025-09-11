@@ -228,12 +228,24 @@ export default function HomeMap() {
     let cancelled = false;
     (async () => {
       try {
-        // Let the browser/CDN cache aggressively; server sets Cache-Control
-        // Attach optional version to bust CDN when reseeding (set NEXT_PUBLIC_UNIS_DATA_V)
-        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `?v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
-        const res = await fetch(`/api/universities${v ? `${v}&` : `?`}scope=markers`);
+        // Prefer localStorage cache by version to avoid network and Edge requests between visits
+        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? String(process.env.NEXT_PUBLIC_UNIS_DATA_V) : "v1";
+        const localKey = `unis:markers:${v}`;
+        try {
+          const cached = typeof window !== 'undefined' ? window.localStorage.getItem(localKey) : null;
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (!cancelled) setUniData(parsed as CountryCities);
+            return; // use local cache; network skipped
+          }
+        } catch {}
+        // Fallback to network
+        const res = await fetch(`/api/universities?scope=markers&v=${encodeURIComponent(v)}`);
         const json = await res.json();
-        if (!cancelled) setUniData(json.data as CountryCities);
+        if (!cancelled) {
+          setUniData(json.data as CountryCities);
+          try { if (typeof window !== 'undefined') window.localStorage.setItem(localKey, JSON.stringify(json.data)); } catch {}
+        }
       } catch {
         if (!cancelled) setUniData({});
       }
@@ -256,8 +268,23 @@ export default function HomeMap() {
     setEnriching(name);
     (async () => {
       try {
-        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `&v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
-        const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}${v}`);
+        const vStr = process.env.NEXT_PUBLIC_UNIS_DATA_V ? String(process.env.NEXT_PUBLIC_UNIS_DATA_V) : "v1";
+        const localKey = `unis:country:${vStr}:${name}`;
+        // Try local first
+        try {
+          const cached = typeof window !== 'undefined' ? window.localStorage.getItem(localKey) : null;
+          if (cached) {
+            const arr = JSON.parse(cached);
+            if (!cancelled) {
+              const next: CountryCities = { ...(uniData || {}) } as any;
+              next[name] = arr as any;
+              setUniData(next);
+              setEnrichedCountries((s) => new Set(s).add(name));
+            }
+            return;
+          }
+        } catch {}
+        const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}&v=${encodeURIComponent(vStr)}`);
         if (!res.ok) throw new Error("bad");
         const json = await res.json();
         if (cancelled) return;
@@ -266,6 +293,7 @@ export default function HomeMap() {
         next[name] = (json.data?.[name] || []) as any;
         setUniData(next);
         setEnrichedCountries((s) => new Set(s).add(name));
+        try { if (typeof window !== 'undefined') window.localStorage.setItem(localKey, JSON.stringify(next[name])); } catch {}
       } catch {}
       finally {
         if (!cancelled) setEnriching((s) => (s === name ? null : s));
