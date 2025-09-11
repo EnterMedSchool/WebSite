@@ -6,6 +6,8 @@ import { eq, sql, inArray } from "drizzle-orm";
 
 // Types reused by the map UI
 export type City = {
+  id: number;
+  slug?: string;
   city: string;
   lat: number;
   lng: number;
@@ -224,6 +226,8 @@ export async function GET(req: Request) {
     for (const r of rows) {
       if (!r.country) continue;
       (data[r.country] ||= []).push({
+        id: r.id as number,
+        slug: slugify(String(r.uni)),
         city: r.city,
         lat: r.lat as number,
         lng: r.lng as number,
@@ -269,5 +273,12 @@ export async function GET(req: Request) {
         },
       }
     );
+function slugify(input: string): string {
+  return (input || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
   }
 }

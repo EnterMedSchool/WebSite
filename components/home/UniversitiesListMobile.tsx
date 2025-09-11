@@ -3,6 +3,8 @@
 import MiniTrend from "@/components/home/MiniTrend";
 
 type City = {
+  id?: number;
+  slug?: string;
   city: string;
   lat: number;
   lng: number;
@@ -50,7 +52,7 @@ export default function UniversitiesListMobile({ selectedName, items, onAddCompa
             </div>
             <div className="mt-2">
               {/* Use viewport root for the sheet; pass prefetched mini trend */}
-              <MiniTrend uni={c.uni} prefetch={{ points: (c as any).trendPoints, seats: (c as any).trendSeats }} />
+              <MiniTrend uni={c.uni} id={(c as any).id} prefetch={{ points: (c as any).trendPoints, seats: (c as any).trendSeats }} />
             </div>
             <div className="mt-3 flex items-center gap-2">
               <button

@@ -7,6 +7,8 @@ import DeadlineStrip from "@/components/home/DeadlineStrip";
 import CostTile from "@/components/home/CostTile";
 
 type City = {
+  id?: number;
+  slug?: string;
   city: string;
   lat: number;
   lng: number;
@@ -122,6 +124,7 @@ export default function UniversitiesPanel({ selectedName, items, topOffset = 4, 
             >
               <MiniTrend
                 uni={c.uni}
+                id={(c as any).id}
                 root={listRef.current}
                 prefetch={{ points: (c as any).trendPoints, seats: (c as any).trendSeats }}
               />

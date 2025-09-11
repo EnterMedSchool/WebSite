@@ -14,7 +14,8 @@ function slugify(input: string): string {
 }
 
 async function enqueueLoad(slug: string): Promise<any> {
-  const key = `/api/compare/scores?unis=${slug}`;
+  const ver = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `&_v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
+  const key = `/api/compare/scores?unis=${slug}${ver}`;
   if (_seriesCache.has(key)) return _seriesCache.get(key);
   return new Promise((resolve) => {
     const list = _resolvers.get(slug) || [];
@@ -27,7 +28,7 @@ async function enqueueLoad(slug: string): Promise<any> {
       _pending.clear();
       _flushTimer = null;
       try {
-        const url = `/api/compare/scores?unis=${encodeURIComponent(batch.join(","))}`;
+        const url = `/api/compare/scores?unis=${encodeURIComponent(batch.join(","))}${ver}`;
         const res = await fetch(url);
         const json = await res.json();
         // Build cache entries per slug
@@ -38,7 +39,7 @@ async function enqueueLoad(slug: string): Promise<any> {
         }
         for (const s of batch) {
           const entry = bySlug.get(s) || { series: [] };
-          _seriesCache.set(`/api/compare/scores?unis=${s}`, entry);
+          _seriesCache.set(`/api/compare/scores?unis=${s}${ver}`, entry);
           const resolvers = _resolvers.get(s) || [];
           _resolvers.delete(s);
           resolvers.forEach((fn) => fn(entry));
@@ -46,7 +47,7 @@ async function enqueueLoad(slug: string): Promise<any> {
       } catch {
         for (const s of batch) {
           const entry = { series: [] };
-          _seriesCache.set(`/api/compare/scores?unis=${s}`, entry);
+          _seriesCache.set(`/api/compare/scores?unis=${s}${ver}`, entry);
           const resolvers = _resolvers.get(s) || [];
           _resolvers.delete(s);
           resolvers.forEach((fn) => fn(entry));
@@ -56,7 +57,7 @@ async function enqueueLoad(slug: string): Promise<any> {
   });
 }
 
-export default function MiniTrend({ uni, root, prefetch }: { uni: string; root?: Element | null; prefetch?: { points?: Array<{ year: number; type: string; score: number }>; seats?: Array<{ year: number; type: string; seats: number }> } }) {
+export default function MiniTrend({ uni, id, root, prefetch }: { uni: string; id?: number; root?: Element | null; prefetch?: { points?: Array<{ year: number; type: string; score: number }>; seats?: Array<{ year: number; type: string; seats: number }> } }) {
   const slug = useMemo(() => uni.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), [uni]);
   const [series, setSeries] = useState<TrendSeries[] | null>(null);
   const [seats, setSeats] = useState<{ eu?: number; nonEu?: number; year?: number }>({});
@@ -105,9 +106,19 @@ export default function MiniTrend({ uni, root, prefetch }: { uni: string; root?:
     (async () => {
       try {
         // Dedupe across instances in the same session
-        const key = `/api/compare/scores?unis=${slug}`;
-        const json = _seriesCache.has(key) ? _seriesCache.get(key) : await enqueueLoad(slug);
-        _seriesCache.set(key, json);
+        const ver = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `&_v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
+        const key = id ? `/api/compare/scores?ids=${id}${ver}` : `/api/compare/scores?unis=${slug}${ver}`;
+        let json;
+        if (_seriesCache.has(key)) {
+          json = _seriesCache.get(key);
+        } else if (id) {
+          const res = await fetch(key);
+          json = await res.json();
+          _seriesCache.set(key, json);
+        } else {
+          json = await enqueueLoad(slug);
+          _seriesCache.set(key, json);
+        }
         const s = json.series?.[0];
         if (off) return;
         if (!s || !Array.isArray(s.points) || s.points.length === 0) {

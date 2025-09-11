@@ -17,6 +17,8 @@ import MapFiltersBar, { type MapFilters } from "@/components/home/MapFiltersBar"
 
 // DB-backed types (match /api/universities response)
 type City = {
+  id?: number;
+  slug?: string;
   city: string;
   lat: number;
   lng: number;
@@ -254,7 +256,8 @@ export default function HomeMap() {
     setEnriching(name);
     (async () => {
       try {
-        const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}`);
+        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `&v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
+        const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}${v}`);
         if (!res.ok) throw new Error("bad");
         const json = await res.json();
         if (cancelled) return;

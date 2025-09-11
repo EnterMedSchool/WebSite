@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import TrendChart from "@/components/charts/TrendChart";
 
 type Item = {
+  id?: number;
   uni: string;
   country?: string;
   city: string;
@@ -102,10 +103,15 @@ export default function CompareDrawer({
     // Fetch only missing; merge with local
     (async () => {
       try {
-        const qs = missing
-          .map((i) => i.uni.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""))
-          .join(",");
-        const res = await fetch(`/api/compare/scores?unis=${encodeURIComponent(qs)}`);
+        const ids = missing.map((i:any) => i.id).filter((n:any) => Number.isFinite(n));
+        const slugs = missing
+          .filter((i:any) => !Number.isFinite(i.id))
+          .map((i) => i.uni.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
+        const qsParts: string[] = [];
+        if (slugs.length) qsParts.push(`unis=${encodeURIComponent(slugs.join(","))}`);
+        if (ids.length) qsParts.push(`ids=${ids.join(",")}`);
+        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `&_v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
+        const res = await fetch(`/api/compare/scores?${qsParts.join("&")}${v}`);
         const json = await res.json();
         const merged: Series[] = [...byLocal, ...(json.series || [])];
         done(merged);
