@@ -1,11 +1,6 @@
 import dynamic from "next/dynamic";
 import MissionShowcase from "@/components/home/MissionShowcase";
 import LatestLessons from "@/components/home/LatestLessons";
-import HowItWorks from "@/components/home/HowItWorks";
-import Milestones from "@/components/home/Milestones";
-import ExamsSection from "@/components/home/ExamsSection";
-import LatestArticles from "@/components/home/LatestArticles";
-import Family from "@/components/home/Family";
 import HomeBackdrop from "@/components/home/HomeBackdrop";
 
 const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
@@ -33,12 +28,11 @@ export default function HomePage() {
         <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
         <MissionShowcase videoSrc="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Vidinsta_Instagram-Post_6634e8cf0c8eb.mp4" poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Untitled-design.png" />
         <LatestLessons />
-        <HowItWorks />
-        <Milestones />
-        <ExamsSection />
-        <LatestArticles />
-        <Family />
       </section>
     </div>
   );
 }
+
+
+
+
