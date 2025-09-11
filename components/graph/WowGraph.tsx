@@ -17,6 +17,9 @@ export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: strin
   const [err, setErr] = useState<string | null>(null);
   const ref = useRef<any>(null);
   const [focus, setFocus] = useState<string | null>(null);
+  const [hover, setHover] = useState<any | null>(null);
+  const mouse = useRef<{x:number;y:number}>({x:0,y:0});
+  const tRef = useRef(0);
 
   // Load static data
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: strin
     const targetCount = 120; // total nodes including originals
     const courseCount = 5;
     for (let i = startId; i < targetCount + 1; i++) {
-      nodes.push({ id: String(i), label: `Lesson ${i}`, courseId: 1 + Math.floor(rand() * courseCount) });
+      nodes.push({ id: String(i), label: `Lesson ${i}` as any, courseId: 1 + Math.floor(rand() * courseCount) } as any);
       // add 1-3 prerequisites among previous 20 nodes to ensure DAG
       const prereqCandidates = [] as number[];
       for (let k = Math.max(1, i - 20); k < i; k++) prereqCandidates.push(k);
@@ -59,7 +62,20 @@ export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: strin
   // Build runtime graph data for force-graph (objects are mutated by the lib)
   const fgData = useMemo(() => {
     if (!augmented) return null as any;
-    const nodes = augmented.nodes.map(n => ({ id: n.id, name: n.label, courseId: n.courseId }));
+    // Randomly mark ~35% as completed for demo
+    let seed = 7; const rand = () => (seed = (seed * 1103515245 + 12345) % 4294967296) / 4294967296;
+    const nodes = augmented.nodes.map((n: any) => ({
+      id: n.id,
+      name: n.label,
+      courseId: n.courseId,
+      completed: rand() < 0.35,
+      href: n.href || (n.slug ? `/lesson/${n.slug}` : undefined),
+      lengthMin: n.lengthMin,
+      excerpt: n.excerpt,
+      courseSlug: n.courseSlug,
+      courseTitle: n.courseTitle,
+      slug: n.slug,
+    }));
     const links = augmented.edges.map(e => ({ id: e.id, source: e.source, target: e.target }));
     return { nodes, links } as any;
   }, [augmented]);
@@ -136,6 +152,18 @@ export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: strin
     return () => clearTimeout(t);
   }, [fgData]);
 
+  // Continuous rope animation
+  useEffect(() => {
+    let raf: number;
+    const loop = () => {
+      tRef.current += 0.02;
+      if (ref.current) ref.current.refresh();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   if (err) return <div className="p-4 text-red-600">Failed to load: {err}</div>;
   if (!fgData) return <div className="p-4 text-gray-500">Loading…</div>;
 
@@ -147,24 +175,93 @@ export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: strin
   }
 
   return (
-    <ForceGraph2D
-      ref={ref}
-      graphData={fgData}
-      cooldownTicks={200}
-      linkCurvature={(l: any) => (l.__on ? 0.35 : 0.2)}
-      linkColor={(l: any) => (l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.25)")}
-      linkDirectionalParticles={(l: any) => (l.__on ? 2 : 0)}
-      linkDirectionalParticleWidth={(l: any) => (l.__on ? 2.5 : 0)}
-      linkDirectionalParticleSpeed={(l: any) => (l.__on ? 0.01 : 0)}
-      nodeRelSize={4}
-      nodeColor={(n: any) => (n.__on || !focus ? colorForCourse(n.courseId) : "#e5e7eb")}
-      nodeLabel={(n: any) => n.name}
-      onNodeClick={(n: any) => setFocus(String(n.id))}
-      enablePanInteraction
-      enableZoomInteraction
-      width={undefined}
-      height={undefined}
-      style={{ width: "100%", height: "100%" }}
-    />
+    <div
+      className="relative h-full w-full"
+      onMouseMove={(e) => { const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect(); mouse.current = { x: e.clientX - r.left, y: e.clientY - r.top }; }}
+    >
+      <ForceGraph2D
+        ref={ref}
+        graphData={fgData}
+        cooldownTicks={200}
+        linkColor={(l: any) => (l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)")}
+        linkDirectionalParticles={(l: any) => (l.__on ? 2 : 0)}
+        linkDirectionalParticleWidth={(l: any) => (l.__on ? 2.0 : 0)}
+        linkDirectionalParticleSpeed={(l: any) => (l.__on ? 0.01 : 0)}
+        nodeRelSize={5}
+        nodeLabel={(n: any) => ""}
+        onNodeClick={(n: any) => setFocus(String(n.id))}
+        onNodeHover={(n: any) => setHover(n || null)}
+        enablePanInteraction
+        enableZoomInteraction
+        width={undefined}
+        height={undefined}
+        style={{ width: "100%", height: "100%" }}
+        // Rope-like bezier with wobble
+        linkCanvasObjectMode={() => "replace"}
+        linkCanvasObject={(l: any, ctx: CanvasRenderingContext2D, scale: number) => {
+          const s = (l.source as any); const t = (l.target as any);
+          if (!s || !t) return;
+          const x1 = s.x, y1 = s.y, x2 = t.x, y2 = t.y;
+          const dx = x2 - x1, dy = y2 - y1;
+          const len = Math.max(1, Math.hypot(dx, dy));
+          const nx = -dy / len, ny = dx / len; // normal
+          const baseAmp = Math.min(20, len * 0.08) / Math.sqrt(scale);
+          const amp = (l.__on ? baseAmp : baseAmp * 0.5);
+          const phase = tRef.current * (l.__on ? 1.2 : 0.6) + (l.__tier || 0) * 0.5;
+          const cx = (x1 + x2) / 2 + nx * amp * Math.sin(phase);
+          const cy = (y1 + y2) / 2 + ny * amp * Math.sin(phase);
+          ctx.lineWidth = (l.__on ? 2.5 : 1) / Math.sqrt(scale);
+          ctx.strokeStyle = (l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)");
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.quadraticCurveTo(cx, cy, x2, y2);
+          ctx.stroke();
+        }}
+        // Custom node draw with completion ring and checkmark
+        nodeCanvasObject={(n: any, ctx: CanvasRenderingContext2D, scale: number) => {
+          const r = 4 + (n.__on || !focus ? 3 : 1);
+          const color = n.completed ? "#22c55e" : (n.__on || !focus ? colorForCourse(n.courseId) : "#e5e7eb");
+          ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = color; ctx.fill();
+          // ring
+          ctx.lineWidth = 2 / Math.sqrt(scale);
+          ctx.strokeStyle = n.__on ? "#f59e0b" : "rgba(0,0,0,0.08)";
+          ctx.stroke();
+          // checkmark if completed
+          if (n.completed) {
+            ctx.strokeStyle = "white"; ctx.lineWidth = 2 / Math.sqrt(scale); ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(n.x - r * 0.6, n.y + r * 0.05);
+            ctx.lineTo(n.x - r * 0.15, n.y + r * 0.5);
+            ctx.lineTo(n.x + r * 0.7, n.y - r * 0.4);
+            ctx.stroke();
+          }
+        }}
+      />
+
+      {hover && (
+        <div
+          style={{ left: mouse.current.x + 14, top: mouse.current.y + 14 }}
+          className="pointer-events-none absolute z-10 w-72 rounded-xl border border-black/5 bg-white/95 p-3 text-xs shadow-xl ring-1 ring-black/10 backdrop-blur"
+        >
+          <div className="flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${hover.completed ? 'bg-green-500' : 'bg-indigo-500'}`}></div>
+            <div className="font-semibold text-gray-900 truncate">{hover.name}</div>
+          </div>
+          {hover.courseTitle && (
+            <div className="mt-0.5 text-[11px] text-gray-500">{hover.courseTitle}{hover.lengthMin ? ` • ${hover.lengthMin} min` : ''}</div>
+          )}
+          {hover.excerpt && (
+            <div className="mt-2 line-clamp-4 text-[11px] text-gray-600">{hover.excerpt}</div>
+          )}
+          <div className="mt-2 flex items-center justify-between">
+            <div className={`text-[11px] ${hover.completed ? 'text-green-600' : 'text-gray-600'}`}>{hover.completed ? 'Completed' : 'Not completed'}</div>
+            {hover.href && (
+              <a href={hover.href} className="pointer-events-auto rounded-full bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Open</a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

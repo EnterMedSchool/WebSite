@@ -10,9 +10,17 @@ import path from "node:path";
 
 async function fetchData() {
   const lessonsRes = await sql`
-    SELECT id, course_id AS "courseId", slug, title
-    FROM lessons
-    WHERE visibility IS NULL OR visibility='public'
+    SELECT l.id,
+           l.course_id AS "courseId",
+           l.slug,
+           l.title,
+           COALESCE(l.length_min, l.duration_min) AS "lengthMin",
+           LEFT(COALESCE(l.body, ''), 180) AS "excerpt",
+           c.slug AS "courseSlug",
+           c.title AS "courseTitle"
+    FROM lessons l
+    JOIN courses c ON c.id = l.course_id
+    WHERE l.visibility IS NULL OR l.visibility='public'
   `;
   const edgesRes = await sql`
     SELECT lesson_id AS "lessonId", requires_lesson_id AS "requiresLessonId"
@@ -58,7 +66,20 @@ function buildGraph({ lessons, edges, courses }) {
       const id = String(l.id);
       const x = cx + (Math.random() * 2 - 1) * jitter;
       const y = cy + (Math.random() * 2 - 1) * jitter;
-      nodes.push({ id, label: l.title, slug: l.slug, courseId: l.courseId, x, y, size: 2 });
+      nodes.push({
+        id,
+        label: l.title,
+        slug: l.slug,
+        courseId: l.courseId,
+        courseSlug: l.courseSlug,
+        courseTitle: l.courseTitle,
+        lengthMin: l.lengthMin,
+        excerpt: l.excerpt,
+        href: `/lesson/${l.slug}`,
+        x,
+        y,
+        size: 2,
+      });
     }
   }
 
