@@ -17,6 +17,7 @@ import StudyToolbar from "@/components/lesson/StudyToolbar";
 
 type Block = { id: number; kind: string; content: string };
 type Lesson = { id: number; slug: string; title: string };
+type Course = { id: number; slug: string; title: string } | null;
 
 type CourseProg = { total: number; completed: number; pct: number } | null;
 
@@ -44,6 +45,7 @@ export default function LessonPage() {
   const completeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const [nav, setNav] = useState<NavInfo>(null);
+  const [course, setCourse] = useState<Course>(null);
   const [courseProg, setCourseProg] = useState<CourseProg>(null);
   const [lessonProg, setLessonProg] = useState<LessonProg>(null);
   const [timeline, setTimeline] = useState<Timeline>(null);
@@ -79,6 +81,7 @@ export default function LessonPage() {
       setLesson(j.lesson);
       setBlocks(j.blocks);
       setNav(j.nav || null);
+      setCourse(j.course || null);
       setCourseProg(j.courseProgress || null);
       setTimeline(j.timeline || null);
     })();
@@ -232,7 +235,9 @@ export default function LessonPage() {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
-              <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Lesson</div>
+              <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                {course?.title ? course.title : 'Course'}
+              </div>
               <button
                 onClick={() => { try { const k=`ems:fav:${slug}`; const v=localStorage.getItem(k)==='1'?'0':'1'; localStorage.setItem(k,v); } catch {} }}
                 title="Favorite"
@@ -266,23 +271,50 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {/* Navigator (range only) */}
+      {/* Chapter path bar (UI only) */}
       <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-indigo-900">Navigator</div>
-          <div className="flex flex-1 items-center gap-3 sm:pl-4">
-            {(() => {
-              const lessons = timeline?.lessons || [];
-              const pos = Math.max(0, lessons.findIndex((l) => l.slug === slug));
-              const max = Math.max(1, lessons.length);
-              const val = Math.max(1, pos + 1);
-              return (
-                <input type="range" min={1} max={max} defaultValue={val} className="w-full accent-indigo-600" onChange={() => {}} />
-              );
-            })()}
-          </div>
-          
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-sm font-semibold text-indigo-900">Chapter path</div>
+          {courseProg && (
+            <div className="text-[11px] text-gray-600">{courseProg.completed}/{courseProg.total} done</div>
+          )}
         </div>
+        {(() => {
+          const lessons = timeline?.lessons || [];
+          const count = lessons.length || 1;
+          const currIdx = Math.max(0, lessons.findIndex((l) => l.slug === slug));
+          const pct = courseProg?.pct ?? Math.round(((currIdx + 1) / count) * 100);
+          return (
+            <div className="relative overflow-visible rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 p-2 ring-1 ring-inset ring-indigo-100">
+              <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/70 shadow-inner ring-1 ring-indigo-100">
+                <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" style={{ width: `${pct}%` }} />
+                {lessons.map((l, i) => {
+                  const left = (i / Math.max(1, count - 1)) * 100;
+                  const isCurr = i === currIdx;
+                  const done = (courseProg?.completed ?? 0) > i; // visual only
+                  const cls = isCurr
+                    ? 'bg-white text-indigo-700 ring-indigo-600 scale-110'
+                    : done
+                    ? 'bg-emerald-600 text-white ring-emerald-300'
+                    : 'bg-white text-indigo-700 ring-indigo-400';
+                  return (
+                    <a key={l.slug} href={`/lesson/${l.slug}`} title={l.title}
+                      className={`absolute top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full ring-2 transition ${cls}`}
+                      style={{ left: `${left}%` }}>
+                      <span className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-gray-600">{i+1}</span>
+                    </a>
+                  );
+                })}
+              </div>
+              <style jsx>{`
+                @media (prefers-reduced-motion: no-preference) {
+                  .ems-path .fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-100%);animation:sheen 3s linear infinite}
+                  @keyframes sheen{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+                }
+              `}</style>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Content */}
