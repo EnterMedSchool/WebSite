@@ -55,7 +55,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI }
   function askAI() { try { window.dispatchEvent(new CustomEvent('ai:open')); } catch {} onAskAI?.(); }
 
   return (
-    <div className="sticky top-16 z-[5] rounded-2xl border bg-white/95 p-2 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <div className="sticky top-24 z-[5] rounded-2xl border bg-white/95 p-2 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {/* Mode switch with icons and labels */}
         <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-300">
@@ -77,4 +77,3 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI }
     </div>
   );
 }
-

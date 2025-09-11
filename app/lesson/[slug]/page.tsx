@@ -271,8 +271,8 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {/* Chapter path bar (UI only) */}
-      <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+      {/* Chapter path bar (UI only, sticky) */}
+      <div className="sticky top-16 z-30 mt-3 rounded-2xl border bg-white/90 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-sm font-semibold text-indigo-900">Chapter path</div>
           {courseProg && (
@@ -286,31 +286,46 @@ export default function LessonPage() {
           const pct = courseProg?.pct ?? Math.round(((currIdx + 1) / count) * 100);
           return (
             <div className="relative overflow-visible rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 p-2 ring-1 ring-inset ring-indigo-100">
-              <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/70 shadow-inner ring-1 ring-indigo-100">
-                <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" style={{ width: `${pct}%` }} />
+              <div className="relative h-4 w-full overflow-visible rounded-full bg-white/70 shadow-inner ring-1 ring-indigo-100">
+                <div className="path-fill absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" style={{ width: `${pct}%` }} />
                 {lessons.map((l, i) => {
                   const left = (i / Math.max(1, count - 1)) * 100;
                   const isCurr = i === currIdx;
-                  const done = (courseProg?.completed ?? 0) > i; // visual only
-                  const cls = isCurr
-                    ? 'bg-white text-indigo-700 ring-indigo-600 scale-110'
-                    : done
-                    ? 'bg-emerald-600 text-white ring-emerald-300'
-                    : 'bg-white text-indigo-700 ring-indigo-400';
+                  const done = (courseProg?.completed ?? 0) > i; // visual-only
+                  const state = isCurr ? 'curr' : done ? 'done' : 'todo';
                   return (
-                    <a key={l.slug} href={`/lesson/${l.slug}`} title={l.title}
-                      className={`absolute top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full ring-2 transition ${cls}`}
-                      style={{ left: `${left}%` }}>
-                      <span className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-gray-600">{i+1}</span>
+                    <a
+                      key={l.slug}
+                      href={`/lesson/${l.slug}`}
+                      title={l.title}
+                      className={`ems-dot ${state}`}
+                      style={{ left: `${left}%` }}
+                    >
+                      <span className="icon" aria-hidden>
+                        {isCurr ? (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M8 5l11 7-11 7V5z" fill="currentColor"/></svg>
+                        ) : done ? (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        ) : (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>
+                        )}
+                      </span>
+                      <span className="tooltip">{l.title}</span>
                     </a>
                   );
                 })}
               </div>
               <style jsx>{`
-                @media (prefers-reduced-motion: no-preference) {
-                  .ems-path .fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-100%);animation:sheen 3s linear infinite}
-                  @keyframes sheen{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-                }
+                .path-fill::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); transform:translateX(-100%); animation:sheen 3s linear infinite; }
+                .ems-dot { position:absolute; top:50%; transform:translate(-50%,-50%); display:grid; place-items:center; height:22px; width:22px; border-radius:9999px; color:#374151; text-decoration:none; }
+                .ems-dot .tooltip { position:absolute; left:50%; bottom:-6px; transform:translate(-50%,100%); white-space:nowrap; font-size:10px; color:#4b5563; background:rgba(255,255,255,.95); border:1px solid rgba(99,102,241,.25); padding:2px 6px; border-radius:999px; box-shadow:0 4px 10px rgba(0,0,0,.08); opacity:0; pointer-events:none; transition:opacity .15s ease; }
+                .ems-dot:hover .tooltip { opacity:1; }
+                .ems-dot.todo { background:white; box-shadow:0 0 0 2px rgba(99,102,241,.35) inset; color:#4f46e5; }
+                .ems-dot.done { background:#10b981; color:white; box-shadow:0 0 0 2px rgba(16,185,129,.45) inset; }
+                .ems-dot.curr { background:white; color:#4f46e5; box-shadow:0 0 0 2px rgba(99,102,241,.6) inset, 0 0 0 0 rgba(99,102,241,.25); animation:glow 2s ease-out infinite; }
+                @keyframes glow { 0% { box-shadow:0 0 0 0 rgba(99,102,241,.35), 0 0 0 2px rgba(99,102,241,.6) inset } 70% { box-shadow:0 0 0 12px rgba(99,102,241,0), 0 0 0 2px rgba(99,102,241,.6) inset } 100% { box-shadow:0 0 0 0 rgba(99,102,241,0), 0 0 0 2px rgba(99,102,241,.6) inset } }
+                .ems-dot::after { content:''; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at center, rgba(99,102,241,.20), transparent 70%); opacity:0; transform:scale(.6); transition:transform .2s ease, opacity .2s ease; }
+                .ems-dot:hover::after { opacity:1; transform:scale(1); }
               `}</style>
             </div>
           );
