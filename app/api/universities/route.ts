@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions, universitySeats } from "@/drizzle/schema";
-import { inArray } from "drizzle-orm";
 import { eq, sql, inArray } from "drizzle-orm";
 
 // Types reused by the map UI
