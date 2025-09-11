@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from 'react';
 
 export type MenuXpBarProps = {
   isAuthed: boolean;
@@ -21,6 +22,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
   const [burst, setBurst] = useState<number>(0);
   const barRef = useRef<HTMLDivElement>(null);
   const xpRef = useRef<HTMLDivElement>(null);
+  const [miniOpenTick, setMiniOpenTick] = useState(0); // bump when opening to let children refetch
 
   useEffect(() => {
     const prev = dispLevel;
@@ -105,7 +107,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
     <div className="relative flex items-center" ref={xpRef}>
       <button
         type="button"
-        onClick={() => setXpOpen(v => !v)}
+        onClick={() => { setXpOpen(v => { const nv = !v; if (nv) setMiniOpenTick(t=>t+1); return nv; }); }}
         aria-expanded={xpOpen}
         className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur transition hover:shadow-[0_6px_22px_rgba(0,0,0,0.18)] hover:border-white/30 hover:bg-white/15 active:scale-[0.99]"
         title="View XP details"
@@ -142,26 +144,98 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
       <style>{`@keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } } @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } }`}</style>
 
       {xpOpen && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[360px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
           <div className="absolute -top-2 right-6 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
             <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
             <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} - {dispSpan > 0 ? `${dispIn}/${dispSpan} XP to next` : ''}</div>
-            <div className="mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
+
+            <Mini24hAndStreak openTick={miniOpenTick} />
+
+            <div className="mt-4 mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
             <RecentXpList />
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
-                <div className="mb-1 font-semibold text-gray-900">Inventory</div>
-                <InventoryMini />
-              </div>
-              <div className="rounded-xl border p-3 hover:bg-indigo-50/40 transition">
-                <div className="font-semibold text-gray-900">Daily Streak</div>
-                <div className="mt-1 text-gray-600">Streak: <span id="streak-days">-</span> days</div>
-              </div>
-            </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Mini24hAndStreak({ openTick }: { openTick: number }) {
+  const [stats, setStats] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await fetch('/api/me/dashboard', { credentials: 'include' });
+        const j = r.ok ? await r.json() : null;
+        if (!ignore) setStats(j);
+        // Update legacy streak placeholder if present
+        const streakEl = document.getElementById('streak-days');
+        if (streakEl && j?.user?.streakDays != null) streakEl.textContent = String(j.user.streakDays);
+      } catch {
+        if (!ignore) setStats(null);
+      } finally { if (!ignore) setLoading(false); }
+    })();
+    return () => { ignore = true; };
+  }, [openTick]);
+
+  const xpToday = stats?.series?.xp7?.[stats?.series?.xp7?.length - 1] ?? 0;
+  const minutesToday = stats?.learning?.minutesToday ?? 0;
+  const correctToday = stats?.learning?.correctToday ?? 0;
+  const streakDays = stats?.user?.streakDays ?? null;
+  const last7 = Array.isArray(stats?.series?.xp7) ? [...stats.series.xp7] : [];
+
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <StatPill loading={loading} color="indigo" label="XP (24h)" value={`+${xpToday}`} icon={
+          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>
+        }/>
+        <StatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}m`} icon={
+          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>
+        }/>
+        <StatPill loading={loading} color="amber" label="Correct" value={`${correctToday}`} icon={
+          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
+        }/>
+      </div>
+
+      <div className="mt-3 rounded-xl border p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-white shadow"><svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 3c1.5 2 2 3.5 2 5.5S12.5 12 11 13c-.5-1.5-1.5-2.5-3-3 0 3 2 4.5 2 6.5S8.5 20 7 20c-2 0-4-2-4-5 0-4.5 3-7.5 6.5-9.5C10.5 4.5 11.5 4 12 3Z"/></svg></span>
+            <div className="text-xs font-semibold text-gray-900">Daily Streak</div>
+          </div>
+          <div className="text-[11px] font-bold text-amber-700">{streakDays != null ? `${streakDays} days` : '—'}</div>
+        </div>
+        <div className="mt-2 flex items-center gap-1">
+          {(last7.length ? last7 : new Array(7).fill(0)).slice(-7).map((v: number, i: number) => (
+            <div key={i} className={`h-6 flex-1 rounded-lg border ${v>0 ? 'bg-gradient-to-br from-amber-200 to-rose-200 border-amber-300' : 'bg-gray-100 border-gray-200'}`} />
+          ))}
+        </div>
+        <div className="mt-1 flex justify-between text-[10px] text-gray-500">
+          <span>6d ago</span><span>Today</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatPill({ loading, color, label, value, icon }: { loading: boolean; color: 'indigo'|'emerald'|'amber'; label: string; value: string; icon: ReactNode }) {
+  const theme = color === 'indigo'
+    ? { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200' }
+    : color === 'emerald'
+    ? { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' }
+    : { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' };
+  return (
+    <div className={`flex items-center justify-between rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}> 
+      <div className={`flex items-center gap-2 ${theme.text}`}>
+        {icon}
+        <div className="font-semibold">{label}</div>
+      </div>
+      <div className={`text-[11px] font-bold ${theme.text}`}>{loading ? '…' : value}</div>
     </div>
   );
 }

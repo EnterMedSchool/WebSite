@@ -18,6 +18,7 @@ import StudyToolbar from "@/components/lesson/StudyToolbar";
 type Block = { id: number; kind: string; content: string };
 type Lesson = { id: number; slug: string; title: string };
 type Course = { id: number; slug: string; title: string } | null;
+type Chapter = { id: number; slug: string; title: string; position?: number } | null;
 
 type CourseProg = { total: number; completed: number; pct: number } | null;
 
@@ -46,6 +47,7 @@ export default function LessonPage() {
 
   const [nav, setNav] = useState<NavInfo>(null);
   const [course, setCourse] = useState<Course>(null);
+  const [chapter, setChapter] = useState<Chapter>(null);
   const [courseProg, setCourseProg] = useState<CourseProg>(null);
   const [lessonProg, setLessonProg] = useState<LessonProg>(null);
   const [timeline, setTimeline] = useState<Timeline>(null);
@@ -83,6 +85,7 @@ export default function LessonPage() {
       setBlocks(j.blocks);
       setNav(j.nav || null);
       setCourse(j.course || null);
+      setChapter(j.chapter || null);
       setCourseProg(j.courseProgress || null);
       setTimeline(j.timeline || null);
     })();
@@ -282,24 +285,31 @@ export default function LessonPage() {
         </div>
         {(() => {
           const lessons = timeline?.lessons || [];
-          const count = lessons.length || 1;
-          const currIdx = Math.max(0, lessons.findIndex((l) => l.slug === slug));
-          const pct = courseProg?.pct ?? Math.round(((currIdx + 1) / count) * 100);
+          // Insert a chapter intro as step 0 when available
+          const markers = (chapter && course)
+            ? ([{ key: `intro-${chapter.slug}`, title: chapter.title, href: `/course/${course.slug}/guidebook/${chapter.slug}`, type: 'chapter' as const }]
+               .concat(lessons.map((l) => ({ key: l.slug, title: l.title, href: `/lesson/${l.slug}`, type: 'lesson' as const }))))
+            : (lessons.map((l) => ({ key: l.slug, title: l.title, href: `/lesson/${l.slug}`, type: 'lesson' as const })));
+          const count = Math.max(1, markers.length);
+          const currIdx = Math.max(0, markers.findIndex((m) => m.type === 'lesson' && m.key === slug));
+          const pct = Math.round((currIdx / Math.max(1, count - 1)) * 100);
           return (
             <div className="relative overflow-visible rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 p-2 ring-1 ring-inset ring-indigo-100">
               <div className="relative h-4 w-full overflow-visible rounded-full bg-white/70 shadow-inner ring-1 ring-indigo-100">
                 <div className="path-fill absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" style={{ width: `${pct}%` }} />
-                {lessons.map((l, i) => {
+                {markers.map((m, i) => {
                   const left = (i / Math.max(1, count - 1)) * 100;
                   const isCurr = i === currIdx;
-                  const done = (courseProg?.completed ?? 0) > i; // visual-only
+                  const isLesson = m.type === 'lesson';
+                  const lessonIdx = isLesson ? (i - ((chapter && course) ? 1 : 0)) : -1;
+                  const done = isLesson ? ((courseProg?.completed ?? 0) > Math.max(0, lessonIdx)) : false;
                   const state = isCurr ? 'curr' : done ? 'done' : 'todo';
                   return (
                     <a
-                      key={l.slug}
-                      href={`/lesson/${l.slug}`}
-                      title={l.title}
-                      className={`ems-dot ${state}`}
+                      key={m.key}
+                      href={m.href}
+                      title={m.type === 'chapter' ? `Chapter: ${m.title}` : m.title}
+                      className={`ems-dot ${state} ${m.type === 'chapter' ? 'intro' : ''}`}
                       style={{ left: `${left}%` }}
                     >
                       <span className="icon" aria-hidden>
@@ -311,7 +321,7 @@ export default function LessonPage() {
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>
                         )}
                       </span>
-                      <span className="tooltip">{l.title}</span>
+                      <span className="tooltip">{m.type === 'chapter' ? `Chapter: ${m.title}` : m.title}</span>
                     </a>
                   );
                 })}
@@ -342,6 +352,20 @@ export default function LessonPage() {
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Chapter Progress</div>
             {/* Removed sidebar progress bar to reduce duplication */}
             <ul className="relative mt-2">
+              {chapter && course && (
+                <li className="group relative pl-8 pb-4">
+                  {/* connector to next */}
+                  <span className="absolute left-3 top-6 h-full w-[2px] bg-gradient-to-b from-indigo-200 to-transparent" />
+                  <span className="absolute left-0 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-indigo-700 ring-2 ring-indigo-200">0</span>
+                  <Link
+                    href={`/course/${course.slug}/guidebook/${chapter.slug}`}
+                    className={"block rounded-lg px-2 py-1.5 text-sm transition hover:bg-gray-50 text-gray-800"}
+                    title="Chapter introduction"
+                  >
+                    <div className="line-clamp-2 pr-6">Chapter: {chapter.title}</div>
+                  </Link>
+                </li>
+              )}
               {timeline?.lessons?.map((t, i) => {
                 const isCurr = t.slug === slug;
                 const done = !!t.completed || (isCurr && isComplete);
@@ -354,7 +378,7 @@ export default function LessonPage() {
                         done ? "bg-emerald-500 text-white ring-emerald-200" : isCurr ? "bg-indigo-600 text-white ring-indigo-200" : "bg-white text-indigo-700 ring-indigo-200"
                       }`}
                     >
-                      {i + 1}
+                      {(i + 1)}
                     </span>
                     <Link
                       href={`/lesson/${t.slug}${isCurr && (tab==='practice') ? `?tab=${tab}&q=${idx+1}` : ''}`}

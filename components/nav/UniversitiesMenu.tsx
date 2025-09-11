@@ -226,6 +226,7 @@ export default function UniversitiesMenu() {
       <button
         type="button"
         className={`text-sm font-semibold uppercase tracking-wide text-white/90 hover:text-white px-1 py-1 ${open ? "opacity-100" : ""}`}
+        data-nav-link
         onClick={() => setOpen((v) => !v)}
         onMouseEnter={() => {
           clearCloseTimer();

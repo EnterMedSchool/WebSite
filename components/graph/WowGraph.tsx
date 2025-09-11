@@ -299,7 +299,7 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
   const tRef = useRef(0);
 
   // Graph state
-  const [nodes, setNodes] = useState<any[]>(() => manifest.courses.map(c => ({ id: `c:${c.id}`, course: true, courseId: c.id, name: c.title })));
+  const [nodes, setNodes] = useState<any[]>(() => manifest.courses.map(c => ({ id: `c:${c.id}`, course: true, courseId: c.id, name: c.title, x: c.x, y: c.y, fx: c.x, fy: c.y })));
   const [links, setLinks] = useState<any[]>(() => manifest.cross.map((e, i) => ({ id:`ce:${i}`, source: `c:${e.from}`, target: `c:${e.to}`, weight: e.count })));
 
   // Incoming adjacency for lessons only
@@ -320,8 +320,11 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
     const res = await fetch(`${baseSrc}course-${courseId}.json`);
     const data: GraphJSON = await res.json();
     // remove the course node and any aggregated cross links touching it
+    const center = manifest.courses.find(c => c.id === courseId);
+    const cx = center?.x ?? 0; const cy = center?.y ?? 0;
+    const jitter = 60;
     setNodes(prev => prev.filter(n => n.id !== `c:${courseId}`).concat(
-      data.nodes.map((n:any) => ({ id: n.id, name: n.label, courseId: n.courseId, href: n.slug ? `/lesson/${n.slug}`:undefined }))
+      data.nodes.map((n:any) => ({ id: n.id, name: n.label, courseId: n.courseId, href: n.slug ? `/lesson/${n.slug}`:undefined, x: cx + (Math.random()*2-1)*jitter, y: cy + (Math.random()*2-1)*jitter }))
     ));
     setLinks(prev => prev.filter(l => l.source !== `c:${courseId}` && l.target !== `c:${courseId}`).concat(
       data.edges.map((e:any) => ({ id: e.id, source: e.source, target: e.target }))
@@ -358,7 +361,9 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
       <ForceGraph2D
         ref={ref}
         graphData={{ nodes, links }}
-        cooldownTicks={200}
+        cooldownTicks={0}
+        enableNodeDrag
+        d3VelocityDecay={0.9}
         linkColor={(l:any)=> l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)"}
         linkDirectionalParticles={(l:any)=> l.__on ? 2 : 0}
         linkDirectionalParticleWidth={(l:any)=> l.__on ? 2.0 : 0}

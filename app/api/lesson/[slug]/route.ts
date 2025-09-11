@@ -14,6 +14,20 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const br = await sql`SELECT id, kind, content FROM lesson_blocks WHERE lesson_id=${lesson.id} ORDER BY COALESCE(rank_key,'')`;
   const cr = await sql`SELECT id, slug, title FROM courses WHERE id=${lesson.course_id} LIMIT 1`;
+  // Resolve the chapter (if any) this lesson belongs to, for linking to the chapter guidebook
+  let chapter: { id: number; slug: string; title: string; position?: number } | null = null;
+  try {
+    const chR = await sql`
+      SELECT c.id, c.slug, c.title, c.position
+      FROM chapter_lessons cl
+      JOIN chapters c ON c.id = cl.chapter_id
+      WHERE cl.lesson_id = ${lesson.id}
+      ORDER BY c.position ASC
+      LIMIT 1`;
+    if (chR.rows[0]) {
+      chapter = { id: Number(chR.rows[0].id), slug: String(chR.rows[0].slug), title: String(chR.rows[0].title), position: Number(chR.rows[0].position) };
+    }
+  } catch {}
   // Compute prev/next based on rank_key within the same course
   const lr2 = await sql`SELECT id, slug, title, COALESCE(rank_key,'') as rk FROM lessons WHERE course_id=${lesson.course_id} ORDER BY COALESCE(rank_key,'') ASC, slug ASC`;
   const ordered = lr2.rows as any[];
@@ -56,5 +70,5 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 }));
     }
   } catch { /* ignore, courseProgress stays null */ }
-  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 })) } });
+  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], chapter, blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 })) } });
 }

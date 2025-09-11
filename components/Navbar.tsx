@@ -6,6 +6,9 @@ import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
 import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 import ResourcesMenu from "@/components/nav/ResourcesMenu";
+import HaloNav from "@/components/nav/HaloNav";
+import CommandPalette from "@/components/nav/CommandPalette";
+import SearchTrigger from "@/components/nav/SearchTrigger";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
 import { db, sql } from "@/lib/db";
 import { users } from "@/drizzle/schema";
@@ -67,22 +70,26 @@ export default async function Navbar() {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Single condensed gradient bar */}
-      <div className="w-full bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700 text-white shadow-[0_10px_30px_rgba(49,46,129,0.30)]">
+      {/* Aurora ribbon */}
+      <div className="relative w-full text-white shadow-[0_10px_30px_rgba(49,46,129,0.30)]">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700" />
+        <div className="absolute inset-y-0 right-0 -z-10 w-24 bg-gradient-to-l from-indigo-900/30 to-transparent" />
+        <div className="absolute inset-y-0 left-0 -z-10 w-24 bg-gradient-to-r from-indigo-900/30 to-transparent" />
         <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-4 px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <nav className="hidden md:flex items-center justify-center gap-6 overflow-hidden">
+          <HaloNav className="hidden md:flex items-center justify-center gap-1 overflow-hidden">
             <UniversitiesMenu />
-            <Link href={primary[1].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
-            <Link href={primary[2].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>
-            <Link href={primary[3].href} className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[3].label}</Link>
-            <Link href="/course-mates" className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">Course Mates</Link>
+            <Link href={primary[1].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
+            <Link href={primary[2].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>
+            <Link href={primary[3].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[3].label}</Link>
+            <Link href="/course-mates" data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">Course Mates</Link>
             <ResourcesMenu />
-          </nav>
+            <SearchTrigger className="ml-1" />
+          </HaloNav>
 
           <div className="flex items-center gap-3 justify-end shrink-0">
             <UserMenu
@@ -98,6 +105,7 @@ export default async function Navbar() {
           </div>
         </div>
       </div>
+      <CommandPalette />
     </header>
   );
 }

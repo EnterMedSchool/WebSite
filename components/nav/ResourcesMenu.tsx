@@ -10,7 +10,7 @@ export default function ResourcesMenu() {
   ];
   return (
     <div className="group relative">
-      <button className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">
+      <button className="text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white" data-nav-link>
         Resources
         <span className="ml-1 inline-block rotate-0 transition-transform group-hover:rotate-180">▾</span>
       </button>
