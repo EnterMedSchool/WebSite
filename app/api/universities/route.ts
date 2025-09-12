@@ -119,6 +119,14 @@ export async function GET(req: Request) {
       }
       avgById = new Map(Object.entries(agg).map(([k, v]) => [Number(k), v.n ? v.sum / v.n : 0]));
 
+      // Normalize candidate type to standard buckets
+      function normCand(input: string | null | undefined): string {
+        const s = String(input || "").toLowerCase().replace(/[^a-z]/g, "");
+        if (s === "eu") return "EU";
+        if (s === "noneu" || s === "international" || s === "nonue") return "NonEU";
+        return input || "";
+      }
+
       // Scores/trend
       const sRows = await db
         .select()
@@ -130,7 +138,7 @@ export async function GET(req: Request) {
       const pts: Record<number, Array<{ year: number; type: string; score: number }>> = {} as any;
       for (const s of sRows) {
         const uid = s.universityId as number;
-        const cand = s.candidateType as string;
+        const cand = normCand(s.candidateType as any);
         const yr = s.year as number;
         const sc = Number(s.minScore);
         const cur = best[uid];
@@ -161,7 +169,7 @@ export async function GET(req: Request) {
       for (const s of seatRows) {
         const uid = Number(s.universityId);
         const yr = Number(s.year);
-        const cand = String(s.candidateType);
+        const cand = normCand(String(s.candidateType));
         if (yr >= cutoff && (cand === "EU" || cand === "NonEU")) {
           (seatMap[uid] ||= []).push({ year: yr, type: cand, seats: Number(s.seats) });
         }

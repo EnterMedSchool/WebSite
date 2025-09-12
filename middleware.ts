@@ -14,19 +14,6 @@ function isAdminEmail(email: string | null | undefined): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Study Rooms feature flag guard
-  const isStudyPath = pathname.startsWith('/study-rooms') || pathname.startsWith('/api/study');
-  if (isStudyPath) {
-    const flag = String(process.env.FEATURE_STUDY_ROOMS || '').trim();
-    const enabled = flag === '1' || /^true$/i.test(flag);
-    if (!enabled) {
-      // Hide feature: respond 404 for both pages and APIs
-      return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
-    }
-    // fall-through to next for enabled
-    return NextResponse.next();
-  }
-
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
   if (!isAdminPath) return NextResponse.next();
 
@@ -76,12 +63,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Admin
-    '/admin/:path*',
-    '/api/admin/:path*',
-    // Study Rooms (feature-flagged)
-    '/study-rooms/:path*',
-    '/api/study/:path*',
-  ],
+  matcher: ['/admin/:path*', '/api/admin/:path*'],
 };
