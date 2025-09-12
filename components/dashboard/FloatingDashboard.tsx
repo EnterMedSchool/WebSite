@@ -254,12 +254,12 @@ function DashPill({ color, label, value, children }: { color: 'indigo'|'emerald'
     ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
     : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
   return (
-    <div className={`flex items-center justify-between rounded-2xl border ${theme.ring} ${theme.bg} px-3 py-2`}> 
-      <div className={`flex items-center gap-2 ${theme.text}`}>
-        {children}
-        <div className="font-semibold">{label}</div>
+    <div className={`min-w-0 flex items-center justify-between overflow-hidden rounded-2xl border ${theme.ring} ${theme.bg} px-3 py-2`}>
+      <div className={`min-w-0 flex items-center gap-2 ${theme.text}`}>
+        <span className="shrink-0">{children}</span>
+        <div className="min-w-0 truncate font-semibold">{label}</div>
       </div>
-      <div key={popKey} className={`text-[11px] font-extrabold ${theme.text}`} style={{ animation: 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{value}</div>
+      <div key={popKey} className={`shrink-0 whitespace-nowrap text-[11px] font-extrabold tabular-nums ${theme.text}`} style={{ animation: 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{value}</div>
       <style>{`@keyframes pop { 0% { transform: scale(1) } 30% { transform: scale(1.08) } 100% { transform: scale(1) } }`}</style>
     </div>
   );

@@ -151,6 +151,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
 
             <div className="mt-4 mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
             <RecentXpList />
+            <PowerUpsTray />
             <div className="mt-4 flex items-center justify-between text-[11px]">
               <div className="text-gray-500">Want more insights?</div>
               <button
@@ -206,7 +207,7 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
         <AnimatedStatPill loading={loading} color="sky" label="Tasks" value={`${stats?.learning?.tasksToday ?? 0}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>} />
       </div>
 
-      <div className="mt-3 rounded-xl border p-3">
+      <div className="mt-3 rounded-xl border p-3 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-white shadow"><svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 3c1.5 2 2 3.5 2 5.5S12.5 12 11 13c-.5-1.5-1.5-2.5-3-3 0 3 2 4.5 2 6.5S8.5 20 7 20c-2 0-4-2-4-5 0-4.5 3-7.5 6.5-9.5C10.5 4.5 11.5 4 12 3Z"/></svg></span>
@@ -214,6 +215,12 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
           </div>
           <div className="text-[11px] font-bold text-amber-700">{streakDays ? `${streakDays} days` : '-'}</div>
         </div>
+        {streakDays < 7 && (
+          <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-200 to-yellow-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-300/60 shadow-sm">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-amber-700"><path fill="currentColor" d="M5 10h14v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Zm2-6h10l2 3v3H5V7Z"/></svg>
+            Reach 7 days for a chest!
+          </div>
+        )}
         <div className="relative mt-2">
           <div className="flex items-center gap-1">
             {(last7.length ? last7 : new Array(7).fill(0)).slice(-7).map((v: number, i: number) => {
@@ -231,7 +238,7 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
             </div>
           )}
         </div>
-        <div className="mt-1 flex justify-between text-[10px] text-gray-500"><span>6d ago</span><span>Today</span></div>
+      <div className="mt-1 flex justify-between text-[10px] text-gray-500"><span>6d ago</span><span>Today</span></div>
       </div>
     </div>
   );
@@ -291,5 +298,45 @@ function RecentXpList() {
   );
 }
 
-function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
+// Temporary UI-only power-ups list
+function PowerUpsTray() {
+  const items: { key: string; name: string; count: number; color: string; tip: string; icon: ReactNode }[] = [
+    {
+      key: 'recover', name: 'Streak Recover', count: 1, color: 'from-pink-200 to-rose-100', tip: 'Recover yesterday\'s missed day.',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-6 w-6 text-rose-600"><path fill="currentColor" d="M12 2a10 10 0 1 1-7.07 2.93L3 3v6h6L6.59 5.59A8 8 0 1 0 12 4Z"/></svg>
+      )
+    },
+    {
+      key: 'booster', name: 'XP Booster', count: 2, color: 'from-indigo-200 to-blue-100', tip: 'Double XP for 30 minutes.',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-6 w-6 text-indigo-600"><path fill="currentColor" d="M11 2h2v6h-2zM7 5h2v6H7zm8 3h2v6h-2zM4 12h16v2H4zM7 15h2v6H7zm8 0h2v6h-2zM11 16h2v6h-2z"/></svg>
+      )
+    },
+    {
+      key: 'freezer', name: 'Streak Freezer', count: 0, color: 'from-cyan-200 to-teal-100', tip: 'Freeze your streak for a day.',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-6 w-6 text-cyan-600"><path fill="currentColor" d="M11 2h2v4h-2zM4.22 5.64l1.41-1.41 2.83 2.83-1.41 1.41zM2 11h4v2H2zm4.64 8.14l-1.41-1.41 2.83-2.83 1.41 1.41zM11 18h2v4h-2zm8.14-4.64 1.41 1.41-2.83 2.83-1.41-1.41zM18 11h4v2h-4zm-1.41-3.54 2.83-2.83 1.41 1.41-2.83 2.83z"/></svg>
+      )
+    }
+  ];
+  return (
+    <div className="mt-4">
+      <div className="mb-2 text-[11px] font-semibold text-gray-800">Power‑Ups</div>
+      <div className="flex items-stretch gap-2">
+        {items.map((it) => (
+          <div key={it.key} className={`group relative grid w-24 place-items-center rounded-2xl border bg-white p-3 ring-1 ring-black/5 hover:bg-indigo-50/40`}> 
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${it.color} shadow-inner`}>
+              {it.icon}
+            </div>
+            <div className="mt-2 truncate text-center text-[10px] font-semibold text-gray-800">{it.name}</div>
+            <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white shadow">{it.count}</span>
+            <div className="pointer-events-none absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-xl border bg-white/95 px-2 py-1 text-[10px] opacity-0 shadow-sm transition-opacity group-hover:opacity-100">{it.tip}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
+function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
