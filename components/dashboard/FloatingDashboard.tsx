@@ -277,7 +277,7 @@ function ProfileCard({ name, imageUrl, level, xp, streakDays }: { name: string |
             {rewards === null ? (
               <div className="h-10 animate-pulse rounded bg-gray-100" />
             ) : rewards.length === 0 ? (
-              <div className="text-xs text-gray-600">You don't have items yet.</div>
+              <div className="text-xs text-gray-600">You don&#39;t have items yet.</div>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {rewards.map((rw,i)=> (
