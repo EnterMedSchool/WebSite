@@ -512,7 +512,7 @@ export default function LessonPage() {
               <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
                 {(player?.locked && player?.source === 'video_html') ? (
                   <div className="flex flex-col items-center justify-center gap-3 text-center">
-                    <div className="text-sm font-semibold text-indigo-900">This lesson is available for Ari's IMAT students</div>
+                    <div className="text-sm font-semibold text-indigo-900">This lesson is available for Ari&apos;s IMAT students</div>
                     <div className="text-[12px] text-gray-600">Purchase the IMAT course to access this video and materials.</div>
                     <div className="mt-1 flex items-center justify-center gap-2">
                       <a href="/imat-course" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Go to IMAT course</a>
@@ -570,7 +570,6 @@ export default function LessonPage() {
                   )})}
                   </div>
                 );
-              })()}
               })()}
 
               {!focusMode && (
