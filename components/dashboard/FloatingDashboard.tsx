@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import ClassPanel from "./ClassPanel";
 import type { ReactNode } from 'react';
 
 // Types for dashboard payload
@@ -28,6 +29,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   const [data, setData] = useState<DashData | null>(null);
   const [loading, setLoading] = useState(false);
   const [mates, setMates] = useState<{ count: number; course?: string | null; school?: string | null; year?: number | null; activeNow?: number | null; isVerified?: boolean } | null>(null);
+  const [tab, setTab] = useState<'dashboard'|'class'|'profile'|'privacy'|'settings'>('dashboard');
 
   // Load dashboard when opened
   useEffect(() => {
@@ -84,21 +86,46 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   return (
     <div className="fixed inset-0 z-[9998] grid place-items-center bg-gradient-to-br from-black/40 via-indigo-900/10 to-fuchsia-900/10 backdrop-blur-[2px] p-4" onClick={onClose}>
       <div className="relative w-full max-w-6xl rounded-[28px] border border-violet-200/60 bg-white/90 shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
-        {/* Left rail */}
+        {/* Left rail: dashboard menu */}
         <div className="absolute left-0 top-0 h-full w-16 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
           <div className="flex h-full flex-col items-center justify-between py-5">
-            <div className="space-y-4">
-              {['#ffffff', '#dbeafe', '#fde68a', '#bbf7d0'].map((c, i) => (
-                <span key={i} className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/20"><span className="h-5 w-5 rounded-full" style={{ background: c }} /></span>
+            <div className="flex flex-col items-center gap-3">
+              {([
+                { key: 'dashboard', label: 'Dashboard', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                )},
+                { key: 'class', label: 'Class', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 3l9 4.5-9 4.5L3 7.5 12 3zm0 6.75L20.25 6V18l-8.25 3.75V9.75zM3.75 18V6L12 9.75V21L3.75 18z"/></svg>
+                )},
+                { key: 'profile', label: 'Profile', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-5 0-9 2.5-9 5.5V22h18v-2.5C21 16.5 17 14 12 14z"/></svg>
+                )},
+                { key: 'privacy', label: 'Privacy', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-2V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 0 1 6 0v3H9z"/></svg>
+                )},
+                { key: 'settings', label: 'Settings', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 8a4 4 0 1 0 4 4 4.005 4.005 0 0 0-4-4zm9.4 4a7.43 7.43 0 0 0-.09-1l2.11-1.65-2-3.46-2.49 1a7.56 7.56 0 0 0-1.73-1L14.5 1h-5L8.6 4.89a7.56 7.56 0 0 0-1.73 1l-2.49-1-2 3.46L4 11a7.43 7.43 0 0 0-.09 1l-2.11 1.65 2 3.46 2.49-1a7.56 7.56 0 0 0 1.73 1L9.5 23h5l.9-3.89a7.56 7.56 0 0 0 1.73-1l2.49 1 2-3.46z"/></svg>
+                )},
+              ] as const).map((item) => (
+                <button
+                  key={item.key}
+                  title={item.label}
+                  onClick={() => setTab(item.key as any)}
+                  className={`grid h-10 w-10 place-items-center rounded-2xl transition ${tab===item.key ? 'bg-white text-indigo-700 shadow ring-1 ring-white/70' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                  aria-pressed={tab===item.key}
+                >
+                  {item.icon}
+                </button>
               ))}
             </div>
-            <button onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-white hover:bg-white/30">A-</button>
+            <button onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-white hover:bg-white/30">×</button>
           </div>
         </div>
 
         {/* Main content */}
         <div className="pl-16">
           <div className="grid grid-cols-12 gap-6 p-6">
+            {tab === 'dashboard' && (<>
             {/* Greeting + Today */}
             <div className="col-span-7">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
@@ -235,7 +262,75 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                 </div>
               </div>
             </div>
+            </>)}
+
+            {tab === 'class' && (
+              <div className="col-span-12">
+                <ClassPanel />
+              </div>
+            )}
+
+            {tab === 'profile' && (
+              <div className="col-span-12">
+                <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+                  <div className="mb-3 text-lg font-semibold text-gray-900">Profile</div>
+                  <ProfileCard name={data?.user?.name ?? null} imageUrl={data?.user?.image ?? null} level={data?.user?.level ?? 1} xp={data?.user?.xp ?? 0} streakDays={data?.user?.streakDays ?? 0} />
+                  <div className="mt-4"><a href="/me/profile" className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Open profile settings</a></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'privacy' && (
+              <div className="col-span-12">
+                <PrivacyInline />
+              </div>
+            )}
+
+            {tab === 'settings' && (
+              <div className="col-span-12">
+                <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+                  <div className="mb-3 text-lg font-semibold text-gray-900">Settings</div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center justify-between rounded-xl border bg-white p-3"><span>Profile & Education</span><a href="/me/profile" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Open</a></li>
+                    <li className="flex items-center justify-between rounded-xl border bg-white p-3"><span>Course Mates</span><button onClick={()=>setTab('class')} className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Open Class</button></li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrivacyInline() {
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  useEffect(() => {
+    (async () => { try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(!!j?.public); } else setIsPublic(false); } catch { setIsPublic(false); } })();
+  }, []);
+  return (
+    <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+      <div className="mb-3 text-lg font-semibold text-gray-900">Privacy</div>
+      <div className="rounded-xl border bg-gray-50 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
+            <div className="text-[11px] text-gray-600">Public profiles appear across the website (e.g., university counts and Course Mates).</div>
+          </div>
+          <button
+            type="button"
+            onClick={async()=>{
+              if (isPublic == null) return; const next = !isPublic;
+              if (next) { const ok = window.confirm('Make your profile public? You can change this anytime.'); if (!ok) return; }
+              setIsPublic(next);
+              try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {}
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
+            aria-pressed={!!isPublic}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
         </div>
       </div>
     </div>

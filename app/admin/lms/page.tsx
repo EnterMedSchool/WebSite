@@ -15,6 +15,10 @@ export default async function AdminLmsIndexPage() {
       <h1 className="text-2xl font-bold">LMS Manager</h1>
       <p className="mt-1 text-sm text-gray-600">Signed in as {admin.email}</p>
 
+      <div className="mt-4">
+        <a href="/admin/lms/board" className="inline-block rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Open Multi‑Course Board</a>
+      </div>
+
       <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
         {list.map((c) => (
           <a key={c.id}
@@ -29,4 +33,3 @@ export default async function AdminLmsIndexPage() {
     </div>
   );
 }
-

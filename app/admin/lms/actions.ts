@@ -187,6 +187,57 @@ export async function moveLessonBetweenChaptersAction(lessonId: number, fromChap
   return { ok: true };
 }
 
+// Move lesson to a different chapter within the same course (detach from any and attach to target)
+export async function moveLessonToChapterAction(lessonId: number, toChapterId: number) {
+  assertAdmin(await requireAdminEmail());
+  const lid = Number(lessonId), toId = Number(toChapterId);
+  if (![lid, toId].every((n) => Number.isFinite(n) && n > 0)) throw new Error("bad_request");
+  await db.delete(chapterLessons).where(eq(chapterLessons.lessonId as any, lid));
+  const pos = await nextChapterLessonPosition(toId);
+  await db.insert(chapterLessons).values({ chapterId: toId, lessonId: lid, position: pos });
+  const ch = (await db.select({ courseId: chapters.courseId }).from(chapters).where(eq(chapters.id as any, toId)).limit(1))[0];
+  if (ch?.courseId) revalidatePath(`/admin/lms/${ch.courseId}`);
+  return { ok: true };
+}
+
+// Move a lesson across courses and optionally attach to a chapter in the target course
+export async function moveLessonToCourseAndChapterAction(lessonId: number, toCourseId: number, toChapterId?: number | null) {
+  assertAdmin(await requireAdminEmail());
+  const lid = Number(lessonId), cid = Number(toCourseId);
+  const toCh = toChapterId ? Number(toChapterId) : null;
+  if (![lid, cid].every((n) => Number.isFinite(n) && n > 0)) throw new Error("bad_request");
+  // Get current course
+  const lr = await db.select({ id: lessons.id, courseId: lessons.courseId }).from(lessons).where(eq(lessons.id as any, lid)).limit(1);
+  const curr = lr[0] as any;
+  if (!curr) throw new Error("lesson_not_found");
+  const fromCourseId = Number(curr.courseId);
+  if (fromCourseId === cid) {
+    // Same course: if a chapter provided, just move to that chapter
+    if (toCh && Number.isFinite(toCh)) {
+      await moveLessonToChapterAction(lid, toCh);
+      return { ok: true };
+    }
+  }
+  // Update lesson's course
+  await db.update(lessons).set({ courseId: cid }).where(eq(lessons.id as any, lid));
+  // Detach from any previous chapters
+  await db.delete(chapterLessons).where(eq(chapterLessons.lessonId as any, lid));
+  // Optionally attach to target chapter if provided
+  if (toCh && Number.isFinite(toCh)) {
+    // validate chapter belongs to target course
+    const ch = (await db.select({ id: chapters.id, courseId: chapters.courseId }).from(chapters).where(eq(chapters.id as any, toCh)).limit(1))[0] as any;
+    if (ch && Number(ch.courseId) === cid) {
+      const pos = await nextChapterLessonPosition(Number(ch.id));
+      await db.insert(chapterLessons).values({ chapterId: Number(ch.id), lessonId: lid, position: pos });
+    }
+  }
+  // Revalidate affected admin pages
+  revalidatePath(`/admin/lms/${fromCourseId}`);
+  revalidatePath(`/admin/lms/${cid}`);
+  revalidatePath(`/admin/lms/board`);
+  return { ok: true };
+}
+
 export async function reorderQuestionsAction(lessonId: number, orderedQuestionIds: number[]) {
   assertAdmin(await requireAdminEmail());
   const lid = Number(lessonId);
