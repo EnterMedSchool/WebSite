@@ -179,6 +179,8 @@ export default function EnterMedSchool2026() {
       <div className="grid items-center gap-8 md:grid-cols-2">
         {/* Left copy */}
         <div className="relative z-10">
+          {/* Backplate for readability on bright backgrounds */}
+          <div className="pointer-events-none absolute -inset-4 -z-10 rounded-3xl bg-white/95 ring-1 ring-slate-200 shadow-[0_20px_60px_rgba(2,6,23,0.08)] backdrop-blur-sm dark:bg-slate-900/60 dark:ring-white/10" />
           <div className="mb-2 flex items-center gap-2">
             <NewBadge />
             <span className="text-xs font-medium uppercase tracking-wider text-indigo-700/90 dark:text-indigo-200/90">Feature wave</span>
@@ -186,13 +188,13 @@ export default function EnterMedSchool2026() {
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             EnterMedSchool <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 via-violet-600 to-fuchsia-600">2026</span>
           </h2>
-          <p className="mt-3 text-slate-800 dark:text-slate-200">
+          <p className="mt-3 text-base leading-7 text-slate-900 dark:text-slate-100">
             Enter<span className="relative inline-block">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600">ed</span>
             </span>{" "}
             med school already? Cool! Use our website for study material during med school, check the latest events, study materials, and updates from your classmates, gather XP together, compete against other schools, solve clinical cases together — and much more!
           </p>
-          <ul className="mt-4 grid gap-2 text-sm text-slate-800 dark:text-slate-200">
+          <ul className="mt-4 grid gap-2 text-sm text-slate-900 dark:text-slate-100">
             <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500"/> Course Mates hub with events, notes, and live feed</li>
             <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-500"/> XP, weekly leaderboards, and school vs. school challenges</li>
             <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-fuchsia-500"/> Clinical cases, sprints, and quiz nights</li>
@@ -216,4 +218,3 @@ export default function EnterMedSchool2026() {
     </section>
   );
 }
-
