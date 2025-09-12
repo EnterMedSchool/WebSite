@@ -31,7 +31,8 @@ export default function HaloNav({ className = "", children }: HaloNavProps) {
     function onOver(e: MouseEvent) { highlightFor(e.target as HTMLElement); }
     function onOut(e: MouseEvent) {
       const to = (e as any).relatedTarget as HTMLElement | null;
-      if (!to || !el.contains(to)) setRect((r) => ({ ...r, visible: false }));
+      const root = wrapRef.current; // re-read to satisfy TS nullability
+      if (!to || !root || !root.contains(to)) setRect((r) => ({ ...r, visible: false }));
     }
     function onFocusIn(e: FocusEvent) { highlightFor(e.target as HTMLElement); }
     function onFocusOut() { setRect((r) => ({ ...r, visible: false })); }
@@ -76,4 +77,3 @@ export default function HaloNav({ className = "", children }: HaloNavProps) {
     </div>
   );
 }
-
