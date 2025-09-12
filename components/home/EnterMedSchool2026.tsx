@@ -8,9 +8,9 @@ type FeedItem = { who: string; action: string; time: string; tone: string };
 type EventItem = { title: string; at: string; tag: string };
 
 const LEADERS: Leader[] = [
-  { name: "Sapienza", points: 1380, color: "from-indigo-500 to-violet-500" },
-  { name: "Tor Vergata", points: 1215, color: "from-fuchsia-500 to-rose-500" },
-  { name: "Pavia", points: 990, color: "from-emerald-500 to-lime-500" },
+  { name: "Sapienza", points: 1380, color: "from-indigo-600 to-violet-600" },
+  { name: "Tor Vergata", points: 1215, color: "from-violet-600 to-fuchsia-600" },
+  { name: "Pavia", points: 990, color: "from-emerald-600 to-lime-600" },
 ];
 
 const FEED: FeedItem[] = [
@@ -20,23 +20,23 @@ const FEED: FeedItem[] = [
   { who: "Noah T.", action: "uploaded Pharm flashcards", time: "18m", tone: "fuchsia" },
 ];
 
-const toneBg = (t: string) => {
+const EVENTS: EventItem[] = [
+  { title: "Clinical Case Night", at: "Today 18:00", tag: "Team" },
+  { title: "Neuroanatomy Sprint", at: "Tomorrow 10:00", tag: "Study" },
+];
+
+function toneBg(t: string) {
   if (t === "emerald") return "bg-emerald-500";
   if (t === "violet") return "bg-violet-500";
   if (t === "indigo") return "bg-indigo-500";
   if (t === "fuchsia") return "bg-fuchsia-500";
   return "bg-slate-500";
-};
-
-const EVENTS: EventItem[] = [
-  { title: "Clinical Case Night", at: "18:00 Today", tag: "Team" },
-  { title: "Neuroanatomy Sprint", at: "Tomorrow 10:00", tag: "Study" },
-];
+}
 
 function NewBadge({ small = false }: { small?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-400 px-2.5 ${
+      className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 px-2.5 ${
         small ? "py-0.5 text-[10px]" : "py-1 text-xs"
       } font-bold text-white shadow-[0_8px_24px_rgba(251,191,36,0.35)]`}
     >
@@ -56,13 +56,13 @@ function CourseMatesWidget() {
       className="relative isolate w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-white/5"
       aria-label="Course Mates Hub preview"
     >
-      {/* Subtle perimeter glow (reduced for contrast) */}
+      {/* very subtle perimeter glow for lift */}
       <div className="pointer-events-none absolute -inset-px -z-10 rounded-3xl bg-gradient-to-br from-indigo-400/10 via-violet-400/5 to-fuchsia-400/10 blur-lg" />
 
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="grid place-items-center h-8 w-8 rounded-xl bg-indigo-600 text-white shadow">
+          <div className="grid h-8 w-8 place-items-center rounded-xl bg-indigo-600 text-white shadow">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20l9-5-9-5-9 5 9 5Z"/><path d="M3 7l9-5 9 5"/></svg>
           </div>
           <div className="text-sm font-semibold text-slate-900 dark:text-white">Course Mates Hub</div>
@@ -97,7 +97,7 @@ function CourseMatesWidget() {
             {EVENTS.map((e) => (
               <li key={e.title} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200/60 dark:bg-white/10 dark:ring-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="inline-grid h-6 w-6 place-items-center rounded-lg bg-indigo-500 text-white text-[10px]">{e.tag}</span>
+                  <span className="inline-grid h-6 w-6 place-items-center rounded-lg bg-indigo-600 text-white text-[10px]">{e.tag}</span>
                   <span className="font-medium text-slate-900 dark:text-white">{e.title}</span>
                 </div>
                 <span className="text-xs text-slate-500 dark:text-slate-300">{e.at}</span>
@@ -136,7 +136,7 @@ function CourseMatesWidget() {
                 <div className="font-medium text-slate-900 dark:text-white">{l.name}</div>
                 <div className="text-xs text-slate-600 dark:text-slate-300">{l.points.toLocaleString()} XP</div>
               </div>
-              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200/50 dark:bg-white/10">
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
                 <div
                   className={`h-2 rounded-full bg-gradient-to-r ${l.color}`}
                   style={{ width: `${(l.points / total) * 100}%` }}
@@ -160,10 +160,10 @@ export default function EnterMedSchool2026() {
     <motion.span
       key={i}
       initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 0.2, y: 0 }}
+      whileInView={{ opacity: 0.25, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
       transition={{ delay: 0.05 * i, duration: 0.5 }}
-      className="select-none rounded-full border border-white/40 bg-white/50 px-3 py-1 text-[10px] font-extrabold tracking-widest text-indigo-700 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/10 dark:text-indigo-200"
+      className="select-none rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-extrabold tracking-widest text-indigo-700 shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-indigo-200"
       style={{ transform: `rotate(${(i % 2 ? -1 : 1) * 12}deg)` }}
     >
       NEW
@@ -172,30 +172,30 @@ export default function EnterMedSchool2026() {
 
   return (
     <section id="entermedschool-2026" className="relative mx-auto w-full max-w-6xl px-4">
-      {/* Decorative background */}
-      <div className="pointer-events-none absolute -top-24 right-[-10%] h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/20 via-fuchsia-300/15 to-rose-300/15 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-12 left-[-6%] h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/15 via-cyan-300/12 to-indigo-300/15 blur-3xl" />
+      {/* Softer decorative blobs for depth */}
+      <div className="pointer-events-none absolute -top-24 right-[-10%] h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/15 via-violet-300/10 to-fuchsia-300/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-12 left-[-6%] h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/12 via-cyan-300/10 to-indigo-300/12 blur-3xl" />
 
       <div className="grid items-center gap-8 md:grid-cols-2">
         {/* Left copy */}
         <div className="relative z-10">
           <div className="mb-2 flex items-center gap-2">
             <NewBadge />
-            <span className="text-xs font-medium uppercase tracking-wider text-indigo-700/80 dark:text-indigo-200/90">Feature wave</span>
+            <span className="text-xs font-medium uppercase tracking-wider text-indigo-700/90 dark:text-indigo-200/90">Feature wave</span>
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             EnterMedSchool <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 via-violet-600 to-fuchsia-600">2026</span>
           </h2>
-          <p className="mt-3 text-slate-700 dark:text-slate-200">
+          <p className="mt-3 text-slate-800 dark:text-slate-200">
             Enter<span className="relative inline-block">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600">ed</span>
             </span>{" "}
             med school already? Cool! Use our website for study material during med school, check the latest events, study materials, and updates from your classmates, gather XP together, compete against other schools, solve clinical cases together — and much more!
           </p>
-          <ul className="mt-4 grid gap-2 text-sm text-slate-700 dark:text-slate-200">
-            <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-400"/> Course Mates hub with events, notes, and live feed</li>
-            <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-400"/> XP, weekly leaderboards, and school vs. school challenges</li>
-            <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-fuchsia-400"/> Clinical cases, sprints, and quiz nights</li>
+          <ul className="mt-4 grid gap-2 text-sm text-slate-800 dark:text-slate-200">
+            <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500"/> Course Mates hub with events, notes, and live feed</li>
+            <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-500"/> XP, weekly leaderboards, and school vs. school challenges</li>
+            <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-fuchsia-500"/> Clinical cases, sprints, and quiz nights</li>
           </ul>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -204,7 +204,7 @@ export default function EnterMedSchool2026() {
           </div>
 
           {/* Floating NEW badges */}
-          <div className="mt-6 flex flex-wrap gap-2 opacity-70">{news}</div>
+          <div className="mt-6 flex flex-wrap gap-2 opacity-80">{news}</div>
         </div>
 
         {/* Right widget */}
@@ -216,3 +216,4 @@ export default function EnterMedSchool2026() {
     </section>
   );
 }
+
