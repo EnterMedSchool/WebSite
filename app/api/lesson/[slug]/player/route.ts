@@ -4,8 +4,12 @@ import { db } from "@/lib/db";
 import { courses, imatUserPlan, lessons, users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { detectProviderFromSrc, extractIframeSrc, firstYouTubeFromBody, isPremiumSrc } from "@/lib/video/embed";
+import { apiGuardStart } from "@/lib/api/guard";
 
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
+  const guard = apiGuardStart(req, { key: 'lesson/[slug]/player:GET' });
+  if (guard.deny) return guard.deny;
+  try {
   const url = new URL(req.url);
   const slug = params.slug;
   const demo = url.searchParams.get("demo") === "1";
@@ -97,5 +101,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   // Short cache to reduce DB hits while developing
   res.headers.set("Cache-Control", userId ? "private, max-age=30" : "public, max-age=60");
   return res;
+  } finally {
+    guard.end();
+  }
 }
-

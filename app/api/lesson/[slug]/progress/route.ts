@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUserId } from "@/lib/study/auth";
 import { levelFromXp, MAX_LEVEL, GOAL_XP } from "@/lib/xp";
+import { apiGuardStart } from "@/lib/api/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
+  const guard = apiGuardStart(req, { key: 'lesson/[slug]/progress:POST' });
+  if (guard.deny) return guard.deny;
   try {
     const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
     if (!isAuthConfigured) {
@@ -213,10 +216,14 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
   } catch (err: any) {
     console.error('progress POST failed', err);
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });
+  } finally {
+    guard.end();
   }
 }
 
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
+  const guard = apiGuardStart(req, { key: 'lesson/[slug]/progress:GET' });
+  if (guard.deny) return guard.deny;
   try {
     const isAuthConfigured = Boolean(process.env.NEXTAUTH_SECRET);
     if (!isAuthConfigured) {
@@ -242,5 +249,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   } catch (err: any) {
     console.error('progress GET failed', err);
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });
+  } finally {
+    guard.end();
   }
 }

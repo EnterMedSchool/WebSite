@@ -10,14 +10,34 @@ import { useEffect } from "react";
  */
 export default function DevFetchGuard() {
   useEffect(() => {
-    const isProd = process.env.NODE_ENV === "production";
-    const enabled = !isProd && String(process.env.NEXT_PUBLIC_DEV_THROTTLE ?? "1") !== "0";
+    const enabled = String(
+      // Prefer generic var; fall back to previous dev-only var for back-compat
+      (process.env.NEXT_PUBLIC_FETCH_GUARD as any) ??
+        (process.env.NEXT_PUBLIC_DEV_THROTTLE as any) ??
+        "1"
+    ) !== "0";
     if (!enabled || typeof window === "undefined" || !window.fetch) return;
 
-    const MAX_RPS = Number(process.env.NEXT_PUBLIC_DEV_MAX_RPS ?? 30);
-    const BURST = Number(process.env.NEXT_PUBLIC_DEV_BURST ?? Math.max(60, MAX_RPS * 2));
-    const MAX_CONCURRENT = Number(process.env.NEXT_PUBLIC_DEV_MAX_CONCURRENT ?? 16);
-    const CANCEL_DUP_MS = Number(process.env.NEXT_PUBLIC_DEV_CANCEL_DUP_MS ?? 200);
+    const MAX_RPS = Number(
+      (process.env.NEXT_PUBLIC_FETCH_MAX_RPS as any) ??
+        (process.env.NEXT_PUBLIC_DEV_MAX_RPS as any) ??
+        30
+    );
+    const BURST = Number(
+      (process.env.NEXT_PUBLIC_FETCH_BURST as any) ??
+        (process.env.NEXT_PUBLIC_DEV_BURST as any) ??
+        Math.max(60, MAX_RPS * 2)
+    );
+    const MAX_CONCURRENT = Number(
+      (process.env.NEXT_PUBLIC_FETCH_MAX_CONCURRENT as any) ??
+        (process.env.NEXT_PUBLIC_DEV_MAX_CONCURRENT as any) ??
+        16
+    );
+    const CANCEL_DUP_MS = Number(
+      (process.env.NEXT_PUBLIC_FETCH_CANCEL_DUP_MS as any) ??
+        (process.env.NEXT_PUBLIC_DEV_CANCEL_DUP_MS as any) ??
+        200
+    );
 
     const originalFetch = window.fetch.bind(window);
 
@@ -46,7 +66,14 @@ export default function DevFetchGuard() {
       return false;
     }
 
-    function make429(pathname: string): Response {
+    function notifyAnd429(pathname: string, source: string): Response {
+      try {
+        window.dispatchEvent(
+          new CustomEvent("throttle-warning", {
+            detail: { path: pathname, source },
+          })
+        );
+      } catch {}
       return new Response(
         JSON.stringify({ error: "too_many_requests", hint: "DEV fetch guard" }),
         {
@@ -74,7 +101,7 @@ export default function DevFetchGuard() {
     }
 
     // Patch fetch
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line
     (window as any).fetch = async function devGuardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       try {
         // Only guard API calls (you can extend to all requests if desired)
@@ -87,7 +114,7 @@ export default function DevFetchGuard() {
           const key = normalizeKey(input, init);
           console.warn(`[DevFetchGuard] Dropped (rps/concurrency) ${key}`);
           const pathname = key.split(" ")[1] || "/api";
-          return make429(pathname);
+          return notifyAnd429(pathname, "client_guard_drop");
         }
 
         // Duplicate suppression for rapid-fire on same path
@@ -105,7 +132,7 @@ export default function DevFetchGuard() {
           controllers.clear();
           console.warn(`[DevFetchGuard] Cancelled duplicates ${key}`);
           const pathname = key.split(" ")[1] || "/api";
-          return make429(pathname);
+          return notifyAnd429(pathname, "client_guard_dupe");
         }
 
         const ctrl = new AbortController();
@@ -126,6 +153,17 @@ export default function DevFetchGuard() {
         const nextInit: RequestInit = { ...(init || {}), signal };
         try {
           const res = await originalFetch(input as any, nextInit);
+          try {
+            if (res?.status === 429) {
+              const pathFromHeader = res.headers.get("X-Throttle-Path") || "";
+              const pathname = pathFromHeader || (key.split(" ")[1] || "/api");
+              window.dispatchEvent(
+                new CustomEvent("throttle-warning", {
+                  detail: { path: pathname, source: "server_429" },
+                })
+              );
+            }
+          } catch {}
           return res;
         } finally {
           inFlight -= 1;
@@ -143,11 +181,10 @@ export default function DevFetchGuard() {
 
     return () => {
       // Restore original fetch on unmount (HMR)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line
       (window as any).fetch = originalFetch;
     };
   }, []);
 
   return null;
 }
-
