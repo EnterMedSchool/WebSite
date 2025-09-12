@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   medicalCourseId: integer("medical_course_id"),
   studyYear: integer("study_year"),
   matesVerified: boolean("mates_verified").default(false).notNull(),
+  matesPublic: boolean("mates_public").default(false).notNull(),
 });
 
 export const courses = pgTable(

@@ -27,7 +27,7 @@ type DashData = {
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [data, setData] = useState<DashData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mates, setMates] = useState<{ count: number; course?: string | null; school?: string | null; year?: number | null } | null>(null);
+  const [mates, setMates] = useState<{ count: number; course?: string | null; school?: string | null; year?: number | null; activeNow?: number | null; isVerified?: boolean } | null>(null);
 
   // Load dashboard when opened
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
         const r = await fetch('/api/course-mates/summary', { credentials: 'include' });
         if (!r.ok) return;
         const j = await r.json();
-        setMates({ count: Number(j?.matesCount || 0), course: j?.courseName || null, school: j?.schoolName || null, year: j?.studyYear || null });
+        setMates({ count: Number(j?.matesCount || 0), course: j?.courseName || null, school: j?.schoolName || null, year: j?.studyYear || null, activeNow: Number(j?.activeNow || 0), isVerified: !!j?.isVerified });
       } catch {}
     })();
   }, [open]);
@@ -143,14 +143,32 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                 </div>
               </div>
 
-              {/* Learning activity */}
-              <div className="mt-6 rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="text-base font-bold text-gray-800">Learning activity</div>
-                <div className="mt-3 grid grid-cols-4 gap-3 text-center">
-                  <div className="rounded-2xl border p-4 shadow-sm"><div className="text-2xl font-extrabold text-indigo-700">{data?.learning?.minutesToday ?? (loading ? 0 : 0)}m</div><div className="text-xs text-gray-600">Studied today</div></div>
-                  <div className="rounded-2xl border p-4 shadow-sm"><div className="text-2xl font-extrabold text-indigo-700">{data?.learning?.minutesTotal ?? (loading ? 0 : 0)}m</div><div className="text-xs text-gray-600">Total minutes</div></div>
-                  <div className="rounded-2xl border p-4 shadow-sm"><div className="text-2xl font-extrabold text-indigo-700">{data?.learning?.correctToday ?? (loading ? 0 : 0)}</div><div className="text-xs text-gray-600">Correct today</div></div>
-                </div>
+              {/* Course Mates summary / CTA */}
+              <div className="mt-6 rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-fuchsia-50 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+                {mates && mates.count > 0 ? (
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-semibold text-indigo-800">Your Course Mates</div>
+                        <div className="text-xs text-gray-700">{mates.course || 'Course'} {mates.year ? `• Year ${mates.year}` : ''}{mates.school ? ` • ${mates.school}` : ''}</div>
+                      </div>
+                      <a href="/course-mates" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">Open</a>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-2xl border border-indigo-100 bg-white/70 p-4 shadow-sm"><div className="text-xl font-extrabold text-indigo-700">{mates.count}</div><div className="text-[11px] text-gray-600">Mates verified</div></div>
+                      <div className="rounded-2xl border border-indigo-100 bg-white/70 p-4 shadow-sm"><div className="text-xl font-extrabold text-emerald-700">{mates.activeNow ?? 0}</div><div className="text-[11px] text-gray-600">Active last 24h</div></div>
+                      <div className="rounded-2xl border border-indigo-100 bg-white/70 p-4 shadow-sm"><div className="text-xl font-extrabold text-amber-700">{data?.user?.streakDays ?? 0}</div><div className="text-[11px] text-gray-600">Your streak</div></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-base font-bold text-gray-900">Find your course mates</div>
+                      <div className="mt-1 text-xs text-gray-700">Sync your profile with your university and year to join your class.</div>
+                    </div>
+                    <a href="/course-mates" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">Sync profile</a>
+                  </div>
+                )}
               </div>
             </div>
 

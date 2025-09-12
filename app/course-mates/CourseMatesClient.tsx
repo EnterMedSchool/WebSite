@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 type Option = { id: number; name: string; slug?: string };
 type Org = { id: number; name: string; slug: string; website?: string | null; description?: string | null };
@@ -25,6 +25,7 @@ export default function CourseMatesClient({ authed, initial }: {
     events: any[];
     photos: any[];
     moderators: Mate[];
+    modRequestPending?: boolean;
   };
 }) {
   const [isAuthed] = useState<boolean | null>(authed);
@@ -32,12 +33,22 @@ export default function CourseMatesClient({ authed, initial }: {
   const [summary] = useState<Summary>(initial.summary || null);
   const [studyVibe, setStudyVibe] = useState<string | null>(initial.studyVibe || null);
   const [isModerator] = useState<boolean>(initial.isModerator || false);
+  const [modPending, setModPending] = useState<boolean>(Boolean((initial as any).modRequestPending));
   const [feed, setFeed] = useState<any[]>(initial.feed || []);
   const [events, setEvents] = useState<any[]>(initial.events || []);
   const [photos, setPhotos] = useState<any[]>(initial.photos || []);
   const [organizations] = useState<Org[]>(initial.organizations || []);
   const [moderators] = useState<Mate[]>(initial.moderators || []);
   const [newPost, setNewPost] = useState("");
+  const [isPublic, setIsPublic] = useState<boolean>(false);
+
+  // Load privacy flag on mount if authed
+  useEffect(() => {
+    if (!authed) return;
+    (async () => {
+      try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(!!j?.public); } } catch {}
+    })();
+  }, [authed]);
 
   const initials = useMemo(() => (name?: string | null) => {
     const n = (name || "").trim();
@@ -102,6 +113,23 @@ export default function CourseMatesClient({ authed, initial }: {
                 <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Members</div>
                 <div className="mt-1 text-2xl font-extrabold text-amber-900">{summary?.matesCount ?? 0}</div>
                 <div className="text-xs text-amber-800/80">verified classmates</div>
+              </div>
+            </div>
+            {/* Privacy toggle */}
+            <div className="mt-3 rounded-xl border bg-gray-50 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
+                  <div className="text-[11px] text-gray-600">Public profiles appear in university counts and Course Mates. You can change this anytime.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async()=>{ const next = !isPublic; setIsPublic(next); try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {} }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                  aria-pressed={isPublic}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
               </div>
             </div>
           </div>
@@ -204,6 +232,11 @@ export default function CourseMatesClient({ authed, initial }: {
               {!moderators.length && <li className="text-sm text-gray-600">No representatives assigned yet.</li>}
             </ul>
             <div className="mt-2 text-[11px] text-gray-500">Your EnterMedSchool representatives, who have edit access to this private student hub.</div>
+            {!isModerator && access==='verified' && (
+              <div className="mt-3">
+                <button disabled={modPending} onClick={async()=>{ try { const r = await fetch('/api/course-mates/moderators/apply', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) }); if (r.ok) setModPending(true); } catch {} }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{modPending ? 'Application sent' : 'Apply as a representative'}</button>
+              </div>
+            )}
           </div>
         </div>
       )}

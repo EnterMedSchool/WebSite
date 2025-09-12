@@ -75,13 +75,13 @@ export default async function Navbar() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700" />
         <div className="absolute inset-y-0 right-0 -z-10 w-24 bg-gradient-to-l from-indigo-900/30 to-transparent" />
         <div className="absolute inset-y-0 left-0 -z-10 w-24 bg-gradient-to-r from-indigo-900/30 to-transparent" />
-        <div className="relative mx-auto grid max-w-6xl grid-cols-[auto,1fr,auto] items-center gap-4 px-4 py-2.5">
+        <div className="relative mx-auto grid max-w-screen-2xl grid-cols-[auto,1fr,auto] items-center gap-4 px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <HaloNav className="hidden md:flex items-center justify-center gap-1 overflow-hidden">
+          <HaloNav className="hidden w-full min-w-0 md:flex items-center justify-center gap-1">
             <UniversitiesMenu />
             <Link href={primary[1].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
             <Link href={primary[2].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>

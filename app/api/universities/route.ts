@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions, universitySeats } from "@/drizzle/schema";
+import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions, universitySeats, users } from "@/drizzle/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 
 // Types reused by the map UI
@@ -30,6 +30,7 @@ export type City = {
   // Lightweight 3-year trend for mini charts (prevents per-card API calls)
   trendPoints?: Array<{ year: number; type: string; score: number }>;
   trendSeats?: Array<{ year: number; type: string; seats: number }>;
+  emsCount?: number;
 };
 export type CountryCities = Record<string, City[]>;
 
@@ -100,6 +101,7 @@ export async function GET(req: Request) {
     let miniTrendSeatsById = new Map<number, Array<{ year: number; type: string; seats: number }>>();
     let costsById = new Map<number, { rent?: number | null; food?: number | null; transport?: number | null }>();
     let admissionsById = new Map<number, { opens?: number | null; deadline?: number | null; results?: number | null }>();
+    let emsCountByUniId = new Map<number, number>();
 
     if (ids.length && includeHeavy) {
       // Ratings (avg)
@@ -167,6 +169,16 @@ export async function GET(req: Request) {
       miniTrendSeatsById = new Map(
         Object.entries(seatMap).map(([k, v]) => [Number(k), (v as any[]).sort((a, b) => a.year - b.year)])
       );
+
+      // EMS public students per university (privacy-aware)
+      try {
+        const counts = await db
+          .select({ uid: users.universityId, n: sql<number>`count(*)::int` })
+          .from(users)
+          .where(sql`coalesce(${users.matesVerified}, false) = true AND coalesce(${users.matesPublic}, false) = true AND ${users.universityId} IS NOT NULL ${ids.length ? sql`AND ${users.universityId} = ANY(${ids})` : sql``}` as any)
+          .groupBy(users.universityId);
+        emsCountByUniId = new Map(counts.map((r: any) => [Number(r.uid), Number(r.n || 0)]));
+      } catch {}
 
       // Latest costs
       const cRows = await db
@@ -246,6 +258,7 @@ export async function GET(req: Request) {
         logo: (r.logo as string) ?? undefined,
         rating: includeHeavy ? (avgById.get(r.id as number) ?? undefined) : undefined,
         lastScore: includeHeavy ? (lastScoreById.get(r.id as number) ?? undefined) : undefined,
+        emsCount: includeHeavy ? (emsCountByUniId.get(r.id as number) ?? undefined) : undefined,
         photos: includeHeavy ? ((r.photos as string[]) ?? undefined) : undefined,
         orgs: includeHeavy ? ((r.orgs as string[]) ?? undefined) : undefined,
         article: includeHeavy ? ((r.article as any) ?? undefined) : undefined,

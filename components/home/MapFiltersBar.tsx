@@ -30,9 +30,10 @@ type Props = {
   onOpenCompare?: () => void;
   savedCount?: number;
   compareCount?: number;
+  defaultAdvancedOpen?: boolean;
 };
 
-export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount, suggestions = [], onPick, onViewMobile, compact = false, onOpenSaved, onOpenCompare, savedCount, compareCount }: Props) {
+export default function MapFiltersBar({ filters, onChange, countries, languages, exams, resultCount, suggestions = [], onPick, onViewMobile, compact = false, onOpenSaved, onOpenCompare, savedCount, compareCount, defaultAdvancedOpen = false }: Props) {
   const hasFilters = useMemo(() => {
     const { q, country, language, exam, kind, dorms, scholarship } = filters;
     return !!q || !!country || !!language || !!exam || !!kind || !!dorms || !!scholarship;
@@ -40,6 +41,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [advOpen, setAdvOpen] = useState<boolean>(!compact && defaultAdvancedOpen);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
   }, [compact]);
 
   return (
-    <div className={`pointer-events-auto mx-auto rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 ${compact ? 'p-3' : 'p-5'} shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 text-white`}>
+    <div className={`pointer-events-auto mx-auto rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 ${compact ? 'p-3' : 'p-6'} shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 text-white`}>
       {!compact && (
         <div className="mb-2">
           <h2 className="text-xl font-extrabold tracking-tight">Where would you like to EnterMedSchool?</h2>
@@ -158,7 +160,7 @@ export default function MapFiltersBar({ filters, onChange, countries, languages,
 
         {/* Advanced filters (UI only for now) */}
         {!compact && (
-          <details className="mt-1 rounded-2xl bg-white/10 p-2 text-white/90">
+          <details open={advOpen} onToggle={(e)=> setAdvOpen((e.currentTarget as HTMLDetailsElement).open)} className="mt-1 rounded-2xl bg-white/10 p-2 text-white/90">
             <summary className="cursor-pointer list-none text-xs font-semibold">More filters</summary>
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <label className="block text-xs">

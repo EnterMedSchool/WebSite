@@ -104,6 +104,11 @@ export default async function CourseMatesPage() {
     try { const r = await sql`SELECT p.id, p.url, p.caption FROM course_event_photos p WHERE p.event_id IN (SELECT id FROM course_events WHERE course_id=${courseId} ORDER BY start_at DESC LIMIT 50) ORDER BY p.created_at DESC LIMIT 9`; photos = r.rows; } catch {}
   }
 
+  let modRequestPending = false;
+  if (courseId) {
+    try { const r = await sql`SELECT 1 FROM course_moderator_requests WHERE user_id=${userId} AND course_id=${courseId} AND status='pending' LIMIT 1`; modRequestPending = !!r.rows[0]; } catch {}
+  }
+
   const initial = {
     universities,
     schools,
@@ -119,8 +124,8 @@ export default async function CourseMatesPage() {
     events,
     photos,
     moderators,
+    modRequestPending,
   };
 
   return <CourseMatesClient authed={true} initial={initial} />;
 }
-

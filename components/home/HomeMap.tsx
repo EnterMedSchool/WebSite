@@ -5,6 +5,8 @@ import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "re
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
 import ExplorerRail from "@/components/home/ExplorerRail";
+import FloatingPanel from "@/components/ui/FloatingPanel";
+import UniversitiesPanelFloating from "@/components/home/UniversitiesPanelFloating";
 import { useRouter, useSearchParams } from "next/navigation";
 import UniversitiesPanel from "@/components/home/UniversitiesPanel";
 import UniversitiesListMobile from "@/components/home/UniversitiesListMobile";
@@ -40,6 +42,7 @@ type City = {
   admResults?: string;
   trendPoints?: Array<{ year: number; type: string; score: number }>;
   trendSeats?: Array<{ year: number; type: string; seats: number }>;
+  emsCount?: number;
 };
 type CountryCities = Record<string, City[]>;
 
@@ -67,6 +70,7 @@ export default function HomeMap() {
   const [enriching, setEnriching] = useState<string | null>(null);
   const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "" });
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [hoverCard, setHoverCard] = useState<{ x: number; y: number; data: any } | null>(null);
   const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
   // Flatten all cities
   const allCityDataRaw = useMemo(() =>
@@ -506,8 +510,13 @@ export default function HomeMap() {
                       onMouseEnter={(e) => {
                         (e.currentTarget as SVGGElement).style.zIndex = "10";
                         setHoveredKey(key);
+                        try {
+                          // Approximate screen placement for a pretty HTML hover card
+                          const rect = (e as any)?.currentTarget?.getBoundingClientRect?.() || { left: (e as any).clientX, top: (e as any).clientY };
+                          setHoverCard({ x: (rect.left || (e as any).clientX) + 14, y: (rect.top || (e as any).clientY) - 90, data: c });
+                        } catch {}
                       }}
-                      onMouseLeave={() => setHoveredKey((k) => (k === key ? null : k))}
+                      onMouseLeave={() => { setHoveredKey((k) => (k === key ? null : k)); setHoverCard((h)=> (h && `${h.data?.country}-${h.data?.city}-${h.data?.uni}`===key ? null : h)); }}
                       onClick={() => {
                         if (isSmall) {
                           setSheetCustomItems([c]);
@@ -608,30 +617,73 @@ export default function HomeMap() {
             </motion.div>
           </div>
         ) : (
-          <ExplorerRail ref={overlayRef as any}>
-            <MapFiltersBar
-              compact={false}
-              filters={filters}
-              onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
-              countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
-              languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
-              exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-              resultCount={allCityData.length} onOpenSaved={() => setSavedOpen(true)} onOpenCompare={() => setCompareOpen(true)} savedCount={saved.length} compareCount={compare.length}
-              suggestions={
-                filters.q.trim().length >= 1
-                  ? Array.from(new Set([
-                      ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
-                      ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
-                      ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
-                    ].map((s) => `${s.kind}:${s.label}`)))
-                      .map((key) => { const [kind, label] = key.split(':'); return { kind: kind as 'uni'|'city'|'country', label, value: label }; })
-                      .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
-                      .slice(0, 12)
-                  : []
-              }
-              onPick={(s) => { if (s.kind === 'country') { setFilters((f) => ({ ...f, country: s.value })); setSelected({ name: s.value, center: position.center, baseCenter: position.center }); } else if (s.kind === 'uni') { const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {} } else { setFilters((f) => ({ ...f, q: s.value })); } }}
-            />
-          </ExplorerRail>
+          <>
+            <FloatingPanel
+              id="map-filters"
+              title="Search & Filters"
+              initialSize={{ width: 560, height: 420 }}
+              initialPos={{ x: 24, y: 120 }}
+              minWidth={420}
+              minHeight={260}
+              className="bg-white/0"
+              bodyClassName="p-4"
+            >
+              <MapFiltersBar
+                compact={false}
+                defaultAdvancedOpen={true}
+                filters={filters}
+                onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+                countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
+                languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
+                exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
+                resultCount={allCityData.length}
+                onOpenSaved={() => setSavedOpen(true)}
+                onOpenCompare={() => setCompareOpen(true)}
+                savedCount={saved.length}
+                compareCount={compare.length}
+                suggestions={
+                  filters.q.trim().length >= 1
+                    ? Array.from(new Set([
+                        ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
+                        ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
+                        ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
+                      ].map((s) => `${s.kind}:${s.label}`)))
+                        .map((key) => { const [kind, label] = key.split(':'); return { kind: kind as 'uni'|'city'|'country', label, value: label }; })
+                        .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
+                        .slice(0, 12)
+                    : []
+                }
+                onPick={(s) => { if (s.kind === 'country') { setFilters((f) => ({ ...f, country: s.value })); setSelected({ name: s.value, center: position.center, baseCenter: position.center }); } else if (s.kind === 'uni') { const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {} } else { setFilters((f) => ({ ...f, q: s.value })); } }}
+              />
+            </FloatingPanel>
+
+            {selected && cityData.length > 0 && (
+              <FloatingPanel
+                id="map-universities"
+                title={selected!.name}
+                initialSize={{ width: 520, height: 600 }}
+                initialPos={{ x: Math.max(24, (typeof window !== 'undefined' ? (window.innerWidth - 520 - 24) : 980)), y: 140 }}
+                minWidth={420}
+                minHeight={360}
+                className="bg-white/0"
+                bodyClassName="p-4"
+              >
+                <UniversitiesPanelFloating
+                  selectedName={selected!.name}
+                  items={cityDataSorted as any}
+                  onAddCompare={(c:any)=> addToCompare(c)}
+                  compareSet={compareSet}
+                  savedSet={savedSet}
+                  onToggleSave={(c:any)=> toggleSaved(c)}
+                  onHover={(c:any)=>{
+                    if (!c) { setHoveredKey(null); return; }
+                    const key = `${(c as any).country || selected!.name}-${c.city}-${c.uni}`;
+                    setHoveredKey(key);
+                  }}
+                />
+              </FloatingPanel>
+            )}
+          </>
         )}
 
         {/* Soft top/bottom gradient to blend edges on mobile */}
@@ -737,6 +789,34 @@ export default function HomeMap() {
         <SavedFab count={saved.length} onOpen={() => setSavedOpen(true)} />
         <SavedDrawer open={savedOpen} items={saved as any} onClose={() => setSavedOpen(false)} onRemove={(u)=> setSaved(s=>s.filter(x=>x.uni!==u))} onClear={()=> setSaved([])} />
       </div>
+
+      {/* Pretty hover card (HTML), positioned near cursor */}
+      {hoverCard && !isSmall && (
+        <div className="pointer-events-none absolute z-40" style={{ left: hoverCard.x, top: hoverCard.y }}>
+          <div className="rounded-xl bg-white/95 backdrop-blur p-2 pr-3 shadow-2xl ring-1 ring-black/10 flex items-center gap-3 min-w-[220px] max-w-[320px]">
+            <div className="h-8 w-8 overflow-hidden rounded-full bg-indigo-100 flex items-center justify-center">
+              {hoverCard.data.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={hoverCard.data.logo} alt="logo" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-[11px] font-bold text-indigo-700">{hoverCard.data.city?.[0]}</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-xs font-bold text-gray-900">{hoverCard.data.uni}</div>
+              <div className="truncate text-[10px] text-gray-600">{hoverCard.data.city}{hoverCard.data.kind ? ` • ${hoverCard.data.kind === 'private' ? 'Private' : 'Public'}` : ''}</div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                {hoverCard.data.exam && (<span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-semibold text-indigo-700 ring-1 ring-indigo-200">{String(hoverCard.data.exam).toUpperCase()}</span>)}
+                {hoverCard.data.language && (<span className="rounded-full bg-teal-50 px-1.5 py-0.5 text-[9px] font-semibold text-teal-700 ring-1 ring-teal-200">{String(hoverCard.data.language)}</span>)}
+                {typeof hoverCard.data.emsCount === 'number' && (<span className="rounded-full bg-pink-50 px-1.5 py-0.5 text-[9px] font-semibold text-pink-700 ring-1 ring-pink-200">EMS {hoverCard.data.emsCount}</span>)}
+              </div>
+            </div>
+            {typeof hoverCard.data.rating === 'number' && (
+              <div className="ml-auto text-[11px] font-semibold text-gray-700">★ {hoverCard.data.rating.toFixed(1)}</div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

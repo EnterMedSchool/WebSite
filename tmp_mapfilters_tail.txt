@@ -1,0 +1,12 @@
+        {!compact && (
+          <details className="mt-1 rounded-2xl bg-white/10 p-2 text-white/90">
+            <summary className="cursor-pointer list-none text-xs font-semibold">More filters</summary>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <label className="block text-xs">
+                <span className="mb-1 block text-[11px] text-indigo-100/90">Type</span>
+                <select value={filters.kind || ''} onChange={(e)=>onChange({ kind: (e.target.value as any) })} className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2 text-sm text-gray-900 shadow-sm">
+                  <option value="">Any</option>
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              </label>

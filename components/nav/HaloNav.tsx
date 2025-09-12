@@ -53,7 +53,7 @@ export default function HaloNav({ className = "", children }: HaloNavProps) {
     <div
       ref={wrapRef}
       className={
-        "relative isolate flex items-center gap-2 rounded-full bg-white/5 px-2 py-1 ring-1 ring-white/15 backdrop-blur " +
+        "relative isolate flex items-center gap-2 rounded-full bg-white/5 px-2 py-1 ring-1 ring-white/15 backdrop-blur overflow-x-auto hide-scrollbar flex-nowrap " +
         className
       }
     >

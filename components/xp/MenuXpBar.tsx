@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export type MenuXpBarProps = {
   isAuthed: boolean;
@@ -22,7 +22,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
   const [burst, setBurst] = useState<number>(0);
   const barRef = useRef<HTMLDivElement>(null);
   const xpRef = useRef<HTMLDivElement>(null);
-  const [miniOpenTick, setMiniOpenTick] = useState(0); // bump when opening to let children refetch
+  const [miniOpenTick, setMiniOpenTick] = useState(0);
 
   useEffect(() => {
     const prev = dispLevel;
@@ -115,15 +115,12 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
         <span className={`inline-flex h-7 min-w-[42px] items-center justify-center rounded-full bg-white/80 px-2 text-[11px] font-bold text-indigo-700 shadow-sm ${lvPulse > 0 ? 'animate-[pulse_0.8s_ease-out_1] scale-105' : ''}`}>
           Lv {dispLevel}
         </span>
-        <div ref={barRef} className="relative h-2 w-36 overflow-hidden rounded-full bg-white/20 sm:w-40">
+        <div ref={barRef} className="relative h-2 w-28 overflow-hidden rounded-full bg-white/20 md:w-32 lg:w-36 xl:w-40">
           <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 transition-[width] duration-700 ease-out" style={{ width: `${dispPct}%` }} />
           <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
-          <span className="pointer-events-none absolute -inset-y-2 -left-6 h-6 w-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.35)_40%,transparent_70%)] opacity-0 blur-[2px] transition-opacity group-hover:opacity-70" style={{ animation: 'xpshimmer 1.2s linear infinite' }} />
         </div>
-        <span className="ml-1 whitespace-nowrap text-[10px] font-semibold text-white/85">{isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}</span>
+        <span className="ml-1 hidden whitespace-nowrap text-[10px] font-semibold text-white/85 xl:inline">{isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}</span>
         <svg className={`ml-1 h-3 w-3 text-white/80 transition-transform ${xpOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z" /></svg>
-        <span className="pointer-events-none absolute -inset-1 rounded-full opacity-0 blur-md transition group-hover:opacity-40" style={{ background: 'radial-gradient(40px 20px at 50% 50%, rgba(255,255,255,0.45), rgba(255,255,255,0))' }} />
-        <span className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 opacity-0 shadow group-hover:opacity-100">View details</span>
       </button>
 
       {burst > 0 && (
@@ -140,8 +137,8 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
         </div>
       )}
 
-      {/* Global keyframes used by inline animation names */}
-      <style>{`@keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } } @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } } @keyframes pop { 0% { transform: scale(1) } 30% { transform: scale(1.08) } 100% { transform: scale(1) } }`}</style>
+      {/* Global keyframes */}
+      <style>{`@keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } } @keyframes pop { 0% { transform: scale(1) } 30% { transform: scale(1.08) } 100% { transform: scale(1) } }`}</style>
 
       {xpOpen && (
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
@@ -174,6 +171,7 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
   const [stats, setStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -182,12 +180,9 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
         const r = await fetch('/api/me/dashboard', { credentials: 'include' });
         const j = r.ok ? await r.json() : null;
         if (!ignore) setStats(j);
-        // Update legacy streak placeholder if present
         const streakEl = document.getElementById('streak-days');
         if (streakEl && j?.user?.streakDays != null) streakEl.textContent = String(j.user.streakDays);
-      } catch {
-        if (!ignore) setStats(null);
-      } finally { if (!ignore) setLoading(false); }
+      } catch { if (!ignore) setStats(null); } finally { if (!ignore) setLoading(false); }
     })();
     return () => { ignore = true; };
   }, [openTick]);
@@ -195,27 +190,20 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
   const xpToday = stats?.series?.xp7?.[stats?.series?.xp7?.length - 1] ?? 0;
   const minutesToday = stats?.learning?.minutesToday ?? 0;
   const correctToday = stats?.learning?.correctToday ?? 0;
-  const streakDays = stats?.user?.streakDays ?? null;
+  const streakDays = stats?.user?.streakDays ?? 0;
   const last7 = Array.isArray(stats?.series?.xp7) ? [...stats.series.xp7] : [];
   const today = new Date(); today.setHours(0,0,0,0);
   const dayAt = (cellIdx: number) => { const d = new Date(today); d.setDate(d.getDate() - (6 - cellIdx)); return d; };
   const fmtDay = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const intensity = Math.max(0, Math.min(1, Number(streakDays || 0) / 10)); // stronger color with longer streak
 
   return (
     <div>
       <div className="grid grid-cols-4 gap-2 text-xs">
-        <AnimatedStatPill loading={loading} color="indigo" label="XP (24h)" value={`+${xpToday}`} icon={
-          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>
-        }/>
-        <AnimatedStatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}m`} icon={
-          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>
-        }/>
-        <AnimatedStatPill loading={loading} color="amber" label="Correct" value={`${correctToday}`} icon={
-          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
-        }/>
-        <AnimatedStatPill loading={loading} color="sky" label="Tasks" value={`${stats?.learning?.tasksToday ?? 0}`} icon={
-          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>
-        }/>
+        <AnimatedStatPill loading={loading} color="indigo" label="XP (24h)" value={`+${xpToday}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>} />
+        <AnimatedStatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}m`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>} />
+        <AnimatedStatPill loading={loading} color="amber" label="Correct" value={`${correctToday}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>} />
+        <AnimatedStatPill loading={loading} color="sky" label="Tasks" value={`${stats?.learning?.tasksToday ?? 0}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>} />
       </div>
 
       <div className="mt-3 rounded-xl border p-3">
@@ -224,18 +212,17 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
             <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-white shadow"><svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 3c1.5 2 2 3.5 2 5.5S12.5 12 11 13c-.5-1.5-1.5-2.5-3-3 0 3 2 4.5 2 6.5S8.5 20 7 20c-2 0-4-2-4-5 0-4.5 3-7.5 6.5-9.5C10.5 4.5 11.5 4 12 3Z"/></svg></span>
             <div className="text-xs font-semibold text-gray-900">Daily Streak</div>
           </div>
-          <div className="text-[11px] font-bold text-amber-700">{streakDays != null ? `${streakDays} days` : '—'}</div>
+          <div className="text-[11px] font-bold text-amber-700">{streakDays ? `${streakDays} days` : '-'}</div>
         </div>
-        <div className="mt-2 relative">
+        <div className="relative mt-2">
           <div className="flex items-center gap-1">
-            {(last7.length ? last7 : new Array(7).fill(0)).slice(-7).map((v: number, i: number) => (
-              <div
-                key={i}
-                onMouseEnter={() => setHoverIdx(i)}
-                onMouseLeave={() => setHoverIdx(null)}
-                className={`h-6 flex-1 rounded-lg border transition ${v>0 ? 'bg-gradient-to-br from-amber-200 to-rose-200 border-amber-300' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}
-              />
-            ))}
+            {(last7.length ? last7 : new Array(7).fill(0)).slice(-7).map((v: number, i: number) => {
+              const a = v > 0 ? 0.25 + 0.6 * intensity : 0;
+              const style = v > 0 ? { background: `linear-gradient(135deg, rgba(251,191,36,${a}), rgba(244,63,94,${a}))`, borderColor: `rgba(245,158,11,${0.35 + 0.45 * intensity})` } as React.CSSProperties : {};
+              return (
+                <div key={i} onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx(null)} style={style} className={`h-6 flex-1 rounded-lg border transition ${v>0 ? '' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`} />
+              );
+            })}
           </div>
           {hoverIdx != null && (
             <div className="pointer-events-none absolute -top-2 left-0 -translate-y-full rounded-xl border bg-white/95 px-3 py-1 text-[10px] shadow-md" style={{ left: `${(hoverIdx/6)*100}%`, transform: `translate(-${Math.round((hoverIdx/6)*100)}%, -8px)` }}>
@@ -244,29 +231,8 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
             </div>
           )}
         </div>
-        <div className="mt-1 flex justify-between text-[10px] text-gray-500">
-          <span>6d ago</span><span>Today</span>
-        </div>
+        <div className="mt-1 flex justify-between text-[10px] text-gray-500"><span>6d ago</span><span>Today</span></div>
       </div>
-    </div>
-  );
-}
-
-function StatPill({ loading, color, label, value, icon }: { loading: boolean; color: 'indigo'|'emerald'|'amber'|'sky'; label: string; value: string; icon: ReactNode }) {
-  const theme = color === 'indigo'
-    ? { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200' }
-    : color === 'emerald'
-    ? { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' }
-    : color === 'amber'
-    ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
-    : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
-  return (
-    <div className={`flex items-center justify-between rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}> 
-      <div className={`flex items-center gap-2 ${theme.text}`}>
-        {icon}
-        <div className="font-semibold">{label}</div>
-      </div>
-      <div className={`text-[11px] font-bold ${theme.text}`}>{loading ? '…' : value}</div>
     </div>
   );
 }
@@ -286,12 +252,12 @@ function AnimatedStatPill({ loading, color, label, value, icon }: { loading: boo
     ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
     : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
   return (
-    <div className={`flex items-center justify-between rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}>
-      <div className={`flex items-center gap-2 ${theme.text}`}>
-        {icon}
-        <div className="font-semibold">{label}</div>
+    <div className={`min-w-0 flex items-center justify-between overflow-hidden rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}>
+      <div className={`min-w-0 flex items-center gap-2 ${theme.text}`}>
+        <span className="shrink-0">{icon}</span>
+        <div className="min-w-0 truncate font-semibold">{label}</div>
       </div>
-      <div key={popKey} className={`text-[11px] font-bold ${theme.text}`} style={{ animation: loading ? undefined : 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{loading ? '…' : value}</div>
+      <div key={popKey} className={`shrink-0 whitespace-nowrap text-[11px] font-bold tabular-nums ${theme.text}`} style={{ animation: loading ? undefined : 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{loading ? '…' : value}</div>
     </div>
   );
 }
@@ -325,33 +291,5 @@ function RecentXpList() {
   );
 }
 
-function InventoryMini() {
-  const [items, setItems] = useState<{ key: string; type: string; label: string }[] | null>(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch('/api/me/xp');
-        const j = await r.json();
-        setItems((j?.rewards || []).slice(0, 8));
-      } catch { setItems([]); }
-    })();
-  }, []);
-  if (!items) return <div className="h-14 animate-pulse rounded bg-gray-100" />;
-  if (items.length === 0) return <div className="text-gray-600">No items yet. Complete chapters and milestones!</div>;
-  return (
-    <div className="grid grid-cols-4 gap-1">
-      {items.map((it) => (
-        <div key={it.key} className="grid place-items-center rounded-lg border bg-white p-2 text-center text-[10px]">
-          {it.type === 'chest' ? (
-            <svg viewBox="0 0 64 64" className="h-8 w-8"><defs><linearGradient id="c1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient><linearGradient id="c2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs><rect x="6" y="22" width="52" height="30" rx="6" fill="url(#c2)" stroke="#92400e" strokeWidth="2"/><rect x="8" y="16" width="48" height="12" rx="6" fill="url(#c1)" stroke="#92400e" strokeWidth="2"/></svg>
-          ) : (
-            <svg viewBox="0 0 64 64" className="h-8 w-8"><defs><linearGradient id="b1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a7f3d0"/><stop offset="100%" stopColor="#22c55e"/></linearGradient></defs><circle cx="32" cy="28" r="20" fill="url(#b1)" stroke="#065f46" strokeWidth="2"/><path d="M22 46l10-6 10 6v10l-10-6-10 6z" fill="#10b981" stroke="#065f46" strokeWidth="2"/></svg>
-          )}
-          <div className="line-clamp-2 text-[10px] font-semibold text-slate-700">{it.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function clampPct(p?: number | null) { return Math.max(0, Math.min(100, Number(p ?? 0))); }
+
