@@ -75,6 +75,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     let awardedXp = 0;
     let newXp = null as null | number;
     let newLevel = null as null | number;
+    let capReached = false;
     const rewards: any[] = [];
 
     // Badge label maps
@@ -131,7 +132,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
         const remTotal = DAILY_TOTAL_XP_CAP > 0 ? Math.max(0, DAILY_TOTAL_XP_CAP - todayTotal) : baseAdd;
         const remLesson = DAILY_LESSON_XP_CAP > 0 ? Math.max(0, DAILY_LESSON_XP_CAP - todayLessons) : baseAdd;
         const add = Math.max(0, Math.min(baseAdd, remTotal, remLesson));
-        const capReached = baseAdd > 0 && add === 0;
+        capReached = baseAdd > 0 && add === 0;
         const nextXp = currXp + add;
         const newLevel = levelFromXp(nextXp);
         if (add > 0) {
