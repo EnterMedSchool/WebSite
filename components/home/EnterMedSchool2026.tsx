@@ -53,11 +53,11 @@ function CourseMatesWidget() {
       whileInView={{ rotate: 0, y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 100, damping: 14 }}
       viewport={{ once: true, amount: 0.4 }}
-      className="relative isolate w-full rounded-3xl border border-indigo-200/50 bg-white/80 p-4 shadow-[0_20px_60px_rgba(49,46,129,0.15)] backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+      className="relative isolate w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-white/5"
       aria-label="Course Mates Hub preview"
     >
-      {/* Glow */}
-      <div className="pointer-events-none absolute -inset-1 -z-10 rounded-3xl bg-gradient-to-br from-indigo-400/20 via-violet-400/10 to-fuchsia-400/20 blur-xl" />
+      {/* Subtle perimeter glow (reduced for contrast) */}
+      <div className="pointer-events-none absolute -inset-px -z-10 rounded-3xl bg-gradient-to-br from-indigo-400/10 via-violet-400/5 to-fuchsia-400/10 blur-lg" />
 
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
@@ -79,7 +79,7 @@ function CourseMatesWidget() {
           { label: "Notes", value: 42 },
           { label: "XP", value: 25620 },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl bg-slate-50/80 p-2 dark:bg-white/10">
+          <div key={s.label} className="rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200/60 dark:bg-white/10 dark:ring-white/10">
             <div className="text-lg font-extrabold text-slate-900 dark:text-white">{s.value}</div>
             <div className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-300">{s.label}</div>
           </div>
@@ -88,14 +88,14 @@ function CourseMatesWidget() {
 
       {/* Agenda + Feed */}
       <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="rounded-2xl border border-indigo-200/40 bg-white/70 p-3 dark:border-white/10 dark:bg-white/5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/5">
           <div className="mb-2 flex items-center justify-between">
             <div className="text-xs font-semibold text-slate-900 dark:text-white">Today&apos;s Agenda</div>
-            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:text-indigo-200">Auto-sync</span>
+            <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 ring-1 ring-indigo-200/70 dark:text-indigo-200">Auto-sync</span>
           </div>
           <ul className="space-y-2 text-sm">
             {EVENTS.map((e) => (
-              <li key={e.title} className="flex items-center justify-between rounded-xl bg-gradient-to-br from-indigo-50/60 to-violet-50/60 px-3 py-2 dark:from-white/10 dark:to-white/5">
+              <li key={e.title} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200/60 dark:bg-white/10 dark:ring-white/10">
                 <div className="flex items-center gap-2">
                   <span className="inline-grid h-6 w-6 place-items-center rounded-lg bg-indigo-500 text-white text-[10px]">{e.tag}</span>
                   <span className="font-medium text-slate-900 dark:text-white">{e.title}</span>
@@ -105,11 +105,11 @@ function CourseMatesWidget() {
             ))}
           </ul>
         </div>
-        <div className="rounded-2xl border border-violet-200/40 bg-white/70 p-3 dark:border-white/10 dark:bg-white/5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/5">
           <div className="mb-2 text-xs font-semibold text-slate-900 dark:text-white">Live Feed</div>
           <ul className="space-y-2 text-sm">
             {FEED.map((f, i) => (
-              <li key={i} className="flex items-center justify-between rounded-xl px-2 py-2 hover:bg-violet-50/60 dark:hover:bg-white/10">
+              <li key={i} className="flex items-center justify-between rounded-xl px-2 py-2 hover:bg-slate-50 dark:hover:bg-white/10">
                 <div className="flex items-center gap-2">
                   <div className={`grid h-7 w-7 place-items-center rounded-full text-white shadow ${toneBg(f.tone)}`}>
                     {f.who.charAt(0)}
@@ -124,7 +124,7 @@ function CourseMatesWidget() {
       </div>
 
       {/* Leaderboard */}
-      <div className="mt-3 rounded-2xl border border-fuchsia-200/40 bg-white/70 p-3 dark:border-white/10 dark:bg-white/5">
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/5">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-xs font-semibold text-slate-900 dark:text-white">Weekly Leaderboard</div>
           <span className="text-[10px] text-slate-500 dark:text-slate-300">Top 3</span>
@@ -173,8 +173,8 @@ export default function EnterMedSchool2026() {
   return (
     <section id="entermedschool-2026" className="relative mx-auto w-full max-w-6xl px-4">
       {/* Decorative background */}
-      <div className="pointer-events-none absolute -top-24 right-[-10%] h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/40 via-fuchsia-300/30 to-rose-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-12 left-[-6%] h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/30 via-cyan-300/30 to-indigo-300/30 blur-3xl" />
+      <div className="pointer-events-none absolute -top-24 right-[-10%] h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/20 via-fuchsia-300/15 to-rose-300/15 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-12 left-[-6%] h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/15 via-cyan-300/12 to-indigo-300/15 blur-3xl" />
 
       <div className="grid items-center gap-8 md:grid-cols-2">
         {/* Left copy */}
@@ -184,11 +184,11 @@ export default function EnterMedSchool2026() {
             <span className="text-xs font-medium uppercase tracking-wider text-indigo-700/80 dark:text-indigo-200/90">Feature wave</span>
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            EnterMedSchool <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500">2026</span>
+            EnterMedSchool <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 via-violet-600 to-fuchsia-600">2026</span>
           </h2>
           <p className="mt-3 text-slate-700 dark:text-slate-200">
             Enter<span className="relative inline-block">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-rose-400 to-fuchsia-500">ed</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600">ed</span>
             </span>{" "}
             med school already? Cool! Use our website for study material during med school, check the latest events, study materials, and updates from your classmates, gather XP together, compete against other schools, solve clinical cases together — and much more!
           </p>
@@ -200,7 +200,7 @@ export default function EnterMedSchool2026() {
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link href="/course-mates" className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500">Try the Hub</Link>
-            <Link href="/updates" className="rounded-xl border border-indigo-300/60 bg-white/70 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm backdrop-blur hover:bg-white/90 dark:border-white/20 dark:bg-white/10 dark:text-indigo-200">See all 2026 updates</Link>
+            <Link href="/updates" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-slate-50 dark:border-white/20 dark:bg-white/10 dark:text-indigo-200">See all 2026 updates</Link>
           </div>
 
           {/* Floating NEW badges */}
@@ -209,7 +209,7 @@ export default function EnterMedSchool2026() {
 
         {/* Right widget */}
         <div className="relative">
-          <div className="pointer-events-none absolute -top-6 -right-6 -left-6 h-10 rounded-[32px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.16),transparent)]" />
+          <div className="pointer-events-none absolute -top-6 -right-6 -left-6 h-10 rounded-[32px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.08),transparent)]" />
           <CourseMatesWidget />
         </div>
       </div>
