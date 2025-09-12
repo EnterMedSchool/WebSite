@@ -17,7 +17,9 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
     // Auth (lightweight)
     const session = await authGetServerSession().catch(() => null);
-    const userId = Number((session as any)?.userId || 0) || null;
+    // Normalize and clamp userId to a safe 32-bit integer range. Fallback to 0/null if invalid.
+    const rawUid = Number((session as any)?.userId || 0);
+    const userId = Number.isInteger(rawUid) && rawUid > 0 && rawUid <= 2147483647 ? rawUid : 0;
 
     // 1) Load minimal lesson info (avoid large columns)
     const l = (await db
@@ -52,20 +54,41 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
       // Entitlements: premium or IMAT plan
       let entitled = false;
-      if (userId) {
-        const u = (await db
-          .select({ isPremium: users.isPremium })
-          .from(users)
-          .where(eq(users.id as any, userId))
-          .limit(1))[0];
-        const hasPremium = !!u?.isPremium;
+      let hasPremium = false;
+      let hasImat = false;
+      let effectiveUserId = userId;
+
+      // If numeric userId is invalid/out-of-range, try to resolve by email instead
+      if (!effectiveUserId && (session as any)?.user?.email) {
+        try {
+          const email = String((session as any).user.email).toLowerCase();
+          const u2 = (await db
+            .select({ id: users.id, isPremium: users.isPremium })
+            .from(users)
+            .where(eq(users.email as any, email))
+            .limit(1))[0];
+          if (u2?.id) {
+            effectiveUserId = Number(u2.id) || 0;
+            hasPremium = !!u2.isPremium;
+          }
+        } catch {}
+      }
+
+      if (effectiveUserId) {
+        if (!hasPremium) {
+          const u = (await db
+            .select({ isPremium: users.isPremium })
+            .from(users)
+            .where(eq(users.id as any, effectiveUserId))
+            .limit(1))[0];
+          hasPremium = !!u?.isPremium;
+        }
         const needsImat = /imat/.test(courseSlug) || Number(l.courseId) === 10;
-        let hasImat = false;
         if (needsImat) {
           hasImat = !!(await db
             .select({ id: imatUserPlan.id })
             .from(imatUserPlan)
-            .where(eq(imatUserPlan.userId as any, userId))
+            .where(eq(imatUserPlan.userId as any, effectiveUserId))
             .limit(1))[0];
         }
         entitled = needsImat ? hasImat || hasPremium : hasPremium || hasImat;
@@ -90,4 +113,3 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
-
