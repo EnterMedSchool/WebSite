@@ -56,7 +56,7 @@ export default function LessonPage() {
   const [focusMode, setFocusMode] = useState<boolean>(false);
   const [introVisited, setIntroVisited] = useState<boolean>(false);
   const [nudgeDismissed, setNudgeDismissed] = useState<boolean>(false);
-  const [player, setPlayer] = useState<{ provider: string | null; iframeSrc: string | null; locked?: boolean; lockReason?: string } | null>(null);
+  const [player, setPlayer] = useState<{ provider: string | null; iframeSrc: string | null; locked?: boolean; lockReason?: string; source?: "video_html" | "body" | "none" } | null>(null);
 
   const q = qs[idx];
 
@@ -510,11 +510,14 @@ export default function LessonPage() {
             <div className="space-y-4">
               {/* Ensure a video appears for demo even if lesson lacks one */}
               {(() => {
-                const hasVideo = !!player?.iframeSrc || blocks.some((b) => b.kind === 'video');
+                // Consider only blocks to decide if the page already has a video block.
+                // If there is no video block, we will show the player (from DB video_html)
+                // or a simple YouTube demo fallback.
+                const hasVideo = blocks.some((b) => b.kind === 'video');
                 if (!hasVideo) {
                   return (
                     <div key="demo-video" className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-                      {player?.iframeSrc ? (
+                      {(player?.iframeSrc && player?.source === 'video_html') ? (
                         <VideoPanel
                           iframeSrc={player.iframeSrc || undefined}
                           locked={!!player?.locked}
@@ -526,16 +529,9 @@ export default function LessonPage() {
                           anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
                         />
                       ) : (
-                        <VideoPanel
-                          src="https://www.youtube.com/watch?v=yO9oj2ScR-g"
-                          locked={!isAuthed && !unlockDemoVideo}
-                          lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
-                          onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
-                          subtitles={[{ lang: 'en', label: 'English' }]}
-                          prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
-                          next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
-                          anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
-                        />
+                        <div className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-900 ring-1 ring-inset ring-indigo-100">
+                          No video available for this lesson/chapter.
+                        </div>
                       )}
                       <ObjectivesStrip chapter={chapter} />
                     </div>
@@ -569,7 +565,7 @@ export default function LessonPage() {
                             next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
                             anchors={[{ pos: 20, id: 'note-1', label: 'Key idea' }, { pos: 55, id: 'note-2', label: 'Labs' }, { pos: 85, id: 'note-3', label: 'Management' }]}
                           />
-                        ) : isVideo && player?.iframeSrc ? (
+                        ) : isVideo && player?.iframeSrc && player?.source === 'video_html' ? (
                           <VideoPanel
                             iframeSrc={player.iframeSrc || undefined}
                             locked={!!player?.locked}
