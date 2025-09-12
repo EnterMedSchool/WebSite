@@ -44,12 +44,14 @@ export async function POST(request: Request) {
     const location = (body?.location || '').toString().trim() || null;
     const description = (body?.description || '').toString().trim() || null;
     if (!title || !Number.isFinite(startAt.getTime())) return NextResponse.json({ error: 'invalid' }, { status: 400 });
+    // Cast dates to ISO strings to satisfy SQL param typing
+    const startAtIso = startAt.toISOString();
+    const endAtIso = endAt ? endAt.toISOString() : null;
     await sql`INSERT INTO course_events (course_id, title, start_at, end_at, location, description, created_by)
-              VALUES (${courseId}, ${title}, ${startAt}, ${endAt}, ${location}, ${description}, ${userId})`;
+              VALUES (${courseId}, ${title}, ${startAtIso}, ${endAtIso}, ${location}, ${description}, ${userId})`;
     const data = await listUpcoming(courseId);
     return NextResponse.json({ ok: true, data });
   } catch (e: any) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
   }
 }
-
