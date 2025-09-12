@@ -6,7 +6,7 @@ import { resolveUserIdFromSession } from "@/lib/user";
 import { isCourseModerator } from "@/lib/course-mates/moderation";
 
 async function listUpcoming(courseId: number) {
-  const r = await sql`SELECT id, title, start_at, end_at, location
+  const r = await sql`SELECT id, title, start_at, end_at, location, thumb_url
                       FROM course_events
                       WHERE course_id=${courseId} AND start_at >= now() - interval '1 day'
                       ORDER BY start_at ASC
@@ -43,12 +43,13 @@ export async function POST(request: Request) {
     const endAt = body?.endAt ? new Date(body.endAt) : null;
     const location = (body?.location || '').toString().trim() || null;
     const description = (body?.description || '').toString().trim() || null;
+    const thumbUrl = (body?.thumbUrl || body?.thumb_url || '').toString().trim() || null;
     if (!title || !Number.isFinite(startAt.getTime())) return NextResponse.json({ error: 'invalid' }, { status: 400 });
     // Cast dates to ISO strings to satisfy SQL param typing
     const startAtIso = startAt.toISOString();
     const endAtIso = endAt ? endAt.toISOString() : null;
-    await sql`INSERT INTO course_events (course_id, title, start_at, end_at, location, description, created_by)
-              VALUES (${courseId}, ${title}, ${startAtIso}, ${endAtIso}, ${location}, ${description}, ${userId})`;
+    await sql`INSERT INTO course_events (course_id, title, start_at, end_at, location, description, thumb_url, created_by)
+              VALUES (${courseId}, ${title}, ${startAtIso}, ${endAtIso}, ${location}, ${description}, ${thumbUrl}, ${userId})`;
     const data = await listUpcoming(courseId);
     return NextResponse.json({ ok: true, data });
   } catch (e: any) {

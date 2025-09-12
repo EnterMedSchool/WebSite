@@ -273,14 +273,11 @@ export async function GET(req: Request) {
       });
     }
 
+    const isHeavy = includeHeavy;
+    const cache = isHeavy ? "public, max-age=60, s-maxage=60, stale-while-revalidate=300" : "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800";
     return NextResponse.json(
       { data },
-      {
-        headers: {
-          // Browser + CDN cache; serve cached for 24h, then allow SWR for a week
-          "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
-        },
-      }
+      { headers: { "Cache-Control": cache } }
     );
   } catch (err) {
     // Fallback to demo JSON if DB is not configured

@@ -44,21 +44,22 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
 
   return (
     <div className="h-full">
-      <div className="mb-3">
-        <div className="text-sm font-semibold uppercase tracking-wide text-indigo-600">{selectedName}</div>
-        <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
-          <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Universities</div><div className="text-base font-bold text-gray-900">{items.length}</div></div>
-          <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Languages</div><div className="text-base font-bold text-gray-900">{langs.size}</div></div>
-          <div className="rounded-lg bg-gray-50 p-2 ring-1 ring-gray-200"><div className="text-[11px] text-gray-600">Exams</div><div className="text-base font-bold text-gray-900">{exams.size}</div></div>
-          <div className="rounded-lg bg-indigo-50 p-2 ring-1 ring-indigo-200"><div className="text-[11px] text-indigo-700">EMS Students</div><div className="text-base font-extrabold text-indigo-800">{emsTotal}</div></div>
+      <div className="flex h-full flex-col rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-4 text-white shadow-[0_14px_40px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20 backdrop-blur">
+        <div className="mb-3">
+          <div className="text-sm font-extrabold uppercase tracking-wide text-white/90">{selectedName}</div>
+          <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
+            <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/20"><div className="text-[11px] text-indigo-50">Universities</div><div className="text-base font-bold text-white">{items.length}</div></div>
+            <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/20"><div className="text-[11px] text-indigo-50">Languages</div><div className="text-base font-bold text-white">{langs.size}</div></div>
+            <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/20"><div className="text-[11px] text-indigo-50">Exams</div><div className="text-base font-bold text-white">{exams.size}</div></div>
+            <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/20"><div className="text-[11px] text-indigo-50">EMS Students</div><div className="text-base font-extrabold text-white">{emsTotal}</div></div>
+          </div>
         </div>
-      </div>
-      <div className="space-y-3 max-h-full overflow-auto pr-1" ref={listRef}>
-        {items.map((c, i) => (
-          <div key={`${c.city}-${i}`} className="group rounded-xl border p-3 hover:bg-gray-50 transition-all" onMouseEnter={() => onHover?.(c)} onMouseLeave={() => onHover?.(null)}>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
-                {c.logo ? (
+        <div className="space-y-3 max-h-full overflow-auto pr-1" ref={listRef}>
+          {items.map((c, i) => (
+            <div key={`${c.city}-${i}`} className="group rounded-xl border p-3 hover:bg-gray-50 transition-all" onMouseEnter={() => onHover?.(c)} onMouseLeave={() => onHover?.(null)}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
+                  {c.logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.logo} alt="logo" className="h-full w-full object-cover" loading="lazy" decoding="async" fetchPriority="low" />
                 ) : (
@@ -101,10 +102,10 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
               <button type="button" onClick={() => onAddCompare?.({ ...c, country: selectedName })} className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${compareSet?.has(c.uni) ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700'}`}>{compareSet?.has(c.uni) ? 'Added to Compare' : 'Add to Compare'}</button>
               <button type="button" onClick={() => onToggleSave?.({ ...c, country: selectedName })} className={`rounded-xl px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${(typeof savedSet !== 'undefined' && savedSet?.has(c.uni)) ? 'bg-pink-600 text-white hover:bg-pink-700' : 'bg-white text-pink-600 ring-1 ring-pink-200 hover:bg-pink-50'}`}>{savedSet?.has(c.uni) ? 'Saved' : 'Save'}</button>
             </div>
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
-

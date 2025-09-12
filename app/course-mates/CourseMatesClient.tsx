@@ -41,6 +41,7 @@ export default function CourseMatesClient({ authed, initial }: {
   const [moderators] = useState<Mate[]>(initial.moderators || []);
   const [newPost, setNewPost] = useState("");
   const [isPublic, setIsPublic] = useState<boolean>(false);
+  const [lb, setLb] = useState<{ weekly: any[]; all: any[] } | null>(null);
 
   // Load privacy flag on mount if authed
   useEffect(() => {
@@ -48,6 +49,11 @@ export default function CourseMatesClient({ authed, initial }: {
     (async () => {
       try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(!!j?.public); } } catch {}
     })();
+  }, [authed]);
+
+  useEffect(() => {
+    if (!authed) return;
+    (async () => { try { const r = await fetch('/api/course-mates/leaderboard', { credentials: 'include' }); if (r.ok) setLb(await r.json()); } catch {} })();
   }, [authed]);
 
   const initials = useMemo(() => (name?: string | null) => {
@@ -172,26 +178,86 @@ export default function CourseMatesClient({ authed, initial }: {
             </ul>
           </div>
 
-          {/* Events */}
-          <div id="events" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-lg font-semibold">Upcoming Events</div>
-              {isModerator && (
-                <button onClick={async()=>{ const title = window.prompt('Event title'); if(!title) return; const when = window.prompt('Start (YYYY-MM-DD HH:mm)', ''); const startAt = when ? new Date((when as any).replace(' ', 'T')) : new Date(); const location = window.prompt('Location (optional)') || null; try { const r = await fetch('/api/course-mates/events', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, startAt, location }) }); if(r.ok){ const j = await r.json(); setEvents(j.data || []);} } catch{} }} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Add event</button>
-              )}
-            </div>
-            <ul className="space-y-2 text-sm text-gray-700">
-              {events.map((ev:any)=> (
-                <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                  <div>
-                    <div className="font-semibold">{ev.title}</div>
-                    <div className="text-xs text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleString()} {ev.location ? '· '+ev.location : ''}</div>
+          {/* Leaderboard */}
+          <div id="leaderboard" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Leaderboard</div>
+            <div className="text-xs font-semibold text-gray-600">This Week</div>
+            <ul className="mt-1 space-y-1">
+              {(lb?.weekly || []).map((r:any, i:number) => (
+                <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-1.5 text-sm">
+                  <div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">#{i+1}</span><span className="font-medium text-gray-800">{r.name || r.username || 'Student'}</span></div>
+                  <span className="text-xs text-indigo-700">{Number(r.weekly_xp || 0)} XP</span>
+                </li>
+              ))}
+              {!lb?.weekly?.length && <li className="rounded-lg border px-3 py-1.5 text-sm text-gray-600">No data yet.</li>}
+            </ul>
+            <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
+            <ul className="mt-1 space-y-1">
+              {(lb?.all || []).map((r:any, i:number) => (
+                <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-1.5 text-sm">
+                  <div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">#{i+1}</span><span className="font-medium text-gray-800">{r.name || r.username || 'Student'}</span></div>
+                  <span className="text-xs text-amber-700">{Number(r.xp || 0)} XP</span>
+                </li>
+              ))}
+              {!lb?.all?.length && <li className="rounded-lg border px-3 py-1.5 text-sm text-gray-600">No data yet.</li>}
+            </ul>
+          </div>
+
+          {/* Events + Mini Calendar */}
+          <div id="events" className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-lg font-semibold">Upcoming Events</div>
+                {isModerator && (
+                  <button onClick={async()=>{ const title = window.prompt('Event title'); if(!title) return; const when = window.prompt('Start (YYYY-MM-DD HH:mm)', ''); const startAt = when ? new Date((when as any).replace(' ', 'T')) : new Date(); const location = window.prompt('Location (optional)') || null; const thumbUrl = window.prompt('Thumbnail URL (optional)') || null; try { const r = await fetch('/api/course-mates/events', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, startAt, location, thumbUrl }) }); if(r.ok){ const j = await r.json(); setEvents(j.data || []);} } catch{} }} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Add event</button>
+                )}
+              </div>
+              <ul className="space-y-2 text-sm text-gray-700">
+                {events.map((ev:any)=> (
+                  <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    {ev.thumb_url && <img src={ev.thumb_url} alt="thumb" className="h-10 w-10 rounded object-cover" />}
+                    <div>
+                      <div className="font-semibold">{ev.title}</div>
+                      <div className="text-xs text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleString()} {ev.location ? '· '+ev.location : ''}</div>
+                    </div>
                   </div>
                   <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Remind me</span>
                 </li>
               ))}
               {!events.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No upcoming events.</li>}
-            </ul>
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 text-lg font-semibold">Mini Calendar</div>
+              {(() => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const first = new Date(year, month, 1);
+                const startDay = first.getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const marks = new Set((events||[]).map((e:any)=>{ const d = new Date(e.start_at || e.startAt); return d.getFullYear()===year && d.getMonth()===month ? d.getDate() : 0; }));
+                const cells: (number | '')[] = [];
+                for (let i=0;i<startDay;i++) cells.push('' as any);
+                for (let d=1; d<=daysInMonth; d++) cells.push(d);
+                while (cells.length % 7 !== 0) cells.push('' as any);
+                const wk = ['S','M','T','W','T','F','S'];
+                return (
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                    {wk.map((d)=> <div key={d} className="py-1 font-semibold text-gray-600">{d}</div>)}
+                    {cells.map((n, i)=> (
+                      <div key={i} className={`grid h-8 place-items-center rounded ${n ? 'bg-gray-50 text-gray-700 ring-1 ring-gray-200' : ''}`}>
+                        <div className="relative">
+                          <span className="text-[11px]">{n || ''}</span>
+                          {typeof n === 'number' && marks.has(n) && <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
 
           {/* Photos */}
@@ -199,14 +265,14 @@ export default function CourseMatesClient({ authed, initial }: {
             <div className="mb-3 flex items-center justify-between">
               <div className="text-lg font-semibold">Photos from Events</div>
               {isModerator && (
-                <button onClick={async()=>{ const url = window.prompt('Image URL'); if(!url) return; const caption = window.prompt('Caption (optional)') || null; try { const r = await fetch('/api/course-mates/photos', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, caption }) }); if(r.ok){ const j = await r.json(); setPhotos(j.data || []);} } catch{} }} className="text-xs font-semibold text-indigo-700 hover:underline">Add link</button>
+                <button onClick={async()=>{ const url = window.prompt('Link URL (folder or image)'); if(!url) return; const caption = window.prompt('Caption (optional)') || null; const thumbUrl = window.prompt('Thumbnail URL (optional)') || null; try { const r = await fetch('/api/course-mates/photos', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, caption, thumbUrl }) }); if(r.ok){ const j = await r.json(); setPhotos(j.data || []);} } catch{} }} className="text-xs font-semibold text-indigo-700 hover:underline">Add link</button>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {photos.map((p:any)=> (
-                <div key={p.id} className="aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-black/5">
-                  <img src={p.url} alt={p.caption || 'Event photo'} className="h-full w-full object-cover" />
-                </div>
+                <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="group block aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-black/5">
+                  <img src={p.thumb_url || p.url} alt={p.caption || 'Event photo'} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+                </a>
               ))}
               {!photos.length && <div className="rounded-xl border p-6 text-center text-sm text-gray-600">No photos yet.</div>}
             </div>
@@ -263,4 +329,6 @@ export default function CourseMatesClient({ authed, initial }: {
     </div>
   );
 }
+
+
 

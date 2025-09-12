@@ -6,7 +6,7 @@ import { resolveUserIdFromSession } from "@/lib/user";
 import { isCourseModerator } from "@/lib/course-mates/moderation";
 
 async function listPhotos(courseId: number) {
-  const r = await sql`SELECT p.id, p.url, p.caption
+  const r = await sql`SELECT p.id, p.url, p.thumb_url, p.caption
                       FROM course_event_photos p
                       WHERE p.event_id IN (
                         SELECT id FROM course_events WHERE course_id=${courseId} ORDER BY start_at DESC LIMIT 50
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     if (!mod) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     const body = await request.json().catch(() => ({}));
     const url = (body?.url || '').toString().trim();
+    const thumbUrl = (body?.thumbUrl || body?.thumb_url || '').toString().trim() || null;
     const caption = (body?.caption || '').toString().trim() || null;
     const eventId = body?.eventId ? Number(body.eventId) : null;
     if (!url || !/^https?:\/\//i.test(url)) return NextResponse.json({ error: 'invalid_url' }, { status: 400 });
@@ -51,11 +52,10 @@ export async function POST(request: Request) {
       finalEventId = r.rows[0]?.id || null;
     }
     if (!finalEventId) return NextResponse.json({ error: 'no_event' }, { status: 400 });
-    await sql`INSERT INTO course_event_photos (event_id, url, caption, added_by) VALUES (${finalEventId}, ${url}, ${caption}, ${userId})`;
+    await sql`INSERT INTO course_event_photos (event_id, url, thumb_url, caption, added_by) VALUES (${finalEventId}, ${url}, ${thumbUrl}, ${caption}, ${userId})`;
     const data = await listPhotos(courseId);
     return NextResponse.json({ ok: true, data });
   } catch (e: any) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
   }
 }
-
