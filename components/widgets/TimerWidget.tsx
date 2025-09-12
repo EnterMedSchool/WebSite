@@ -26,11 +26,7 @@ function EnabledTimerWidget() {
   const etagRef = useRef<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [open, setOpen] = useState(false);
-  const winIdRef = useRef<string>(() => {
-    const r = Math.random().toString(36).slice(2);
-    return r;
-  }) as any;
-  if (!winIdRef.current) winIdRef.current = Math.random().toString(36).slice(2);
+  const winIdRef = useRef<string>(Math.random().toString(36).slice(2));
   const [isLeader, setIsLeader] = useState(false);
   const bcRef = useRef<BroadcastChannel | null>(null);
 
