@@ -4,10 +4,10 @@ import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
-import SuperNav from "@/components/nav/SuperNav";
-import HaloNav from "@/components/nav/HaloNav";
+import AdaptiveNav from "@/components/nav/AdaptiveNav";
 import CommandPalette from "@/components/nav/CommandPalette";
 import SearchTrigger from "@/components/nav/SearchTrigger";
+import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
 import { db, sql } from "@/lib/db";
 import { users } from "@/drizzle/schema";
@@ -54,17 +54,18 @@ export default async function Navbar() {
   }
   // Admin features removed; no admin link or checks
 
-  const primary = [
-    { href: "/#universities", label: "Universities" },
-    { href: "/#exams", label: "Entrance Exams" },
-    { href: "/#communities", label: "Communities" },
-    { href: "/#imat", label: "IMAT Course" },
-  ];
-  const secondary = [
-    { href: "/blog", label: "Study Materials" },
-    { href: "/#parents", label: "Information for Parents" },
-    { href: "/study-rooms", label: "Virtual Library" },
-    { href: "/#scholarships", label: "Scholarship Program" },
+  const studyEnabled = (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === '1') || (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === 'true') || (process.env.STUDY_ROOMS_ENABLED === '1') || (process.env.STUDY_ROOMS_ENABLED === 'true');
+  const navItems = [
+    { key: 'universities', label: 'UNIVERSITIES', element: (<UniversitiesMenu />) },
+    { key: 'exams', label: 'EXAMS', href: '/#exams' },
+    { key: 'imat', label: 'IMAT COURSE', href: '/#imat' },
+    { key: 'communities', label: 'COMMUNITIES', href: '/#communities' },
+    { key: 'mates', label: 'COURSE MATES', href: '/course-mates' },
+    { key: 'materials', label: 'STUDY MATERIALS', href: '/blog' },
+    ...(studyEnabled ? [{ key: 'library', label: 'VIRTUAL LIBRARY', href: '/study-rooms' }] : [] as any),
+    { key: 'scholarships', label: 'SCHOLARSHIPS', href: '/#scholarships' },
+    { key: 'blog', label: 'BLOG', href: '/blog' },
+    { key: 'search', label: 'SEARCH', element: (<SearchTrigger />) },
   ];
 
   return (
@@ -80,7 +81,7 @@ export default async function Navbar() {
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <SuperNav />
+          <AdaptiveNav items={navItems as any} />
 
           <div className="flex items-center gap-3 justify-end shrink-0">
             <UserMenu

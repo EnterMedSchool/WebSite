@@ -279,13 +279,20 @@ export default function HomeMap() {
           const cached = typeof window !== 'undefined' ? window.localStorage.getItem(localKey) : null;
           if (cached) {
             const arr = JSON.parse(cached);
-            if (!cancelled) {
-              const next: CountryCities = { ...(uniData || {}) } as any;
-              next[name] = arr as any;
-              setUniData(next);
-              setEnrichedCountries((s) => new Set(s).add(name));
+            // Only trust cache if it looks enriched enough (has emsCount or trend points/seats)
+            const looksEnriched = Array.isArray(arr) && arr.length > 0 && arr.some((c: any) => (
+              typeof c?.emsCount === 'number' || (Array.isArray(c?.trendPoints) && c.trendPoints.length > 0) || (Array.isArray(c?.trendSeats) && c.trendSeats.length > 0)
+            ));
+            if (looksEnriched) {
+              if (!cancelled) {
+                const next: CountryCities = { ...(uniData || {}) } as any;
+                next[name] = arr as any;
+                setUniData(next);
+                setEnrichedCountries((s) => new Set(s).add(name));
+              }
+              return; // cached copy is good enough
             }
-            return;
+            // else: fall through to network fetch to upgrade the stale cached copy
           }
         } catch {}
         const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}&v=${encodeURIComponent(vStr)}`);
