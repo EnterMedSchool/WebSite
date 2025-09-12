@@ -83,14 +83,25 @@ export default function LessonPage() {
   useEffect(() => {
     (async () => {
       const res = await fetch(`/api/lesson/${slug}`);
+      if (!res.ok) {
+        // Reset to safe defaults when lesson is missing
+        setLesson(null);
+        setBlocks([]);
+        setNav(null);
+        setCourse(null);
+        setChapter(null);
+        setCourseProg(null);
+        setTimeline(null);
+        return;
+      }
       const j = await res.json();
-      setLesson(j.lesson);
-      setBlocks(j.blocks);
-      setNav(j.nav || null);
-      setCourse(j.course || null);
-      setChapter(j.chapter || null);
-      setCourseProg(j.courseProgress || null);
-      setTimeline(j.timeline || null);
+      setLesson(j?.lesson ?? null);
+      setBlocks(Array.isArray(j?.blocks) ? j.blocks : []);
+      setNav(j?.nav || null);
+      setCourse(j?.course || null);
+      setChapter(j?.chapter || null);
+      setCourseProg(j?.courseProgress || null);
+      setTimeline(j?.timeline || null);
     })();
   }, [slug]);
 
@@ -100,9 +111,10 @@ export default function LessonPage() {
       try {
         const qs = unlockDemoVideo ? "?demo=1" : "";
         const r = await fetch(`/api/lesson/${slug}/player${qs}`);
+        if (!r.ok) { setPlayer(null); return; }
         const k = await r.json();
         setPlayer(k || null);
-      } catch {}
+      } catch { setPlayer(null); }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, unlockDemoVideo]);
