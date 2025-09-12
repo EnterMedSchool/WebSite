@@ -86,10 +86,11 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   return (
     <div className="fixed inset-0 z-[9998] grid place-items-center bg-gradient-to-br from-black/40 via-indigo-900/10 to-fuchsia-900/10 backdrop-blur-[2px] p-4" onClick={onClose}>
       <div className="relative w-full max-w-6xl rounded-[28px] border border-violet-200/60 bg-white/90 shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
-        {/* Left rail: dashboard menu */}
-        <div className="absolute left-0 top-0 h-full w-16 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
-          <div className="flex h-full flex-col items-center justify-between py-5">
-            <div className="flex flex-col items-center gap-3">
+        {/* Left rail: dashboard menu with labels */}
+        <div className="absolute left-0 top-0 h-full w-56 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
+          <div className="flex h-full flex-col justify-between py-5">
+            <div className="px-3">
+              <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-white/80">Menu</div>
               {([
                 { key: 'dashboard', label: 'Dashboard', icon: (
                   <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -109,21 +110,23 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
               ] as const).map((item) => (
                 <button
                   key={item.key}
-                  title={item.label}
                   onClick={() => setTab(item.key as any)}
-                  className={`grid h-10 w-10 place-items-center rounded-2xl transition ${tab===item.key ? 'bg-white text-indigo-700 shadow ring-1 ring-white/70' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                  className={`mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${tab === item.key ? 'bg-white text-indigo-700 shadow ring-1 ring-white/70' : 'text-white/90 hover:bg-white/10'}`}
                   aria-pressed={tab===item.key}
                 >
-                  {item.icon}
+                  <span className={`grid h-8 w-8 place-items-center rounded-lg ${tab===item.key?'bg-indigo-50 text-indigo-700':'bg-white/20 text-white'}`}>{item.icon}</span>
+                  <span className={`text-[13px] font-semibold ${tab===item.key?'text-indigo-700':'text-white'}`}>{item.label}</span>
                 </button>
               ))}
             </div>
-            <button onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-white hover:bg-white/30">×</button>
+            <div className="px-3">
+              <button onClick={onClose} aria-label="Close" className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white hover:bg-white/30">Close</button>
+            </div>
           </div>
         </div>
 
         {/* Main content */}
-        <div className="pl-16">
+        <div className="pl-56">
           <div className="grid grid-cols-12 gap-6 p-6">
             {tab === 'dashboard' && (<>
             {/* Greeting + Today */}
