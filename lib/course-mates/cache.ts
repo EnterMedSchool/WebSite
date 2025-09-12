@@ -12,15 +12,19 @@ export const getUniversities = unstable_cache(async (): Promise<Option[]> => {
   }
 }, ["universities:list:v1"], { revalidate: 60 * 60 * 24 });
 
-export const getSchoolsByUniversity = unstable_cache(async (uniId: number): Promise<Option[]> => {
-  if (!uniId) return [];
-  try {
-    const r = await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`;
-    return r.rows as any;
-  } catch {
-    return [];
-  }
-}, (uniId: number) => ["schools:by-uni:v1", String(uniId)], { revalidate: 60 * 60 * 24 });
+export const getSchoolsByUniversity = unstable_cache(
+  async (uniId: number): Promise<Option[]> => {
+    if (!uniId) return [];
+    try {
+      const r = await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`;
+      return r.rows as any;
+    } catch {
+      return [];
+    }
+  },
+  ["schools:by-uni:v1"],
+  { revalidate: 60 * 60 * 24 }
+);
 
 export const getCourses = unstable_cache(
   async (params: { uniId?: number | null; schoolId?: number | null }): Promise<Option[]> => {
@@ -44,11 +48,6 @@ export const getCourses = unstable_cache(
       return [];
     }
   },
-  (params: { uniId?: number | null; schoolId?: number | null }) => [
-    "courses:v1",
-    String(params.uniId ?? 0),
-    String(params.schoolId ?? 0),
-  ],
+  ["courses:v1"],
   { revalidate: 60 * 60 * 24 }
 );
-
