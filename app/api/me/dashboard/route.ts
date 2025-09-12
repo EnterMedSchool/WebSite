@@ -118,43 +118,19 @@ export async function GET(req: Request) {
       LEFT JOIN stats s ON s.chapter_id = tc.id
       ORDER BY tc.last_viewed DESC`;
 
-    // Your class: courses with user progress percentage
-    const cr = await sql`
-      WITH lessons_in_course AS (
-        SELECT c.id AS course_id, l.id AS lesson_id
-        FROM courses c
-        JOIN chapters ch ON ch.course_id = c.id
-        JOIN chapter_lessons cl ON cl.chapter_id = ch.id
-        JOIN lessons l ON l.id = cl.lesson_id
-      ), progress AS (
-        SELECT lic.course_id,
-               COALESCE(
-                 ROUND(
-                   AVG(
-                     CASE WHEN COALESCE(ulp.completed,false)
-                          THEN 100
-                          ELSE COALESCE(ulp.progress,0)
-                     END
-                   )::numeric
-                 ), 0
-               ) AS progress_pct
-        FROM lessons_in_course lic
-        LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = lic.lesson_id AND ulp.user_id=${userId}
-        GROUP BY lic.course_id
-      )
-      SELECT c.id, c.slug, c.title, c.description, p.progress_pct
-      FROM courses c
-      LEFT JOIN progress p ON p.course_id = c.id
-      ORDER BY c.created_at DESC
-      LIMIT 8`;
-
     // Replace course list with user's relevant courses if any
     let cr: any = null;
     try {
       const anyRel = await sql`SELECT 1 FROM user_relevant_courses WHERE user_id=${userId} LIMIT 1`;
       if (anyRel.rows[0]) {
         cr = await sql`
-          WITH progress AS (
+          WITH lessons_in_course AS (
+            SELECT c.id AS course_id, l.id AS lesson_id
+            FROM courses c
+            JOIN chapters ch ON ch.course_id = c.id
+            JOIN chapter_lessons cl ON cl.chapter_id = ch.id
+            JOIN lessons l ON l.id = cl.lesson_id
+          ), progress AS (
             SELECT lic.course_id,
                    COALESCE(
                      ROUND(
@@ -178,7 +154,13 @@ export async function GET(req: Request) {
           LIMIT 12`;
       } else {
         cr = await sql`
-          WITH progress AS (
+          WITH lessons_in_course AS (
+            SELECT c.id AS course_id, l.id AS lesson_id
+            FROM courses c
+            JOIN chapters ch ON ch.course_id = c.id
+            JOIN chapter_lessons cl ON cl.chapter_id = ch.id
+            JOIN lessons l ON l.id = cl.lesson_id
+          ), progress AS (
             SELECT lic.course_id,
                    COALESCE(
                      ROUND(

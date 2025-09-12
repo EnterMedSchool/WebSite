@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from 'react';
@@ -102,7 +102,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             {/* Greeting + Today */}
             <div className="col-span-7">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
-                <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName} 👋</div>
+                <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName}</div>
                 <div className="mt-1 text-[13px] text-gray-600">Nice to have you back, let&apos;s continue preparing for your exam.</div>
                 {/* Today KPI pills */}
                 <div className="mt-4 grid grid-cols-4 gap-2 text-xs">
@@ -160,7 +160,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-semibold text-indigo-800">Your Course Mates</div>
-                        <div className="text-xs text-gray-700">{mates.course || 'Course'} {mates.year ? `• Year ${mates.year}` : ''}{mates.school ? ` • ${mates.school}` : ''}</div>
+                        <div className="text-xs text-gray-700">{mates.course || 'Course'} {mates.year ? `- Year ${mates.year}` : ''}{mates.school ? ` - ${mates.school}` : ''}</div>
                       </div>
                       <a href="/course-mates" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">Open</a>
                     </div>
@@ -219,7 +219,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                   <a href="/course-mates" className="flex items-center justify-between rounded-2xl border border-indigo-200/70 bg-indigo-50/60 px-4 py-3 text-indigo-800 transition hover:bg-indigo-50">
                     <div>
                       <div className="text-sm font-semibold">Your Course Mates</div>
-                      <div className="text-xs opacity-80">{mates ? (mates.year && mates.course ? `${mates.count} mates • ${mates.course} • Year ${mates.year}` : `${mates.count} mates • set course & year`) : 'Discover classmates by course'}</div>
+                      <div className="text-xs opacity-80">{mates ? (mates.year && mates.course ? `${mates.count} mates â€¢ ${mates.course} â€¢ Year ${mates.year}` : `${mates.count} mates â€¢ set course & year`) : 'Discover classmates by course'}</div>
                     </div>
                     <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 15-5-5 1.41-1.41L13 13.17l4.59-4.58L19 10Z"/></svg>
                   </a>

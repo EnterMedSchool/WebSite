@@ -32,13 +32,12 @@ export async function POST(request: Request) {
     // Upsert set: simple replace strategy for now
     await sql`DELETE FROM user_relevant_courses WHERE user_id=${userId}`;
     if (courseIds.length) {
-      const values = courseIds.map((cid:number)=> `(${userId}, ${cid})`).join(", ");
-      // Using raw to avoid array parameterization issues for bulk insert
-      await sql.unsafe(`INSERT INTO user_relevant_courses (user_id, course_id) VALUES ${values} ON CONFLICT DO NOTHING`);
+      for (const cid of courseIds) {
+        await sql`INSERT INTO user_relevant_courses (user_id, course_id) VALUES (${userId}, ${cid}) ON CONFLICT DO NOTHING`;
+      }
     }
     return NextResponse.json({ ok: true });
   } catch (e:any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
-
