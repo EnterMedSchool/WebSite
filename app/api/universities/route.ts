@@ -293,13 +293,4 @@ export async function GET(req: Request) {
   }
 }
       // EMS students per university (verified Course‑Mates profiles)
-      try {
-        const uRows = await db
-          .select({ uid: users.universityId, n: sql<number>`count(*)::int` })
-          .from(users)
-          .where(and(inArray(users.universityId, ids), eq(users.matesVerified, true)))
-          .groupBy(users.universityId);
-        emsCountByUniId = new Map(uRows.map((r: any) => [Number(r.uid), Number(r.n || 0)]));
-      } catch {
-        emsCountByUniId = new Map();
-      }
+      
