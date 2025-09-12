@@ -4,10 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type Todo = { id: number; label: string; done: boolean };
 
+// Wrapper to gate the widget by env flag without violating rules-of-hooks
 export default function TasksWidget() {
   const enabled = process.env.NEXT_PUBLIC_WIDGETS_ENABLED === '1' || process.env.NEXT_PUBLIC_WIDGETS_ENABLED === 'true';
   if (!enabled) return null as any;
+  return <EnabledTasksWidget />;
+}
 
+function EnabledTasksWidget() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Todo[]>([]);
   const [newLabel, setNewLabel] = useState("");
@@ -141,3 +145,4 @@ export default function TasksWidget() {
     </div>
   );
 }
+

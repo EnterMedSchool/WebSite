@@ -14,6 +14,10 @@ function msToMMSS(ms: number) {
 export default function TimerWidget() {
   const enabled = process.env.NEXT_PUBLIC_WIDGETS_ENABLED === '1' || process.env.NEXT_PUBLIC_WIDGETS_ENABLED === 'true';
   if (!enabled) return null as any;
+  return <EnabledTimerWidget />;
+}
+
+function EnabledTimerWidget() {
 
   const [code, setCode] = useState<string | null>(null);
   const [myCode, setMyCode] = useState<string | null>(null);
