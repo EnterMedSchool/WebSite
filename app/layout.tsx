@@ -13,10 +13,12 @@ export const metadata: Metadata = {
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700" ] });
 const baloo = Baloo_2({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-baloo" });
 
-// Study Rooms and floating widgets removed for now.
+// Floating timer & tasks widgets (feature-flagged)
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const RewardsOverlay = dynamic(() => import("@/components/xp/RewardsOverlay"), { ssr: false });
+  const TimerWidget = dynamic(() => import("@/components/widgets/TimerWidget"), { ssr: false });
+  const TasksWidget = dynamic(() => import("@/components/widgets/TasksWidget"), { ssr: false });
   return (
     <html lang="en">
       <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
@@ -24,6 +26,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="mx-auto max-w-[1400px] p-6">{children}</main>
           <RewardsOverlay />
+          <TimerWidget />
+          <TasksWidget />
         </Providers>
         {null}
       </body>

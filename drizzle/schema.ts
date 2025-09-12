@@ -917,11 +917,66 @@ export const terms = pgTable(
     data: jsonb("data"),
     tags: jsonb("tags"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
     slugIdx: index("terms_slug_idx").on(t.slug),
     slugUnique: uniqueIndex("terms_slug_unique").on(t.slug),
+  })
+);
+
+// ==========================
+// Floating Widgets (Timer + Todos)
+// ==========================
+
+export const timerGroups = pgTable(
+  "timer_groups",
+  {
+    id: serial("id").primaryKey(),
+    code: varchar("code", { length: 16 }).notNull(),
+    ownerUserId: integer("owner_user_id").notNull(),
+    state: jsonb("state").notNull(), // { mode, endAt, durationMs, pausedAt, updatedAt }
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    codeUnique: uniqueIndex("timer_groups_code_unique").on(t.code),
+    ownerIdx: index("timer_groups_owner_idx").on(t.ownerUserId),
+  })
+);
+
+export const timerGroupMembers = pgTable(
+  "timer_group_members",
+  {
+    id: serial("id").primaryKey(),
+    groupId: integer("group_id").notNull(),
+    userId: integer("user_id").notNull(),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+    lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    groupIdx: index("tgm_group_idx").on(t.groupId),
+    userIdx: index("tgm_user_idx").on(t.userId),
+  })
+);
+
+export const todos = pgTable(
+  "todos",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    label: varchar("label", { length: 400 }).notNull(),
+    done: boolean("done").default(false).notNull(),
+    completedAt: timestamp("completed_at"),
+    xpAwarded: boolean("xp_awarded").default(false).notNull(),
+    position: integer("position").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    todoUserIdx: index("todos_user_idx").on(t.userId),
+    todoDoneIdx: index("todos_done_idx").on(t.done),
+    todoOrderIdx: index("todos_order_idx").on(t.userId, t.position),
   })
 );
 
