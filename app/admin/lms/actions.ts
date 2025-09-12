@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db, sql } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
-import { chapters, chapterLessons, courses, lessons, questions, lmsAdminDrafts } from "@/drizzle/schema";
+import { chapters, chapterLessons, courses, lessons, questions, lmsAdminDrafts, choices } from "@/drizzle/schema";
 import { requireAdminEmail } from "@/lib/admin";
 
 function assertAdmin(ok: any) {
@@ -13,6 +13,27 @@ function assertAdmin(ok: any) {
 function slugify(input: string): string {
   const base = (input || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
   return base || "item";
+}
+
+let __draftsEnsured = false;
+async function ensureDraftsTable() {
+  if (__draftsEnsured) return;
+  try {
+    await (sql as any)`CREATE TABLE IF NOT EXISTS lms_admin_drafts (
+      id serial PRIMARY KEY,
+      email varchar(255) NOT NULL,
+      key varchar(120) NOT NULL,
+      title varchar(200),
+      payload jsonb NOT NULL,
+      status varchar(16) NOT NULL DEFAULT 'draft',
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await (sql as any)`CREATE INDEX IF NOT EXISTS lms_admin_drafts_email_idx ON lms_admin_drafts(email)`;
+    await (sql as any)`CREATE INDEX IF NOT EXISTS lms_admin_drafts_key_idx ON lms_admin_drafts(key)`;
+    await (sql as any)`CREATE INDEX IF NOT EXISTS lms_admin_drafts_status_idx ON lms_admin_drafts(status)`;
+  } catch {}
+  __draftsEnsured = true;
 }
 
 async function nextChapterPosition(courseId: number): Promise<number> {
@@ -87,7 +108,7 @@ export async function reorderChaptersAction(courseId: number, orderedIds: number
   const items = ids.map((id, idx) => ({ id, pos: idx + 1 }));
   const idList = ids as any;
   const cases = items.map((it) => `WHEN ${it.id} THEN ${it.pos}`).join(" ");
-  const q = `UPDATE chapters SET position = CASE id ${cases} END WHERE course_id = $1 AND id = ANY($2)`;
+  const q = `UPDATE chapters SET position = CASE id ${cases} END WHERE course_id = $1 AND id = ANY($2::int[])`;
   await (sql as any).query(q, [cid, idList]);
   revalidatePath(`/admin/lms/${cid}`);
   return { ok: true };
@@ -147,7 +168,7 @@ export async function reorderChapterLessonsAction(chapterId: number, orderedLess
   const items = ids.map((id, idx) => ({ id, pos: idx + 1 }));
   const idList = ids as any;
   const cases = items.map((it) => `WHEN ${it.id} THEN ${it.pos}`).join(" ");
-  const q = `UPDATE chapter_lessons SET position = CASE lesson_id ${cases} END WHERE chapter_id = $1 AND lesson_id = ANY($2)`;
+  const q = `UPDATE chapter_lessons SET position = CASE lesson_id ${cases} END WHERE chapter_id = $1 AND lesson_id = ANY($2::int[])`;
   await (sql as any).query(q, [cid, idList]);
   const ch = (await db.select({ courseId: chapters.courseId }).from(chapters).where(eq(chapters.id as any, cid)).limit(1))[0];
   if (ch?.courseId) revalidatePath(`/admin/lms/${ch.courseId}`);
@@ -306,6 +327,7 @@ export async function deleteQuestionAction(questionId: number) {
 export async function saveDraftAction(key: string, payload: any, title?: string) {
   const adm = await requireAdminEmail();
   assertAdmin(adm);
+  await ensureDraftsTable();
   const email = adm!.email.toLowerCase();
   const k = (key || "").slice(0, 120);
   if (!k) throw new Error("bad_key");
@@ -319,6 +341,7 @@ export async function saveDraftAction(key: string, payload: any, title?: string)
 export async function loadDraftAction(key: string) {
   const adm = await requireAdminEmail();
   assertAdmin(adm);
+  await ensureDraftsTable();
   const email = adm!.email.toLowerCase();
   const k = (key || "").slice(0, 120);
   const row = (await db.select().from(lmsAdminDrafts).where(and(eq(lmsAdminDrafts.email as any, email), eq(lmsAdminDrafts.key as any, k))).limit(1))[0] as any;
@@ -330,6 +353,7 @@ export async function loadDraftAction(key: string) {
 export async function applyDraftAction(key: string) {
   const adm = await requireAdminEmail();
   assertAdmin(adm);
+  await ensureDraftsTable();
   const email = adm!.email.toLowerCase();
   const k = (key || "").slice(0, 120);
   const row = (await db.select().from(lmsAdminDrafts).where(and(eq(lmsAdminDrafts.email as any, email), eq(lmsAdminDrafts.key as any, k))).limit(1))[0] as any;
@@ -363,5 +387,51 @@ export async function applyDraftAction(key: string) {
   }
   // Mark as applied
   await db.update(lmsAdminDrafts).set({ status: "applied" as any }).where(eq(lmsAdminDrafts.id as any, row.id));
+  return { ok: true };
+}
+
+// Question editing helpers
+export async function updateQuestionAccessAction(questionId: number, access: string | null) {
+  assertAdmin(await requireAdminEmail());
+  const qid = Number(questionId);
+  if (!Number.isFinite(qid) || qid <= 0) throw new Error("bad_question");
+  await db.update(questions).set({ access: access as any }).where(eq(questions.id as any, qid));
+  return { ok: true };
+}
+
+export async function addChoiceAction(questionId: number, content: string, correct?: boolean) {
+  assertAdmin(await requireAdminEmail());
+  const qid = Number(questionId);
+  if (!Number.isFinite(qid)) throw new Error("bad_question");
+  const text = (content || "").trim();
+  if (!text) throw new Error("empty_choice");
+  const ins = await db.insert(choices).values({ questionId: qid, content: text, correct: !!correct }).returning({ id: choices.id });
+  if (correct) {
+    await (sql as any)`UPDATE choices SET correct=false WHERE question_id=${qid} AND id<>${ins[0].id}`;
+  }
+  return { id: ins[0].id };
+}
+
+export async function updateChoiceContentAction(choiceId: number, content: string) {
+  assertAdmin(await requireAdminEmail());
+  const cid = Number(choiceId);
+  if (!Number.isFinite(cid)) throw new Error("bad_choice");
+  await db.update(choices).set({ content }).where(eq(choices.id as any, cid));
+  return { ok: true };
+}
+
+export async function setCorrectChoiceAction(questionId: number, choiceId: number) {
+  assertAdmin(await requireAdminEmail());
+  const qid = Number(questionId), cid = Number(choiceId);
+  if (!Number.isFinite(qid) || !Number.isFinite(cid)) throw new Error("bad_request");
+  await (sql as any)`UPDATE choices SET correct = (id=${cid}) WHERE question_id=${qid}`;
+  return { ok: true };
+}
+
+export async function deleteChoiceAction(choiceId: number) {
+  assertAdmin(await requireAdminEmail());
+  const cid = Number(choiceId);
+  if (!Number.isFinite(cid)) throw new Error("bad_choice");
+  await db.delete(choices).where(eq(choices.id as any, cid));
   return { ok: true };
 }

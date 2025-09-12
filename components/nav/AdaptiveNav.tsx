@@ -115,7 +115,13 @@ export default function AdaptiveNav({ items }: Props) {
       {/* Hidden measurement rack (renders all items once to get stable widths) */}
       <div className="absolute left-0 top-0 -z-50 flex -translate-y-full gap-2 opacity-0">
         {items.map((it, i) => (
-          <div key={`m-${it.key}`} ref={(el) => (itemRefs.current[i] = el)} className="shrink-0">
+          <div
+            key={`m-${it.key}`}
+            ref={(el: HTMLDivElement | null): void => {
+              itemRefs.current[i] = el;
+            }}
+            className="shrink-0"
+          >
             {it.element ? (
               <span className="inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide">{it.label}</span>
             ) : (
