@@ -15,6 +15,7 @@ import {
   reorderChaptersAction,
 } from "../actions";
 import DndList from "@/components/admin/DndList";
+import { saveDraftAction, applyDraftAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,12 +28,28 @@ type ChapterItem = {
   lessons: { id: number; slug: string; title: string; position: number }[];
 };
 
-async function loadCourse(courseId: number) {
-  const c = (await db.select().from(courses).where(eq(courses.id as any, courseId)).limit(1))[0] as any;
-  if (!c) return null;
-  const chr = await db.select().from(chapters).where(eq(chapters.courseId as any, courseId)).orderBy(asc(chapters.position as any), asc(chapters.id as any));
+export default async function AdminCourseLmsPage({ params, searchParams }: { params: { courseId: string }, searchParams?: { [k: string]: string | string[] | undefined } }) {
+  const admin = await requireAdminEmail();
+  if (!admin) return <div className="p-6 text-red-600">Access denied.</div>;
+  const cid = Number(params.courseId);
+  if (!Number.isFinite(cid)) return <div className="p-6">Bad course id.</div>;
+  const c = (await db.select().from(courses).where(eq(courses.id as any, cid)).limit(1))[0] as any;
+  if (!c) return <div className="p-6">Course not found.</div>;
+
+  const limit = Math.max(5, Math.min(40, Number((searchParams as any)?.limit || 15)));
+  const page = Math.max(1, Number((searchParams as any)?.page || 1));
+  const q = String((searchParams as any)?.q || "").trim();
+
+  const chr = await db
+    .select()
+    .from(chapters)
+    .where(eq(chapters.courseId as any, cid))
+    .orderBy(asc(chapters.position as any), asc(chapters.id as any))
+    .limit(limit)
+    .offset((page - 1) * limit);
+
   const chapterIds = chr.map((x) => Number(x.id));
-  let lessonMap = new Map<number, { id: number; slug: string; title: string; position: number }[]>();
+  const lessonMap = new Map<number, { id: number; slug: string; title: string; position: number }[]>();
   if (chapterIds.length > 0) {
     const rows = await sql`SELECT cl.chapter_id, l.id, l.slug, l.title, cl.position
                            FROM chapter_lessons cl JOIN lessons l ON l.id = cl.lesson_id
@@ -45,17 +62,15 @@ async function loadCourse(courseId: number) {
     }
   }
   const chaptersShaped: ChapterItem[] = chr.map((ch) => ({ id: ch.id, slug: ch.slug, title: ch.title, position: ch.position, lessons: lessonMap.get(Number(ch.id)) || [] }));
-  const allLessons = await db.select({ id: lessons.id, slug: lessons.slug, title: lessons.title }).from(lessons).where(eq(lessons.courseId as any, courseId)).orderBy(asc(lessons.title as any));
-  return { course: c, chapters: chaptersShaped, allLessons };
-}
 
-export default async function AdminCourseLmsPage({ params }: { params: { courseId: string } }) {
-  const admin = await requireAdminEmail();
-  if (!admin) return <div className="p-6 text-red-600">Access denied.</div>;
-  const cid = Number(params.courseId);
-  if (!Number.isFinite(cid)) return <div className="p-6">Bad course id.</div>;
-  const data = await loadCourse(cid);
-  if (!data) return <div className="p-6">Course not found.</div>;
+  // Optional search result set for attaching lessons without loading entire course list
+  let searchLessons: { id: number; slug: string; title: string }[] = [];
+  if (q) {
+    const rows = await sql`SELECT id, slug, title FROM lessons WHERE course_id=${cid} AND (title ILIKE ${'%' + q + '%'} OR slug ILIKE ${'%' + q + '%'}) ORDER BY title ASC LIMIT 50`;
+    searchLessons = rows.rows.map((r:any)=>({ id: Number(r.id), slug: String(r.slug), title: String(r.title) }));
+  }
+
+  const data = { course: c, chapters: chaptersShaped, searchLessons };
 
   return (
     <div className="mx-auto max-w-6xl p-6">
@@ -88,12 +103,59 @@ export default async function AdminCourseLmsPage({ params }: { params: { courseI
         </form>
       </div>
 
+      {/* Draft controls */}
+      <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm text-gray-700">Draft: saves current on-page order as a plan you can apply later.</div>
+          <div className="space-x-2">
+            <form action={async () => {
+              "use server";
+              const ops: any[] = [];
+              const chapterIds = data.chapters.map((c)=>c.id);
+              if (chapterIds.length) ops.push({ type: 'reorder_chapters', courseId: cid, orderedIds: chapterIds });
+              for (const ch of data.chapters) {
+                const orderedLessonIds = (ch.lessons || []).map((l)=>l.id);
+                if (orderedLessonIds.length) ops.push({ type: 'reorder_chapter_lessons', chapterId: ch.id, orderedLessonIds });
+              }
+              await saveDraftAction(`course:${cid}`, { ops }, `course-${cid}-page-${page}`);
+            }} className="inline">
+              <button className="rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-sm">Save Draft</button>
+            </form>
+            <form action={async () => { "use server"; await applyDraftAction(`course:${cid}`); }} className="inline">
+              <button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Apply Last Draft</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Pagination and search */}
+      <div className="mt-4 flex items-center justify-between text-sm">
+        <div className="text-gray-600">Showing {data.chapters.length} chapters · Page {page}</div>
+        <div className="space-x-2">
+          <a className={`rounded-md border px-3 py-1 ${page<=1?'pointer-events-none opacity-50':''}`} href={`/admin/lms/${cid}?page=${Math.max(1,page-1)}&limit=${limit}${q?`&q=${encodeURIComponent(q)}`:''}`}>Prev</a>
+          <a className={`rounded-md border px-3 py-1 ${data.chapters.length<limit?'pointer-events-none opacity-50':''}`} href={`/admin/lms/${cid}?page=${page+1}&limit=${limit}${q?`&q=${encodeURIComponent(q)}`:''}`}>Next</a>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3">
+        <form method="get" className="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="page" value={String(page)} />
+          <input type="hidden" name="limit" value={String(limit)} />
+          <div>
+            <label className="block text-xs text-gray-600">Search lessons to attach</label>
+            <input name="q" defaultValue={q} className="mt-1 w-80 rounded-md border px-2 py-1 text-sm" placeholder="Title or slug" />
+          </div>
+          <button className="rounded-md border px-3 py-1.5 text-sm">Search</button>
+          {q && <span className="text-xs text-gray-500">Showing up to 50 results</span>}
+        </form>
+      </div>
+
       {/* Chapters list */}
       <div className="mt-6 space-y-6">
-        {/* Drag-and-drop reorder chapters */}
-        {data.chapters.length > 0 && (
+        {/* Drag-and-drop reorder chapters (current page only) */}
+        {data.chapters.length > 1 && (
           <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <div className="mb-2 text-sm font-semibold text-gray-800">Reorder chapters</div>
+            <div className="mb-2 text-sm font-semibold text-gray-800">Reorder chapters (current page)</div>
             <form action={async (fd: FormData) => {
               "use server";
               const raw = String(fd.get("order") || "[]");
@@ -199,17 +261,19 @@ export default async function AdminCourseLmsPage({ params }: { params: { courseI
                 </div>
               )}
 
-              {/* Attach existing lesson */}
-              <div className="mt-3">
-                <form action={async (fd: FormData) => { "use server"; const lid = Number(fd.get("lessonId")); if (Number.isFinite(lid) && lid>0) await attachLessonToChapterAction(ch.id, lid); }} className="flex items-center gap-2">
-                  <select name="lessonId" className="w-96 rounded-md border px-2 py-1 text-sm">
-                    {data.allLessons.filter((l) => !ch.lessons.find((x)=>x.id===l.id)).map((l) => (
-                      <option key={l.id} value={l.id}>{l.title} ({l.slug})</option>
-                    ))}
-                  </select>
-                  <button className="rounded-md border px-2 py-1 text-sm">Attach Lesson</button>
-                </form>
-              </div>
+              {/* Attach existing lesson (from search results) */}
+              {q && (
+                <div className="mt-3">
+                  <form action={async (fd: FormData) => { "use server"; const lid = Number(fd.get("lessonId")); if (Number.isFinite(lid) && lid>0) await attachLessonToChapterAction(ch.id, lid); }} className="flex items-center gap-2">
+                    <select name="lessonId" className="w-96 rounded-md border px-2 py-1 text-sm">
+                      {data.searchLessons.filter((l:any) => !ch.lessons.find((x)=>x.id===l.id)).map((l:any) => (
+                        <option key={l.id} value={l.id}>{l.title} ({l.slug})</option>
+                      ))}
+                    </select>
+                    <button className="rounded-md border px-2 py-1 text-sm">Attach Lesson</button>
+                  </form>
+                </div>
+              )}
 
               {/* Create new lesson and attach */}
               <div className="mt-3">

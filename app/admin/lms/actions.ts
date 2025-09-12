@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db, sql } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
-import { chapters, chapterLessons, courses, lessons, questions } from "@/drizzle/schema";
+import { chapters, chapterLessons, courses, lessons, questions, lmsAdminDrafts } from "@/drizzle/schema";
 import { requireAdminEmail } from "@/lib/admin";
 
 function assertAdmin(ok: any) {
@@ -299,5 +299,69 @@ export async function deleteQuestionAction(questionId: number) {
   await (sql as any)`DELETE FROM choices WHERE question_id=${qid}`;
   await (sql as any)`DELETE FROM questions WHERE id=${qid}`;
   if (lid > 0) revalidatePath(`/admin/lms/lesson/${lid}/questions`);
+  return { ok: true };
+}
+
+// Save a draft plan (server-side), keyed per admin and scope key (e.g., course:6)
+export async function saveDraftAction(key: string, payload: any, title?: string) {
+  const adm = await requireAdminEmail();
+  assertAdmin(adm);
+  const email = adm!.email.toLowerCase();
+  const k = (key || "").slice(0, 120);
+  if (!k) throw new Error("bad_key");
+  const data = payload ?? {};
+  // Upsert by (email,key) — emulate with delete+insert for portability
+  await (sql as any)`DELETE FROM lms_admin_drafts WHERE email=${email} AND key=${k}`;
+  const ins = await db.insert(lmsAdminDrafts).values({ email, key: k, title: title || null as any, payload: data, status: "draft" }).returning({ id: lmsAdminDrafts.id });
+  return { id: ins[0].id };
+}
+
+export async function loadDraftAction(key: string) {
+  const adm = await requireAdminEmail();
+  assertAdmin(adm);
+  const email = adm!.email.toLowerCase();
+  const k = (key || "").slice(0, 120);
+  const row = (await db.select().from(lmsAdminDrafts).where(and(eq(lmsAdminDrafts.email as any, email), eq(lmsAdminDrafts.key as any, k))).limit(1))[0] as any;
+  if (!row) return null;
+  return { id: row.id, payload: row.payload, title: row.title, status: row.status };
+}
+
+// Apply a draft by replaying contained operations. Supports a minimal op set for reorders and moves
+export async function applyDraftAction(key: string) {
+  const adm = await requireAdminEmail();
+  assertAdmin(adm);
+  const email = adm!.email.toLowerCase();
+  const k = (key || "").slice(0, 120);
+  const row = (await db.select().from(lmsAdminDrafts).where(and(eq(lmsAdminDrafts.email as any, email), eq(lmsAdminDrafts.key as any, k))).limit(1))[0] as any;
+  if (!row) throw new Error("draft_not_found");
+  const ops: any[] = Array.isArray(row.payload?.ops) ? row.payload.ops : [];
+  // Execute ops inside a transaction-like best effort (Vercel Postgres lacks BEGIN; drizzle/sql will still run sequentially)
+  for (const op of ops) {
+    try {
+      switch (op.type) {
+        case 'reorder_chapters':
+          await reorderChaptersAction(Number(op.courseId), op.orderedIds as number[]);
+          break;
+        case 'reorder_chapter_lessons':
+          await reorderChapterLessonsAction(Number(op.chapterId), op.orderedLessonIds as number[]);
+          break;
+        case 'move_lesson_to_course_chapter':
+          await moveLessonToCourseAndChapterAction(Number(op.lessonId), Number(op.toCourseId), op.toChapterId ? Number(op.toChapterId) : undefined);
+          break;
+        case 'move_lesson_to_chapter':
+          await moveLessonToChapterAction(Number(op.lessonId), Number(op.toChapterId));
+          break;
+        default:
+          // ignore unknown
+          break;
+      }
+    } catch (e) {
+      // Continue other ops; could collect errors in future
+      // eslint-disable-next-line no-console
+      console.error('apply op failed', op, e);
+    }
+  }
+  // Mark as applied
+  await db.update(lmsAdminDrafts).set({ status: "applied" as any }).where(eq(lmsAdminDrafts.id as any, row.id));
   return { ok: true };
 }
