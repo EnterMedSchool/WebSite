@@ -10,6 +10,8 @@ type Props = {
   onAskAI?: () => void;
   focus?: boolean;
   onFocusToggle?: () => void;
+  softLockPractice?: boolean;
+  practiceHint?: string;
 };
 
 function IconBook() {
@@ -20,6 +22,11 @@ function IconBook() {
 function IconQuiz() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="currentColor" strokeWidth="1.5"/><path d="M8 9h8M8 13h5" stroke="currentColor" strokeWidth="1.5"/></svg>
+  );
+}
+function IconLock() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 10V7a5 5 0 0 1 10 0v3" stroke="currentColor" strokeWidth="1.5"/><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/></svg>
   );
 }
 function IconShare() {
@@ -38,7 +45,7 @@ function IconGPT() {
   );
 }
 
-export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle }: Props) {
+export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint }: Props) {
   const [copied, setCopied] = useState(false);
   async function share() {
     try {
@@ -70,7 +77,11 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
             {/* Mode switch */}
             <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
               <button onClick={() => onMode('learn')} className={segBtn(mode==='learn')}><IconBook /><span>Learn</span></button>
-              <button onClick={() => onMode('practice')} className={segBtn(mode==='practice')}><IconQuiz /><span>Practice</span></button>
+              <button onClick={() => onMode('practice')} className={segBtn(mode==='practice')}>
+                <IconQuiz />
+                <span>Practice</span>
+                {softLockPractice && <span className="ml-1 text-gray-400" title={practiceHint || 'Intro not viewed'}><IconLock /></span>}
+              </button>
             </div>
 
             {/* Actions cluster */}

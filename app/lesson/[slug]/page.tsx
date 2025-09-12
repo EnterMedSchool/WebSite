@@ -18,7 +18,7 @@ import StudyToolbar from "@/components/lesson/StudyToolbar";
 type Block = { id: number; kind: string; content: string };
 type Lesson = { id: number; slug: string; title: string };
 type Course = { id: number; slug: string; title: string } | null;
-type Chapter = { id: number; slug: string; title: string; position?: number } | null;
+type Chapter = { id: number; slug: string; title: string; description?: string | null; position?: number; meta?: any } | null;
 
 type CourseProg = { total: number; completed: number; pct: number } | null;
 
@@ -54,6 +54,8 @@ export default function LessonPage() {
   const [uniSynced, setUniSynced] = useState<boolean>(false);
   const [unlockDemoVideo, setUnlockDemoVideo] = useState<boolean>(false);
   const [focusMode, setFocusMode] = useState<boolean>(false);
+  const [introVisited, setIntroVisited] = useState<boolean>(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState<boolean>(false);
 
   const q = qs[idx];
 
@@ -139,6 +141,16 @@ export default function LessonPage() {
     })();
   }, [slug, isAuthed]);
 
+  // Read intro visited + nudge state when chapter changes
+  useEffect(() => {
+    if (!chapter?.slug) { setIntroVisited(false); return; }
+    try {
+      const visited = localStorage.getItem(`ems:chapter:intro:visited:${chapter.slug}`) === '1';
+      setIntroVisited(visited);
+      setNudgeDismissed(localStorage.getItem(`ems:chapter:intro:nudge:${chapter.slug}:dismissed`) === '1');
+    } catch {}
+  }, [chapter?.slug]);
+
   const progressPct = useMemo(() => (qs.length ? Math.round((idx) / qs.length * 100) : 0), [idx, qs.length]);
 
   // Keep URL in sync with tab and question index for shareable deep links
@@ -222,6 +234,13 @@ export default function LessonPage() {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex items-start justify-between gap-4">
           <div>
+            {course?.slug && chapter?.slug && (
+              <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold">
+                <Link href={`/course/${course.slug}`} className="hover:underline">{course.title || 'Course'}</Link>
+                <span className="opacity-80">›</span>
+                <Link href={`/course/${course.slug}/guidebook/${chapter.slug}`} className="hover:underline">{chapter.title}</Link>
+              </div>
+            )}
             <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{lesson?.title}</h1>
             {/* removed tiny pills; mode switcher moved below */}
             {/* Compact status instead of a full bar */}
@@ -275,6 +294,11 @@ export default function LessonPage() {
         </div>
       </div>
 
+      {/* Collapsible intro teaser */}
+      {chapter?.slug && (
+        <TeaserCard courseSlug={course?.slug || ''} chapter={chapter as any} />
+      )}
+
       {/* Chapter path bar (UI only, sticky) */}
       <div className="sticky top-16 z-30 mt-3 rounded-2xl border bg-white/90 p-4 shadow-md ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mb-2 flex items-center justify-between">
@@ -302,18 +326,20 @@ export default function LessonPage() {
                   const isCurr = i === currIdx;
                   const isLesson = m.type === 'lesson';
                   const lessonIdx = isLesson ? (i - ((chapter && course) ? 1 : 0)) : -1;
-                  const done = isLesson ? ((courseProg?.completed ?? 0) > Math.max(0, lessonIdx)) : false;
+                  const done = isLesson ? ((courseProg?.completed ?? 0) > Math.max(0, lessonIdx)) : !!introVisited;
                   const state = isCurr ? 'curr' : done ? 'done' : 'todo';
                   return (
                     <a
                       key={m.key}
                       href={m.href}
-                      title={m.type === 'chapter' ? `Chapter: ${m.title}` : m.title}
+                      title={m.type === 'chapter' ? `Intro: ${m.title}` : m.title}
                       className={`ems-dot ${state} ${m.type === 'chapter' ? 'intro' : ''}`}
                       style={{ left: `${left}%` }}
                     >
                       <span className="icon" aria-hidden>
-                        {isCurr ? (
+                        {m.type === 'chapter' ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v14.5A2.5 2.5 0 0 1 17.5 20H7.5A2.5 2.5 0 0 0 5 22.5V5.5Z" fill="currentColor"/></svg>
+                        ) : isCurr ? (
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M8 5l11 7-11 7V5z" fill="currentColor"/></svg>
                         ) : done ? (
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -321,7 +347,7 @@ export default function LessonPage() {
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>
                         )}
                       </span>
-                      <span className="tooltip">{m.type === 'chapter' ? `Chapter: ${m.title}` : m.title}</span>
+                      <span className="tooltip">{m.type === 'chapter' ? `Intro: ${m.title}${chapter ? `\nComplete all lessons to unlock the chapter chest${(chapter as any)?.meta?.readMin ? ` • Intro · ${(chapter as any).meta.readMin} min read` : ''}` : ''}` : m.title}</span>
                     </a>
                   );
                 })}
@@ -334,6 +360,7 @@ export default function LessonPage() {
                 .ems-dot.todo { background:white; box-shadow:0 0 0 2px rgba(99,102,241,.35) inset; color:#4f46e5; }
                 .ems-dot.done { background:#10b981; color:white; box-shadow:0 0 0 2px rgba(16,185,129,.45) inset; }
                 .ems-dot.curr { background:white; color:#4f46e5; box-shadow:0 0 0 2px rgba(99,102,241,.6) inset, 0 0 0 0 rgba(99,102,241,.25); animation:glow 2s ease-out infinite; }
+                .ems-dot.intro { background:#f5f3ff; color:#6d28d9; box-shadow:0 0 0 2px rgba(109,40,217,.35) inset; }
                 @keyframes glow { 0% { box-shadow:0 0 0 0 rgba(99,102,241,.35), 0 0 0 2px rgba(99,102,241,.6) inset } 70% { box-shadow:0 0 0 12px rgba(99,102,241,0), 0 0 0 2px rgba(99,102,241,.6) inset } 100% { box-shadow:0 0 0 0 rgba(99,102,241,0), 0 0 0 2px rgba(99,102,241,.6) inset } }
                 .ems-dot::after { content:''; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at center, rgba(99,102,241,.20), transparent 70%); opacity:0; transform:scale(.6); transition:transform .2s ease, opacity .2s ease; }
                 .ems-dot:hover::after { opacity:1; transform:scale(1); }
@@ -362,7 +389,17 @@ export default function LessonPage() {
                     className={"block rounded-lg px-2 py-1.5 text-sm transition hover:bg-gray-50 text-gray-800"}
                     title="Chapter introduction"
                   >
-                    <div className="line-clamp-2 pr-6">Chapter: {chapter.title}</div>
+                    <div className="flex items-center gap-2 pr-6">
+                      <div className="line-clamp-2">Chapter: {chapter.title}</div>
+                      {estimateLabel(chapter) && (
+                        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{estimateLabel(chapter)}</span>
+                      )}
+                      {introVisited && (
+                        <span className="ml-auto inline-flex items-center text-emerald-600" title="Viewed">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 </li>
               )}
@@ -426,8 +463,23 @@ export default function LessonPage() {
               onMode={(m)=> setTab(m)}
               focus={focusMode}
               onFocusToggle={()=> setFocusMode((v)=> !v)}
+              softLockPractice={!introVisited}
+              practiceHint="Start with the chapter intro"
             />
           </div>
+          {chapter && !introVisited && !nudgeDismissed && (timeline?.lessons?.[0]?.slug === slug) && (
+            <div className="mb-3 flex items-start justify-between rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[12px] text-violet-900">
+              <div>
+                <span className="font-semibold">Start with the chapter intro.</span>
+                <span className="ml-1 opacity-80">It sets context for the lessons.</span>
+              </div>
+              <button
+                onClick={() => { setNudgeDismissed(true); try { localStorage.setItem(`ems:chapter:intro:nudge:${chapter.slug}:dismissed`, '1'); } catch {} }}
+                className="rounded-full px-2 py-0.5 text-violet-700 hover:bg-violet-100"
+                title="Dismiss"
+              >✕</button>
+            </div>
+          )}
           {tab === "learn" && (
             <div className="space-y-4">
               {/* Ensure a video appears for demo even if lesson lacks one */}
@@ -446,6 +498,7 @@ export default function LessonPage() {
                         next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
                         anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
                       />
+                      <ObjectivesStrip chapter={chapter} />
                     </div>
                   );
                 }
@@ -453,6 +506,7 @@ export default function LessonPage() {
               })()}
               {(() => {
                 let navShown = false;
+                let objShown = false;
                 return blocks.map((b, i) => {
                   const isVideo = b.kind === 'video';
                   return (
@@ -484,6 +538,7 @@ export default function LessonPage() {
                           <div className="rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">{b.content}</div>
                         )}
                       </motion.div>
+                      {isVideo && !objShown && (objShown = true) && (<ObjectivesStrip chapter={chapter} />)}
                       {isVideo && !navShown && (navShown = true) && (<div />)}
                     </div>
                   );
@@ -608,6 +663,56 @@ export default function LessonPage() {
           </aside>
         )}
       </div>
+    </div>
+  );
+}
+
+function estimateLabel(ch: Chapter | null) {
+  if (!ch) return '';
+  const m: any = (ch as any)?.meta || {};
+  const v = m.readMin ?? m.read_min ?? m.read ?? null;
+  if (!v) return 'Intro · 3–5 min read';
+  if (typeof v === 'number') return `Intro · ${v} min read`;
+  if (typeof v === 'string') return String(v);
+  return '';
+}
+
+function TeaserCard({ courseSlug, chapter }: { courseSlug: string; chapter: NonNullable<Chapter> }) {
+  const [open, setOpen] = useState(false);
+  const desc = ((chapter as any)?.meta?.teaser || (chapter as any)?.description || '') as string;
+  if (!desc) return null;
+  const estimate = estimateLabel(chapter);
+  return (
+    <div className="mt-3 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+      <div className="mb-1 flex items-center justify-between">
+        <div className="text-sm font-semibold text-indigo-900">Chapter introduction</div>
+        {estimate ? <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] text-indigo-700">{estimate}</span> : null}
+      </div>
+      <div className={`text-sm text-slate-700 ${open ? '' : 'line-clamp-3'}`}>{desc}</div>
+      <div className="mt-2 flex items-center gap-2">
+        <Link href={`/course/${courseSlug}/guidebook/${chapter.slug}`} className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Open guidebook</Link>
+        <button onClick={() => setOpen(v=>!v)} className="text-[12px] font-semibold text-indigo-700 hover:underline">{open ? 'Show less' : 'Read more'}</button>
+      </div>
+    </div>
+  );
+}
+
+function ObjectivesStrip({ chapter }: { chapter: Chapter | null }) {
+  const items: string[] = Array.isArray((chapter as any)?.meta?.objectives)
+    ? (chapter as any).meta.objectives
+    : Array.isArray((chapter as any)?.meta?.goals)
+      ? (chapter as any).meta.goals
+      : [];
+  if (!items.length) return null;
+  return (
+    <div className="mt-3 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-3 text-[12px] text-indigo-900">
+      <div className="mb-1 font-semibold">Learning objectives</div>
+      <ul className="grid gap-1">
+        {items.slice(0,3).map((t, i) => (
+          <li key={i} className="flex items-start gap-2"><span className="mt-[3px] inline-block h-1.5 w-1.5 rounded-full bg-indigo-500"/><span>{t}</span></li>
+        ))}
+      </ul>
+      <div className="mt-2 text-[11px] text-indigo-700">See all in the chapter guidebook</div>
     </div>
   );
 }

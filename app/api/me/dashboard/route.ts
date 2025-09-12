@@ -38,8 +38,21 @@ export async function GET(req: Request) {
     const minutesToday = Math.round(Number(todayRow.rows?.[0]?.sec || 0) / 60);
     const minutesTotal = Math.round(Number(totalRow.rows?.[0]?.sec || 0) / 60);
     const correctToday = Number(correctTodayRow.rows?.[0]?.cnt || 0);
-    // Placeholder until tasks metric is implemented
-    const tasksToday = 0;
+    // Tasks completed today across study tasks and IMAT plan tasks
+    const tStudy = await sql`SELECT COUNT(1) AS cnt
+                              FROM study_task_items sti
+                              JOIN study_task_lists stl ON stl.id = sti.task_list_id
+                              WHERE stl.user_id=${userId}
+                                AND COALESCE(sti.is_completed,false)=true
+                                AND sti.completed_at IS NOT NULL
+                                AND DATE(sti.completed_at)=CURRENT_DATE`;
+    const tImat = await sql`SELECT COUNT(1) AS cnt
+                             FROM imat_user_plan_tasks
+                             WHERE user_id=${userId}
+                               AND COALESCE(is_completed,false)=true
+                               AND completed_at IS NOT NULL
+                               AND DATE(completed_at)=CURRENT_DATE`;
+    const tasksToday = Number(tStudy.rows?.[0]?.cnt || 0) + Number(tImat.rows?.[0]?.cnt || 0);
 
     // Latest two chapters the user is working on (by last viewed lesson),
     // plus stats: total minutes (sum length_min), average progress, and a continue slug
@@ -161,6 +174,20 @@ export async function GET(req: Request) {
       xp7.push(Number(xr.rows?.[0]?.xp || 0));
       min7.push(Math.round(Number(mr.rows?.[0]?.sec || 0) / 60));
       corr7.push(Number(qr.rows?.[0]?.cnt || 0));
+      const tsr = await sql`SELECT 
+                               (SELECT COUNT(1) FROM study_task_items sti
+                                   JOIN study_task_lists stl ON stl.id = sti.task_list_id
+                                   WHERE stl.user_id=${userId}
+                                     AND COALESCE(sti.is_completed,false)=true
+                                     AND sti.completed_at >= ${fromIso}
+                                     AND sti.completed_at < ${toIso})
+                               +
+                               (SELECT COUNT(1) FROM imat_user_plan_tasks ipt
+                                   WHERE ipt.user_id=${userId}
+                                     AND COALESCE(ipt.is_completed,false)=true
+                                     AND ipt.completed_at >= ${fromIso}
+                                     AND ipt.completed_at < ${toIso}) AS cnt`;
+      tasks7.push(Number(tsr.rows?.[0]?.cnt || 0));
     }
 
     return NextResponse.json({

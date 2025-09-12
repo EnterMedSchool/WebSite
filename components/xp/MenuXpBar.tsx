@@ -141,7 +141,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
       )}
 
       {/* Global keyframes used by inline animation names */}
-      <style>{`@keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } } @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } }`}</style>
+      <style>{`@keyframes fall { from { opacity: 1; transform: translateY(0) rotate(0deg); } to { opacity: 0; transform: translateY(18px) rotate(60deg); } } @keyframes xpshimmer { from { transform: translateX(-120%); } to { transform: translateX(220%); } } @keyframes pop { 0% { transform: scale(1) } 30% { transform: scale(1.08) } 100% { transform: scale(1) } }`}</style>
 
       {xpOpen && (
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
@@ -154,6 +154,15 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
 
             <div className="mt-4 mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
             <RecentXpList />
+            <div className="mt-4 flex items-center justify-between text-[11px]">
+              <div className="text-gray-500">Want more insights?</div>
+              <button
+                className="rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-700 shadow-sm ring-1 ring-indigo-200 transition hover:bg-indigo-100"
+                onClick={() => { setXpOpen(false); window.dispatchEvent(new CustomEvent('dashboard:open' as any)); }}
+              >
+                Open full dashboard
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -164,6 +173,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
 function Mini24hAndStreak({ openTick }: { openTick: number }) {
   const [stats, setStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -187,18 +197,24 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
   const correctToday = stats?.learning?.correctToday ?? 0;
   const streakDays = stats?.user?.streakDays ?? null;
   const last7 = Array.isArray(stats?.series?.xp7) ? [...stats.series.xp7] : [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dayAt = (cellIdx: number) => { const d = new Date(today); d.setDate(d.getDate() - (6 - cellIdx)); return d; };
+  const fmtDay = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <StatPill loading={loading} color="indigo" label="XP (24h)" value={`+${xpToday}`} icon={
+      <div className="grid grid-cols-4 gap-2 text-xs">
+        <AnimatedStatPill loading={loading} color="indigo" label="XP (24h)" value={`+${xpToday}`} icon={
           <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>
         }/>
-        <StatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}m`} icon={
+        <AnimatedStatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}m`} icon={
           <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>
         }/>
-        <StatPill loading={loading} color="amber" label="Correct" value={`${correctToday}`} icon={
+        <AnimatedStatPill loading={loading} color="amber" label="Correct" value={`${correctToday}`} icon={
           <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
+        }/>
+        <AnimatedStatPill loading={loading} color="sky" label="Tasks" value={`${stats?.learning?.tasksToday ?? 0}`} icon={
+          <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>
         }/>
       </div>
 
@@ -210,10 +226,23 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
           </div>
           <div className="text-[11px] font-bold text-amber-700">{streakDays != null ? `${streakDays} days` : '—'}</div>
         </div>
-        <div className="mt-2 flex items-center gap-1">
-          {(last7.length ? last7 : new Array(7).fill(0)).slice(-7).map((v: number, i: number) => (
-            <div key={i} className={`h-6 flex-1 rounded-lg border ${v>0 ? 'bg-gradient-to-br from-amber-200 to-rose-200 border-amber-300' : 'bg-gray-100 border-gray-200'}`} />
-          ))}
+        <div className="mt-2 relative">
+          <div className="flex items-center gap-1">
+            {(last7.length ? last7 : new Array(7).fill(0)).slice(-7).map((v: number, i: number) => (
+              <div
+                key={i}
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx(null)}
+                className={`h-6 flex-1 rounded-lg border transition ${v>0 ? 'bg-gradient-to-br from-amber-200 to-rose-200 border-amber-300' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}
+              />
+            ))}
+          </div>
+          {hoverIdx != null && (
+            <div className="pointer-events-none absolute -top-2 left-0 -translate-y-full rounded-xl border bg-white/95 px-3 py-1 text-[10px] shadow-md" style={{ left: `${(hoverIdx/6)*100}%`, transform: `translate(-${Math.round((hoverIdx/6)*100)}%, -8px)` }}>
+              <div className="font-semibold text-gray-800">{fmtDay(dayAt(hoverIdx))}</div>
+              <div className="mt-0.5 text-gray-600">{(last7[hoverIdx] ?? 0) > 0 ? <span className="text-amber-600">🔥 Active — keep the flame alive!</span> : <span className="text-gray-500">No XP — today is a great day to restart.</span>}</div>
+            </div>
+          )}
         </div>
         <div className="mt-1 flex justify-between text-[10px] text-gray-500">
           <span>6d ago</span><span>Today</span>
@@ -223,12 +252,14 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
   );
 }
 
-function StatPill({ loading, color, label, value, icon }: { loading: boolean; color: 'indigo'|'emerald'|'amber'; label: string; value: string; icon: ReactNode }) {
+function StatPill({ loading, color, label, value, icon }: { loading: boolean; color: 'indigo'|'emerald'|'amber'|'sky'; label: string; value: string; icon: ReactNode }) {
   const theme = color === 'indigo'
     ? { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200' }
     : color === 'emerald'
     ? { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' }
-    : { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' };
+    : color === 'amber'
+    ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
+    : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
   return (
     <div className={`flex items-center justify-between rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}> 
       <div className={`flex items-center gap-2 ${theme.text}`}>
@@ -236,6 +267,31 @@ function StatPill({ loading, color, label, value, icon }: { loading: boolean; co
         <div className="font-semibold">{label}</div>
       </div>
       <div className={`text-[11px] font-bold ${theme.text}`}>{loading ? '…' : value}</div>
+    </div>
+  );
+}
+
+function AnimatedStatPill({ loading, color, label, value, icon }: { loading: boolean; color: 'indigo'|'emerald'|'amber'|'sky'; label: string; value: string; icon: ReactNode }) {
+  const [popKey, setPopKey] = useState(0);
+  const prev = useRef<string | null>(null);
+  useEffect(() => {
+    if (prev.current !== null && prev.current !== value) setPopKey((k) => k + 1);
+    prev.current = value;
+  }, [value]);
+  const theme = color === 'indigo'
+    ? { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200' }
+    : color === 'emerald'
+    ? { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' }
+    : color === 'amber'
+    ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
+    : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
+  return (
+    <div className={`flex items-center justify-between rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}>
+      <div className={`flex items-center gap-2 ${theme.text}`}>
+        {icon}
+        <div className="font-semibold">{label}</div>
+      </div>
+      <div key={popKey} className={`text-[11px] font-bold ${theme.text}`} style={{ animation: loading ? undefined : 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{loading ? '…' : value}</div>
     </div>
   );
 }

@@ -2,8 +2,6 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { getUniversities, getSchoolsByUniversity, getCourses } from "@/lib/course-mates/cache";
-import { isCourseModerator } from "@/lib/course-mates/moderation";
 import { resolveUserIdFromSession } from "@/lib/user";
 
 export async function GET() {
@@ -19,7 +17,7 @@ export async function GET() {
     const year = me?.study_year || null;
     const isVerified = !!me?.mates_verified;
 
-    const universities = await getUniversities();
+    const universities = (await sql`SELECT id, name FROM universities ORDER BY name ASC`).rows;
 
     // Feature detection: if new tables aren't migrated yet, avoid 500s and return empty feature data
     const reg = (await sql`SELECT
@@ -29,8 +27,20 @@ export async function GET() {
         to_regclass('public.student_organization_schools')  AS org_schools`).rows[0] || {} as any;
     const hasSchools = !!reg?.schools; const hasMsc = !!reg?.msc; const hasOrgs = !!reg?.orgs; const hasOrgSchools = !!reg?.org_schools;
 
-    const schools = hasSchools && uniId ? await getSchoolsByUniversity(uniId) : [];
-    const courses = hasMsc && (courseId || schoolId || uniId) ? await getCourses({ uniId, schoolId }) : [];
+    const schools = hasSchools && uniId ? (await sql`SELECT id, name, slug FROM schools WHERE university_id=${uniId} ORDER BY name ASC`).rows : [];
+    let courses: any[] = [];
+    if (hasMsc && (courseId || schoolId || uniId)) {
+      if (schoolId && uniId) {
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE school_id=${schoolId} AND university_id=${uniId} ORDER BY name ASC`;
+        courses = r.rows;
+      } else if (schoolId) {
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE school_id=${schoolId} ORDER BY name ASC`;
+        courses = r.rows;
+      } else if (uniId) {
+        const r = await sql`SELECT id, name, slug FROM medical_school_courses WHERE university_id=${uniId} ORDER BY name ASC`;
+        courses = r.rows;
+      }
+    }
 
     // Organizations at university, optionally also linked to this school
     let orgs: any[] = [];
@@ -65,7 +75,7 @@ export async function GET() {
 
     // Mates: users in same course + study year
     let mates: any[] = [];
-    let matesCount = 0, courseName: string | null = null, schoolName: string | null = null, activeNow = 0;
+    let matesCount = 0, courseName: string | null = null, schoolName: string | null = null;
     if (false && isVerified && courseId && year) {
       const mr = await sql`
         SELECT id, name, username, image
@@ -100,83 +110,9 @@ export async function GET() {
           }
           const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id <> ${userId} AND medical_course_id = ${courseId} AND study_year = ${year} AND COALESCE(mates_verified, false) = true`;
           matesCount = Number(r.rows[0]?.n || 0);
-          const a = await sql`SELECT COUNT(DISTINCT e.user_id)::int AS n
-                               FROM lms_events e
-                               JOIN users u ON u.id = e.user_id
-                               WHERE e.created_at >= now() - interval '24 hours'
-                                 AND u.medical_course_id = ${courseId}
-                                 AND u.study_year = ${year}
-                                 AND COALESCE(u.mates_verified, false) = true`;
-          activeNow = Number(a.rows[0]?.n || 0);
         } catch {}
       } catch {}
     }
-
-    // Course settings
-    let studyVibe: string | null = null;
-    if (courseId) {
-      try {
-        const r = await sql`SELECT study_vibe FROM course_mates_settings WHERE course_id=${courseId} LIMIT 1`;
-        studyVibe = r.rows[0]?.study_vibe ?? null;
-      } catch {}
-    }
-
-    // Moderators list
-    let moderators: any[] = [];
-    if (courseId) {
-      try {
-        const r = await sql`SELECT m.user_id AS id, u.name, u.username, u.image
-                             FROM course_mates_moderators m
-                             LEFT JOIN users u ON u.id = m.user_id
-                             WHERE m.course_id=${courseId}
-                             ORDER BY u.name NULLS LAST, u.username NULLS LAST`;
-        moderators = r.rows;
-      } catch {}
-    }
-
-    // Feed posts
-    let feed: any[] = [];
-    if (courseId) {
-      try {
-        const r = await sql`SELECT p.id, p.content, p.created_at, u.name, u.username, u.image
-                             FROM course_feed_posts p
-                             LEFT JOIN users u ON u.id = p.user_id
-                             WHERE p.course_id=${courseId}
-                             ORDER BY p.created_at DESC
-                             LIMIT 10`;
-        feed = r.rows;
-      } catch {}
-    }
-
-    // Upcoming events
-    let events: any[] = [];
-    if (courseId) {
-      try {
-        const r = await sql`SELECT id, title, start_at, end_at, location
-                             FROM course_events
-                             WHERE course_id=${courseId} AND start_at >= now() - interval '1 day'
-                             ORDER BY start_at ASC
-                             LIMIT 6`;
-        events = r.rows;
-      } catch {}
-    }
-
-    // Recent photos
-    let photos: any[] = [];
-    if (courseId) {
-      try {
-        const r = await sql`SELECT p.id, p.url, p.caption
-                             FROM course_event_photos p
-                             WHERE p.event_id IN (
-                               SELECT id FROM course_events WHERE course_id=${courseId} ORDER BY start_at DESC LIMIT 50
-                             )
-                             ORDER BY p.created_at DESC
-                             LIMIT 9`;
-        photos = r.rows;
-      } catch {}
-    }
-
-    const isModerator = courseId ? await isCourseModerator(userId, courseId) : false;
 
     return NextResponse.json({
       me: {
@@ -189,13 +125,7 @@ export async function GET() {
       organizations: orgs,
       mates,
       access: isVerified ? 'verified' : (courseId && year ? 'pending' : 'unset'),
-      summary: isVerified ? { matesCount, courseName, schoolName, studyYear: year ?? null, activeNow } : null,
-      settings: { studyVibe },
-      moderators,
-      feed,
-      events,
-      photos,
-      isModerator,
+      summary: isVerified ? { matesCount, courseName, schoolName, studyYear: year ?? null } : null,
     });
   } catch (e: any) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
@@ -269,4 +199,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
+
+
 

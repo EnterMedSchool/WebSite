@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from 'react';
 
 // Types for dashboard payload
 type Series = { labels: string[]; xp7: number[]; min7: number[]; corr7: number[]; tasks7?: number[] };
@@ -103,6 +104,21 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
                 <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName} 👋</div>
                 <div className="mt-1 text-[13px] text-gray-600">Nice to have you back, let&apos;s continue preparing for your exam.</div>
+                {/* Today KPI pills */}
+                <div className="mt-4 grid grid-cols-4 gap-2 text-xs">
+                  <DashPill color="indigo" label="XP (24h)" value={`+${data?.series?.xp7?.[(data?.series?.xp7?.length||1)-1] ?? 0}`}>
+                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>
+                  </DashPill>
+                  <DashPill color="emerald" label="Minutes" value={`${data?.learning?.minutesToday ?? 0}m`}>
+                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>
+                  </DashPill>
+                  <DashPill color="amber" label="Correct" value={`${data?.learning?.correctToday ?? 0}`}>
+                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
+                  </DashPill>
+                  <DashPill color="sky" label="Tasks" value={`${data?.learning?.tasksToday ?? 0}`}>
+                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>
+                  </DashPill>
+                </div>
                 <div className="mt-5 text-base font-bold text-gray-800">Latest chapters</div>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {(data?.chapters ?? []).slice(0, 2).map((ch) => (
@@ -205,16 +221,43 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   );
 }
 
+function DashPill({ color, label, value, children }: { color: 'indigo'|'emerald'|'amber'|'sky'; label: string; value: string; children: ReactNode }) {
+  const [popKey, setPopKey] = useState(0);
+  const prev = useRef<string | null>(null);
+  useEffect(() => {
+    if (prev.current !== null && prev.current !== value) setPopKey((k) => k + 1);
+    prev.current = value;
+  }, [value]);
+  const theme = color === 'indigo'
+    ? { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200' }
+    : color === 'emerald'
+    ? { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' }
+    : color === 'amber'
+    ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
+    : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
+  return (
+    <div className={`flex items-center justify-between rounded-2xl border ${theme.ring} ${theme.bg} px-3 py-2`}> 
+      <div className={`flex items-center gap-2 ${theme.text}`}>
+        {children}
+        <div className="font-semibold">{label}</div>
+      </div>
+      <div key={popKey} className={`text-[11px] font-extrabold ${theme.text}`} style={{ animation: 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{value}</div>
+      <style>{`@keyframes pop { 0% { transform: scale(1) } 30% { transform: scale(1.08) } 100% { transform: scale(1) } }`}</style>
+    </div>
+  );
+}
+
 function MiniChart({ series }: { series?: Series | null }) {
   const [showXp, setShowXp] = useState(true);
   const [showMin, setShowMin] = useState(true);
   const [showCorr, setShowCorr] = useState(true);
+  const [showTasks, setShowTasks] = useState(false);
   const [idx, setIdx] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   if (!series || !series.labels) return <div className="h-28 w-full animate-pulse rounded-xl bg-gray-100" />;
 
-  const labels = series.labels, xp = series.xp7, mn = series.min7, cr = series.corr7;
-  const maxY = Math.max(10, ...(showXp ? xp : [0]), ...(showMin ? mn : [0]), ...(showCorr ? cr : [0]));
+  const labels = series.labels, xp = series.xp7, mn = series.min7, cr = series.corr7, tk = series.tasks7 || new Array(series.labels.length).fill(0);
+  const maxY = Math.max(10, ...(showXp ? xp : [0]), ...(showMin ? mn : [0]), ...(showCorr ? cr : [0]), ...(showTasks ? tk : [0]));
   const W = 360, H = 120, P = 18; const n = labels.length;
   const xi = (i: number) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
   const yi = (v: number) => H - P - (v / maxY) * (H - 2 * P);
@@ -226,7 +269,7 @@ function MiniChart({ series }: { series?: Series | null }) {
     const t = (rel - P) / (W - 2 * P); const j = Math.round(t * (n - 1)); setIdx(Math.max(0, Math.min(n - 1, j)));
   }
   const ax = idx != null ? xi(idx) : null;
-  const tip = idx != null ? { day: labels[idx], xp: xp[idx], min: mn[idx], corr: cr[idx] } : null;
+  const tip = idx != null ? { day: labels[idx], xp: xp[idx], min: mn[idx], corr: cr[idx], tasks: tk[idx] } : null;
 
   return (
     <div ref={ref} className="relative select-none" onMouseMove={onMove} onMouseLeave={() => setIdx(null)}>
@@ -236,21 +279,26 @@ function MiniChart({ series }: { series?: Series | null }) {
           <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.8" /><stop offset="100%" stopColor="#34d399" stopOpacity="0.2" /></linearGradient>
           <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity="0.8" /><stop offset="100%" stopColor="#fcd34d" stopOpacity="0.2" /></linearGradient>
         </defs>
+        <defs>
+          <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.8" /><stop offset="100%" stopColor="#38bdf8" stopOpacity="0.2" /></linearGradient>
+        </defs>
         {showMin && <path d={path(mn)} fill="none" stroke="url(#g2)" strokeWidth="3" />}
         {showXp && <path d={path(xp)} fill="none" stroke="url(#g1)" strokeWidth="3" />}
         {showCorr && <path d={path(cr)} fill="none" stroke="url(#g3)" strokeWidth="3" />}
+        {showTasks && <path d={path(tk)} fill="none" stroke="url(#g4)" strokeWidth="3" />}
         {ax != null && <line x1={ax} y1={P} x2={ax} y2={H - P} stroke="#94a3b8" strokeDasharray="3,3" />}
       </svg>
       {tip && (
         <div className="pointer-events-none absolute -translate-x-1/2 rounded-xl border bg-white/95 px-2 py-1 text-[10px] shadow" style={{ left: `${ax! / 3.6}%`, top: 0 }}>
           <div className="font-semibold text-gray-800">{tip.day}</div>
-          <div className="mt-0.5 grid grid-cols-4 gap-2"><span className="text-indigo-600">{tip.xp} XP</span><span className="text-emerald-600">{tip.min}m</span><span className="text-amber-600">{tip.corr}</span></div>
+          <div className="mt-0.5 grid grid-cols-4 gap-2"><span className="text-indigo-600">{tip.xp} XP</span><span className="text-emerald-600">{tip.min}m</span><span className="text-amber-600">{tip.corr}</span><span className="text-sky-600">{tip.tasks}</span></div>
         </div>
       )}
       <div className="mt-2 flex items-center justify-center gap-2 text-[10px]">
         <button onClick={() => setShowXp(v=>!v)} className={`rounded-full px-2 py-0.5 ${showXp ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>XP</button>
         <button onClick={() => setShowMin(v=>!v)} className={`rounded-full px-2 py-0.5 ${showMin ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>Minutes</button>
         <button onClick={() => setShowCorr(v=>!v)} className={`rounded-full px-2 py-0.5 ${showCorr ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>Correct</button>
+        <button onClick={() => setShowTasks(v=>!v)} className={`rounded-full px-2 py-0.5 ${showTasks ? 'bg-sky-100 text-sky-700' : 'bg-gray-100 text-gray-600'}`}>Tasks</button>
       </div>
     </div>
   );

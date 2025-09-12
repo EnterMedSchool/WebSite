@@ -18,14 +18,14 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   let chapter: { id: number; slug: string; title: string; position?: number } | null = null;
   try {
     const chR = await sql`
-      SELECT c.id, c.slug, c.title, c.position
+      SELECT c.id, c.slug, c.title, c.description, c.position, c.meta
       FROM chapter_lessons cl
       JOIN chapters c ON c.id = cl.chapter_id
       WHERE cl.lesson_id = ${lesson.id}
       ORDER BY c.position ASC
       LIMIT 1`;
     if (chR.rows[0]) {
-      chapter = { id: Number(chR.rows[0].id), slug: String(chR.rows[0].slug), title: String(chR.rows[0].title), position: Number(chR.rows[0].position) };
+      chapter = { id: Number(chR.rows[0].id), slug: String(chR.rows[0].slug), title: String(chR.rows[0].title), description: chR.rows[0].description ? String(chR.rows[0].description) : null, position: Number(chR.rows[0].position), ...(chR.rows[0].meta ? { meta: chR.rows[0].meta } : {}) } as any;
     }
   } catch {}
   // Compute prev/next based on rank_key within the same course

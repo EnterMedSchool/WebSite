@@ -586,6 +586,74 @@ export const studentOrganizationCourses = pgTable(
   (t) => ({ orgCoursesCourseIdx: index("org_courses_course_idx").on(t.courseId) })
 );
 
+// ---------------- Course Mates social features ----------------
+
+export const courseMatesModerators = pgTable(
+  "course_mates_moderators",
+  {
+    id: serial("id").primaryKey(),
+    courseId: integer("course_id").notNull(),
+    userId: integer("user_id").notNull(),
+    role: varchar("role", { length: 24 }).default("moderator").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    cmmCourseIdx: index("cmm_course_idx").on(t.courseId),
+  })
+);
+
+export const courseMatesSettings = pgTable(
+  "course_mates_settings",
+  {
+    courseId: integer("course_id").primaryKey().notNull(),
+    studyVibe: varchar("study_vibe", { length: 80 }),
+  }
+);
+
+export const courseFeedPosts = pgTable(
+  "course_feed_posts",
+  {
+    id: serial("id").primaryKey(),
+    courseId: integer("course_id").notNull(),
+    userId: integer("user_id").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at"),
+  },
+  (t) => ({
+    cfpCourseIdx: index("cfp_course_created_idx").on(t.courseId, t.createdAt),
+  })
+);
+
+export const courseEvents = pgTable(
+  "course_events",
+  {
+    id: serial("id").primaryKey(),
+    courseId: integer("course_id").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    startAt: timestamp("start_at").notNull(),
+    endAt: timestamp("end_at"),
+    location: varchar("location", { length: 200 }),
+    description: text("description"),
+    createdBy: integer("created_by"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ ceCourseIdx: index("ce_course_start_idx").on(t.courseId, t.startAt) })
+);
+
+export const courseEventPhotos = pgTable(
+  "course_event_photos",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id").notNull(),
+    url: varchar("url", { length: 800 }).notNull(),
+    caption: varchar("caption", { length: 200 }),
+    addedBy: integer("added_by"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ cepEventIdx: index("cep_event_idx").on(t.eventId) })
+);
+
 // Pending education requests requiring manual approval
 export const userEducationRequests = pgTable(
   "user_education_requests",

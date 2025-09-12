@@ -41,6 +41,8 @@ export default async function ChapterGuidebookPage({ params }: { params: { slug:
 
   return (
     <div className="mx-auto max-w-5xl p-6">
+      {/* mark intro viewed in localStorage for soft gating/UI cues */}
+      <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('ems:chapter:intro:visited:${chapter.slug}','1')}catch{}` }} />
       <div className="mb-4 text-sm text-indigo-700">
         <Link href={`/course/${course.slug}`} className="hover:underline">Back to course</Link>
       </div>
@@ -89,4 +91,3 @@ export default async function ChapterGuidebookPage({ params }: { params: { slug:
     </div>
   );
 }
-
