@@ -3,6 +3,7 @@ import { db, sql } from "@/lib/db";
 import { timerGroups } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
+import { rateAllow, clientIpFrom } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,6 +40,9 @@ export async function GET(req: Request, { params }: { params: { code: string } }
 export async function PATCH(req: Request, { params }: { params: { code: string } }) {
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Rate limit owner updates to ~1/sec (burst 3)
+  const key = `timer:update:${userId}:${clientIpFrom(req)}`;
+  if (!rateAllow(key, 3, 3_000)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || "").trim();
   const durationMs = typeof body?.durationMs === 'number' ? Number(body.durationMs) : undefined;

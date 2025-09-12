@@ -3,6 +3,7 @@ import { db, sql } from "@/lib/db";
 import { todos } from "@/drizzle/schema";
 import { and, asc, desc, eq, sql as dsql } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
+import { rateAllow, clientIpFrom } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const key = `todos:create:${userId}:${clientIpFrom(req)}`;
+  if (!rateAllow(key, 20, 60_000)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const body = await req.json().catch(() => ({}));
   const label = String(body?.label || "").trim();
   if (!label) return NextResponse.json({ error: "label required" }, { status: 400 });
@@ -41,4 +44,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Failed" }, { status: 500 });
   }
 }
-

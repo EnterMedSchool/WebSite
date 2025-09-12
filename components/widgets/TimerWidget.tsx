@@ -166,7 +166,10 @@ export default function TimerWidget() {
             Timer {state?.mode === 'running' ? `· ${msToMMSS(remainingMs)}` : ''}
           </button>
           {code ? (
-            <span className="text-xs text-gray-600">Code: <b>{code}</b></span>
+            <span className="text-xs text-gray-600 flex items-center gap-2">
+              <span>Code: <b>{code}</b>{isOwner ? ' (owner)' : ''}</span>
+              <button className="rounded bg-gray-100 px-2 py-0.5" onClick={()=>{ try { navigator.clipboard.writeText(code!); } catch {} }}>Copy</button>
+            </span>
           ) : (
             <span className="text-xs text-gray-600">No group</span>
           )}

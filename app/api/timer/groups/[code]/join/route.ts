@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { timerGroups, timerGroupMembers } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
+import { rateAllow, clientIpFrom } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,9 @@ export const revalidate = 0;
 export async function POST(req: Request, { params }: { params: { code: string } }) {
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Soft rate limit: 30 joins/min per user+ip
+  const key = `timer:join:${userId}:${clientIpFrom(req)}`;
+  if (!rateAllow(key, 30, 60_000)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   try {
     const g = (await db.select({ id: timerGroups.id }).from(timerGroups).where(eq(timerGroups.code as any, params.code)).limit(1))[0];
     if (!g?.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -34,4 +38,3 @@ export async function POST(req: Request, { params }: { params: { code: string } 
     return NextResponse.json({ error: e?.message || "Failed" }, { status: 500 });
   }
 }
-

@@ -3,6 +3,7 @@ import { db, sql } from "@/lib/db";
 import { timerGroups } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
+import { rateAllow, clientIpFrom } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,9 @@ function genCode(len = 8) {
 export async function POST(req: Request) {
   const userId = await requireUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Rate limit: 10 creates/min per user+ip (although we reuse existing)
+  const key = `timer:create:${userId}:${clientIpFrom(req)}`;
+  if (!rateAllow(key, 10, 60_000)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   try {
     const existing = (await db
       .select({ id: timerGroups.id, code: timerGroups.code })
