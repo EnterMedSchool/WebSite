@@ -25,7 +25,8 @@ export default function HaloNav({ className = "", children }: HaloNavProps) {
       if (!item) { setRect((r) => ({ ...r, visible: false })); return; }
       const w = el.getBoundingClientRect();
       const b = item.getBoundingClientRect();
-      setRect({ left: b.left - w.left - 6, width: b.width + 12, visible: true });
+      // account for horizontal scroll to keep halo aligned when scrolled
+      setRect({ left: (b.left - w.left) + el.scrollLeft - 6, width: b.width + 12, visible: true });
     }
 
     function onOver(e: MouseEvent) { highlightFor(e.target as HTMLElement); }

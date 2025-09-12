@@ -218,6 +218,26 @@ export const lessonBlocks = pgTable(
   (t) => ({ lessonIdx: index("lesson_blocks_lesson_idx").on(t.lessonId) })
 );
 
+// Admin working area for drafts/suggestions (generic JSON payloads)
+export const lmsAdminDrafts = pgTable(
+  "lms_admin_drafts",
+  {
+    id: serial("id").primaryKey(),
+    email: varchar("email", { length: 255 }).notNull(),
+    key: varchar("key", { length: 120 }).notNull(),
+    title: varchar("title", { length: 200 }),
+    payload: jsonb("payload").notNull(),
+    status: varchar("status", { length: 16 }).notNull().default("draft"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    emailIdx: index("lms_admin_drafts_email_idx").on(t.email),
+    keyIdx: index("lms_admin_drafts_key_idx").on(t.key),
+    statusIdx: index("lms_admin_drafts_status_idx").on(t.status),
+  })
+);
+
 export const lessonPrerequisites = pgTable(
   "lesson_prerequisites",
   {

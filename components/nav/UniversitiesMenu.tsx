@@ -237,7 +237,7 @@ export default function UniversitiesMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        Universities
+        UNIVERSITIES
       </button>
 
       {open && (

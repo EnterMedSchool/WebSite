@@ -4,8 +4,7 @@ import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
-import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
-import ResourcesMenu from "@/components/nav/ResourcesMenu";
+import SuperNav from "@/components/nav/SuperNav";
 import HaloNav from "@/components/nav/HaloNav";
 import CommandPalette from "@/components/nav/CommandPalette";
 import SearchTrigger from "@/components/nav/SearchTrigger";
@@ -81,15 +80,7 @@ export default async function Navbar() {
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 
-          <HaloNav className="hidden w-full min-w-0 md:flex items-center justify-center gap-1">
-            <UniversitiesMenu />
-            <Link href={primary[1].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[1].label}</Link>
-            <Link href={primary[2].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[2].label}</Link>
-            <Link href={primary[3].href} data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">{primary[3].label}</Link>
-            <Link href="/course-mates" data-nav-link className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 hover:text-white">Course Mates</Link>
-            <ResourcesMenu />
-            <SearchTrigger className="ml-1" />
-          </HaloNav>
+          <SuperNav />
 
           <div className="flex items-center gap-3 justify-end shrink-0">
             <UserMenu

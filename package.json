@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "graph:build": "node scripts/build-learning-graph.mjs",
+    "glossary:build": "node scripts/build-glossary-index.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"

@@ -64,10 +64,11 @@ function WowFullGraph({ src }: { src: string }) {
     const nodes = data.nodes.slice();
     const edges = data.edges.slice();
     const startId = nodes.length ? Math.max(...nodes.map(n => Number(n.id) || 0)) + 1 : 1;
-    const targetCount = 120; // total nodes including originals
+    const targetCount = 140; // total nodes including originals
     const courseCount = 5;
+    const cats = ['anatomy','physiology','biochem','path','pharm'];
     for (let i = startId; i < targetCount + 1; i++) {
-      nodes.push({ id: String(i), label: `Lesson ${i}` as any, courseId: 1 + Math.floor(rand() * courseCount) } as any);
+      nodes.push({ id: String(i), label: `Lesson ${i}` as any, courseId: 1 + Math.floor(rand() * courseCount), category: cats[Math.floor(rand()*cats.length)] } as any);
       // add 1-3 prerequisites among previous 20 nodes to ensure DAG
       const prereqCandidates = [] as number[];
       for (let k = Math.max(1, i - 20); k < i; k++) prereqCandidates.push(k);
@@ -97,6 +98,7 @@ function WowFullGraph({ src }: { src: string }) {
       courseSlug: n.courseSlug,
       courseTitle: n.courseTitle,
       slug: n.slug,
+      category: n.category,
     }));
     const links = augmented.edges.map(e => ({ id: e.id, source: e.source, target: e.target }));
     return { nodes, links } as any;
@@ -189,11 +191,17 @@ function WowFullGraph({ src }: { src: string }) {
   if (err) return <div className="p-4 text-red-600">Failed to load: {err}</div>;
   if (!fgData) return <div className="p-4 text-gray-500">Loading…</div>;
 
-  function colorForCourse(courseId?: number) {
+  function colorForCourse(courseId?: number, category?: string) {
+    if (category) {
+      const catColors: Record<string,string> = {
+        anatomy: '#ff6b6b', physiology: '#34d399', biochem: '#60a5fa', path: '#f59e0b', pharm: '#a78bfa'
+      };
+      return catColors[category] || '#e5e7eb';
+    }
     if (!courseId) return "#9aa3af";
     const hues = [0, 24, 48, 72, 96, 150, 180, 210, 260, 300];
     const h = hues[Math.abs(courseId) % hues.length];
-    return `hsl(${h} 70% 52%)`;
+    return `hsl(${h} 80% 60%)`;
   }
 
   return (
@@ -232,22 +240,44 @@ function WowFullGraph({ src }: { src: string }) {
           const phase = tRef.current * (l.__on ? 1.2 : 0.6) + (l.__tier || 0) * 0.5;
           const cx = (x1 + x2) / 2 + nx * amp * Math.sin(phase);
           const cy = (y1 + y2) / 2 + ny * amp * Math.sin(phase);
-          ctx.lineWidth = (l.__on ? 2.5 : 1) / Math.sqrt(scale);
-          ctx.strokeStyle = (l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)");
+          // Base track (dim)
+          ctx.lineWidth = (l.__on ? 3 : 1.2) / Math.sqrt(scale);
+          ctx.strokeStyle = (l.__on ? "rgba(16,185,129,0.3)" : "rgba(99,102,241,0.12)");
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.quadraticCurveTo(cx, cy, x2, y2);
           ctx.stroke();
+          // XP fill overlay
+          if (l.__on) {
+            const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+            grad.addColorStop(0, "#34d399");
+            grad.addColorStop(0.5, "#a7f3d0");
+            grad.addColorStop(1, "#34d399");
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 4 / Math.sqrt(scale);
+            ctx.shadowColor = '#34d399';
+            ctx.shadowBlur = 12;
+            // dash animation to simulate fill motion
+            ctx.setLineDash([len * 0.25, len]);
+            const offset = (1 - ((tRef.current * 40 + (l.__tier || 0) * 120) % (len)))
+            ctx.lineDashOffset = offset;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(cx, cy, x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+          }
         }}
         // Custom node draw with completion ring and checkmark
         nodeCanvasObject={(n: any, ctx: CanvasRenderingContext2D, scale: number) => {
           const r = 4 + (n.__on || !focus ? 3 : 1);
-          const color = n.completed ? "#22c55e" : (n.__on || !focus ? colorForCourse(n.courseId) : "#e5e7eb");
+          const color = n.completed ? "#22c55e" : (n.__on || !focus ? colorForCourse(n.courseId, n.category) : "#475569");
           ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
           ctx.fillStyle = color; ctx.fill();
           // ring
           ctx.lineWidth = 2 / Math.sqrt(scale);
-          ctx.strokeStyle = n.__on ? "#f59e0b" : "rgba(0,0,0,0.08)";
+          ctx.strokeStyle = n.__on ? "#34d399" : "rgba(148,163,184,0.25)";
           ctx.stroke();
           // checkmark if completed
           if (n.completed) {

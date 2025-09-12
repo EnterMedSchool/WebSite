@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import VideoPanel from "@/components/lesson/VideoPanel";
+import LessonBody from "@/components/lesson/LessonBody";
 import UniResources from "@/components/lesson/UniResources";
 import AnkiDownload from "@/components/lesson/AnkiDownload";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
@@ -543,7 +544,11 @@ export default function LessonPage() {
                 const blurLocked = !!(player?.locked && player?.source === 'video_html');
                 return (
                   <div className={blurLocked ? 'filter blur-[2px] select-none pointer-events-none' : ''}>
-                  {blocks.map((b, i) => {
+                   {/* Highlighted lesson body (HTML from lessons.body) */}
+                   <div className="mb-4 rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+                     <LessonBody slug={slug} />
+                   </div>
+                   {blocks.map((b, i) => {
                    const isVideo = b.kind === 'video';
                    return (
                      <div key={`wrap-${b.id}`}>
