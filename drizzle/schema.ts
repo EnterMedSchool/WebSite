@@ -343,24 +343,7 @@ export const posts = pgTable(
 );
 
 // Admin drafts for staging LMS changes (saved plans)
-export const lmsAdminDrafts = pgTable(
-  "lms_admin_drafts",
-  {
-    id: serial("id").primaryKey(),
-    email: varchar("email", { length: 255 }).notNull(),
-    key: varchar("key", { length: 120 }).notNull(), // e.g., course:6 or board
-    title: varchar("title", { length: 200 }),
-    payload: jsonb("payload").notNull(), // { ops: [...], meta }
-    status: varchar("status", { length: 16 }).default("draft").notNull(), // draft | applied | archived
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (t) => ({
-    emailIdx: index("lms_admin_drafts_email_idx").on(t.email),
-    keyIdx: index("lms_admin_drafts_key_idx").on(t.key),
-    statusIdx: index("lms_admin_drafts_status_idx").on(t.status),
-  })
-);
+// NOTE: defined above under "Admin working area for drafts/suggestions".
 
 // University data (for map and elsewhere)
 export const countries = pgTable(

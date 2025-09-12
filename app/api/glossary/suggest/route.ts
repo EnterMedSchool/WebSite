@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (!body || typeof body !== "object") return bad("Invalid JSON payload", 400);
     const email = String(body.email || "").trim();
     const key = String(body.key || "").trim(); // e.g., glossary-term:<id> or lesson:<slug>
-    const title = (body.title == null ? null : String(body.title)).slice(0, 200);
+    const title = body.title == null ? null : String(body.title).slice(0, 200);
     const payload = body.payload ?? {};
     if (!email || !key) return bad("Missing email or key", 400);
 
@@ -27,4 +27,3 @@ export async function POST(req: Request) {
     return bad(String(e?.message ?? e), 500);
   }
 }
-
