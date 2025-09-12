@@ -98,7 +98,9 @@ export async function GET() {
             const s = await sql`SELECT name FROM schools WHERE id=${sid} LIMIT 1`;
             schoolName = s.rows[0]?.name ?? null;
           }
-          const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id <> ${userId} AND medical_course_id = ${courseId} AND study_year = ${year} AND COALESCE(mates_verified, false) = true`;
+          // Include the current user in the members count so a newly verified
+          // student sees at least 1 member in their hub.
+          const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE medical_course_id = ${courseId} AND study_year = ${year} AND COALESCE(mates_verified, false) = true`;
           matesCount = Number(r.rows[0]?.n || 0);
           const a = await sql`SELECT COUNT(DISTINCT e.user_id)::int AS n
                                FROM lms_events e

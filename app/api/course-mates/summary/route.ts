@@ -20,7 +20,9 @@ export async function GET() {
         const s = await sql`SELECT name FROM schools WHERE id=${sid} LIMIT 1`;
         schoolName = s.rows[0]?.name ?? null;
       }
-      const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id <> ${userId} AND medical_course_id = ${cid} AND study_year = ${yr} AND COALESCE(mates_verified, false) = true`;
+      // Include current user to avoid showing 0 members when someone is
+      // newly verified but alone in their cohort.
+      const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE medical_course_id = ${cid} AND study_year = ${yr} AND COALESCE(mates_verified, false) = true`;
       matesCount = Number(r.rows[0]?.n || 0);
       const a = await sql`SELECT COUNT(DISTINCT e.user_id)::int AS n
                            FROM lms_events e

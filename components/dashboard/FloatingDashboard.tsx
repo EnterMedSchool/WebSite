@@ -102,7 +102,16 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             {/* Greeting + Today */}
             <div className="col-span-7">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
-                <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName}</div>
+                <div className="flex items-center gap-3">
+                  <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName}</div>
+                  <img
+                    src="https://entermedschool.com/wp-content/uploads/2025/09/LeoHi.png"
+                    alt="Leo waving hello"
+                    className="h-10 w-auto select-none"
+                    loading="eager"
+                    decoding="async"
+                  />
+                </div>
                 <div className="mt-1 text-[13px] text-gray-600">Nice to have you back, let&apos;s continue preparing for your exam.</div>
                 {/* Today KPI pills */}
                 <div className="mt-4 grid grid-cols-4 gap-2 text-xs">

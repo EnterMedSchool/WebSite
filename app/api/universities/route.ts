@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { countries, universities, universityPrograms, universityScores, universityTestimonials, universityCosts, universityAdmissions, universitySeats, users } from "@/drizzle/schema";
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql, inArray, and } from "drizzle-orm";
 
 // Types reused by the map UI
 export type City = {
@@ -258,7 +258,7 @@ export async function GET(req: Request) {
         logo: (r.logo as string) ?? undefined,
         rating: includeHeavy ? (avgById.get(r.id as number) ?? undefined) : undefined,
         lastScore: includeHeavy ? (lastScoreById.get(r.id as number) ?? undefined) : undefined,
-        emsCount: includeHeavy ? (emsCountByUniId.get(r.id as number) ?? undefined) : undefined,
+        emsCount: includeHeavy ? (emsCountByUniId.get(r.id as number) ?? 0) : undefined,
         photos: includeHeavy ? ((r.photos as string[]) ?? undefined) : undefined,
         orgs: includeHeavy ? ((r.orgs as string[]) ?? undefined) : undefined,
         article: includeHeavy ? ((r.article as any) ?? undefined) : undefined,
@@ -292,3 +292,14 @@ export async function GET(req: Request) {
     );
   }
 }
+      // EMS students per university (verified Course‑Mates profiles)
+      try {
+        const uRows = await db
+          .select({ uid: users.universityId, n: sql<number>`count(*)::int` })
+          .from(users)
+          .where(and(inArray(users.universityId, ids), eq(users.matesVerified, true)))
+          .groupBy(users.universityId);
+        emsCountByUniId = new Map(uRows.map((r: any) => [Number(r.uid), Number(r.n || 0)]));
+      } catch {
+        emsCountByUniId = new Map();
+      }

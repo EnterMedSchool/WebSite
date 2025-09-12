@@ -3,6 +3,7 @@ import { resolveUserIdFromSession } from '@/lib/user';
 import { sql } from '@/lib/db';
 import { getUniversities, getSchoolsByUniversity, getCourses } from '@/lib/course-mates/cache';
 import { isCourseModerator, isUniversityModerator } from '@/lib/course-mates/moderation';
+import { requireAdminEmail } from '@/lib/admin';
 
 export default async function CourseMatesPage() {
   const userId = await resolveUserIdFromSession();
@@ -76,7 +77,9 @@ export default async function CourseMatesPage() {
       courseName = c.rows[0]?.name ?? null;
       const sid = c.rows[0]?.school_id || null;
       if (sid) { const s = await sql`SELECT name FROM schools WHERE id=${sid} LIMIT 1`; schoolName = s.rows[0]?.name ?? null; }
-      const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE id <> ${userId} AND medical_course_id = ${courseId} AND study_year = ${year} AND COALESCE(mates_verified, false) = true`;
+      // Include the current user in the members count so a newly verified
+      // student sees at least 1 member in their hub.
+      const r = await sql`SELECT COUNT(*)::int AS n FROM users WHERE medical_course_id = ${courseId} AND study_year = ${year} AND COALESCE(mates_verified, false) = true`;
       matesCount = Number(r.rows[0]?.n || 0);
       const a = await sql`SELECT COUNT(DISTINCT e.user_id)::int AS n FROM lms_events e JOIN users u ON u.id = e.user_id WHERE e.created_at >= now() - interval '24 hours' AND u.medical_course_id = ${courseId} AND u.study_year = ${year} AND COALESCE(u.mates_verified, false) = true`;
       activeNow = Number(a.rows[0]?.n || 0);
@@ -130,6 +133,8 @@ export default async function CourseMatesPage() {
     summary: isVerified ? { matesCount, courseName, schoolName, studyYear: year ?? null, activeNow } : null,
     studyVibe,
     isModerator: courseId ? await isCourseModerator(userId, courseId) : false,
+    // Pass admin flag to control admin-only actions in the client UI
+    isAdmin: (await requireAdminEmail()) ? true : false,
     feed,
     events,
     photos,

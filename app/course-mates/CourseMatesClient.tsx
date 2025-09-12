@@ -26,6 +26,7 @@ export default function CourseMatesClient({ authed, initial }: {
     photos: any[];
     moderators: Mate[];
     modRequestPending?: boolean;
+    isAdmin?: boolean;
   };
 }) {
   const [isAuthed] = useState<boolean | null>(authed);
@@ -45,6 +46,7 @@ export default function CourseMatesClient({ authed, initial }: {
   const [newPost, setNewPost] = useState("");
   const [isPublic, setIsPublic] = useState<boolean>(false);
   const [lb, setLb] = useState<{ weekly: any[]; all: any[] } | null>(null);
+  const [isAdmin] = useState<boolean>(Boolean((initial as any).isAdmin));
 
   // Load privacy flag on mount if authed
   useEffect(() => {
@@ -304,7 +306,7 @@ export default function CourseMatesClient({ authed, initial }: {
                 <li key={m.id} className="flex items-center gap-3">
                   <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name || m.username)}</div>
                   <div className="text-sm text-gray-900">{m.name || m.username}</div>
-                  {isModerator && (
+                  {isAdmin && (
                     <button
                       onClick={async()=>{ try { await fetch('/api/admin/course-mates/moderators', { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ courseId: (initial as any).me?.medicalCourseId, userId: m.id }) }); location.reload(); } catch {} }}
                       className="ml-auto rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200"
@@ -329,7 +331,7 @@ export default function CourseMatesClient({ authed, initial }: {
                   <li key={m.id} className="flex items-center gap-3">
                     <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name || m.username)}</div>
                     <div className="text-sm text-gray-900">{m.name || m.username}</div>
-                    {isUniModerator && (
+                    {isAdmin && (
                       <button onClick={async()=>{ try { await fetch('/api/admin/universities/moderators', { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ universityId: (initial as any).me?.universityId, userId: m.id }) }); location.reload(); } catch {} }} className="ml-auto rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200">Remove</button>
                     )}
                   </li>
