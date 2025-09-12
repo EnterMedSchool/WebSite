@@ -2,15 +2,12 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { apiGuardStart } from "@/lib/api/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
-  const guard = apiGuardStart(req, { key: 'lesson/[slug]/questions:GET' });
-  if (guard.deny) return guard.deny;
+export async function GET(_req: Request, { params }: { params: { slug: string } }) {
   const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -53,6 +50,5 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     }
     result.push({ id: q.id, prompt: q.prompt, explanation: q.explanation, access: q.access || 'public', answeredCorrect, selectedChoiceId, choices: cr.rows.map((c:any)=>({ id:c.id, text:c.content, correct:c.correct })) });
   }
-  const res = NextResponse.json({ questions: result });
-  try { return res; } finally { guard.end(); }
+  return NextResponse.json({ questions: result });
 }
