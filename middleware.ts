@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { globalRateAllow, isPathExcludedFromGlobal, keyedRateAllow } from '@/lib/edge/rate';
+import { getClientIpFromHeaders } from '@/lib/edge/ip';
 
 // --- Edge API throttle (dev + prod) -----------------------------
 // Token-bucket limiter at the middleware (edge) layer to stop
@@ -75,7 +77,110 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
 
-  // Edge throttle for ALL API routes to avoid storms in dev/prod
+  // Global RPM throttle (site-wide), before everything else
+  try {
+    const limitRpm = Number(process.env.GLOBAL_RPM ?? 250);
+    // Enable unless explicitly disabled
+    const enabled = String(process.env.GLOBAL_RPM_ENABLED ?? '1') !== '0';
+    const bypass = (process.env.GLOBAL_RPM_BYPASS_TOKEN || '').trim();
+    const bypassHeader = (req.headers.get('x-bypass-rate') || '').trim();
+    if (enabled && req.method !== 'OPTIONS' && !isPathExcludedFromGlobal(pathname) && (!bypass || bypassHeader !== bypass)) {
+      const { allow, retryAfter, reset, limit, remaining } = await globalRateAllow(limitRpm);
+      if (!allow) {
+        const accept = String(req.headers.get('accept') || '').toLowerCase();
+        const isApi = pathname.startsWith('/api/');
+        const headers: Record<string, string> = {
+          'Retry-After': String(retryAfter || 5),
+          'Cache-Control': 'no-store',
+          'X-Global-RateLimit': '1',
+          'RateLimit-Limit': String(limit || limitRpm),
+          'RateLimit-Remaining': String(Math.max(0, Number(remaining || 0))),
+          'RateLimit-Reset': String(reset || retryAfter || 60),
+          'X-Throttle-Path': pathname,
+        };
+        if (isApi || accept.includes('application/json')) {
+          return new NextResponse(
+            JSON.stringify({ error: 'too_many_requests', scope: 'global', limit: limitRpm }),
+            { status: 429, headers: { 'Content-Type': 'application/json', ...headers } },
+          );
+        }
+        const html = `<!doctype html>
+          <html lang="en"><head><meta charset="utf-8"/>
+          <meta name="viewport" content="width=device-width,initial-scale=1"/>
+          <title>Slow down</title>
+          <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#f9fafb;color:#111827;margin:0;padding:2rem} .card{max-width:700px;margin:10vh auto;padding:1.25rem 1.5rem;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1),0 4px 6px -4px rgba(0,0,0,0.1)} h1{font-size:1.5rem;margin:0 0 .5rem} p{margin:.25rem 0} .muted{color:#6b7280}</style>
+          </head><body><div class="card">
+          <h1>Too many requests</h1>
+          <p>We’re protecting the site from high load. Please try again in ${String(retryAfter || 5)}s.</p>
+          <p class="muted">Global limit: ${limitRpm} requests per minute.</p>
+          </div></body></html>`;
+        return new NextResponse(html, { status: 429, headers: { 'Content-Type': 'text/html; charset=utf-8', ...headers } });
+      }
+    }
+  } catch {}
+
+  // Per-IP RPM limiter (fair-share), after global pass
+  try {
+    const enabled = String(process.env.IP_RPM_ENABLED ?? '1') !== '0';
+    const limitRpm = Number(process.env.IP_RPM ?? 120);
+    if (enabled && req.method !== 'OPTIONS' && pathname && !isPathExcludedFromGlobal(pathname)) {
+      const ip = getClientIpFromHeaders(req.headers) || 'unknown';
+      const key = `${process.env.RATE_PREFIX ?? 'rate'}:ip:${ip}`;
+      const { allow, retryAfter, reset, limit, remaining } = await keyedRateAllow(key, limitRpm);
+      if (!allow) {
+        const isApi = pathname.startsWith('/api/');
+        const headers: Record<string, string> = {
+          'Retry-After': String(retryAfter || 5),
+          'Cache-Control': 'no-store',
+          'X-Ip-RateLimit': '1',
+          'RateLimit-Limit': String(limit || limitRpm),
+          'RateLimit-Remaining': String(Math.max(0, Number(remaining || 0))),
+          'RateLimit-Reset': String(reset || retryAfter || 60),
+          'X-Throttle-Path': pathname,
+        };
+        if (isApi) {
+          return new NextResponse(
+            JSON.stringify({ error: 'too_many_requests', scope: 'ip', limit: limitRpm }),
+            { status: 429, headers: { 'Content-Type': 'application/json', ...headers } },
+          );
+        }
+        return new NextResponse('Too many requests from your network. Please slow down.', { status: 429, headers });
+      }
+    }
+  } catch {}
+
+  // Per-user RPM limiter (authenticated users), after IP pass
+  try {
+    const enabled = String(process.env.USER_RPM_ENABLED ?? '1') !== '0';
+    const limitRpm = Number(process.env.USER_RPM ?? 180);
+    if (enabled && req.method !== 'OPTIONS' && pathname && !isPathExcludedFromGlobal(pathname)) {
+      const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+      const uid = (token as any)?.userId || (token as any)?.id || (token as any)?.sub || null;
+      const email = (token as any)?.email || null;
+      const userKeySrc = uid ? `id:${uid}` : (email ? `email:${String(email).toLowerCase()}` : null);
+      if (userKeySrc) {
+        const key = `${process.env.RATE_PREFIX ?? 'rate'}:user:${userKeySrc}`;
+        const { allow, retryAfter, reset, limit, remaining } = await keyedRateAllow(key, limitRpm);
+        if (!allow) {
+          const headers: Record<string, string> = {
+            'Retry-After': String(retryAfter || 5),
+            'Cache-Control': 'no-store',
+            'X-User-RateLimit': '1',
+            'RateLimit-Limit': String(limit || limitRpm),
+            'RateLimit-Remaining': String(Math.max(0, Number(remaining || 0))),
+            'RateLimit-Reset': String(reset || retryAfter || 60),
+            'X-Throttle-Path': pathname,
+          };
+          return new NextResponse(
+            JSON.stringify({ error: 'too_many_requests', scope: 'user', limit: limitRpm }),
+            { status: 429, headers: { 'Content-Type': 'application/json', ...headers } },
+          );
+        }
+      }
+    }
+  } catch {}
+
+  // Instance (edge) throttle for ALL API routes to avoid storms in dev/prod
   if (edgeThrottle.enabled && pathname.startsWith('/api/')) {
     if (!edgeThrottle.allow()) {
       return edgeThrottle.tooManyResponse(req.nextUrl);
@@ -130,6 +235,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Run on all admin routes AND all API routes (dev throttle)
-  matcher: ['/admin/:path*', '/api/:path*'],
+  // Run on everything (global throttle) but we’ll skip static paths in code.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

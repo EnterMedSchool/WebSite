@@ -517,7 +517,16 @@ export default function LessonPage() {
                 if (!hasVideo) {
                   return (
                     <div key="demo-video" className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-                      {(player?.iframeSrc && player?.source === 'video_html') ? (
+                      {(player?.locked && player?.source === 'video_html') ? (
+                        <div className="flex flex-col items-center justify-center gap-3 text-center">
+                          <div className="text-sm font-semibold text-indigo-900">This lesson is available for Ari's IMAT students</div>
+                          <div className="text-[12px] text-gray-600">Purchase the IMAT course to access this video and materials.</div>
+                          <div className="mt-1 flex items-center justify-center gap-2">
+                            <a href="/imat-course" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Go to IMAT course</a>
+                            <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100">Log in</button>
+                          </div>
+                        </div>
+                      ) : (player?.iframeSrc && player?.source === 'video_html') ? (
                         <VideoPanel
                           iframeSrc={player.iframeSrc || undefined}
                           locked={!!player?.locked}
@@ -542,7 +551,10 @@ export default function LessonPage() {
               {(() => {
                 let navShown = false;
                 let objShown = false;
-                return blocks.map((b, i) => {
+                const blurLocked = !!(player?.locked && player?.source === 'video_html');
+                return (
+                  <div className={blurLocked ? 'filter blur-[2px] select-none pointer-events-none' : ''}>
+                  {blocks.map((b, i) => {
                   const isVideo = b.kind === 'video';
                   return (
                     <div key={`wrap-${b.id}`}>
@@ -587,8 +599,10 @@ export default function LessonPage() {
                       {isVideo && !objShown && (objShown = true) && (<ObjectivesStrip chapter={chapter} />)}
                       {isVideo && !navShown && (navShown = true) && (<div />)}
                     </div>
-                  );
-                });
+                  )})}
+                  </div>
+                );
+              })()}
               })()}
 
               {!focusMode && (

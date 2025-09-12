@@ -157,9 +157,13 @@ export default function DevFetchGuard() {
             if (res?.status === 429) {
               const pathFromHeader = res.headers.get("X-Throttle-Path") || "";
               const pathname = pathFromHeader || (key.split(" ")[1] || "/api");
+              const scope = res.headers.get("X-Global-RateLimit") ? "global" :
+                            res.headers.get("X-Ip-RateLimit") ? "ip" :
+                            res.headers.get("X-User-RateLimit") ? "user" :
+                            res.headers.get("X-Api-Edge-Throttle") ? "edge" : "server_429";
               window.dispatchEvent(
                 new CustomEvent("throttle-warning", {
-                  detail: { path: pathname, source: "server_429" },
+                  detail: { path: pathname, source: scope },
                 })
               );
             }

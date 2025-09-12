@@ -71,7 +71,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
         .where(eq(users.id as any, userId))
         .limit(1))[0];
       const hasPremium = !!u?.isPremium;
-      const needsImat = /imat/.test(courseSlug);
+      const needsImat = /imat/.test(courseSlug) || Number(l.courseId) === 10;
       let hasImat = false;
       if (needsImat) {
         hasImat = !!(await db
