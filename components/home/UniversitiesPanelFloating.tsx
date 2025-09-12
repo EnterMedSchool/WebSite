@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -70,13 +70,13 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
               </div>
               <div className="min-w-0">
                 <div className="truncate font-medium">{c.uni}</div>
-                <div className="text-sm text-gray-500">{c.city}{c.kind ? ' • ' + (c.kind === 'private' ? 'Private' : 'Public') : ''}</div>
+                <div className="text-sm text-gray-500">{c.city}{c.kind ?  ·  : ''}</div>
               </div>
               {typeof (c as any).emsCount === 'number' && (
                 <div className="ml-auto text-[11px] font-semibold text-indigo-700 bg-indigo-50 rounded-full px-2 py-0.5 ring-1 ring-indigo-200">EMS {(c as any).emsCount}</div>
               )}
               {typeof c.rating === 'number' && (
-                <div className="ml-2 text-sm font-semibold text-gray-700">★ {c.rating.toFixed(1)}</div>
+                <div className="ml-2 text-sm font-semibold text-gray-700">â˜… {c.rating.toFixed(1)}</div>
               )}
             </div>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -113,3 +113,4 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
     </div>
   );
 }
+

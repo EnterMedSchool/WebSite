@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -12,29 +12,38 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const lr = await sql`SELECT id, slug, title, course_id FROM lessons WHERE slug=${slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
   const br = await sql`SELECT id, kind, content FROM lesson_blocks WHERE lesson_id=${lesson.id} ORDER BY COALESCE(rank_key,'')`;
   const cr = await sql`SELECT id, slug, title FROM courses WHERE id=${lesson.course_id} LIMIT 1`;
-
-  // Prev/next: course-wide via rank_key
+  // Resolve the chapter (if any) this lesson belongs to, for linking to the chapter guidebook
+  let chapter: { id: number; slug: string; title: string; position?: number } | null = null;
+  try {
+    const chR = await sql`
+      SELECT c.id, c.slug, c.title, c.description, c.position, c.meta
+      FROM chapter_lessons cl
+      JOIN chapters c ON c.id = cl.chapter_id
+      WHERE cl.lesson_id = ${lesson.id}
+      ORDER BY c.position ASC
+      LIMIT 1`;
+    if (chR.rows[0]) {
+      chapter = { id: Number(chR.rows[0].id), slug: String(chR.rows[0].slug), title: String(chR.rows[0].title), description: chR.rows[0].description ? String(chR.rows[0].description) : null, position: Number(chR.rows[0].position), ...(chR.rows[0].meta ? { meta: chR.rows[0].meta } : {}) } as any;
+    }
+  } catch {}
+  // Compute prev/next based on rank_key within the same course
   const lr2 = await sql`SELECT id, slug, title, COALESCE(rank_key,'') as rk FROM lessons WHERE course_id=${lesson.course_id} ORDER BY COALESCE(rank_key,'') ASC, slug ASC`;
   const ordered = lr2.rows as any[];
   const idx = ordered.findIndex((l:any)=> Number(l.id) === Number(lesson.id));
   const prev = idx>0 ? { slug: ordered[idx-1].slug, title: ordered[idx-1].title } : null;
   const next = idx>=0 && idx < ordered.length-1 ? { slug: ordered[idx+1].slug, title: ordered[idx+1].title } : null;
-
-  // Chapter containing this lesson (first by position)
-  const ch = await sql`SELECT chapter_id FROM chapter_lessons WHERE lesson_id=${lesson.id} ORDER BY position ASC, chapter_id ASC LIMIT 1`;
-  const chapterId = ch.rows[0]?.chapter_id ? Number(ch.rows[0].chapter_id) : 0;
-
-  // Question counts across course (for qCount badges)
+  // Preload question counts per lesson for sidebar drilldown
   const qCountByLesson = new Map<number, number>();
   try {
-    const qr = await sql`SELECT q.lesson_id, COUNT(*)::int AS cnt FROM questions q WHERE q.lesson_id IN (SELECT id FROM lessons WHERE course_id=${lesson.course_id}) GROUP BY q.lesson_id`;
+    const qr = await sql`SELECT q.lesson_id, COUNT(*)::int AS cnt
+                         FROM questions q
+                         WHERE q.lesson_id IN (SELECT id FROM lessons WHERE course_id=${lesson.course_id})
+                         GROUP BY q.lesson_id`;
     for (const r of qr.rows) qCountByLesson.set(Number(r.lesson_id), Number(r.cnt));
   } catch {}
-
-  // Optional per-user progress and chapter-scoped timeline
+  // Per-user course progress (if authenticated)
   let courseProgress: any = null;
   let timelineLessons: any[] | null = null;
   try {
@@ -46,7 +55,6 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       const ur = await sql`SELECT id FROM users WHERE email=${email} LIMIT 1`;
       if (ur.rows[0]?.id) userId = Number(ur.rows[0].id);
     }
-
     if (userId) {
       const totalR = await sql`SELECT COUNT(*)::int AS total FROM lessons WHERE course_id=${lesson.course_id}`;
       const compR = await sql`SELECT COUNT(*)::int AS completed FROM user_lesson_progress ulp JOIN lessons l ON l.id=ulp.lesson_id WHERE ulp.user_id=${userId} AND l.course_id=${lesson.course_id} AND ulp.completed=true`;
@@ -54,22 +62,13 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       const completed = Number(compR.rows[0]?.completed || 0);
       const pct = total ? Math.round((completed / total) * 100) : 0;
       courseProgress = { total, completed, pct };
-    }
-
-    if (chapterId) {
-      const rows = await sql`SELECT l.id, l.slug, l.title, COALESCE(l.length_min, l.duration_min) AS length_min, cl.position FROM chapter_lessons cl JOIN lessons l ON l.id = cl.lesson_id WHERE cl.chapter_id=${chapterId} ORDER BY cl.position ASC, l.id ASC LIMIT 20`;
-      const ids = rows.rows.map((r:any)=> Number(r.id));
-      const doneSet = new Set<number>();
-      if (userId && ids.length > 0) {
-        const dr = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND lesson_id = ANY(${ids as any}) AND completed=true`;
-        for (const r of dr.rows) doneSet.add(Number(r.lesson_id));
-      }
-      timelineLessons = rows.rows.map((r:any)=> ({ id: Number(r.id), slug: String(r.slug), title: String(r.title), completed: doneSet.has(Number(r.id)), qCount: qCountByLesson.get(Number(r.id)) ?? 0 }));
+      // Build timeline with completion flags
+      const cr = await sql`SELECT lesson_id FROM user_lesson_progress WHERE user_id=${userId} AND completed=true`;
+      const done = new Set<number>(cr.rows.map((r:any)=> Number(r.lesson_id)));
+      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: done.has(Number(l.id)), qCount: qCountByLesson.get(Number(l.id)) ?? 0 }));
     } else {
-      const slice = ordered.slice(Math.max(0, idx - 10), idx + 10).slice(0, 20);
-      timelineLessons = slice.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 }));
+      timelineLessons = ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 }));
     }
-  } catch {}
-
-  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? [] } });
+  } catch { /* ignore, courseProgress stays null */ }
+  return NextResponse.json({ lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title }, course: cr.rows[0], chapter, blocks: br.rows, nav: { prev, next }, courseProgress, timeline: { lessons: timelineLessons ?? ordered.map((l:any)=> ({ id: Number(l.id), slug: l.slug, title: l.title, completed: false, qCount: qCountByLesson.get(Number(l.id)) ?? 0 })) } });
 }

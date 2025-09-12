@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import TrendChart, { TrendSeries } from "@/components/charts/TrendChart";
@@ -64,25 +64,31 @@ export default function MiniTrend({ uni, id, root, prefetch }: { uni: string; id
   const holderRef = useRef<HTMLDivElement | null>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
 
-  // If prefetch is provided (from /api/universities), hydrate immediately and skip fetching
+  // If prefetch is provided (from /api/universities), hydrate immediately.
+  // Only skip network fetch when we actually have points; otherwise allow fetch.
   useEffect(() => {
     if (!prefetch) return;
-    const euPts = (prefetch.points || []).filter((p: any) => p.type === "EU").map((p: any) => ({ year: p.year, type: p.type, score: p.score }));
-    const nePts = (prefetch.points || []).filter((p: any) => p.type === "NonEU").map((p: any) => ({ year: p.year, type: p.type, score: p.score }));
+    const prePts = Array.isArray(prefetch.points) ? prefetch.points : [];
+    const preSeats = Array.isArray(prefetch.seats) ? prefetch.seats : [];
+    const euPts = prePts.filter((p: any) => p.type === "EU").map((p: any) => ({ year: p.year, type: p.type, score: p.score }));
+    const nePts = prePts.filter((p: any) => p.type === "NonEU").map((p: any) => ({ year: p.year, type: p.type, score: p.score }));
     const out: TrendSeries[] = [];
     if (euPts.length) out.push({ uni: "EU", points: euPts });
     if (nePts.length) out.push({ uni: "NonEU", points: nePts });
-    setSeries(out);
-    const latestYear = Math.max(...((prefetch.seats || []).map((x: any) => x.year) ?? [0]));
-    const eu = (prefetch.seats || []).find((x: any) => x.year === latestYear && x.type === "EU")?.seats;
-    const nonEu = (prefetch.seats || []).find((x: any) => x.year === latestYear && x.type === "NonEU")?.seats;
-    setSeats({ eu, nonEu, year: latestYear > 0 ? latestYear : undefined });
-    setShouldLoad(false); // no need to fetch
+    if (out.length) setSeries(out);
+    if (preSeats.length) {
+      const latestYear = Math.max(...(preSeats.map((x: any) => x.year) ?? [0]));
+      const eu = preSeats.find((x: any) => x.year === latestYear && x.type === "EU")?.seats;
+      const nonEu = preSeats.find((x: any) => x.year === latestYear && x.type === "NonEU")?.seats;
+      setSeats({ eu, nonEu, year: latestYear > 0 ? latestYear : undefined });
+    }
+    setShouldLoad(!(out.length > 0));
   }, [prefetch]);
 
   // Defer network work until item is near visible
   useEffect(() => {
-    if (shouldLoad || prefetch) return;
+    const hasPrefetchedPoints = !!(prefetch && Array.isArray(prefetch.points) && prefetch.points.length > 0);
+    if (shouldLoad || hasPrefetchedPoints) return;
     const el = holderRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
@@ -98,7 +104,7 @@ export default function MiniTrend({ uni, id, root, prefetch }: { uni: string; id
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [root, shouldLoad]);
+  }, [root, shouldLoad, prefetch?.points]);
 
   useEffect(() => {
     if (!shouldLoad) return;
@@ -172,3 +178,4 @@ export default function MiniTrend({ uni, id, root, prefetch }: { uni: string; id
     </div>
   );
 }
+

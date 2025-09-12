@@ -4,6 +4,7 @@ import { Baloo_2, Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
 import Providers from "./providers";
+import DevFetchGuard from "@/components/dev/DevFetchGuard";
 
 export const metadata: Metadata = {
   title: "WebSite",
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900`}>
         <Providers>
+          {process.env.NODE_ENV !== 'production' ? <DevFetchGuard /> : null}
           <Navbar />
           <main className="mx-auto max-w-[1400px] p-6">{children}</main>
           {STUDY_ENABLED ? <QuickDock /> : null}

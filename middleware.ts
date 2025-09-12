@@ -2,6 +2,66 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
+// --- Edge API throttle (dev + prod) -----------------------------
+// Token-bucket limiter at the middleware (edge) layer to stop
+// accidental request storms before they reach route handlers.
+// Lightweight, best-effort in-memory per runtime instance.
+const edgeThrottle = (() => {
+  const isDev = process.env.NODE_ENV !== 'production';
+  // Enable by default in prod; in dev use DEV_THROTTLE (back-compat)
+  const enabled = String(
+    process.env.API_EDGE_THROTTLE ?? (isDev ? process.env.DEV_THROTTLE ?? '1' : '1'),
+  ) !== '0';
+  const MAX_RPS = Number(
+    process.env.API_EDGE_MAX_RPS ?? (isDev ? process.env.DEV_MAX_RPS ?? 60 : 300),
+  );
+  const BURST = Number(
+    process.env.API_EDGE_BURST ?? (isDev ? process.env.DEV_BURST ?? Math.max(120, MAX_RPS * 2) : Math.max(600, MAX_RPS * 2)),
+  );
+
+  const key = '__EDGE_TOKEN_BUCKET__';
+  type Bucket = { tokens: number; lastRefill: number };
+  // @ts-ignore
+  const g: any = globalThis as any;
+  if (!g[key]) {
+    g[key] = { tokens: BURST, lastRefill: Date.now() } as Bucket;
+  }
+
+  function allow(): boolean {
+    if (!enabled) return true;
+    const bucket: Bucket = g[key];
+    const now = Date.now();
+    const delta = Math.max(0, now - bucket.lastRefill);
+    const refill = (delta / 1000) * MAX_RPS;
+    bucket.tokens = Math.min(BURST, bucket.tokens + refill);
+    bucket.lastRefill = now;
+    if (bucket.tokens >= 1) {
+      bucket.tokens -= 1;
+      return true;
+    }
+    return false;
+  }
+
+  function tooManyResponse(url?: URL) {
+    const res = new NextResponse(
+      JSON.stringify({ error: 'too_many_requests', hint: 'edge throttle active' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+          'Retry-After': '1',
+          'X-Api-Edge-Throttle': '1',
+          ...(url ? { 'X-Throttle-Path': url.pathname } : {}),
+        },
+      },
+    );
+    return res;
+  }
+
+  return { enabled, allow, tooManyResponse };
+})();
+
 function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   const allow = (process.env.ADMIN_EMAILS || 'entermedschool@gmail.com')
@@ -14,6 +74,14 @@ function isAdminEmail(email: string | null | undefined): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
+
+  // Edge throttle for ALL API routes to avoid storms in dev/prod
+  if (edgeThrottle.enabled && pathname.startsWith('/api/')) {
+    if (!edgeThrottle.allow()) {
+      return edgeThrottle.tooManyResponse(req.nextUrl);
+    }
+  }
+  // If this is not an admin path, proceed normally after dev throttle check
   if (!isAdminPath) return NextResponse.next();
 
   // Allow only CORS preflight to pass for API (if any)
@@ -62,5 +130,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  // Run on all admin routes AND all API routes (dev throttle)
+  matcher: ['/admin/:path*', '/api/:path*'],
 };
