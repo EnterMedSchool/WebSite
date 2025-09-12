@@ -4,7 +4,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // react-force-graph-2d must be dynamically imported (no SSR)
-const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false }) as any;
+// Explicitly resolve the default export to avoid "element type is invalid" issues in prod
+const ForceGraph2D = dynamic(() => import("react-force-graph-2d").then(m => m.default), { ssr: false }) as any;
 
 type GraphJSON = {
   nodes: { id: string; label: string; slug?: string; courseId?: number }[];
