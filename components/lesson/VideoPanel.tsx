@@ -7,6 +7,7 @@ type Anchor = { pos: number; id: string; label: string };
 
 type Props = {
   src?: string; // can be file or YouTube URL
+  iframeSrc?: string; // explicit iframe URL (e.g., Bunny embed)
   poster?: string;
   locked?: boolean;
   lockReason?: string;
@@ -35,7 +36,7 @@ function toYouTubeEmbed(url?: string): string | null {
   return null;
 }
 
-export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, subtitles, prev, next, anchors }: Props) {
+export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason, onUnlock, subtitles, prev, next, anchors }: Props) {
   const yt = toYouTubeEmbed(src);
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -55,7 +56,19 @@ export default function VideoPanel({ src, poster, locked, lockReason, onUnlock, 
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
-        {yt ? (
+        {iframeSrc ? (
+          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={iframeSrc}
+              title="Lesson video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+              style={{ border: 0 }}
+            />
+          </div>
+        ) : yt ? (
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
             <iframe
               className="absolute inset-0 h-full w-full"

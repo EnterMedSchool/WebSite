@@ -201,8 +201,8 @@ function Mini24hAndStreak({ openTick }: { openTick: number }) {
   return (
     <div>
       <div className="grid grid-cols-4 gap-2 text-xs">
-        <AnimatedStatPill loading={loading} color="indigo" label="XP (24h)" value={`+${xpToday}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>} />
-        <AnimatedStatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}m`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>} />
+        <AnimatedStatPill loading={loading} color="indigo" label="XP (24h)" value={`${xpToday}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>} />
+        <AnimatedStatPill loading={loading} color="emerald" label="Minutes" value={`${minutesToday}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>} />
         <AnimatedStatPill loading={loading} color="amber" label="Correct" value={`${correctToday}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>} />
         <AnimatedStatPill loading={loading} color="sky" label="Tasks" value={`${stats?.learning?.tasksToday ?? 0}`} icon={<svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>} />
       </div>
@@ -259,12 +259,10 @@ function AnimatedStatPill({ loading, color, label, value, icon }: { loading: boo
     ? { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' }
     : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
   return (
-    <div className={`min-w-0 flex items-center justify-between overflow-hidden rounded-xl border ${theme.ring} ${theme.bg} px-3 py-2`}>
-      <div className={`min-w-0 flex items-center gap-2 ${theme.text}`}>
-        <span className="shrink-0">{icon}</span>
-        <div className="min-w-0 truncate font-semibold">{label}</div>
-      </div>
-      <div key={popKey} className={`shrink-0 whitespace-nowrap text-[11px] font-bold tabular-nums ${theme.text}`} style={{ animation: loading ? undefined : 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{loading ? '…' : value}</div>
+    <div className={`flex items-center justify-between rounded-xl border ${theme.ring} ${theme.bg} px-2.5 py-1.5`}>
+      <span className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/60 ${theme.text}`}>{icon}</span>
+      <div key={popKey} className={`ml-auto whitespace-nowrap text-[12px] font-bold tabular-nums ${theme.text}`} style={{ animation: loading ? undefined : 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{loading ? '…' : value}</div>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }

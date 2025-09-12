@@ -76,6 +76,30 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     let newXp = null as null | number;
     let newLevel = null as null | number;
     const rewards: any[] = [];
+
+    // Badge label maps
+    const LESSON_BADGES: Record<number, string> = {
+      25: "Lesson Runner I — 25 lessons done.",
+      50: "Lesson Runner II — 50 lessons.",
+      100: "Lesson Runner III — 100 lessons.",
+      250: "Lesson Marathon I — 250 lessons.",
+      500: "Lesson Marathon II — 500 lessons.",
+      750: "Lesson Marathon III — 750 lessons.",
+      1000: "Kilolesson — 1,000 lessons.",
+      1500: "Scholar’s Pace — 1,500 lessons.",
+    };
+    const LESSON_MILESTONES = Object.keys(LESSON_BADGES).map((k) => Number(k)).sort((a,b)=>a-b);
+    const STREAK_BADGES: Record<number, string> = {
+      3: "Streak Spark — 3‑day streak.",
+      7: "One‑Week Streak — 7 days.",
+      14: "Two‑Week Flow — 14 days.",
+      21: "Habit Formed — 21 days.",
+      30: "Monthly Momentum — 30 days.",
+      90: "Quarterly Rhythm — 90 days.",
+      180: "Half‑Year Groove — 180 days.",
+      365: "Year of Focus — 365 days.",
+    };
+    const STREAK_MILESTONES = Object.keys(STREAK_BADGES).map((k)=>Number(k)).sort((a,b)=>a-b);
     if (completed) {
       // Award XP only once per lesson per user based on xp_awarded marker
       const awarded = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND subject_type='lesson' AND subject_id=${lesson.id} AND action='xp_awarded' LIMIT 1`;
@@ -107,19 +131,19 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
           await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                     VALUES (${userId}, 'lesson', ${lesson.id}, 'xp_awarded', ${JSON.stringify({ amount: add, totalXp: nextXp })}::jsonb)`;
         } catch {}
-        // Milestone: total completed lessons
+        // Milestone: total completed lessons (retro-award any missing <= total)
         try {
           const cntR = await sql`SELECT COUNT(*)::int AS completed FROM user_lesson_progress WHERE user_id=${userId} AND completed=true`;
           const totalCompleted = Number(cntR.rows[0]?.completed || 0);
-          const milestones = [3, 5, 10, 20, 50];
-          for (const m of milestones) {
-            if (totalCompleted === m) {
+          for (const m of LESSON_MILESTONES) {
+            if (totalCompleted >= m) {
               const key = `lessons_${m}`;
               const exists = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND action='reward' AND (payload->>'key')=${key} LIMIT 1`;
               if (exists.rows.length === 0) {
+                const label = LESSON_BADGES[m] || `${m} Lessons Completed`;
                 try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                                 VALUES (${userId}, 'user', ${userId}, 'reward', ${JSON.stringify({ type: 'badge', key, label: `${m} Lessons Completed` })}::jsonb)`; } catch {}
-                rewards.push({ type: 'badge', key, label: `${m} Lessons Completed` });
+                                 VALUES (${userId}, 'user', ${userId}, 'reward', ${JSON.stringify({ type: 'badge', key, label })}::jsonb)`; } catch {}
+                rewards.push({ type: 'badge', key, label });
               }
             }
           }
@@ -143,6 +167,27 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
                 try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                                  VALUES (${userId}, 'chapter', ${chId}, 'reward', ${JSON.stringify({ type: 'chest', key, label: `Chapter ${Number(ch.position || 0)} Complete` })}::jsonb)`; } catch {}
                 rewards.push({ type: 'chest', key, label: `Chapter ${Number(ch.position || 0)} Complete` });
+              }
+            }
+          }
+        } catch {}
+        // Streak milestones: award when earning XP today and crossing thresholds
+        try {
+          // count consecutive days with any xp_awarded event ending today
+          const sr = await sql`SELECT created_at FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at > now() - interval '40 days' ORDER BY created_at DESC`;
+          const days = Array.from(new Set(sr.rows.map((r:any) => new Date(r.created_at).toDateString())));
+          let d = new Date(); d.setHours(0,0,0,0);
+          let streakDays = 0;
+          while (days.includes(d.toDateString())) { streakDays++; d = new Date(d.getTime() - 86400000); }
+          for (const m of STREAK_MILESTONES) {
+            if (streakDays >= m) {
+              const key = `streak_${m}`;
+              const exists = await sql`SELECT 1 FROM lms_events WHERE user_id=${userId} AND action='reward' AND (payload->>'key')=${key} LIMIT 1`;
+              if (exists.rows.length === 0) {
+                const label = STREAK_BADGES[m] || `${m}-day streak`;
+                try { await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                                 VALUES (${userId}, 'user', ${userId}, 'reward', ${JSON.stringify({ type: 'badge', key, label })}::jsonb)`; } catch {}
+                rewards.push({ type: 'badge', key, label });
               }
             }
           }

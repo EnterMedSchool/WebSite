@@ -86,7 +86,7 @@ export default function FloatingPanel({ id, initialSize = { width: 520, height: 
       {bare ? (
         <div className="relative h-full w-full">
           {/* Transparent handle strip for dragging */}
-          <div className="ems-win-drag absolute left-0 right-0 top-0 h-3 cursor-move" />
+          <div className="ems-win-drag absolute left-0 right-0 top-0 h-10 cursor-move" />
           <div className="h-full w-full">{children}</div>
         </div>
       ) : (

@@ -56,6 +56,7 @@ export default function LessonPage() {
   const [focusMode, setFocusMode] = useState<boolean>(false);
   const [introVisited, setIntroVisited] = useState<boolean>(false);
   const [nudgeDismissed, setNudgeDismissed] = useState<boolean>(false);
+  const [player, setPlayer] = useState<{ provider: string | null; iframeSrc: string | null; locked?: boolean; lockReason?: string } | null>(null);
 
   const q = qs[idx];
 
@@ -92,6 +93,19 @@ export default function LessonPage() {
       setTimeline(j.timeline || null);
     })();
   }, [slug]);
+
+  // Load player embed (lazy, small payload) — avoids fetching large bodies repeatedly
+  useEffect(() => {
+    (async () => {
+      try {
+        const qs = unlockDemoVideo ? "?demo=1" : "";
+        const r = await fetch(`/api/lesson/${slug}/player${qs}`);
+        const k = await r.json();
+        setPlayer(k || null);
+      } catch {}
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, unlockDemoVideo]);
 
   // Load questions on opening practice
   useEffect(() => {
@@ -484,20 +498,33 @@ export default function LessonPage() {
             <div className="space-y-4">
               {/* Ensure a video appears for demo even if lesson lacks one */}
               {(() => {
-                const hasVideo = blocks.some((b) => b.kind === 'video');
+                const hasVideo = !!player?.iframeSrc || blocks.some((b) => b.kind === 'video');
                 if (!hasVideo) {
                   return (
                     <div key="demo-video" className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-                      <VideoPanel
-                        src="https://www.youtube.com/watch?v=yO9oj2ScR-g"
-                        locked={!isAuthed && !unlockDemoVideo}
-                        lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
-                        onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
-                        subtitles={[{ lang: 'en', label: 'English' }]}
-                        prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
-                        next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
-                        anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
-                      />
+                      {player?.iframeSrc ? (
+                        <VideoPanel
+                          iframeSrc={player.iframeSrc || undefined}
+                          locked={!!player?.locked}
+                          lockReason={player?.lockReason || (isAuthed ? undefined : "Login or enroll to watch")}
+                          onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                          subtitles={[{ lang: 'en', label: 'English' }]}
+                          prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
+                          next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
+                          anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
+                        />
+                      ) : (
+                        <VideoPanel
+                          src="https://www.youtube.com/watch?v=yO9oj2ScR-g"
+                          locked={!isAuthed && !unlockDemoVideo}
+                          lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
+                          onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                          subtitles={[{ lang: 'en', label: 'English' }]}
+                          prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
+                          next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
+                          anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
+                        />
+                      )}
                       <ObjectivesStrip chapter={chapter} />
                     </div>
                   );
@@ -518,12 +545,23 @@ export default function LessonPage() {
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.03 }}
                       >
-                        {isVideo ? (
+                        {isVideo && !player?.iframeSrc ? (
                           <VideoPanel
                             src={JSON.parse(b.content || "{}")?.src || ""}
                             poster={JSON.parse(b.content || "{}")?.poster || ""}
                             locked={!isAuthed && !unlockDemoVideo}
                             lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
+                            onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                            subtitles={[{ lang: 'en', label: 'English' }]}
+                            prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
+                            next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
+                            anchors={[{ pos: 20, id: 'note-1', label: 'Key idea' }, { pos: 55, id: 'note-2', label: 'Labs' }, { pos: 85, id: 'note-3', label: 'Management' }]}
+                          />
+                        ) : isVideo && player?.iframeSrc ? (
+                          <VideoPanel
+                            iframeSrc={player.iframeSrc || undefined}
+                            locked={!!player?.locked}
+                            lockReason={player?.lockReason || (isAuthed ? undefined : "Login or enroll to watch")}
                             onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
                             subtitles={[{ lang: 'en', label: 'English' }]}
                             prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}

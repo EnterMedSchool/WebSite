@@ -34,6 +34,9 @@ export default function CourseMatesClient({ authed, initial }: {
   const [studyVibe, setStudyVibe] = useState<string | null>(initial.studyVibe || null);
   const [isModerator] = useState<boolean>(initial.isModerator || false);
   const [modPending, setModPending] = useState<boolean>(Boolean((initial as any).modRequestPending));
+  const [uniModerators] = useState<Mate[]>((initial as any).uniModerators || []);
+  const [uniModPending, setUniModPending] = useState<boolean>(Boolean((initial as any).uniModRequestPending));
+  const isUniModerator = Boolean((initial as any).isUniModerator);
   const [feed, setFeed] = useState<any[]>(initial.feed || []);
   const [events, setEvents] = useState<any[]>(initial.events || []);
   const [photos, setPhotos] = useState<any[]>(initial.photos || []);
@@ -301,6 +304,12 @@ export default function CourseMatesClient({ authed, initial }: {
                 <li key={m.id} className="flex items-center gap-3">
                   <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name || m.username)}</div>
                   <div className="text-sm text-gray-900">{m.name || m.username}</div>
+                  {isModerator && (
+                    <button
+                      onClick={async()=>{ try { await fetch('/api/admin/course-mates/moderators', { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ courseId: (initial as any).me?.medicalCourseId, userId: m.id }) }); location.reload(); } catch {} }}
+                      className="ml-auto rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200"
+                    >Remove</button>
+                  )}
                 </li>
               ))}
               {!moderators.length && <li className="text-sm text-gray-600">No representatives assigned yet.</li>}
@@ -311,6 +320,28 @@ export default function CourseMatesClient({ authed, initial }: {
                 <button disabled={modPending} onClick={async()=>{ try { const r = await fetch('/api/course-mates/moderators/apply', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) }); if (r.ok) setModPending(true); } catch {} }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{modPending ? 'Application sent' : 'Apply as a representative'}</button>
               </div>
             )}
+
+            {/* University reps subsection */}
+            <div className="mt-5 border-t pt-3">
+              <div className="mb-2 text-sm font-semibold">University Representatives</div>
+              <ul className="space-y-2">
+                {((uniModerators as any) || []).map((m: any) => (
+                  <li key={m.id} className="flex items-center gap-3">
+                    <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name || m.username)}</div>
+                    <div className="text-sm text-gray-900">{m.name || m.username}</div>
+                    {isUniModerator && (
+                      <button onClick={async()=>{ try { await fetch('/api/admin/universities/moderators', { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ universityId: (initial as any).me?.universityId, userId: m.id }) }); location.reload(); } catch {} }} className="ml-auto rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200">Remove</button>
+                    )}
+                  </li>
+                ))}
+                {(!uniModerators || (uniModerators as any).length===0) && <li className="text-sm text-gray-600">No university reps yet.</li>}
+              </ul>
+              {!isUniModerator && access==='verified' && (
+                <div className="mt-3">
+                  <button disabled={uniModPending} onClick={async()=>{ try { const r = await fetch('/api/universities/moderators/apply', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) }); if (r.ok) setUniModPending(true); } catch {} }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{uniModPending ? 'Application sent' : 'Apply as a university representative'}</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

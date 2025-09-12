@@ -121,7 +121,17 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                 </div>
                 <div className="mt-5 text-base font-bold text-gray-800">Latest chapters</div>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  {(data?.chapters ?? []).slice(0, 2).map((ch) => (
+                  {loading ? (
+                    [0,1].map((i) => (
+                      <div key={i} className="relative rounded-2xl p-[2px] min-h-[148px]" style={{ background: 'conic-gradient(#e5e7eb 0, #e5e7eb 0)' }}>
+                        <div className="flex h-full flex-col justify-between rounded-[14px] border border-gray-100 bg-white p-4 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
+                          <div className="h-4 w-40 animate-pulse rounded bg-gray-100" />
+                          <div className="mt-2 h-5 w-64 animate-pulse rounded bg-gray-100" />
+                          <div className="mt-3 h-3 w-32 animate-pulse rounded bg-gray-100" />
+                        </div>
+                      </div>
+                    ))
+                  ) : (data?.chapters ?? []).slice(0, 2).map((ch) => (
                     <div key={ch.id} className="relative rounded-2xl p-[2px]" style={{ background: `conic-gradient(${(ch.progress_pct ?? 0) >= 100 ? '#10b981' : '#6366f1'} ${Math.max(0, Math.min(100, Math.round(ch.progress_pct ?? 0)))}%, #e5e7eb 0)` }}>
                       <div className="flex h-full flex-col justify-between rounded-[14px] border border-gray-100 bg-white p-4 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
                         <div className="text-sm font-semibold text-indigo-700">{ch.course_title}</div>
@@ -144,8 +154,8 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
               </div>
 
               {/* Course Mates summary / CTA */}
-              <div className="mt-6 rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-fuchsia-50 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                {mates && mates.count > 0 ? (
+              <div className="mt-6 rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-fuchsia-50 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)] min-h-[140px]">
+                {mates && (mates.isVerified || mates.year || mates.course) ? (
                   <div>
                     <div className="flex items-center justify-between">
                       <div>
@@ -175,23 +185,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             {/* Right column */}
             <div className="col-span-5 space-y-4">
               {/* Profile */}
-              <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/90 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="relative h-28 w-full bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200" />
-                <div className="p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">{data?.user?.image ? (<img src={data.user.image} alt="User" className="h-12 w-12 object-cover" />) : (<span className="text-base font-semibold text-indigo-700">{firstName.slice(0,1).toUpperCase()}</span>)}</span>
-                    <div>
-                      <div className="font-semibold text-gray-900">{data?.user?.name ?? "Your Name"}</div>
-                      <a href="/me/profile" className="text-xs font-semibold text-indigo-700 underline">Edit profile</a>
-                    </div>
-                  </div>
-                  <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
-                    <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{data?.user?.level ?? 1}</div><div className="text-gray-600">Level</div></div>
-                    <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{data?.user?.xp ?? 0}</div><div className="text-gray-600">XP</div></div>
-                    <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{data?.user?.streakDays ?? '-'}</div><div className="text-gray-600">Streak</div></div>
-                  </div>
-                </div>
-              </div>
+              <ProfileCard name={data?.user?.name ?? null} imageUrl={data?.user?.image ?? null} level={data?.user?.level ?? 1} xp={data?.user?.xp ?? 0} streakDays={data?.user?.streakDays ?? 0} />
 
               {/* XP / Activity */}
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-5 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
@@ -203,14 +197,14 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             {/* Courses */}
             <div className="col-span-12">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="text-base font-bold text-gray-800">Your Courses</div>
+                <div className="text-base font-bold text-gray-800">Your Relevant Courses</div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {(data?.courses || []).map((c) => {
                     const pct = Math.max(0, Math.min(100, Math.round(Number(c.progress_pct ?? 0))));
                     const col = pct >= 100 ? '#10b981' : '#6366f1';
                     return (
-                      <div key={c.id} className="relative rounded-2xl p-[2px]" style={{ background: `conic-gradient(${col} ${pct}%, #e5e7eb 0)` }}>
-                        <a href={`/course/${encodeURIComponent(c.slug)}`} className="flex items-center gap-3 rounded-[14px] border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:bg-indigo-50/40">
+                      <div key={c.id} className="relative rounded-2xl p-[2px] min-h-[76px]" style={{ background: `conic-gradient(${col} ${pct}%, #e5e7eb 0)` }}>
+                        <a href={`/course/${encodeURIComponent(c.slug)}`} className="flex min-h-[72px] items-center gap-3 rounded-[14px] border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:bg-indigo-50/40">
                           <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-200 to-fuchsia-200 shadow-inner" />
                           <div>
                             <div className="font-semibold text-gray-900">{c.title}</div>
@@ -221,7 +215,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                     );
                   })}
                 </div>
-                <div className="mt-6">
+                <div className="hidden">
                   <a href="/course-mates" className="flex items-center justify-between rounded-2xl border border-indigo-200/70 bg-indigo-50/60 px-4 py-3 text-indigo-800 transition hover:bg-indigo-50">
                     <div>
                       <div className="text-sm font-semibold">Your Course Mates</div>
@@ -232,6 +226,65 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileCard({ name, imageUrl, level, xp, streakDays }: { name: string | null; imageUrl: string | null; level: number; xp: number; streakDays: number }) {
+  const [recent, setRecent] = useState<{ when: string; what: string; amount: number }[] | null>(null);
+  const [rewards, setRewards] = useState<{ key: string; type: string; label: string; earnedAt: string }[] | null>(null);
+  useEffect(() => {
+    (async () => {
+      try { const r = await fetch('/api/me/xp', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setRecent((j?.recent || []).slice(0,6)); setRewards((j?.rewards || []).slice(0,6)); } else { setRecent([]); setRewards([]);} } catch { setRecent([]); setRewards([]);} })();
+  }, []);
+  return (
+    <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/90 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+      <div className="relative h-28 w-full bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200" />
+      <div className="p-4">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">{imageUrl ? (<img src={imageUrl} alt="User" className="h-12 w-12 object-cover" />) : (<span className="text-base font-semibold text-indigo-700">{(name||'U').slice(0,1).toUpperCase()}</span>)}</span>
+          <div>
+            <div className="font-semibold text-gray-900">{name ?? 'Your Name'}</div>
+            <a href="/me/profile" className="text-xs font-semibold text-indigo-700 underline">Edit profile</a>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{level}</div><div className="text-gray-600">Level</div></div>
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{xp}</div><div className="text-gray-600">XP</div></div>
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{streakDays || '-'}</div><div className="text-gray-600">Streak</div></div>
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{Array.isArray(rewards)?rewards.length:'-'}</div><div className="text-gray-600">Items</div></div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div>
+            <div className="mb-1 text-xs font-semibold text-gray-700">Recent XP</div>
+            {recent === null ? (
+              <div className="h-10 animate-pulse rounded bg-gray-100" />
+            ) : recent.length === 0 ? (
+              <div className="text-xs text-gray-600">No XP yet. Complete a lesson to earn some!</div>
+            ) : (
+              <ul className="space-y-1">
+                {recent.map((r,i)=> (
+                  <li key={i} className="flex items-center justify-between text-xs text-gray-800"><span className="truncate pr-2">{r.what}</span><span className="text-gray-500">{r.when}</span><span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">+{r.amount}</span></li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <div className="mb-1 text-xs font-semibold text-gray-700">Inventory</div>
+            {rewards === null ? (
+              <div className="h-10 animate-pulse rounded bg-gray-100" />
+            ) : rewards.length === 0 ? (
+              <div className="text-xs text-gray-600">You don't have items yet.</div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {rewards.map((rw,i)=> (
+                  <span key={rw.key} className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-50 to-fuchsia-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200/70">{rw.label}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

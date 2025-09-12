@@ -61,6 +61,9 @@ export const lessons = pgTable(
     // Optional thumbnail for homepage mini-lesson slider
     miniLessonThumbnail: varchar("mini_lesson_thumbnail", { length: 500 }),
     body: text("body"),
+    // Optional raw HTML embed for lesson video (YouTube or Bunny)
+    // This exists in the DB and is used to render the primary video player
+    videoHtml: text("video_html"),
     position: integer("position").default(0).notNull(),
     rankKey: varchar("rank_key", { length: 32 }),
     visibility: varchar("visibility", { length: 16 }).default("public"),
@@ -587,6 +590,21 @@ export const studentOrganizationCourses = pgTable(
   (t) => ({ orgCoursesCourseIdx: index("org_courses_course_idx").on(t.courseId) })
 );
 
+// Per-user selection of courses to show on dashboard
+export const userRelevantCourses = pgTable(
+  "user_relevant_courses",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    courseId: integer("course_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    urcUserIdx: index("urc_user_idx").on(t.userId),
+    urcCourseIdx: index("urc_course_idx").on(t.courseId),
+  })
+);
+
 // ---------------- Course Mates social features ----------------
 
 export const courseMatesModerators = pgTable(
@@ -655,6 +673,38 @@ export const courseEventPhotos = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({ cepEventIdx: index("cep_event_idx").on(t.eventId) })
+);
+
+// University-level representatives
+export const universityModerators = pgTable(
+  "university_moderators",
+  {
+    id: serial("id").primaryKey(),
+    universityId: integer("university_id").notNull(),
+    userId: integer("user_id").notNull(),
+    role: varchar("role", { length: 24 }).default("moderator").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ umodUniIdx: index("umod_uni_idx").on(t.universityId) })
+);
+
+export const universityModeratorRequests = pgTable(
+  "university_moderator_requests",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    universityId: integer("university_id").notNull(),
+    note: text("note"),
+    status: varchar("status", { length: 16 }).default("pending").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    reviewedAt: timestamp("reviewed_at"),
+    reviewedBy: integer("reviewed_by"),
+  },
+  (t) => ({
+    umodReqUserIdx: index("umod_req_user_idx").on(t.userId),
+    umodReqUniIdx: index("umod_req_uni_idx").on(t.universityId),
+    umodReqStatusIdx: index("umod_req_status_idx").on(t.status),
+  })
 );
 
 // Pending education requests requiring manual approval

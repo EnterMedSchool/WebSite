@@ -130,6 +130,9 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
               <li>
                 <Link href="/leaderboard" onClick={() => setOpen(false)} className="block w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Leaderboard</Link>
               </li>
+              <li>
+                <Link href="/me/courses" onClick={() => setOpen(false)} className="block w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Relevant courses</Link>
+              </li>
               
               <li>
                 <button className="w-full rounded-lg px-4 py-2 text-left text-gray-800 hover:bg-gray-50">Settings</button>

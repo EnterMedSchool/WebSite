@@ -2,7 +2,7 @@ import CourseMatesClient from './CourseMatesClient';
 import { resolveUserIdFromSession } from '@/lib/user';
 import { sql } from '@/lib/db';
 import { getUniversities, getSchoolsByUniversity, getCourses } from '@/lib/course-mates/cache';
-import { isCourseModerator } from '@/lib/course-mates/moderation';
+import { isCourseModerator, isUniversityModerator } from '@/lib/course-mates/moderation';
 
 export default async function CourseMatesPage() {
   const userId = await resolveUserIdFromSession();
@@ -101,12 +101,22 @@ export default async function CourseMatesPage() {
   }
   let photos: any[] = [];
   if (courseId) {
-    try { const r = await sql`SELECT p.id, p.url, p.caption FROM course_event_photos p WHERE p.event_id IN (SELECT id FROM course_events WHERE course_id=${courseId} ORDER BY start_at DESC LIMIT 50) ORDER BY p.created_at DESC LIMIT 9`; photos = r.rows; } catch {}
+    try { const r = await sql`SELECT p.id, p.url, p.thumb_url, p.caption FROM course_event_photos p WHERE p.event_id IN (SELECT id FROM course_events WHERE course_id=${courseId} ORDER BY start_at DESC LIMIT 50) ORDER BY p.created_at DESC LIMIT 9`; photos = r.rows; } catch {}
   }
 
   let modRequestPending = false;
   if (courseId) {
     try { const r = await sql`SELECT 1 FROM course_moderator_requests WHERE user_id=${userId} AND course_id=${courseId} AND status='pending' LIMIT 1`; modRequestPending = !!r.rows[0]; } catch {}
+  }
+
+  // University representatives
+  let uniModerators: any[] = [];
+  let uniModRequestPending = false;
+  let isUniModerator = false;
+  if (uniId) {
+    try { const r = await sql`SELECT m.user_id AS id, u.name, u.username, u.image FROM university_moderators m LEFT JOIN users u ON u.id = m.user_id WHERE m.university_id=${uniId} ORDER BY u.name NULLS LAST, u.username NULLS LAST`; uniModerators = r.rows; } catch {}
+    try { const r = await sql`SELECT 1 FROM university_moderator_requests WHERE user_id=${userId} AND university_id=${uniId} AND status='pending' LIMIT 1`; uniModRequestPending = !!r.rows[0]; } catch {}
+    isUniModerator = await isUniversityModerator(userId, uniId);
   }
 
   const initial = {
@@ -125,6 +135,9 @@ export default async function CourseMatesPage() {
     photos,
     moderators,
     modRequestPending,
+    uniModerators,
+    uniModRequestPending,
+    isUniModerator,
   };
 
   return <CourseMatesClient authed={true} initial={initial} />;
