@@ -101,8 +101,13 @@ export async function moveChapterAction(courseId: number, chapterId: number, dir
   const cur = await sql`SELECT id, position FROM chapters WHERE id=${id} AND course_id=${cid} LIMIT 1`;
   const row = cur.rows?.[0] as any;
   if (!row) return { ok: true };
-  const neigh = await sql`SELECT id, position FROM chapters WHERE course_id=${cid} AND position ${direction === 'up' ? sql`<` : sql`>`} ${row.position} ORDER BY position ${direction === 'up' ? sql`DESC` : sql`ASC`} LIMIT 1`;
-  const n = neigh.rows?.[0] as any;
+  let neigh;
+  if (direction === 'up') {
+    neigh = await sql`SELECT id, position FROM chapters WHERE course_id=${cid} AND position < ${row.position} ORDER BY position DESC LIMIT 1`;
+  } else {
+    neigh = await sql`SELECT id, position FROM chapters WHERE course_id=${cid} AND position > ${row.position} ORDER BY position ASC LIMIT 1`;
+  }
+  const n = (neigh as any).rows?.[0] as any;
   if (!n) return { ok: true };
   await (sql as any)`UPDATE chapters SET position = CASE WHEN id=${id} THEN ${n.position} WHEN id=${n.id} THEN ${row.position} ELSE position END WHERE id IN (${[id, n.id] as any})`;
   revalidatePath(`/admin/lms/${cid}`);

@@ -14,6 +14,7 @@ import {
   reorderChapterLessonsAction,
   reorderChaptersAction,
 } from "../actions";
+import DndList from "@/components/admin/DndList";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -89,6 +90,28 @@ export default async function AdminCourseLmsPage({ params }: { params: { courseI
 
       {/* Chapters list */}
       <div className="mt-6 space-y-6">
+        {/* Drag-and-drop reorder chapters */}
+        {data.chapters.length > 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="mb-2 text-sm font-semibold text-gray-800">Reorder chapters</div>
+            <form action={async (fd: FormData) => {
+              "use server";
+              const raw = String(fd.get("order") || "[]");
+              let ids: number[] = [];
+              try { ids = JSON.parse(raw); } catch {}
+              if (Array.isArray(ids) && ids.length) await reorderChaptersAction(cid, ids.map((n:any)=>Number(n)).filter((n)=>Number.isFinite(n)));
+            }}>
+              <DndList
+                items={data.chapters.map((c)=>({ id: c.id, label: c.title, subtitle: c.slug }))}
+                inputName="order"
+              />
+              <div className="mt-3 text-right">
+                <button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Save Order</button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {data.chapters.map((ch, chIdx) => (
           <div key={ch.id} className="rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center justify-between gap-3 border-b p-3">
@@ -154,6 +177,28 @@ export default async function AdminCourseLmsPage({ params }: { params: { courseI
                 ))}
               </ul>
 
+              {/* DnD reorder lessons */}
+              {ch.lessons.length > 1 && (
+                <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="mb-2 text-sm text-gray-800">Reorder lessons</div>
+                  <form action={async (fd: FormData) => {
+                    "use server";
+                    const raw = String(fd.get("order") || "[]");
+                    let ids: number[] = [];
+                    try { ids = JSON.parse(raw); } catch {}
+                    if (Array.isArray(ids) && ids.length) await reorderChapterLessonsAction(ch.id, ids.map((n:any)=>Number(n)).filter((n)=>Number.isFinite(n)));
+                  }}>
+                    <DndList
+                      items={ch.lessons.map((l)=>({ id: l.id, label: l.title, subtitle: l.slug }))}
+                      inputName="order"
+                    />
+                    <div className="mt-3 text-right">
+                      <button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Save Lesson Order</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
               {/* Attach existing lesson */}
               <div className="mt-3">
                 <form action={async (fd: FormData) => { "use server"; const lid = Number(fd.get("lessonId")); if (Number.isFinite(lid) && lid>0) await attachLessonToChapterAction(ch.id, lid); }} className="flex items-center gap-2">
@@ -185,31 +230,7 @@ export default async function AdminCourseLmsPage({ params }: { params: { courseI
         ))}
       </div>
 
-      {/* Batch reorder chapters by position numbers */}
-      {data.chapters.length > 0 ? (
-        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-4">
-          <div className="text-sm font-semibold text-gray-800">Reorder chapters (batch)</div>
-          <form action={async (fd: FormData) => {
-            "use server";
-            const ids = data.chapters.map((c) => c.id);
-            // parse desired mapping from inputs like pos_<id>
-            const pairs = ids.map((id) => ({ id, pos: Number(fd.get(`pos_${id}`)) || 0 })).filter((p) => p.pos > 0);
-            // Sort by desired pos, stable fallback by current order
-            const ordered = [...pairs].sort((a,b)=> a.pos===b.pos ? ids.indexOf(a.id)-ids.indexOf(b.id) : a.pos-b.pos).map((p)=>p.id);
-            await reorderChaptersAction(cid, ordered);
-          }} className="mt-3 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-            {data.chapters.map((ch, i) => (
-              <label key={ch.id} className="flex items-center justify-between gap-3 rounded-md border px-2 py-1 text-sm">
-                <span className="truncate">{ch.title}</span>
-                <input name={`pos_${ch.id}`} defaultValue={i+1} className="w-16 rounded-md border px-2 py-1 text-sm" />
-              </label>
-            ))}
-            <div className="sm:col-span-2 md:col-span-3">
-              <button className="mt-2 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Save Chapter Order</button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+      {/* Removed numeric batch reorder (replaced by DnD above) */}
     </div>
   );
 }

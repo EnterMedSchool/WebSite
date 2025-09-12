@@ -3,6 +3,7 @@ import { db, sql } from "@/lib/db";
 import { lessons, courses, questions } from "@/drizzle/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { createQuestionAction, moveQuestionToLessonAction, reorderQuestionsAction, updateQuestionAction, deleteQuestionAction } from "../../../actions";
+import DndList from "@/components/admin/DndList";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -51,28 +52,29 @@ export default async function LessonQuestionsAdminPage({ params }: { params: { l
         </form>
       </div>
 
-      {/* Questions list */}
+      {/* Questions list + DnD reorder */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-white p-3">
         <div className="text-sm font-semibold text-gray-800">Questions</div>
-        <form action={async (fd: FormData) => {
-          "use server";
-          const orderedIds: number[] = [];
-          for (const q of qs) {
-            const v = Number(fd.get(`pos_${q.id}`));
-            if (Number.isFinite(v) && v>0) orderedIds.push(q.id);
-          }
-          // Sort by provided positions
-          const items = qs.map((q:any)=>({ id:q.id, pos: Number(fd.get(`pos_${q.id}`)) || 0 }));
-          const sorted = items.filter((x)=>x.pos>0).sort((a,b)=>a.pos-b.pos).map((x)=>x.id);
-          if (sorted.length>0) await reorderQuestionsAction(lid, sorted);
-        }}>
-          <ul className="mt-2 divide-y">
+        {/* DnD reorder */}
+        {qs.length > 1 && (
+          <form action={async (fd: FormData) => {
+            "use server";
+            const raw = String(fd.get("order") || "[]");
+            let ids: number[] = [];
+            try { ids = JSON.parse(raw); } catch {}
+            if (Array.isArray(ids) && ids.length) await reorderQuestionsAction(lid, ids.map((n:any)=>Number(n)).filter((n)=>Number.isFinite(n)));
+          }} className="mb-3">
+            <DndList
+              items={qs.map((q:any)=>({ id: q.id, label: q.prompt.slice(0, 80) + (q.prompt.length>80?'…':''), subtitle: q.rank_key || '' }))}
+              inputName="order"
+            />
+            <div className="mt-3 text-right"><button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Save Order</button></div>
+          </form>
+        )}
+        <ul className="mt-2 divide-y">
             {qs.map((q, idx) => (
               <li key={q.id} className="grid grid-cols-12 items-start gap-3 py-3">
-                <div className="col-span-1">
-                  <input name={`pos_${q.id}`} defaultValue={idx+1} className="w-16 rounded-md border px-2 py-1 text-sm" />
-                </div>
-                <div className="col-span-7">
+                <div className="col-span-8">
                   <div className="text-xs text-gray-500">{q.rank_key || ""}</div>
                   <form action={async (fd: FormData) => { "use server"; await updateQuestionAction(q.id, { prompt: String(fd.get("prompt")||q.prompt) }); }} className="flex items-center gap-2">
                     <input name="prompt" defaultValue={q.prompt} className="w-full rounded-md border px-2 py-1 text-sm" />
@@ -97,8 +99,6 @@ export default async function LessonQuestionsAdminPage({ params }: { params: { l
               </li>
             ))}
           </ul>
-          <div className="mt-3"><button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Save Order</button></div>
-        </form>
       </div>
     </div>
   );
