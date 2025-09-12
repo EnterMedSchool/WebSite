@@ -620,13 +620,11 @@ export default function HomeMap() {
           <>
             <FloatingPanel
               id="map-filters"
-              title="Search & Filters"
               initialSize={{ width: 560, height: 420 }}
               initialPos={{ x: 24, y: 120 }}
               minWidth={420}
               minHeight={260}
-              className="bg-white/0"
-              bodyClassName="p-4"
+              className="bg-transparent"
             >
               <MapFiltersBar
                 compact={false}
@@ -660,13 +658,11 @@ export default function HomeMap() {
             {selected && cityData.length > 0 && (
               <FloatingPanel
                 id="map-universities"
-                title={selected!.name}
                 initialSize={{ width: 520, height: 600 }}
                 initialPos={{ x: Math.max(24, (typeof window !== 'undefined' ? (window.innerWidth - 520 - 24) : 980)), y: 140 }}
                 minWidth={420}
                 minHeight={360}
-                className="bg-white/0"
-                bodyClassName="p-4"
+                className="bg-transparent"
               >
                 <UniversitiesPanelFloating
                   selectedName={selected!.name}
@@ -694,7 +690,7 @@ export default function HomeMap() {
           </>
         )}
 
-        {/* Right side panel of universities when a country is selected (legacy, disabled) */}
+        {/* Right side panel (legacy) — kept disabled */}
         {false && selected && cityData.length > 0 && (
           <div
             className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
@@ -764,7 +760,7 @@ export default function HomeMap() {
             <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityDataSorted) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
           </BottomSheet>
         )}
-        {(!isSmall && selected && cityData.length>0) && (
+        {false && (!isSmall && selected && cityData.length>0) && (
           <div ref={panelRef}>
             <UniversitiesPanel
               selectedName={selected!.name}

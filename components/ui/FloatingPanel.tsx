@@ -8,7 +8,6 @@ type Pos = { x: number; y: number };
 
 type Props = {
   id: string; // storage key suffix
-  title?: string;
   initialSize?: Size;
   initialPos?: Pos;
   minWidth?: number;
@@ -17,7 +16,7 @@ type Props = {
   maxHeight?: number | string;
   children: React.ReactNode;
   className?: string;
-  bodyClassName?: string;
+  bare?: boolean; // when true, render no frame — only children
 };
 
 function useStoredWindowState(id: string, initPos: Pos, initSize: Size) {
@@ -61,7 +60,7 @@ function useStoredWindowState(id: string, initPos: Pos, initSize: Size) {
   return { pos, size, setPos, setSize, save };
 }
 
-export default function FloatingPanel({ id, title, initialSize = { width: 520, height: 420 }, initialPos = { x: 24, y: 120 }, minWidth = 360, minHeight = 240, maxWidth = undefined, maxHeight = undefined, children, className = "", bodyClassName = "" }: Props) {
+export default function FloatingPanel({ id, initialSize = { width: 520, height: 420 }, initialPos = { x: 24, y: 120 }, minWidth = 360, minHeight = 240, maxWidth = undefined, maxHeight = undefined, children, className = "", bare = true }: Props) {
   const { pos, size, setPos, setSize, save } = useStoredWindowState(id, initialPos, initialSize);
 
   // Lazy bounds to window to avoid server warnings
@@ -82,15 +81,20 @@ export default function FloatingPanel({ id, title, initialSize = { width: 520, h
       minHeight={minHeight}
       bounds="window"
       enableUserSelectHack={false}
-      className={`pointer-events-auto rounded-2xl shadow-2xl ring-1 ring-black/5 backdrop-blur-md ${className}`}
+      className={`pointer-events-auto ${className}`}
     >
-      <div className="flex h-full w-full flex-col overflow-hidden">
-        <div className="ems-win-drag select-none bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white">
-          {title || "Panel"}
+      {bare ? (
+        <div className="relative h-full w-full">
+          {/* Transparent handle strip for dragging */}
+          <div className="ems-win-drag absolute left-0 right-0 top-0 h-3 cursor-move" />
+          <div className="h-full w-full">{children}</div>
         </div>
-        <div className={`flex-1 overflow-auto bg-white/95 p-3 ${bodyClassName}`}>{children}</div>
-      </div>
+      ) : (
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur">
+          <div className="ems-win-drag select-none bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white">Panel</div>
+          <div className="flex-1 overflow-auto p-3">{children}</div>
+        </div>
+      )}
     </Rnd>
   );
 }
-

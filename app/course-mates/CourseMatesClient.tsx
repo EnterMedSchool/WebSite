@@ -120,11 +120,19 @@ export default function CourseMatesClient({ authed, initial }: {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
-                  <div className="text-[11px] text-gray-600">Public profiles appear in university counts and Course Mates. You can change this anytime.</div>
+                  <div className="text-[11px] text-gray-600">Public profiles appear across the website (e.g., university counts and Course Mates). This includes your name, username and profile picture. You can change this anytime.</div>
                 </div>
                 <button
                   type="button"
-                  onClick={async()=>{ const next = !isPublic; setIsPublic(next); try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {} }}
+                  onClick={async()=>{
+                    const next = !isPublic;
+                    if (next) {
+                      const ok = window.confirm('Are you sure you want to make your profile public?\n\nYour name, username and profile picture will be visible across EnterMedSchool (e.g., Course Mates and university pages). You can switch this off anytime.');
+                      if (!ok) return;
+                    }
+                    setIsPublic(next);
+                    try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {}
+                  }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
                   aria-pressed={isPublic}
                 >
