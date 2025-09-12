@@ -210,13 +210,16 @@ export default function LessonPage() {
         credentials: "include",
         body: JSON.stringify({ completed: target }),
       });
-      if (res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        if (payload?.awardedXp && Number(payload.awardedXp) > 0) {
-          const rect = completeBtnRef.current?.getBoundingClientRect();
-          const from = rect ? { x: rect.left + rect.width / 2, y: rect.top } : { x: window.innerWidth - 80, y: 12 };
-          window.dispatchEvent(new CustomEvent("xp:awarded", { detail: { amount: Number(payload.awardedXp), from, newLevel: Number(payload.newLevel || 1), newPct: Number(payload.pct || 0), newInLevel: Number(payload.inLevel || 0), newSpan: Number(payload.span || 1) } }));
-        }
+        if (res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          if (payload?.capReached === true) {
+            try { localStorage.setItem(`xpCap:lesson:${new Date().toISOString().slice(0,10)}`, '1'); } catch {}
+            try { window.dispatchEvent(new CustomEvent('xp:cap' as any, { detail: { source: 'lesson' } })); } catch {}
+          } else if (payload?.awardedXp && Number(payload.awardedXp) > 0) {
+            const rect = completeBtnRef.current?.getBoundingClientRect();
+            const from = rect ? { x: rect.left + rect.width / 2, y: rect.top } : { x: window.innerWidth - 80, y: 12 };
+            window.dispatchEvent(new CustomEvent("xp:awarded", { detail: { amount: Number(payload.awardedXp), from, newLevel: Number(payload.newLevel || 1), newPct: Number(payload.pct || 0), newInLevel: Number(payload.inLevel || 0), newSpan: Number(payload.span || 1) } }));
+          }
         if (Array.isArray((payload as any)?.rewards)) {
           for (const r of (payload as any).rewards) {
             try { window.dispatchEvent(new CustomEvent('reward:earned', { detail: r })); } catch {}
@@ -645,7 +648,10 @@ export default function LessonPage() {
                         } else {
                           setAnsState((s)=>({ ...s, [Number(q.id)]: 'wrong' }));
                         }
-                        if (j?.awardedXp && Number(j.awardedXp) > 0) {
+                        if (j?.capReached === true && isCorrect) {
+                          try { localStorage.setItem(`xpCap:quiz:${new Date().toISOString().slice(0,10)}`, '1'); } catch {}
+                          try { window.dispatchEvent(new CustomEvent('xp:cap' as any, { detail: { source: 'quiz' } })); } catch {}
+                        } else if (j?.awardedXp && Number(j.awardedXp) > 0) {
                           const detail: any = { amount: Number(j.awardedXp) };
                           if (from) detail.from = from;
                           if (j?.newLevel != null) detail.newLevel = Number(j.newLevel);

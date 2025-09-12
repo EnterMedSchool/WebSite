@@ -110,27 +110,48 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
                     VALUES (${userId}, 'lesson', ${lesson.id}, 'completed', ${JSON.stringify({ progress: 100 })}::jsonb)`;
         } catch {}
 
-        // Load current XP/level, award 10 XP, compute new level
+        // Load current XP/level, compute grant with daily caps
         const ur = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
         const currXp = Number(ur.rows[0]?.xp || 0);
         const currLevel = Number(ur.rows[0]?.level || 1);
-        const add = 10;
+        const baseAdd = 10;
+        const DAILY_TOTAL_XP_CAP = Math.max(0, Number(process.env.XP_DAILY_CAP_TOTAL || 600));
+        const DAILY_LESSON_XP_CAP = Math.max(0, Number(process.env.XP_DAILY_CAP_LESSON || 300));
+        let todayTotal = 0, todayLessons = 0;
+        try {
+          const r1 = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS sum
+                               FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at >= date_trunc('day', now())`;
+          todayTotal = Number(r1.rows?.[0]?.sum || 0);
+        } catch {}
+        try {
+          const r2 = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS sum
+                               FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND subject_type='lesson' AND created_at >= date_trunc('day', now())`;
+          todayLessons = Number(r2.rows?.[0]?.sum || 0);
+        } catch {}
+        const remTotal = DAILY_TOTAL_XP_CAP > 0 ? Math.max(0, DAILY_TOTAL_XP_CAP - todayTotal) : baseAdd;
+        const remLesson = DAILY_LESSON_XP_CAP > 0 ? Math.max(0, DAILY_LESSON_XP_CAP - todayLessons) : baseAdd;
+        const add = Math.max(0, Math.min(baseAdd, remTotal, remLesson));
+        const capReached = baseAdd > 0 && add === 0;
         const nextXp = currXp + add;
         const newLevel = levelFromXp(nextXp);
-        await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
-        awardedXp = add; newXp = nextXp;
+        if (add > 0) {
+          await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
+          awardedXp = add; newXp = nextXp;
+        }
         // Optional: log level up event
-        if (newLevel > currLevel && newLevel <= MAX_LEVEL) {
+        if (add > 0 && newLevel > currLevel && newLevel <= MAX_LEVEL) {
           try {
             await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
                       VALUES (${userId}, 'user', ${userId}, 'level_up', ${JSON.stringify({ from: currLevel, to: newLevel, xp: nextXp })}::jsonb)`;
           } catch {}
         }
         // Optional: separate xp_awarded event for auditing
-        try {
-          await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                    VALUES (${userId}, 'lesson', ${lesson.id}, 'xp_awarded', ${JSON.stringify({ amount: add, totalXp: nextXp })}::jsonb)`;
-        } catch {}
+        if (add > 0) {
+          try {
+            await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
+                      VALUES (${userId}, 'lesson', ${lesson.id}, 'xp_awarded', ${JSON.stringify({ amount: add, totalXp: nextXp })}::jsonb)`;
+          } catch {}
+        }
         // Milestone: total completed lessons (retro-award any missing <= total)
         try {
           const cntR = await sql`SELECT COUNT(*)::int AS completed FROM user_lesson_progress WHERE user_id=${userId} AND completed=true`;
@@ -209,7 +230,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const span = Math.max(1, nextGoal - start);
     const inLevel = Math.max(0, Math.min(span, Number(newXp || 0) - start));
     const pct = Math.round((inLevel / span) * 100);
-    return NextResponse.json({ ok: true, awardedXp, newXp, newLevel: lvl, inLevel, span, pct, rewards });
+    return NextResponse.json({ ok: true, awardedXp, newXp, newLevel: lvl, inLevel, span, pct, rewards, capReached: (typeof capReached !== 'undefined' ? capReached : false) });
   } catch (err: any) {
     console.error('progress POST failed', err);
     return NextResponse.json({ error: 'internal_error', message: String(err?.message || err) }, { status: 500 });

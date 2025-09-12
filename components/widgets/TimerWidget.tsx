@@ -22,6 +22,13 @@ export default function TimerWidget() {
   const etagRef = useRef<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [open, setOpen] = useState(false);
+  const winIdRef = useRef<string>(() => {
+    const r = Math.random().toString(36).slice(2);
+    return r;
+  }) as any;
+  if (!winIdRef.current) winIdRef.current = Math.random().toString(36).slice(2);
+  const [isLeader, setIsLeader] = useState(false);
+  const bcRef = useRef<BroadcastChannel | null>(null);
 
   // Load codes from localStorage
   useEffect(() => {
@@ -33,19 +40,71 @@ export default function TimerWidget() {
     } catch {}
   }, []);
 
-  // Poll group state when we have a code
+  // Leader election helpers (localStorage-based)
+  const lockKey = code ? `timer:leader:${code}` : null;
+  const tryAcquireLeader = useCallback(() => {
+    if (!lockKey) return false;
+    try {
+      const now = Date.now();
+      const raw = localStorage.getItem(lockKey);
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj && typeof obj.ts === 'number' && now - obj.ts < 15000) {
+          // active leader exists
+          setIsLeader(obj.id === winIdRef.current);
+          return obj.id === winIdRef.current;
+        }
+      }
+      const mine = { id: winIdRef.current, ts: now };
+      localStorage.setItem(lockKey, JSON.stringify(mine));
+      setIsLeader(true);
+      return true;
+    } catch { return false; }
+  }, [lockKey]);
+  const refreshLeader = useCallback(() => {
+    if (!lockKey) return;
+    try {
+      const mine = { id: winIdRef.current, ts: Date.now() };
+      localStorage.setItem(lockKey, JSON.stringify(mine));
+    } catch {}
+  }, [lockKey]);
+
+  useEffect(() => {
+    if (!code) { setIsLeader(false); return; }
+    // periodic renew / check
+    const id = setInterval(() => { tryAcquireLeader(); if (isLeader) refreshLeader(); }, 5000);
+    return () => clearInterval(id);
+  }, [code, tryAcquireLeader, refreshLeader, isLeader]);
+
+  // BroadcastChannel for state sharing across tabs
+  useEffect(() => {
+    if (!code || typeof BroadcastChannel === 'undefined') { bcRef.current = null; return; }
+    const bc = new BroadcastChannel(`timer:${code}`);
+    bcRef.current = bc;
+    const onMsg = (ev: MessageEvent) => {
+      try {
+        const d = ev.data || {};
+        if (d && d.type === 'state' && d.code === code) {
+          if (d.etag) etagRef.current = d.etag;
+          if (d.state) setState(d.state);
+        }
+      } catch {}
+    };
+    bc.addEventListener('message', onMsg as any);
+    return () => { try { bc.removeEventListener('message', onMsg as any); bc.close(); } catch {} };
+  }, [code]);
+
+  // Poll group state when we have a code (leader only). Others listen to BroadcastChannel.
   useEffect(() => {
     let stop = false;
     if (!code) return;
     let interval: any; // number
-    // Keep membership active: heartbeat join every ~3 minutes (throttled server-side)
-    const beat = async () => {
-      try { await fetch(`/api/timer/groups/${encodeURIComponent(code!)}/join`, { method: 'POST', credentials: 'include' }); } catch {}
-    };
     const load = async () => {
+      if (!isLeader) return;
       try {
         const headers: any = {};
         if (etagRef.current) headers['If-None-Match'] = etagRef.current;
+        headers['X-Join'] = '1';
         const res = await fetch(`/api/timer/groups/${encodeURIComponent(code)}`, { headers, cache: 'no-store' });
         if (res.status === 304) return; // unchanged
         if (res.ok) {
@@ -56,22 +115,26 @@ export default function TimerWidget() {
           if (st) setState(st);
           // owner determination heuristic: if myCode equals current code
           setIsOwner(Boolean(myCode && code === myCode));
+          // Broadcast to other tabs
+          try { bcRef.current?.postMessage({ type: 'state', code, etag: etagRef.current, state: st }); } catch {}
         }
       } catch {}
     };
     const start = () => {
       void load();
       clearInterval(interval);
-      interval = setInterval(load, document.visibilityState === 'visible' ? 10000 : 30000);
+      const fast = 10000; const slow = 30000; const idle = 60000;
+      const endTs = state?.endAt ? Date.parse(state.endAt) : 0;
+      const expired = (state?.mode === 'running') && endTs > 0 && endTs <= Date.now();
+      const isRun = (state?.mode === 'running') && !expired;
+      const base = isRun ? fast : (expired ? idle : slow);
+      interval = setInterval(load, document.visibilityState === 'visible' ? base : idle);
     };
     start();
-    // do an immediate heartbeat and schedule periodic
-    void beat();
-    const beatId = setInterval(beat, 180000);
     const onVis = () => start();
     document.addEventListener('visibilitychange', onVis);
-    return () => { stop = true; clearInterval(interval); clearInterval(beatId); document.removeEventListener('visibilitychange', onVis); };
-  }, [code, myCode]);
+    return () => { stop = true; clearInterval(interval); document.removeEventListener('visibilitychange', onVis); };
+  }, [code, myCode, isLeader, state?.mode]);
 
   const remainingMs = useMemo(() => {
     if (!state?.endAt || state.mode !== 'running') return 0;
@@ -176,19 +239,23 @@ export default function TimerWidget() {
         </div>
         {open && (
           <div className="mt-2 space-y-2 text-sm">
+            {(state?.mode === 'running' && remainingMs === 0) && (
+              <div className="rounded border border-amber-300 bg-amber-50 p-2 text-[12px] text-amber-900">Timer finished. Start again to continue.</div>
+            )}
             <div className="flex items-center gap-2">
               <button className="rounded bg-gray-100 px-2 py-1" onClick={create}>Create</button>
               <JoinForm onJoin={join} />
               <button className="rounded bg-gray-100 px-2 py-1" onClick={exitShared}>Exit</button>
             </div>
             <div className="flex items-center gap-2">
-              <input type="number" min={1} className="w-20 rounded border px-2 py-1" value={minutes} onChange={(e)=>setMinutes(Math.max(1, Number(e.target.value)||25))} />
+              <input type="number" min={1} max={120} className="w-20 rounded border px-2 py-1" value={minutes} onChange={(e)=>setMinutes(Math.max(1, Math.min(120, Number(e.target.value)||25)))} />
               {isOwner ? (
                 <>
                   <button className="rounded bg-indigo-600 px-2 py-1 text-white" onClick={startTimer}>Start</button>
                   <button className="rounded bg-gray-200 px-2 py-1" onClick={pauseTimer}>Pause</button>
                   <button className="rounded bg-gray-200 px-2 py-1" onClick={resetTimer}>Reset</button>
                   <button className="rounded bg-gray-200 px-2 py-1" onClick={()=>extendTimer(5)}>+5m</button>
+                  <span className="text-[11px] text-gray-500">Max 120 min</span>
                 </>
               ) : (
                 <span className="text-xs text-gray-500">View-only</span>

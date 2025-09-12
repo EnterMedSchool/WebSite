@@ -14,6 +14,16 @@ function isAdminEmail(email: string | null | undefined): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Feature guard: Timer/Tasks APIs hidden unless explicitly enabled
+  const isWidgetsApi = pathname.startsWith('/api/timer') || pathname.startsWith('/api/todos');
+  if (isWidgetsApi) {
+    const flag = String(process.env.FEATURE_WIDGETS_ENABLED || '').trim();
+    const enabled = flag === '1' || /^true$/i.test(flag);
+    if (!enabled) {
+      return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    }
+  }
+
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
   if (!isAdminPath) return NextResponse.next();
 
@@ -63,5 +73,11 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*',
+    // Feature-flag block for widgets APIs
+    '/api/timer/:path*',
+    '/api/todos/:path*',
+  ],
 };

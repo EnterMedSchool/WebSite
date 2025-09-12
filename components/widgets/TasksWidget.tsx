@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Todo = { id: number; label: string; done: boolean };
 
@@ -13,6 +13,8 @@ export default function TasksWidget() {
   const [newLabel, setNewLabel] = useState("");
   const [groupOpen, setGroupOpen] = useState(false);
   const [group, setGroup] = useState<Array<{ userId: number; user: any; items: { id: number; label: string }[] }>>([]);
+  const etagRef = useRef<string | null>(null as any);
+  const [capHint, setCapHint] = useState(false);
 
   const code = useMemo(() => { try { return localStorage.getItem('timer:code'); } catch { return null; } }, [open, groupOpen]);
 
@@ -22,6 +24,11 @@ export default function TasksWidget() {
     (async () => {
       try { const r = await fetch('/api/todos', { cache: 'no-store' }); if (r.ok) { const j = await r.json(); setItems(j?.data || []); } } catch {}
     })();
+    // Check local cap flag for today
+    try {
+      const key = `xpCap:todo:${new Date().toISOString().slice(0,10)}`;
+      setCapHint(localStorage.getItem(key) === '1');
+    } catch {}
   }, [open]);
 
   // Load group snapshot every 60s when panel visible
@@ -29,7 +36,16 @@ export default function TasksWidget() {
     if (!open || !groupOpen || !code) return;
     let t: any;
     const load = async () => {
-      try { const r = await fetch(`/api/timer/groups/${encodeURIComponent(code)}/tasks`, { cache: 'no-store' }); if (r.ok) { const j = await r.json(); setGroup(j?.data || []); } } catch {}
+      try {
+        const headers: any = {};
+        if (etagRef.current) headers['If-None-Match'] = etagRef.current;
+        const r = await fetch(`/api/timer/groups/${encodeURIComponent(code)}/tasks`, { cache: 'no-store', headers });
+        if (r.status === 304) return;
+        if (r.ok) {
+          const tag = r.headers.get('ETag'); if (tag) etagRef.current = tag;
+          const j = await r.json(); setGroup(j?.data || []);
+        }
+      } catch {}
     };
     void load();
     t = setInterval(load, 60000);
@@ -47,7 +63,27 @@ export default function TasksWidget() {
   const toggle = async (id: number) => {
     const cur = items.find((x)=>x.id===id); if (!cur) return;
     setItems((xs)=>xs.map((x)=>x.id===id? { ...x, done: !x.done }: x));
-    try { const r = await fetch(`/api/todos/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ done: !cur.done }) }); if (r.ok) { /* server returns xp; UI anim via global if desired */ } } catch {}
+    try {
+      const r = await fetch(`/api/todos/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ done: !cur.done }) });
+      if (r.ok) {
+        try {
+          const j = await r.json();
+          const awarded = Number(j?.xpAwarded || 0);
+          if (!cur.done && awarded === 0) {
+            // Mark cap reached for today; no extra API calls
+            const key = `xpCap:todo:${new Date().toISOString().slice(0,10)}`;
+            try { localStorage.setItem(key, '1'); } catch {}
+            setCapHint(true);
+            try { window.dispatchEvent(new CustomEvent('xp:cap' as any, { detail: { source: 'todo' } })); } catch {}
+          } else if (!cur.done && awarded > 0) {
+            const detail: any = { amount: awarded };
+            const pg = j?.progress;
+            if (pg) { detail.newLevel = pg.level; detail.newPct = pg.pct; detail.newInLevel = pg.inLevel; detail.newSpan = pg.span; }
+            try { window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail })); } catch {}
+          }
+        } catch {}
+      }
+    } catch {}
   };
 
   const remove = async (id: number) => {
@@ -63,6 +99,11 @@ export default function TasksWidget() {
         </div>
         {open && (
           <div className="mt-2 w-80 text-sm">
+            {capHint && (
+              <div className="mb-2 rounded border border-amber-300 bg-amber-50 p-2 text-[12px] text-amber-900">
+                Daily XP cap reached for tasks. New completions won’t grant XP today.
+              </div>
+            )}
             <form onSubmit={add} className="mb-2 flex gap-2">
               <input className="flex-1 rounded border px-2 py-1" value={newLabel} onChange={(e)=>setNewLabel(e.target.value)} placeholder="Add a task" />
               <button className="rounded bg-gray-200 px-2">Add</button>
@@ -100,4 +141,3 @@ export default function TasksWidget() {
     </div>
   );
 }
-

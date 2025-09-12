@@ -29,7 +29,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     let xpDelta = 0;
     const BASE_TODO_XP = 2;
-    const DAILY_TODO_XP_CAP = 200; // max XP from todos per day
+    const DAILY_TODO_XP_CAP = Math.max(0, Number(process.env.XP_DAILY_CAP_TODO || 200));
+    const DAILY_TOTAL_XP_CAP = Math.max(0, Number(process.env.XP_DAILY_CAP_TOTAL || 600));
     if (updates.done === true && row.done === false && !row.xpAwarded) {
       // We will set xpAwarded only if some XP is actually granted (see cap below)
       xpDelta = BASE_TODO_XP;
@@ -42,6 +43,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (xpDelta > 0) {
       // Check today's awarded XP for todos and apply cap
       let todayAwarded = 0;
+      let todayTotalAwarded = 0;
       try {
         const sr = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS sum
                              FROM lms_events
@@ -51,8 +53,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                                AND created_at >= date_trunc('day', now())`;
         todayAwarded = Number(sr.rows?.[0]?.sum || 0);
       } catch {}
-      const remaining = Math.max(0, DAILY_TODO_XP_CAP - todayAwarded);
-      const grant = Math.max(0, Math.min(xpDelta, remaining));
+      try {
+        const sr2 = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS sum
+                              FROM lms_events
+                              WHERE user_id=${userId}
+                                AND action='xp_awarded'
+                                AND created_at >= date_trunc('day', now())`;
+        todayTotalAwarded = Number(sr2.rows?.[0]?.sum || 0);
+      } catch {}
+      const remTodo = DAILY_TODO_XP_CAP > 0 ? Math.max(0, DAILY_TODO_XP_CAP - todayAwarded) : xpDelta;
+      const remTotal = DAILY_TOTAL_XP_CAP > 0 ? Math.max(0, DAILY_TOTAL_XP_CAP - todayTotalAwarded) : xpDelta;
+      const grant = Math.max(0, Math.min(xpDelta, remTodo, remTotal));
 
       if (grant > 0) {
         // Persist completion + XP awarded flag only when actually granting XP

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ClassPanel from "./ClassPanel";
+import ProfileEducationForm from "@/components/profile/ProfileEducationForm";
 import type { ReactNode } from 'react';
 
 // Types for dashboard payload
@@ -274,11 +275,14 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             )}
 
             {tab === 'profile' && (
-              <div className="col-span-12">
+              <div className="col-span-12 space-y-4">
                 <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
                   <div className="mb-3 text-lg font-semibold text-gray-900">Profile</div>
                   <ProfileCard name={data?.user?.name ?? null} imageUrl={data?.user?.image ?? null} level={data?.user?.level ?? 1} xp={data?.user?.xp ?? 0} streakDays={data?.user?.streakDays ?? 0} />
-                  <div className="mt-4"><a href="/me/profile" className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Open profile settings</a></div>
+                </div>
+                <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+                  <div className="mb-3 text-lg font-semibold text-gray-900">Education</div>
+                  <ProfileEducationForm />
                 </div>
               </div>
             )}

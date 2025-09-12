@@ -428,20 +428,21 @@ export default function HomeMap() {
         <div
           className="relative h-full"
           onWheelCapture={(e) => {
+            // Allow interactive zoom on desktop; on small screens, keep wheel scrolling the page
+            if (!isSmall) return;
             const target = e.target as HTMLElement;
             if ((panelRef.current && panelRef.current.contains(target)) || (overlayRef.current && overlayRef.current.contains(target))) return;
             e.preventDefault();
             e.stopPropagation();
             window.scrollBy({ top: e.deltaY, behavior: "auto" });
           }}
-          
         >
         <ComposableMap projectionConfig={{ scale: 175 }} style={{ width: "100%", height: "100%" }}>
           <ZoomableGroup
             center={position.center}
             zoom={position.zoom}
-            minZoom={isSmall ? 0.9 : position.zoom}
-            maxZoom={isSmall ? 14 : position.zoom}
+            minZoom={isSmall ? 0.9 : 0.9}
+            maxZoom={isSmall ? 14 : 14}
             animate
             animationDuration={1100}
             animationEasingFunction={(t: number) => 1 - Math.pow(1 - t, 3)}

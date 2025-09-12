@@ -20,6 +20,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
   const [dispSpan, setDispSpan] = useState<number>(xpSpan ?? 0);
   const [lvPulse, setLvPulse] = useState<number>(0);
   const [burst, setBurst] = useState<number>(0);
+  const [capToday, setCapToday] = useState<boolean>(false);
   const barRef = useRef<HTMLDivElement>(null);
   const xpRef = useRef<HTMLDivElement>(null);
   const [miniOpenTick, setMiniOpenTick] = useState(0);
@@ -91,6 +92,21 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
     return () => window.removeEventListener('xp:awarded' as any, onAward as any);
   }, [dispLevel]);
 
+  // Cap flag today: derive from localStorage flags and updates via event
+  useEffect(() => {
+    function checkCap() {
+      try {
+        const day = new Date().toISOString().slice(0,10);
+        const hit = localStorage.getItem(`xpCap:todo:${day}`) === '1' || localStorage.getItem(`xpCap:lesson:${day}`) === '1';
+        setCapToday(hit);
+      } catch {}
+    }
+    const onCap = () => checkCap();
+    checkCap();
+    window.addEventListener('xp:cap' as any, onCap as any);
+    return () => window.removeEventListener('xp:cap' as any, onCap as any);
+  }, []);
+
   if (!isAuthed) {
     return (
       <div className="hidden items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-white/70 shadow-sm backdrop-blur sm:flex">
@@ -120,6 +136,11 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
           <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(255,255,255,0.22)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.22)_75%,transparent_75%)] bg-[length:16px_8px] mix-blend-overlay opacity-50" />
         </div>
         <span className="ml-1 hidden whitespace-nowrap text-[10px] font-semibold text-white/85 xl:inline">{isMax ? 'MAX' : dispSpan && dispSpan > 0 ? `${dispIn}/${dispSpan} XP` : ''}</span>
+        {capToday && (
+          <span className="ml-1 inline-flex items-center rounded-full bg-amber-300/90 px-2 py-0.5 text-[10px] font-bold text-amber-900 shadow-sm" title="Daily XP cap reached">
+            CAP
+          </span>
+        )}
         <svg className={`ml-1 h-3 w-3 text-white/80 transition-transform ${xpOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z" /></svg>
       </button>
 
@@ -146,6 +167,9 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
           <div className="p-4">
             <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
             <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} - {dispSpan > 0 ? `${dispIn}/${dispSpan} XP to next` : ''}</div>
+            {capToday && (
+              <div className="mb-3 text-[11px] font-semibold text-amber-700">Daily XP cap reached. New XP won’t accumulate until tomorrow.</div>
+            )}
 
             <Mini24hAndStreak openTick={miniOpenTick} />
 
