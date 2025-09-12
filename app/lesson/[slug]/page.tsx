@@ -508,46 +508,35 @@ export default function LessonPage() {
           )}
           {tab === "learn" && (
             <div className="space-y-4">
-              {/* Ensure a video appears for demo even if lesson lacks one */}
-              {(() => {
-                // Consider only blocks to decide if the page already has a video block.
-                // If there is no video block, we will show the player (from DB video_html)
-                // or a simple YouTube demo fallback.
-                const hasVideo = blocks.some((b) => b.kind === 'video');
-                if (!hasVideo) {
-                  return (
-                    <div key="demo-video" className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-                      {(player?.locked && player?.source === 'video_html') ? (
-                        <div className="flex flex-col items-center justify-center gap-3 text-center">
-                          <div className="text-sm font-semibold text-indigo-900">This lesson is available for Ari's IMAT students</div>
-                          <div className="text-[12px] text-gray-600">Purchase the IMAT course to access this video and materials.</div>
-                          <div className="mt-1 flex items-center justify-center gap-2">
-                            <a href="/imat-course" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Go to IMAT course</a>
-                            <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100">Log in</button>
-                          </div>
-                        </div>
-                      ) : (player?.iframeSrc && player?.source === 'video_html') ? (
-                        <VideoPanel
-                          iframeSrc={player.iframeSrc || undefined}
-                          locked={!!player?.locked}
-                          lockReason={player?.lockReason || (isAuthed ? undefined : "Login or enroll to watch")}
-                          onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
-                          subtitles={[{ lang: 'en', label: 'English' }]}
-                          prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
-                          next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
-                          anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
-                        />
-                      ) : (
-                        <div className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-900 ring-1 ring-inset ring-indigo-100">
-                          No video available for this lesson/chapter.
-                        </div>
-                      )}
-                      <ObjectivesStrip chapter={chapter} />
+              {/* Always prefer DB video_html; never fallback to block videos */}
+              <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
+                {(player?.locked && player?.source === 'video_html') ? (
+                  <div className="flex flex-col items-center justify-center gap-3 text-center">
+                    <div className="text-sm font-semibold text-indigo-900">This lesson is available for Ari's IMAT students</div>
+                    <div className="text-[12px] text-gray-600">Purchase the IMAT course to access this video and materials.</div>
+                    <div className="mt-1 flex items-center justify-center gap-2">
+                      <a href="/imat-course" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Go to IMAT course</a>
+                      <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open'))} className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100">Log in</button>
                     </div>
-                  );
-                }
-                return null;
-              })()}
+                  </div>
+                ) : (player?.iframeSrc && player?.source === 'video_html') ? (
+                  <VideoPanel
+                    iframeSrc={player.iframeSrc || undefined}
+                    locked={!!player?.locked}
+                    lockReason={player?.lockReason || (isAuthed ? undefined : "Login or enroll to watch")}
+                    onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
+                    subtitles={[{ lang: 'en', label: 'English' }]}
+                    prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
+                    next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
+                    anchors={[{ pos: 15, id: 'note-1', label: 'Key idea' }, { pos: 45, id: 'note-2', label: 'Labs' }, { pos: 80, id: 'note-3', label: 'Management' }]}
+                  />
+                ) : (
+                  <div className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-900 ring-1 ring-inset ring-indigo-100">
+                    No video available for this lesson/chapter.
+                  </div>
+                )}
+                <ObjectivesStrip chapter={chapter} />
+              </div>
               {(() => {
                 let navShown = false;
                 let objShown = false;
@@ -555,39 +544,18 @@ export default function LessonPage() {
                 return (
                   <div className={blurLocked ? 'filter blur-[2px] select-none pointer-events-none' : ''}>
                   {blocks.map((b, i) => {
-                  const isVideo = b.kind === 'video';
-                  return (
-                    <div key={`wrap-${b.id}`}>
-                      <motion.div
-                        className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5"
-                        initial={{ opacity: 0, y: 8 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.03 }}
-                      >
-                        {isVideo && !player?.iframeSrc ? (
-                          <VideoPanel
-                            src={JSON.parse(b.content || "{}")?.src || ""}
-                            poster={JSON.parse(b.content || "{}")?.poster || ""}
-                            locked={!isAuthed && !unlockDemoVideo}
-                            lockReason={!isAuthed ? "Login or enroll to watch" : undefined}
-                            onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
-                            subtitles={[{ lang: 'en', label: 'English' }]}
-                            prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
-                            next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
-                            anchors={[{ pos: 20, id: 'note-1', label: 'Key idea' }, { pos: 55, id: 'note-2', label: 'Labs' }, { pos: 85, id: 'note-3', label: 'Management' }]}
-                          />
-                        ) : isVideo && player?.iframeSrc && player?.source === 'video_html' ? (
-                          <VideoPanel
-                            iframeSrc={player.iframeSrc || undefined}
-                            locked={!!player?.locked}
-                            lockReason={player?.lockReason || (isAuthed ? undefined : "Login or enroll to watch")}
-                            onUnlock={() => window.dispatchEvent(new CustomEvent('auth:open'))}
-                            subtitles={[{ lang: 'en', label: 'English' }]}
-                            prev={nav?.prev ? { href: `/lesson/${nav.prev.slug}`, title: `Prev: ${nav.prev.title}` } : null}
-                            next={nav?.next ? { href: `/lesson/${nav.next.slug}`, title: `Next: ${nav.next.title}` } : null}
-                            anchors={[{ pos: 20, id: 'note-1', label: 'Key idea' }, { pos: 55, id: 'note-2', label: 'Labs' }, { pos: 85, id: 'note-3', label: 'Management' }]}
-                          />
+                   const isVideo = b.kind === 'video';
+                   return (
+                     <div key={`wrap-${b.id}`}>
+                       <motion.div
+                         className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5"
+                         initial={{ opacity: 0, y: 8 }}
+                         whileInView={{ opacity: 1, y: 0 }}
+                         viewport={{ once: true }}
+                         transition={{ delay: i * 0.03 }}
+                       >
+                        {isVideo ? (
+                          <div className="text-[12px] text-gray-500">(Video block ignored; using DB video_html policy)</div>
                         ) : b.kind === 'note' ? (
                           <article className="prose prose-indigo max-w-none text-sm" data-lesson-anchor={`note-${i+1}`}>
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.content}</ReactMarkdown>
@@ -595,10 +563,10 @@ export default function LessonPage() {
                         ) : (
                           <div className="rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">{b.content}</div>
                         )}
-                      </motion.div>
-                      {isVideo && !objShown && (objShown = true) && (<ObjectivesStrip chapter={chapter} />)}
-                      {isVideo && !navShown && (navShown = true) && (<div />)}
-                    </div>
+                       </motion.div>
+                       {isVideo && !objShown && (objShown = true) && (<ObjectivesStrip chapter={chapter} />)}
+                       {isVideo && !navShown && (navShown = true) && (<div />)}
+                     </div>
                   )})}
                   </div>
                 );

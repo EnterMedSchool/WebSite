@@ -26,21 +26,9 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     .limit(1))[0];
   if (!l) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  // 2) Determine embed src from video_html if present; else attempt from body lazily
+  // 2) Determine embed src only from video_html (always prefer it; ignore body)
   let iframeSrc: string | null = extractIframeSrc(l.videoHtml as any);
-  let source: "video_html" | "body" | "none" = iframeSrc ? "video_html" : "none";
-  if (!iframeSrc) {
-    const bodyRow = (await db
-      .select({ body: lessons.body })
-      .from(lessons)
-      .where(eq(lessons.id as any, l.id))
-      .limit(1))[0];
-    const yt = firstYouTubeFromBody(bodyRow?.body || null);
-    if (yt) {
-      iframeSrc = yt;
-      source = "body";
-    }
-  }
+  let source: "video_html" | "none" = iframeSrc ? "video_html" : "none";
 
   if (!iframeSrc) {
     const res = NextResponse.json({ provider: null, iframeSrc: null, locked: false, source });
