@@ -310,10 +310,10 @@ export default function LessonPage() {
         {(() => {
           const lessons = timeline?.lessons || [];
           // Insert a chapter intro as step 0 when available
+          const lessonMarkers = lessons.map((l) => ({ key: l.slug, title: l.title, href: `/lesson/${l.slug}`, type: 'lesson' as const }));
           const markers = (chapter && course)
-            ? ([{ key: `intro-${chapter.slug}`, title: chapter.title, href: `/course/${course.slug}/guidebook/${chapter.slug}`, type: 'chapter' as const }]
-               .concat(lessons.map((l) => ({ key: l.slug, title: l.title, href: `/lesson/${l.slug}`, type: 'lesson' as const }))))
-            : (lessons.map((l) => ({ key: l.slug, title: l.title, href: `/lesson/${l.slug}`, type: 'lesson' as const })));
+            ? ([{ key: `intro-${chapter.slug}`, title: chapter.title, href: `/course/${course.slug}/guidebook/${chapter.slug}`, type: 'chapter' as const }, ...lessonMarkers])
+            : lessonMarkers;
           const count = Math.max(1, markers.length);
           const currIdx = Math.max(0, markers.findIndex((m) => m.type === 'lesson' && m.key === slug));
           const pct = Math.round((currIdx / Math.max(1, count - 1)) * 100);
