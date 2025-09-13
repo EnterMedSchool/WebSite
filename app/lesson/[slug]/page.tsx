@@ -26,6 +26,22 @@ export default function LessonPage() {
   const lessonTitle = "Disseminated Intravascular Coagulation (DIC)";
   const courseProgress = { total: 42, completed: 19, pct: 45 };
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
+
+  // Skeleton: questions relevant to this lesson only
+  const relevantQuestions = [
+    { id: 'q1', title: 'Define DIC and common triggers', status: 'correct' as const },
+    { id: 'q2', title: 'Key lab pattern in DIC', status: 'incorrect' as const },
+    { id: 'q3', title: 'Role of fibrin degradation products', status: 'todo' as const },
+    { id: 'q4', title: 'Schistocytes and MAHA vs DIC', status: 'todo' as const },
+    { id: 'q5', title: 'Management priorities in DIC', status: 'todo' as const },
+    { id: 'q6', title: 'Causes of prolonged PT and aPTT', status: 'correct' as const },
+    { id: 'q7', title: 'D-dimer significance', status: 'correct' as const },
+    { id: 'q8', title: 'Transfusion thresholds', status: 'todo' as const },
+    { id: 'q9', title: 'Obstetric DIC scenarios', status: 'incorrect' as const },
+    { id: 'q10', title: 'Sepsis-induced coagulopathy', status: 'todo' as const },
+  ];
+  const qTotal = relevantQuestions.length;
+  const qCorrect = relevantQuestions.filter(q => q.status === 'correct').length;
   const chapterTimeline = [
     { key: "intro", title: "Intro: Coagulation…", q: 0, active: false },
     { key: "dic", title: "Disseminated Intravascular…", q: 2, active: true },
@@ -129,38 +145,49 @@ export default function LessonPage() {
         {!focusMode && (
           <aside className="order-first space-y-3">
             <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
-              <div className="text-[12px] font-semibold text-indigo-900">Chapter progress</div>
+              <div className="text-[12px] font-semibold text-indigo-900">Question progress</div>
 
-              {/* Chapter header */}
-              <div className="mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
+              {/* Lesson summary */}
+              <div className="hidden mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
                 <div className="text-xs font-semibold text-indigo-900 truncate">Chapter: {chapter.title}</div>
                 <div className="text-[11px] text-indigo-800/70">Intro · 3–5 min read</div>
               </div>
 
-              {/* Step list */}
+              {/* Lesson summary */}
+              <div className="mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
+                <div className="truncate text-xs font-semibold text-indigo-900">Relevant to: {lessonTitle}</div>
+                <div className="text-[11px] text-indigo-800/80">{qCorrect}/{relevantQuestions.length} correct - {relevantQuestions.length - qCorrect} remaining</div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/60">
+                  <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${Math.round((qCorrect / Math.max(1, relevantQuestions.length)) * 100)}%` }} />
+                </div>
+              </div>
+
+              {/* Question list */}
               <ul className="relative mt-2">
-                {chapterTimeline.map((l, i) => (
-                  <li key={l.key} className="relative pl-8">
-                    {/* connector */}
-                    {i < chapterTimeline.length - 1 && (
-                      <span className="absolute left-3 top-8 bottom-0 w-px bg-indigo-100" />
-                    )}
-                    {/* index bubble */}
-                    <span className={`absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full text-[12px] font-semibold ${l.active ? 'bg-indigo-600 text-white shadow' : 'bg-gray-200 text-gray-700'}`}>{i + 1}</span>
-                    <button type="button" className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${l.active ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-transparent hover:bg-gray-50 text-gray-800'}`}>
-                      <div className="truncate text-sm font-medium">{l.title}</div>
-                      <div className="mt-0.5 flex items-center gap-3 text-[11px] text-gray-600">
-                        <span className="inline-flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.6"/></svg> ~4 min</span>
-                        {l.q ? (<span className="inline-flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="currentColor" strokeWidth="1.6"/><path d="M8 9h8M8 13h5" stroke="currentColor" strokeWidth="1.6"/></svg> {l.q} quiz</span>) : null}
-                        <span className="inline-flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="currentColor" strokeWidth="1.6"/></svg> 30%</span>
-                      </div>
-                    </button>
-                  </li>
-                ))}
+                {relevantQuestions.map((q, i) => {
+                  const cls = q.status === 'correct' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : q.status === 'incorrect' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-transparent hover:bg-gray-50 text-gray-800';
+                  const chip = q.status === 'correct' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : q.status === 'incorrect' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-gray-100 text-gray-700 ring-gray-300';
+                  const label = q.status === 'correct' ? 'Correct' : q.status === 'incorrect' ? 'Review' : 'To do';
+                  return (
+                    <li key={q.id} className="relative pl-8">
+                      {i < relevantQuestions.length - 1 && (
+                        <span className="absolute left-3 top-8 bottom-0 w-px bg-indigo-100" />
+                      )}
+                      <span className="absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full bg-gray-200 text-gray-700 text-[12px] font-semibold">{i + 1}</span>
+                      <button type="button" className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${cls}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="truncate text-sm font-medium">{q.title}</div>
+                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-gray-600">Single best answer · 1 point</div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
               {/* Footer actions */}
               <div className="mt-2 flex justify-end">
-                <button type="button" className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">All chapters</button>
+                <button type="button" className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Practice all</button>
               </div>
             </div>
           </aside>
