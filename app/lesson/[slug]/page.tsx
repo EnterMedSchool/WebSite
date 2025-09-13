@@ -79,9 +79,31 @@ export default function LessonPage() {
     }
     }
     // Try static guest JSON from CDN (free lessons)
-    fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' })
-      .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
-      .catch(() => {});
+    // Avoid 404 noise by checking index first and only fetching when available.
+    try {
+      const cached = (typeof window !== 'undefined') ? (window as any).__ems_free_index as Set<string> | undefined : undefined;
+      const ensureIndex = async (): Promise<Set<string>> => {
+        if (cached && cached.size) return cached;
+        try {
+          const r = await fetch('/free-lessons/v1/index.json', { cache: 'force-cache' });
+          if (!r.ok) return new Set();
+          const j = await r.json().catch(() => ({} as any));
+          const set = new Set<string>(Array.isArray(j?.lessons) ? j.lessons.map((x: any) => String(x.slug)) : []);
+          if (typeof window !== 'undefined') (window as any).__ems_free_index = set;
+          return set;
+        } catch { return new Set(); }
+      };
+      ensureIndex()
+        .then((idx) => {
+          if (!alive) return;
+          if (idx.has(slug)) {
+            fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' })
+              .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
+    } catch {}
     return () => { alive = false; };
   }, [slug]);
 
