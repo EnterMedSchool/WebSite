@@ -76,7 +76,9 @@ export default function LessonPage() {
           else setPlayerErr('error');
         })
         .catch(() => alive && setPlayerErr('error'));
-    }\n    }\n    // Try static guest JSON from CDN (free lessons)
+    }
+    }
+    // Try static guest JSON from CDN (free lessons)
     fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' })
       .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
       .catch(() => {});
