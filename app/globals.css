@@ -127,3 +127,6 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
     radial-gradient(600px 220px at 10% 20%, rgba(2,132,199,.25), transparent),
     radial-gradient(600px 220px at 80% 50%, rgba(79,70,229,.20), transparent);
 }
+
+/* Footer icon sizing fallback (ensures SVGs don't default to 300px) */
+.ems-footer-icon svg { width: 20px; height: 20px; display: block; }

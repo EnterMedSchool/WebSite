@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:map-data": "node scripts/build-map-data.mjs",
     "lint": "next lint",
     "graph:build": "node scripts/build-learning-graph.mjs",
     "glossary:build": "node scripts/build-glossary-index.mjs",

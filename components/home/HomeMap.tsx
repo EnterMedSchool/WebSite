@@ -44,7 +44,8 @@ type City = {
 };
 type CountryCities = Record<string, City[]>;
 
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+// Use local TopoJSON so the map is fully offline
+const GEO_URL = "/maps/world-110m.json";
 
 type Feature = {
   id: string;
@@ -63,10 +64,10 @@ export default function HomeMap() {
   const PANEL_GUTTER = 8;    // spacing from container bottom
   const PANEL_TOP_GAP = 4;   // small gap under menu
 
-  // Data fetching disabled: keep empty dataset to preserve UI skeleton only
-  const [uniData] = useState<CountryCities | null>({});
-  const [enrichedCountries] = useState<Set<string>>(new Set());
-  const [enriching] = useState<string | null>(null);
+  // Static JSON dataset (from public/). Starts empty and fills from /map/v1/*.json
+  const [uniData, setUniData] = useState<CountryCities | null>(null);
+  const [enrichedCountries, setEnrichedCountries] = useState<Set<string>>(new Set());
+  const [enriching, setEnriching] = useState<string | null>(null);
   const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "" });
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<{ x: number; y: number; data: any } | null>(null);
@@ -226,10 +227,54 @@ export default function HomeMap() {
     return () => clearTimeout(t);
   }, [filters, router]);
 
-  // Data fetching fully disabled; keep empty map markers.
-  // Intentionally no effect here to avoid any network or local cache usage.
+  // Load minimal markers from static JSON under public/map/v1/markers.min.json
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      try {
+        const res = await fetch("/map/v1/markers.min.json", { cache: "force-cache" });
+        if (!res.ok) throw new Error("no markers");
+        const json = await res.json();
+        if (!off) setUniData(json as CountryCities);
+      } catch {
+        // Fallback: try bundled demo data so UI isn't empty during setup
+        try {
+          const mod = await import("@/data/universities");
+          if (!off) setUniData(mod.demoUniversities as CountryCities);
+        } catch {
+          if (!off) setUniData({});
+        }
+      }
+    })();
+    return () => { off = true; };
+  }, []);
 
-  // Enrichment disabled: no per-country loading or caching.
+  // On selection, load enriched per-country file from public/map/v1/countries/<name>.json (if available)
+  useEffect(() => {
+    const name = selected?.name;
+    if (!name || !uniData) return;
+    if (enrichedCountries.has(name) || enriching === name) return;
+    let off = false;
+    setEnriching(name);
+    (async () => {
+      try {
+        const path = `/map/v1/countries/${encodeURIComponent(name)}.json`;
+        const res = await fetch(path, { cache: "force-cache" });
+        if (!res.ok) throw new Error("no country file");
+        const arr = (await res.json()) as City[];
+        if (off) return;
+        const next: CountryCities = { ...(uniData || {}) } as any;
+        next[name] = arr as any;
+        setUniData(next);
+        setEnrichedCountries((s) => new Set(s).add(name));
+      } catch {
+        // If there's no country file yet, keep markers-only view
+      } finally {
+        if (!off) setEnriching((s) => (s === name ? null : s));
+      }
+    })();
+    return () => { off = true; };
+  }, [selected?.name, uniData, enrichedCountries, enriching]);
 
   // No header measurement needed; panel is anchored inside the map container.
   // Detect small screens (sm/md) for sheet behavior
@@ -384,8 +429,7 @@ export default function HomeMap() {
                 return geographies.map((geo: any) => {
                   const name = (geo.properties.name as string) || "";
                   const isSelected = selected?.name === name;
-                  // With data loading removed, allow interacting with any country
-                  const hasData = true;
+                  const hasData = countryHasData.has(name);
                   const fill = isSelected ? "#C7D2FE" : hasData ? "#E6ECFF" : "#EEF2F7";
                   // Keep the same fill on hover to remove the hover reaction
                   const hoverFill = fill;
@@ -396,7 +440,7 @@ export default function HomeMap() {
                     <Geography
                       key={(geo as Feature).id}
                       geography={geo}
-                      onClick={() => handleCountryClick(geo)}
+                      onClick={hasData ? () => handleCountryClick(geo) : undefined}
                       style={{
                         default: { fill, outline: "none", stroke: strokeColor, strokeWidth: strokeW, cursor: hasData ? "pointer" : "default" },
                         // Mirror default stroke on hover so selection outline stays visible
