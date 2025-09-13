@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 type Props = {
-  mode: "learn" | "practice";
-  onMode: (m: "learn" | "practice") => void;
+  mode: "learn" | "practice" | "background";
+  onMode: (m: "learn" | "practice" | "background") => void;
   onShare?: () => void;
   onPrint?: () => void;
   onAskAI?: () => void;
@@ -22,6 +22,11 @@ function IconBook() {
 function IconQuiz() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="currentColor" strokeWidth="1.5"/><path d="M8 9h8M8 13h5" stroke="currentColor" strokeWidth="1.5"/></svg>
+  );
+}
+function IconLamp() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 1 6 6c0 2.2-1.2 3.9-2.6 5.1-.6.5-1.1 1.4-1.2 2.3H9.8c-.1-.9-.6-1.8-1.2-2.3C7.2 12.9 6 11.2 6 9a6 6 0 0 1 6-6Z" stroke="currentColor" strokeWidth="1.5"/><path d="M9 20h6M10 18h4" stroke="currentColor" strokeWidth="1.5"/></svg>
   );
 }
 function IconLock() {
@@ -82,6 +87,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
                 <span>Practice</span>
                 {softLockPractice && <span className="ml-1 text-gray-400" title={practiceHint || 'Intro not viewed'}><IconLock /></span>}
               </button>
+              <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
             </div>
 
             {/* Actions cluster */}

@@ -14,7 +14,7 @@ export default function LessonPage() {
   const { slug: rawSlug } = useParams();
   const slug = String(rawSlug || "lesson");
 
-  const [tab, setTab] = useState<"learn" | "practice">("learn");
+  const [tab, setTab] = useState<"learn" | "practice" | "background">("learn");
   const [focusMode, setFocusMode] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [fav, setFav] = useState(false);
@@ -193,15 +193,27 @@ export default function LessonPage() {
             </div>
           )}
 
-          {/* Extras – UI-only widgets */}
-          <UniResources enabled={false} comingSoon />
-          <AnkiDownload comingSoon />
-          <ConceptChecklist items={["Concept A", "Concept B", "Concept C"]} comingSoon />
-          <BackgroundMap comingSoon />
+          {/* Background tab – placeholder only */}
+          {tab === "background" && (
+            <>
+              <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
+                <div className="mb-2 text-sm font-semibold text-indigo-900">Background knowledge</div>
+                <p className="text-gray-700">Relevant foundations and reference material will appear here.</p>
+              </div>
+              <BackgroundMap comingSoon />
+            </>
+          )}
         </div>
 
         {/* Right: Sidebar */}
-        {!focusMode && <Glossary />}
+        {!focusMode && (
+          <div className="hidden lg:block space-y-4">
+            <Glossary />
+            <UniResources enabled={false} comingSoon />
+            <AnkiDownload comingSoon />
+            <ConceptChecklist items={["Concept A", "Concept B", "Concept C"]} comingSoon />
+          </div>
+        )}
       </div>
     </div>
   );
