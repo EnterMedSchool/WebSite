@@ -102,9 +102,9 @@ export default function FlashcardsWidget({ open, onClose, deck, title = "Flashca
         <div className="p-4">
           {done ? (
             <div className="space-y-3 text-center">
-              <div className="text-sm font-extrabold text-indigo-900">Nice work! 🎉</div>
+              <div className="text-sm font-extrabold text-indigo-900">Nice work!</div>
               <div className="text-[12px] text-gray-600">You reviewed all cards in this deck.</div>
-              <div className="text-[12px] text-gray-600">Known {known} · Need review {unknown}</div>
+              <div className="text-[12px] text-gray-600">Known {known} - Need review {unknown}</div>
               <div className="pt-1">
                 <button
                   className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:from-indigo-700 hover:to-violet-700"
@@ -135,7 +135,7 @@ export default function FlashcardsWidget({ open, onClose, deck, title = "Flashca
                   </div>
                 ) : (
                   <div className="mt-3">
-                    <button className="rounded-xl bg-gray-900/90 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-900" onClick={() => setShowBack(true)}>Show answer ␣</button>
+                    <button className="rounded-xl bg-gray-900/90 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-900" onClick={() => setShowBack(true)}>Show answer (Space/Enter)</button>
                   </div>
                 )}
               </div>
@@ -143,8 +143,8 @@ export default function FlashcardsWidget({ open, onClose, deck, title = "Flashca
               {/* Actions */}
               {showBack && (
                 <div className="flex items-center justify-between">
-                  <button className="rounded-xl bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 hover:bg-rose-200" onClick={markUnknown}>✗ I didn't know (←)</button>
-                  <button className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700" onClick={markKnown}>✓ I knew it (→)</button>
+                  <button className="rounded-xl bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 hover:bg-rose-200" onClick={markUnknown}>I didn&apos;t know (&lt;-)</button>
+                  <button className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700" onClick={markKnown}>I knew it (-&gt;)</button>
                 </div>
               )}
             </div>
