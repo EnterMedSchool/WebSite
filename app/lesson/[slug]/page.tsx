@@ -12,6 +12,7 @@ import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
+import UniResources from "@/components/lesson/UniResources";
 
 export default function LessonPage() {
   const { slug: rawSlug } = useParams();
@@ -260,8 +261,15 @@ export default function LessonPage() {
             {/* Flashcards moved to left sidebar above question progress */}
             <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
               <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Concept check</summary>
-              <div className="px-2 pb-2">
+              <div className="px-2 pb-2"> 
                 <div className="rounded-xl border p-3 text-[12px] text-gray-600">Inline checks are embedded in the reading area.</div>
+              </div>
+            </details>
+            {/* University Resources */}
+            <details id="uni-resources" className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
+              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">University Resources</summary>
+              <div className="px-2 pb-2">
+                <UniResources enabled={false} comingSoon />
               </div>
             </details>
           </div>

@@ -340,6 +340,9 @@ export const posts = pgTable(
 
     coverImageUrl: varchar("cover_image_url", { length: 500 }),
     coverImageAlt: varchar("cover_image_alt", { length: 300 }),
+    coverImageWidth: integer("cover_image_width"),
+    coverImageHeight: integer("cover_image_height"),
+    coverImageCaption: text("cover_image_caption"),
 
     metaTitle: varchar("meta_title", { length: 200 }),
     metaDescription: varchar("meta_description", { length: 320 }),
@@ -353,9 +356,22 @@ export const posts = pgTable(
     twitterTitle: varchar("twitter_title", { length: 200 }),
     twitterDescription: varchar("twitter_description", { length: 320 }),
     twitterImageUrl: varchar("twitter_image_url", { length: 500 }),
+    twitterCreator: varchar("twitter_creator", { length: 50 }),
+    twitterImageAlt: varchar("twitter_image_alt", { length: 300 }),
 
     structuredData: jsonb("structured_data"), // JSON-LD array or object
     tags: jsonb("tags"), // string[]
+
+    lang: varchar("lang", { length: 16 }),
+    hreflangAlternates: jsonb("hreflang_alternates"), // {lang, href}[]
+    redirectFrom: jsonb("redirect_from"), // string[]
+    robotsDirectives: jsonb("robots_directives"),
+
+    publisherName: varchar("publisher_name", { length: 120 }),
+    publisherLogoUrl: varchar("publisher_logo_url", { length: 500 }),
+
+    sitemapChangefreq: varchar("sitemap_changefreq", { length: 16 }),
+    sitemapPriority: doublePrecision("sitemap_priority"),
 
     authorName: varchar("author_name", { length: 120 }),
     authorEmail: varchar("author_email", { length: 255 }),

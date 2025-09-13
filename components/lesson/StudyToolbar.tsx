@@ -32,6 +32,15 @@ function IconLamp() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 1 6 6c0 2.2-1.2 3.9-2.6 5.1-.6.5-1.1 1.4-1.2 2.3H9.8c-.1-.9-.6-1.8-1.2-2.3C7.2 12.9 6 11.2 6 9a6 6 0 0 1 6-6Z" stroke="currentColor" strokeWidth="1.5"/><path d="M9 20h6M10 18h4" stroke="currentColor" strokeWidth="1.5"/></svg>
   );
 }
+function IconUniversity() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M3 9l9-5 9 5-9 5-9-5Z" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M6 11v6m12-6v6" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M3 17h18" stroke="currentColor" strokeWidth="1.5"/>
+    </svg>
+  );
+}
 function IconLock() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 10V7a5 5 0 0 1 10 0v3" stroke="currentColor" strokeWidth="1.5"/><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/></svg>
@@ -78,6 +87,13 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   const primaryBtn = `inline-flex h-11 items-center gap-2 rounded-full bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700`;
   // Focus should be primary (blue) in both states
   const toggleBtn = primaryBtn;
+  function goUniResources() {
+    try {
+      const el = document.getElementById('uni-resources');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else window.location.hash = '#uni-resources';
+    } catch {}
+  }
 
   return (
     <div className="sticky top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -93,11 +109,16 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
                 {softLockPractice && <span className="ml-1 text-gray-400" title={practiceHint || 'Intro not viewed'}><IconLock /></span>}
               </button>
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
+              {/* Quick link to University Resources section */}
+              <button onClick={goUniResources} className={segBtn(false)}>
+                <IconUniversity />
+                <span>University Resources</span>
+              </button>
             </div>
 
             {/* Inline chapter path between tabs and primary CTA */}
             {typeof chapterCount === 'number' && typeof activeStep === 'number' && (
-              <div className="hidden min-w-[160px] flex-1 md:block">
+              <div className="hidden min-w-[120px] flex-1 md:ml-1 md:block">
                 <ChapterPathMini count={chapterCount} currentIndex={activeStep} />
               </div>
             )}
