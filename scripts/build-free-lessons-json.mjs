@@ -52,7 +52,8 @@ async function fetchLessonPayload(slug) {
   let questionsByLesson = {};
   if (qr.rows.length) {
     const qids = qr.rows.map((r)=>Number(r.id));
-    const cr = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${qids as any}) ORDER BY id`;
+    // Pass array properly to @vercel/postgres
+    const cr = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${sql.array(qids, 'int4')}) ORDER BY id`;
     const byQ = new Map(); for (const c of cr.rows) {
       const arr = byQ.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ.set(Number(c.question_id), arr);
     }
@@ -63,12 +64,12 @@ async function fetchLessonPayload(slug) {
     let remaining = Math.max(0, MAX_CHAPTER_QUESTIONS - questions.length);
     if (remaining > 0) {
       const ids = lessons.map((x)=>Number(x.id));
-      const qr2 = await sql`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${ids as any}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
+      const qr2 = await sql`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${sql.array(ids, 'int4')}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
       const capped = [];
       for (const r of qr2.rows) { if (remaining <= 0) break; capped.push(r); remaining--; }
       if (capped.length) {
         const qids2 = capped.map((r)=>Number(r.id));
-        const cr2 = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${qids2 as any}) ORDER BY id`;
+        const cr2 = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${sql.array(qids2, 'int4')}) ORDER BY id`;
         const byQ2 = new Map(); for (const c of cr2.rows) { const arr = byQ2.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ2.set(Number(c.question_id), arr); }
         for (const r of capped) {
           const lid = String(Number(r.lesson_id));
