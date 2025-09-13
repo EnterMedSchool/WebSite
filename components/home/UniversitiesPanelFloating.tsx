@@ -67,10 +67,10 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
                   onMouseEnter={() => onHover?.(c)}
                   onMouseLeave={() => onHover?.(null)}
                   onClick={() => setActive(c)}
-                  className="group inline-flex max-w-full items-center gap-2 rounded-full bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-800 ring-1 ring-gray-200 transition hover:bg-indigo-50 hover:text-indigo-800 hover:ring-indigo-200"
+                  className="group relative inline-flex max-w-full items-center gap-2 rounded-2xl bg-gradient-to-br from-white/95 to-indigo-50/30 px-3 py-2 text-[12px] font-semibold text-gray-800 ring-1 ring-indigo-200/50 shadow-sm hover:shadow-md hover:from-white hover:to-white transition-all hover:-translate-y-0.5"
                   title={`${c.uni} — ${c.city}`}
                 >
-                  <span className="relative grid h-6 w-6 place-items-center overflow-hidden rounded-full bg-indigo-100">
+                  <span className="relative grid h-7 w-7 place-items-center overflow-hidden rounded-full bg-indigo-100 ring-2 ring-white shadow-[0_0_0_2px_rgba(99,102,241,0.25)]">
                     {c.logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={c.logo} alt="logo" className="h-full w-full object-cover" loading="lazy" decoding="async" fetchPriority="low" />
@@ -78,16 +78,25 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
                       <span className="text-[10px] font-extrabold text-indigo-700">{c.city[0]}</span>
                     )}
                   </span>
-                  <span className="truncate max-w-[12rem]">{c.uni}</span>
+                  <span className="truncate max-w-[12rem] leading-5">{c.uni}</span>
+                  <span className="hidden sm:inline text-[10px] font-normal text-gray-500">· {c.city}</span>
+                  <span className="ml-2 flex items-center gap-1">
+                    {c.exam && (
+                      <span className="rounded-full bg-indigo-50 px-1.5 py-[2px] text-[9px] font-bold text-indigo-700 ring-1 ring-indigo-200">{String(c.exam).toUpperCase()}</span>
+                    )}
+                    {c.language && (
+                      <span className="rounded-full bg-teal-50 px-1.5 py-[2px] text-[9px] font-semibold text-teal-700 ring-1 ring-teal-200">{String(c.language)}</span>
+                    )}
+                  </span>
                 </button>
               ))}
             </div>
 
             {/* Detail overlay when a university is chosen */}
             {active && (
-              <div className="absolute inset-0 z-10 rounded-2xl bg-white p-3 ring-1 ring-black/10 shadow-xl">
+              <div className="absolute inset-0 z-10 rounded-2xl bg-white p-3 ring-1 ring-black/10 shadow-2xl">
                 <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 overflow-hidden rounded-full bg-indigo-100 flex items-center justify-center">
+                  <div className="h-12 w-12 overflow-hidden rounded-full bg-indigo-100 flex items-center justify-center ring-2 ring-white shadow-[0_0_0_3px_rgba(99,102,241,0.25)]">
                     {active.logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={active.logo} alt="logo" className="h-full w-full object-cover" />
@@ -96,7 +105,7 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate font-bold text-gray-900">{active.uni}</div>
+                    <div className="truncate font-extrabold text-gray-900 tracking-tight">{active.uni}</div>
                     <div className="text-sm text-gray-600">{active.city}{active.kind ? ` · ${active.kind}` : ''}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       {active.exam && (<span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200">{String(active.exam).toUpperCase()}</span>)}
@@ -109,7 +118,7 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
                   </button>
                 </div>
 
-                <div className="mt-3 rounded-2xl bg-gray-50 p-2">
+                <div className="mt-3 rounded-2xl bg-gray-50 p-2 ring-1 ring-gray-200/60">
                   <MiniTrend uni={active.uni} id={active.id} root={listRef.current} prefetch={{ points: (active as any).trendPoints, seats: (active as any).trendSeats }} />
                 </div>
 
@@ -131,4 +140,3 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
     </div>
   );
 }
-

@@ -130,7 +130,7 @@ export default function CourseMatesClient({ authed, initial }: {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
       {/* Mobile placeholder, desktop-only for now */}
       <div className="md:hidden rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-700">
         Course Hub is optimized for desktop. Mobile layout coming soon.

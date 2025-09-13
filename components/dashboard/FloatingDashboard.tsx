@@ -85,8 +85,8 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   }
 
   return (
-    <div className="fixed inset-0 z-[9998] grid place-items-center bg-gradient-to-br from-black/40 via-indigo-900/10 to-fuchsia-900/10 backdrop-blur-[2px] p-4" onClick={onClose}>
-      <div className="relative w-full max-w-6xl rounded-[28px] border border-violet-200/60 bg-white/90 shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/40 via-indigo-900/10 to-fuchsia-900/10 backdrop-blur-[2px] p-4" onClick={onClose}>
+      <div className="relative w-full max-w-7xl my-4 rounded-[28px] border border-violet-200/60 bg-white/90 shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
         {/* Left rail: dashboard menu with labels */}
         <div className="absolute left-0 top-0 h-full w-56 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
           <div className="flex h-full flex-col justify-between py-5">
@@ -131,7 +131,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
           <div className="grid grid-cols-12 gap-6 p-6">
             {tab === 'dashboard' && (<>
             {/* Greeting + Today */}
-            <div className="col-span-7">
+            <div className="col-span-8">
               <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
                 <div className="flex items-center gap-3">
                   <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName}</div>
@@ -223,7 +223,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             </div>
 
             {/* Right column */}
-            <div className="col-span-5 space-y-4">
+            <div className="col-span-4 space-y-4">
               {/* Profile */}
               <ProfileCard name={data?.user?.name ?? null} imageUrl={data?.user?.image ?? null} level={data?.user?.level ?? 1} xp={data?.user?.xp ?? 0} streakDays={data?.user?.streakDays ?? 0} />
 

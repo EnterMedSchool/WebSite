@@ -16,18 +16,7 @@ type Manifest = {
 };
 
 export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: string }) {
-  const [manifest, setManifest] = useState<Manifest | null>(null);
-  const [mode, setMode] = useState<"pending"|"sharded"|"full">("pending");
-  useEffect(() => {
-    let cancelled = false;
-    fetch(src.replace("graph.json","manifest.json"))
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
-      .then(j => { if (!cancelled) { setManifest(j); setMode("sharded"); } })
-      .catch(() => { if (!cancelled) setMode("full"); });
-    return () => { cancelled = true; };
-  }, [src]);
-  if (mode === 'pending') return <div className="p-4 text-gray-500">Loading…</div>;
-  if (mode === 'sharded' && manifest) return <WowShardedGraph baseSrc={src.replace("graph.json","")} manifest={manifest}/>;
+  // Always render the full graph (no sharding) so all dots are visible ("open").
   return <WowFullGraph src={src}/>;
 }
 
@@ -55,13 +44,13 @@ function WowFullGraph({ src }: { src: string }) {
     if (!data) return null;
     const DEV = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).has('dev') || process.env.NODE_ENV !== 'production');
     if (!DEV) return data;
-    if (data.nodes.length >= 80) return data;
+    if (data.nodes.length >= 50) return data;
     // Deterministic pseudo-random for stable builds
     let seed = 42; const rand = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
     const nodes = data.nodes.slice();
     const edges = data.edges.slice();
     const startId = nodes.length ? Math.max(...nodes.map(n => Number(n.id) || 0)) + 1 : 1;
-    const targetCount = 140; // total nodes including originals
+    const targetCount = 50; // total nodes including originals
     const courseCount = 5;
     const cats = ['anatomy','physiology','biochem','path','pharm'];
     for (let i = startId; i < targetCount + 1; i++) {
@@ -74,6 +63,33 @@ function WowFullGraph({ src }: { src: string }) {
         const j = Math.floor(rand() * prereqCandidates.length);
         const src = prereqCandidates.splice(j, 1)[0];
         edges.push({ id: `e${src}-${i}-${t}` as any, source: String(src), target: String(i) });
+      }
+    }
+    // Ensure single connected component (ignore direction for connectivity)
+    const idSet = new Set(nodes.map(n => String(n.id)));
+    const undirected = new Map<string, Set<string>>();
+    const addUndirected = (a:string,b:string) => {
+      if (!undirected.has(a)) undirected.set(a, new Set());
+      if (!undirected.has(b)) undirected.set(b, new Set());
+      undirected.get(a)!.add(b); undirected.get(b)!.add(a);
+    };
+    for (const id of idSet) addUndirected(id, id); // init
+    for (const e of edges) addUndirected(String((e as any).source), String((e as any).target));
+    const all = Array.from(idSet);
+    if (all.length) {
+      const visited = new Set<string>();
+      const q=[all[0]]; visited.add(all[0]);
+      while(q.length){ const v=q.shift()!; const nbrs=undirected.get(v) || new Set(); for(const u of nbrs){ if(!visited.has(u)){ visited.add(u); q.push(u); } } }
+      let bridgeIdx = 0;
+      for (const id of all) {
+        if (!visited.has(id)) {
+          // connect this orphan to some visited node
+          const target = all[bridgeIdx % visited.size];
+          edges.push({ id: `b${id}-${target}`, source: target, target: id } as any);
+          addUndirected(target, id);
+          visited.add(id);
+          bridgeIdx++;
+        }
       }
     }
     return { ...data, nodes, edges };
@@ -224,6 +240,8 @@ function WowFullGraph({ src }: { src: string }) {
         nodeLabel={(n: any) => ""}
         onNodeClick={(n: any) => setFocus(String(n.id))}
         onNodeHover={(n: any) => setHover(n || null)}
+        enableNodeDrag
+        d3VelocityDecay={0.9}
         enablePanInteraction
         enableZoomInteraction
         width={undefined}
