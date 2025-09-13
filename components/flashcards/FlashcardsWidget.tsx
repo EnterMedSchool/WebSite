@@ -105,11 +105,11 @@ export default function FlashcardsWidget({ open, onClose, deck, title = "Flashca
               {/* Card */}
               <div className="rounded-xl border bg-white p-4 shadow-sm">
                 <div className="text-[12px] uppercase tracking-wide text-gray-500">Prompt</div>
-                <div className="mt-1 text-sm text-gray-900">{current.front}</div>
+                <div className="mt-1 text-sm text-gray-900">{current!.front}</div>
                 {showBack ? (
                   <div className="mt-3 rounded-lg bg-indigo-50 p-3 ring-1 ring-inset ring-indigo-200">
                     <div className="text-[12px] uppercase tracking-wide text-indigo-800">Answer</div>
-                    <div className="mt-1 text-sm text-indigo-900">{current.back}</div>
+                    <div className="mt-1 text-sm text-indigo-900">{current!.back}</div>
                   </div>
                 ) : (
                   <div className="mt-3">
@@ -132,4 +132,3 @@ export default function FlashcardsWidget({ open, onClose, deck, title = "Flashca
     </div>
   );
 }
-

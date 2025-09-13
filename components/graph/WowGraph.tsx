@@ -1,11 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-// react-force-graph-2d must be dynamically imported (no SSR)
-// Explicitly resolve the default export to avoid "element type is invalid" issues in prod
-const ForceGraph2D = dynamic(() => import("react-force-graph-2d").then(m => m.default), { ssr: false }) as any;
+import ForceGraph2D from "react-force-graph-2d";
 
 type GraphJSON = {
   nodes: { id: string; label: string; slug?: string; courseId?: number }[];
@@ -173,7 +169,13 @@ function WowFullGraph({ src }: { src: string }) {
   // Camera fit on first render
   useEffect(() => {
     if (!ref.current || !fgData) return;
-    const t = setTimeout(() => ref.current.zoomToFit(400, 50), 0);
+    const t = setTimeout(() => {
+      try {
+        if (typeof (ref.current as any).zoomToFit === "function") {
+          (ref.current as any).zoomToFit(400, 50);
+        }
+      } catch {}
+    }, 0);
     return () => clearTimeout(t);
   }, [fgData]);
 
@@ -226,7 +228,6 @@ function WowFullGraph({ src }: { src: string }) {
         enableZoomInteraction
         width={undefined}
         height={undefined}
-        style={{ width: "100%", height: "100%" }}
         // Rope-like bezier with wobble
         linkCanvasObjectMode={() => "replace"}
         linkCanvasObject={(l: any, ctx: CanvasRenderingContext2D, scale: number) => {
@@ -357,9 +358,16 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
     setNodes(prev => prev.filter(n => n.id !== `c:${courseId}`).concat(
       data.nodes.map((n:any) => ({ id: n.id, name: n.label, courseId: n.courseId, href: n.slug ? `/lesson/${n.slug}`:undefined, x: cx + (Math.random()*2-1)*jitter, y: cy + (Math.random()*2-1)*jitter }))
     ));
-    setLinks(prev => prev.filter(l => l.source !== `c:${courseId}` && l.target !== `c:${courseId}`).concat(
-      data.edges.map((e:any) => ({ id: e.id, source: e.source, target: e.target }))
-    ));
+    setLinks(prev => prev
+      .filter(l => {
+        const s = String((l as any).source && typeof (l as any).source === 'object' ? (l as any).source.id : (l as any).source);
+        const t = String((l as any).target && typeof (l as any).target === 'object' ? (l as any).target.id : (l as any).target);
+        return s !== `c:${courseId}` && t !== `c:${courseId}`;
+      })
+      .concat(
+        data.edges.map((e:any) => ({ id: e.id, source: e.source, target: e.target }))
+      )
+    );
     // update inMap
     for (const e of data.edges) {
       const arr = inMapRef.current.get(String(e.target)) || [];
@@ -385,7 +393,15 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
   }, [focus, links]);
 
   // fit on first render
-  useEffect(()=>{ if(!ref.current) return; const t=setTimeout(()=>ref.current.zoomToFit(400,50),0); return ()=>clearTimeout(t); }, []);
+  useEffect(()=>{
+    if(!ref.current) return;
+    const t=setTimeout(()=>{
+      try {
+        if (typeof (ref.current as any).zoomToFit === 'function') (ref.current as any).zoomToFit(400,50);
+      } catch {}
+    },0);
+    return ()=>clearTimeout(t);
+  }, []);
 
   return (
     <div className="relative h-full w-full" onMouseMove={(e)=>{const r=(e.currentTarget as HTMLDivElement).getBoundingClientRect(); mouse.current={x:e.clientX-r.left,y:e.clientY-r.top};}}>
@@ -408,7 +424,6 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
         nodeCanvasObject={(n:any, ctx:CanvasRenderingContext2D, scale:number)=>{ if(n.course){ const r=8; ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fillStyle="#ffffff"; ctx.fill(); ctx.lineWidth=2/Math.sqrt(scale); ctx.strokeStyle=colorForCourse(n.courseId); ctx.stroke(); ctx.fillStyle="#111827"; ctx.font=`${12/Math.sqrt(scale)}px Inter, system-ui`; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(n.name, n.x + r + 4, n.y); return; } const r=4 + 2; const color = n.completed ? "#22c55e" : colorForCourse(n.courseId); ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 2/Math.sqrt(scale); ctx.strokeStyle = n.__on?"#f59e0b":"rgba(0,0,0,0.08)"; ctx.stroke(); if(n.completed){ ctx.strokeStyle="white"; ctx.lineWidth=2/Math.sqrt(scale); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(n.x-r*0.6,n.y+r*0.05); ctx.lineTo(n.x-r*0.15,n.y+r*0.5); ctx.lineTo(n.x+r*0.7,n.y-r*0.4); ctx.stroke(); } }}
         width={undefined}
         height={undefined}
-        style={{ width:"100%", height:"100%" }}
       />
 
       {hover && !hover.course && (

@@ -93,6 +93,27 @@ export function TrendChart({
     return d.trim();
   }
 
+  // Compute collision-safe Y positions for hover labels when points are close
+  let labelYBySeries: Map<number, number> | null = null;
+  if (hoverIdx != null) {
+    const entries = values
+      .map((v, si) => ({ si, v: v.points[hoverIdx]?.value }))
+      .filter((e): e is { si: number; v: number } => typeof e.v === 'number');
+    const desired = entries.map((e) => ({ si: e.si, y: y(e.v) }));
+    desired.sort((a, b) => a.y - b.y);
+    const minGap = compact ? 12 : 14;
+    for (let i = 1; i < desired.length; i++) {
+      if (desired[i].y - desired[i - 1].y < minGap) {
+        desired[i].y = desired[i - 1].y + minGap;
+      }
+    }
+    // Clamp to chart bounds
+    for (const d of desired) {
+      d.y = Math.max(P + 6, Math.min(H - P - 6, d.y));
+    }
+    labelYBySeries = new Map(desired.map((d) => [d.si, d.y]));
+  }
+
   return (
     <svg
       width="100%"
@@ -149,7 +170,7 @@ export function TrendChart({
               {!compact && <circle cx={x(hoverIdx)} cy={y(v.points[hoverIdx]!.value!)} r={6} fill={v.color} fillOpacity={0.12} />}
               <text
                 x={x(hoverIdx)}
-                y={y(v.points[hoverIdx]!.value!) - (compact ? 6 : 8)}
+                y={(labelYBySeries?.get(si) ?? y(v.points[hoverIdx]!.value!)) - (compact ? 6 : 8)}
                 fontSize={compact ? 10 : 11}
                 textAnchor="middle"
                 fill="#334155"

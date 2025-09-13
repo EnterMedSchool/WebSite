@@ -64,13 +64,13 @@ export default function MiniTrend({ uni, id, root, prefetch }: { uni: string; id
 
   return (
     <div ref={holderRef} className="flex items-center justify-between gap-3">
-      <div className="shrink-0">
-        <TrendChart series={series ?? []} mode="All" compact className="ring-1 ring-gray-200/60" />
+      <div className="flex-1 min-w-0">
+        <TrendChart series={series ?? []} mode="All" compact className="ring-1 ring-gray-200/60 w-full" />
       </div>
       <div className="grid w-[132px] grid-rows-2 gap-2">
         <div className="rounded-xl bg-indigo-50 px-2 py-1.5 text-indigo-800 ring-1 ring-indigo-200/60">
           <div className="text-[9px] font-semibold uppercase tracking-wide">EU</div>
-          <div className="text-base font-extrabold leading-5">{seats.eu ?? (noData ? "—" : "—")}</div>
+          <div className="text-base font-extrabold leading-5">{seats.eu ?? (noData ? "-" : "-")}</div>
           <div className="text-[9px] text-indigo-700/70">{seats.year ? `seats in ${seats.year}` : ""}</div>
         </div>
         <div className="rounded-xl bg-amber-50 px-2 py-1.5 text-amber-800 ring-1 ring-amber-200/60">

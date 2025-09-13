@@ -209,12 +209,19 @@ export default function CourseMatesClient({ authed, initial }: {
           <div id="feed" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-lg font-semibold">Latest Updates</div>
-              {access === 'verified' && (
-                <form className="flex items-center gap-2" onSubmit={async (e)=>{ e.preventDefault(); const t = newPost.trim(); if(!t) return; try { const r = await fetch('/api/course-mates/feed', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: t }) }); if(r.ok){ const j = await r.json(); setFeed(j.data || []); setNewPost(''); } } catch{} }}>
-                  <input value={newPost} onChange={(e)=>setNewPost(e.target.value)} placeholder="Post an update" className="w-64 rounded-lg border px-3 py-1.5 text-sm" />
-                  <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Post</button>
-                </form>
-              )}
+              <div className="flex items-center gap-2">
+                <button onClick={reloadAll} disabled={refreshing} title="Refresh"
+                  className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 hover:bg-gray-200 disabled:opacity-60">
+                  <svg viewBox="0 0 24 24" className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}><path fill="currentColor" d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
+                  Refresh
+                </button>
+                {access === 'verified' && (
+                  <form className="flex items-center gap-2" onSubmit={async (e)=>{ e.preventDefault(); const t = newPost.trim(); if(!t) return; try { const r = await fetch('/api/course-mates/feed', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: t }) }); if(r.ok){ const j = await r.json(); setFeed(j.data || []); setNewPost(''); } } catch{} }}>
+                    <input value={newPost} onChange={(e)=>setNewPost(e.target.value)} placeholder="Post an update" className="w-64 rounded-lg border px-3 py-1.5 text-sm" />
+                    <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Post</button>
+                  </form>
+                )}
+              </div>
             </div>
             <ul className="space-y-3">
               {feedLimited.map((p:any) => (
@@ -317,35 +324,32 @@ export default function CourseMatesClient({ authed, initial }: {
               {!events.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No upcoming events.</li>}
               </ul>
             </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 text-lg font-semibold">Mini Calendar</div>
-              {(() => {
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = now.getMonth();
-                const first = new Date(year, month, 1);
-                const startDay = first.getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const marks = new Set((events||[]).map((e:any)=>{ const d = new Date(e.start_at || e.startAt); return d.getFullYear()===year && d.getMonth()===month ? d.getDate() : 0; }));
-                const cells: (number | '')[] = [];
-                for (let i=0;i<startDay;i++) cells.push('' as any);
-                for (let d=1; d<=daysInMonth; d++) cells.push(d);
-                while (cells.length % 7 !== 0) cells.push('' as any);
-                const wk = ['S','M','T','W','T','F','S'];
+            <CuteCalendar events={events} />
+          </div>
+
+          {/* Past events gallery */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-lg font-semibold">Past Events</div>
+              <div className="text-xs text-gray-600">Thumbnails with key details</div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {pastEvents.map((ev: any) => {
+                const id = (ev as any).id ?? (ev as any).event_id ?? (ev as any).eventId;
+                const count = id != null ? (photoCountByEvent[String(id)] || 0) : 0;
                 return (
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                    {wk.map((d)=> <div key={d} className="py-1 font-semibold text-gray-600">{d}</div>)}
-                    {cells.map((n, i)=> (
-                      <div key={i} className={`grid h-8 place-items-center rounded ${n ? 'bg-gray-50 text-gray-700 ring-1 ring-gray-200' : ''}`}>
-                        <div className="relative">
-                          <span className="text-[11px]">{n || ''}</span>
-                          {typeof n === 'number' && marks.has(n) && <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />}
-                        </div>
-                      </div>
-                    ))}
+                  <div key={`past-${id}`} className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
+                      {ev.thumb_url && <img src={ev.thumb_url} alt={ev.title} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />}
+                    </div>
+                    <div className="p-3">
+                      <div className="truncate font-semibold text-gray-900" title={ev.title}>{ev.title}</div>
+                      <div className="mt-0.5 text-[11px] text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleDateString()} · by {ev.created_by || 'moderator'} · {count} photos</div>
+                    </div>
                   </div>
                 );
-              })()}
+              })}
+              {!pastEvents.length && <div className="rounded-xl border p-6 text-center text-sm text-gray-600">No past events yet.</div>}
             </div>
           </div>
 
@@ -429,6 +433,32 @@ export default function CourseMatesClient({ authed, initial }: {
               )}
             </div>
           </div>
+          
+          {/* Settings */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Settings</div>
+            <div className="rounded-xl border bg-gray-50 p-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
+                  <div className="text-[11px] text-gray-600">Public profiles appear across the website (e.g., university counts and Course Mates). Includes your name, username and profile picture.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async()=>{
+                    const next = !isPublic;
+                    if (next) { const ok = window.confirm('Are you sure you want to make your profile public?\n\nYour name, username and profile picture will be visible across EnterMedSchool (e.g., Course Mates and university pages). You can switch this off anytime.'); if (!ok) return; }
+                    setIsPublic(next);
+                    try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {}
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                  aria-pressed={isPublic}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -447,5 +477,94 @@ export default function CourseMatesClient({ authed, initial }: {
   );
 }
 
+function CuteCalendar({ events }: { events: any[] }) {
+  const [month, setMonth] = useState<number>(new Date().getMonth());
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [selected, setSelected] = useState<number | null>(null);
 
+  const marks = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const e of events || []) {
+      const d = new Date((e as any).start_at || (e as any).startAt || (e as any).date);
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        const day = d.getDate(); m.set(day, (m.get(day) || 0) + 1);
+      }
+    }
+    return m;
+  }, [events, month, year]);
 
+  const first = new Date(year, month, 1);
+  const startDay = first.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | '')[] = [];
+  for (let i = 0; i < startDay; i++) cells.push('' as any);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push('' as any);
+
+  const wk = ['S','M','T','W','T','F','S'];
+
+  function prevMonth() {
+    const d = new Date(year, month, 1); d.setMonth(d.getMonth() - 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null);
+  }
+  function nextMonth() {
+    const d = new Date(year, month, 1); d.setMonth(d.getMonth() + 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null);
+  }
+
+  const selectedEvents = useMemo(() => {
+    if (!selected) return [] as any[];
+    return (events || []).filter((e: any) => {
+      const d = new Date(e.start_at || e.startAt || e.date);
+      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selected;
+    });
+  }, [selected, events, month, year]);
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-lg font-semibold">Calendar</div>
+        <div className="flex items-center gap-2 text-sm">
+          <button onClick={prevMonth} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <div className="min-w-[8rem] text-center font-semibold text-gray-800">{new Date(year, month).toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
+          <button onClick={nextMonth} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200" aria-label="Next month">
+            <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {wk.map((d) => <div key={d} className="py-1 font-semibold text-gray-600">{d}</div>)}
+        {cells.map((n, i) => (
+          <button
+            key={i}
+            className={`grid h-9 place-items-center rounded transition ${n ? 'bg-gray-50 text-gray-700 ring-1 ring-gray-200 hover:bg-indigo-50 hover:ring-indigo-200' : ''} ${selected===n ? 'bg-indigo-100 ring-indigo-300' : ''}`}
+            onClick={() => typeof n === 'number' ? setSelected(n) : undefined}
+          >
+            <div className="relative">
+              <span className="text-[11px]">{(n as any) || ''}</span>
+              {typeof n === 'number' && marks.get(n) && <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />}
+            </div>
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 text-xs text-gray-600">{selected ? `Events on ${new Date(year, month, selected).toLocaleDateString()}` : 'Click a date to view events'}</div>
+      {!!selected && (
+        <ul className="mt-2 space-y-2 text-sm">
+          {selectedEvents.map((ev: any) => (
+            <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+              <div className="flex items-center gap-2">
+                {ev.thumb_url && <img src={ev.thumb_url} alt="thumb" className="h-8 w-8 rounded object-cover" />}
+                <div>
+                  <div className="font-semibold">{ev.title}</div>
+                  <div className="text-xs text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {ev.location ? '· '+ev.location : ''}</div>
+                </div>
+              </div>
+              <a href="#" className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Details</a>
+            </li>
+          ))}
+          {!selectedEvents.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No events on this date.</li>}
+        </ul>
+      )}
+    </div>
+  );
+}
