@@ -326,20 +326,48 @@ export const messages = pgTable(
   })
 );
 
-// Blog posts
+// Blog posts (SEO-ready)
 export const posts = pgTable(
   "posts",
   {
     id: serial("id").primaryKey(),
     slug: varchar("slug", { length: 160 }).notNull().unique(),
     title: varchar("title", { length: 200 }).notNull(),
+    excerpt: text("excerpt"),
     body: text("body").notNull(),
     published: boolean("published").default(false).notNull(),
+    noindex: boolean("noindex").default(false).notNull(),
+
     coverImageUrl: varchar("cover_image_url", { length: 500 }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    coverImageAlt: varchar("cover_image_alt", { length: 300 }),
+
+    metaTitle: varchar("meta_title", { length: 200 }),
+    metaDescription: varchar("meta_description", { length: 320 }),
+    canonicalUrl: varchar("canonical_url", { length: 500 }),
+
+    ogTitle: varchar("og_title", { length: 200 }),
+    ogDescription: varchar("og_description", { length: 320 }),
+    ogImageUrl: varchar("og_image_url", { length: 500 }),
+
+    twitterCard: varchar("twitter_card", { length: 32 }).default("summary_large_image").notNull(),
+    twitterTitle: varchar("twitter_title", { length: 200 }),
+    twitterDescription: varchar("twitter_description", { length: 320 }),
+    twitterImageUrl: varchar("twitter_image_url", { length: 500 }),
+
+    structuredData: jsonb("structured_data"), // JSON-LD array or object
+    tags: jsonb("tags"), // string[]
+
+    authorName: varchar("author_name", { length: 120 }),
+    authorEmail: varchar("author_email", { length: 255 }),
+
+    publishedAt: timestamp("published_at"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => ({ slugIdx: index("posts_slug_idx").on(t.slug) })
+  (t) => ({
+    slugIdx: index("posts_slug_idx").on(t.slug),
+    publishedIdx: index("posts_published_idx").on(t.published),
+  })
 );
 
 // Admin drafts for staging LMS changes (saved plans)

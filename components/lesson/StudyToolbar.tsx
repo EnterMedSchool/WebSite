@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ChapterPathMini from "./ChapterPathMini";
 
 type Props = {
   mode: "learn" | "practice" | "background";
@@ -12,6 +13,8 @@ type Props = {
   onFocusToggle?: () => void;
   softLockPractice?: boolean;
   practiceHint?: string;
+  chapterCount?: number;
+  activeStep?: number;
 };
 
 function IconBook() {
@@ -50,7 +53,7 @@ function IconGPT() {
   );
 }
 
-export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint }: Props) {
+export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint, chapterCount, activeStep }: Props) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   async function share() {
@@ -91,6 +94,13 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
               </button>
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
             </div>
+
+            {/* Inline chapter path between tabs and primary CTA */}
+            {typeof chapterCount === 'number' && typeof activeStep === 'number' && (
+              <div className="hidden min-w-[160px] flex-1 md:block">
+                <ChapterPathMini count={chapterCount} currentIndex={activeStep} />
+              </div>
+            )}
 
             {/* Primary CTA + overflow menu */}
             <div className="inline-flex items-center gap-2">

@@ -12,7 +12,6 @@ import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
-import ChapterPath from "@/components/lesson/ChapterPath";
 
 export default function LessonPage() {
   const { slug: rawSlug } = useParams();
@@ -116,19 +115,6 @@ export default function LessonPage() {
           </div>
         </div>
       </div>
-
-      {/* Chapter path with animated progress */}
-      <div className="mt-4">
-        <ChapterPath
-          steps={chapterTimeline.map((s) => ({
-            key: s.key,
-            title: s.title,
-            status: s.active ? "current" : undefined,
-          }))}
-          activeIndex={Math.max(0, chapterTimeline.findIndex((s) => s.active))}
-        />
-      </div>
-
       {/* Toolbar */}
       <div className="mt-4">
         <StudyToolbar
@@ -137,6 +123,8 @@ export default function LessonPage() {
           onFocusToggle={() => setFocusMode((v) => !v)}
           focus={focusMode}
           softLockPractice={false}
+          chapterCount={chapterTimeline.length}
+          activeStep={Math.max(0, chapterTimeline.findIndex((s) => s.active))}
         />
       </div>
 
