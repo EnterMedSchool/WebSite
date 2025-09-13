@@ -52,6 +52,7 @@ function IconGPT() {
 
 export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint }: Props) {
   const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   async function share() {
     try {
       if (navigator.share) {
@@ -68,9 +69,10 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   function printPage() { try { window.print(); } catch {} onPrint?.(); }
   function askAI() { try { window.dispatchEvent(new CustomEvent('ai:open')); } catch {} onAskAI?.(); }
 
-  const segBtn = (active: boolean) => `inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-700 hover:text-indigo-700'}`;
-  const ghostBtn = `inline-flex h-9 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
-  const primaryBtn = `inline-flex h-9 items-center gap-1 rounded-full bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700`;
+  // 44px hit-targets
+  const segBtn = (active: boolean) => `inline-flex h-11 items-center gap-1 rounded-full px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-800 hover:text-indigo-700'}`;
+  const ghostBtn = `inline-flex h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
+  const primaryBtn = `inline-flex h-11 items-center gap-2 rounded-full bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700`;
   // Focus should be primary (blue) in both states
   const toggleBtn = primaryBtn;
 
@@ -90,13 +92,26 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
             </div>
 
-            {/* Actions cluster */}
-            <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
-              <button onClick={share} className={ghostBtn}><IconShare /><span>Share</span></button>
-              <button onClick={printPage} className={ghostBtn}><IconPrint /><span>Print</span></button>
-              <button onClick={askAI} className={ghostBtn}><IconGPT /><span>ChatGPT</span></button>
-              <a href="/graph" className={ghostBtn}><span>Mind Map</span></a>
-              <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
+            {/* Primary CTA + overflow menu */}
+            <div className="inline-flex items-center gap-2">
+              <button className={primaryBtn} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                <span>Start · Resume</span>
+              </button>
+              <div className="relative">
+                <button aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v)=>!v)} className={ghostBtn}>
+                  <span className="sr-only">More</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 z-10 mt-2 w-48 rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-black/5">
+                    <button onClick={share} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-indigo-50"><IconShare />Share</button>
+                    <button onClick={printPage} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-indigo-50"><IconPrint />Print</button>
+                    <button onClick={askAI} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-indigo-50"><IconGPT />Ask AI</button>
+                    <a href="/graph" className="flex w-full items-center gap-2 rounded-lg px-2 py-2 hover:bg-indigo-50">Mind map</a>
+                    <button onClick={onFocusToggle} className="mt-1 flex w-full items-center gap-2 rounded-lg bg-indigo-600 px-2 py-2 font-semibold text-white hover:bg-indigo-700">{focus ? 'Exit focus' : 'Focus mode'}</button>
+                  </div>
+                )}
+              </div>
             </div>
           </>
         ) : (

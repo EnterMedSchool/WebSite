@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import SubtitlesPanel, { SubtitleTrack } from "./SubtitlesPanel";
 
 type Anchor = { pos: number; id: string; label: string };
 
@@ -12,7 +11,7 @@ type Props = {
   locked?: boolean;
   lockReason?: string;
   onUnlock?: () => void;
-  subtitles?: SubtitleTrack[];
+  subtitles?: any; // integrated controls only (skeleton)
   prev?: { href: string; title: string } | null;
   next?: { href: string; title: string } | null;
   anchors?: Anchor[];
@@ -39,6 +38,8 @@ function toYouTubeEmbed(url?: string): string | null {
 export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason, onUnlock, subtitles, prev, next, anchors }: Props) {
   const yt = toYouTubeEmbed(src);
   const [progress, setProgress] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [ccOpen, setCcOpen] = useState(false);
   useEffect(() => {
     const id = window.setInterval(() => setProgress((p) => (p >= 100 ? 0 : p + 0.6)), 80);
     return () => window.clearInterval(id);
@@ -56,13 +57,31 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
   return (
     <div className="space-y-3">
       <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
-        {iframeSrc ? (
+        {/* Preview image with start CTA; loads embed only after click */}
+        {!playing ? (
+          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+            <div className="absolute inset-0">
+              <img src={poster || "/graph/v1/course-2.jpg"} alt="Lesson preview" className="h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-black/10" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <div className="text-white">
+                  <div className="text-xs opacity-90">Hematology • ~12 min</div>
+                  <div className="text-lg font-semibold">Disseminated intravascular coagulation</div>
+                </div>
+                <button onClick={() => setPlaying(true)} className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  <span>Start · Resume</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : iframeSrc ? (
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
             <iframe
               className="absolute inset-0 h-full w-full"
               src={iframeSrc}
               title="Lesson video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               loading="lazy"
               style={{ border: 0 }}
@@ -74,7 +93,7 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
               className="absolute inset-0 h-full w-full"
               src={yt}
               title="Lesson video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           </div>
@@ -82,6 +101,19 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
           // eslint-disable-next-line jsx-a11y/media-has-caption
           <video src={src} poster={poster} className="block w-full" controls={!locked} playsInline />
         )}
+        {/* In-player controls overlay (skeleton) */}
+        <div className="pointer-events-none absolute right-3 top-3 z-10 flex gap-2">
+          <div className="relative pointer-events-auto">
+            <button aria-haspopup="menu" onClick={() => setCcOpen((v)=>!v)} className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/70">CC • English</button>
+            {ccOpen && (
+              <div className="absolute right-0 z-10 mt-2 w-40 rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-black/5">
+                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-indigo-50">English</button>
+                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-indigo-50">Italiano</button>
+                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-indigo-50">Subtitles off</button>
+              </div>
+            )}
+          </div>
+        </div>
         {locked && (
           <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-sm">
             <div className="max-w-sm rounded-2xl bg-white p-4 text-center shadow ring-1 ring-black/5">
@@ -132,7 +164,7 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
         `}</style>
       </div>
 
-      <SubtitlesPanel tracks={subtitles} />
+      {/* Transcript & chapters placeholder would sit here */}
 
       {/* Prev/Next navigation integrated for the whole panel */}
       {(prev || next) && (

@@ -11,7 +11,11 @@ export default function UniResources({ enabled, resources, comingSoon }: { enabl
     <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5 overflow-hidden">
       <div className="mb-2 flex items-center justify-between">
         <div className="text-sm font-semibold text-indigo-900">Resources from your university</div>
-        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${enabled ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-gray-300'}`}>{enabled ? 'Synced' : 'Sync required'}</span>
+        {enabled ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">Synced</span>
+        ) : (
+          <a href="/me/profile" className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Connect school</a>
+        )}
       </div>
       {comingSoon && (
         <div className="mb-2 text-[11px] text-gray-500">Upload & moderation • coming soon</div>

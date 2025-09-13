@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import VideoPanel from "@/components/lesson/VideoPanel";
+import TranscriptPanel from "@/components/lesson/TranscriptPanel";
 import UniResources from "@/components/lesson/UniResources";
 import AnkiDownload from "@/components/lesson/AnkiDownload";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
@@ -34,16 +35,16 @@ export default function LessonPage() {
   return (
     <div className="mx-auto max-w-[1400px] p-6">
       {/* Header – UI only */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
+      <div className="sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             {/* Breadcrumb-like pill with course > chapter (UI only) */}
-            <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold">
-              <span className="opacity-95">{course.title}</span>
+            <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
+              <a href={`/${course.slug}`} className="opacity-95 hover:underline">{course.title}</a>
               <span className="opacity-80">›</span>
-              <span className="opacity-95">{chapter.title}</span>
+              <a href={`/${course.slug}/${chapter.slug}`} className="opacity-95 hover:underline">{chapter.title}</a>
             </div>
-            <h1 className="truncate text-2xl font-extrabold tracking-tight sm:text-3xl">{lessonTitle}</h1>
+            <h1 className="truncate text-3xl font-extrabold tracking-tight sm:text-4xl">{lessonTitle}</h1>
 
             {/* Compact status + visual bar */}
             <div className="mt-3 w-full max-w-md text-[11px] font-medium text-white/90">
@@ -95,13 +96,20 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {/* Chapter path bar (UI only) */}
+      {/* Chapter stepper (clickable) */}
       <div className="mt-4 rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
-        <div className="mb-1 text-[12px] font-semibold text-gray-900">Chapter path</div>
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-indigo-100">
-          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-violet-400" style={{ width: '55%' }} />
-          <div className="absolute -right-2 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow ring-2 ring-indigo-500" />
-        </div>
+        <div className="mb-2 text-sm font-semibold text-gray-900">Chapter path</div>
+        <ol className="flex flex-wrap items-center gap-2">
+          {chapterTimeline.map((s, i) => (
+            <li key={s.key} className="flex items-center gap-2">
+              <button className={`flex h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold ring-1 ${s.active ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-800 hover:bg-indigo-50 ring-gray-200'}`}>
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-700">{i+1}</span>
+                <span className="max-w-[160px] truncate sm:max-w-[240px]">{s.title}</span>
+              </button>
+              {i < chapterTimeline.length - 1 && <span className="text-gray-300">→</span>}
+            </li>
+          ))}
+        </ol>
       </div>
 
       {/* Toolbar */}
@@ -116,12 +124,12 @@ export default function LessonPage() {
       </div>
 
       {/* Content area */}
-      <div className={`mt-4 grid gap-4 ${focusMode ? '' : 'lg:grid-cols-[260px_1fr_280px]'}`}>
+      <div className={`mt-4 grid gap-4 ${focusMode ? '' : 'lg:grid-cols-[280px_1fr_320px]'}`}>
         {/* Left: Chapter progress */}
         {!focusMode && (
           <aside className="order-first space-y-3">
             <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
-              <div className="text-[11px] font-semibold text-indigo-900">CHAPTER PROGRESS</div>
+              <div className="text-[12px] font-semibold text-indigo-900">Chapter progress</div>
 
               {/* Chapter header */}
               <div className="mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
@@ -141,13 +149,10 @@ export default function LessonPage() {
                     <span className={`absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full text-[12px] font-semibold ${l.active ? 'bg-indigo-600 text-white shadow' : 'bg-gray-200 text-gray-700'}`}>{i + 1}</span>
                     <button type="button" className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${l.active ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-transparent hover:bg-gray-50 text-gray-800'}`}>
                       <div className="truncate text-sm font-medium">{l.title}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-500">
-                        <span>Questions</span>
-                        <span className="inline-flex gap-1">
-                          {Array.from({ length: Math.max(0, l.q || 0) }).map((_, j) => (
-                            <span key={j} className={`grid h-4 w-4 place-items-center rounded-full text-[10px] font-semibold ${l.active ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}>{j + 1}</span>
-                          ))}
-                        </span>
+                      <div className="mt-0.5 flex items-center gap-3 text-[11px] text-gray-600">
+                        <span className="inline-flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.6"/></svg> ~4 min</span>
+                        {l.q ? (<span className="inline-flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="currentColor" strokeWidth="1.6"/><path d="M8 9h8M8 13h5" stroke="currentColor" strokeWidth="1.6"/></svg> {l.q} quiz</span>) : null}
+                        <span className="inline-flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="currentColor" strokeWidth="1.6"/></svg> 30%</span>
                       </div>
                     </button>
                   </li>
@@ -165,13 +170,15 @@ export default function LessonPage() {
         <div className="space-y-4">
           {/* Video panel – static example */}
           <VideoPanel
-            src="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            src="https://www.youtube.com/watch?v=8qRLS1oG6lY"
+            poster="/graph/v1/course-2.jpg"
             iframeSrc={undefined}
             locked={false}
             subtitles={[]}
             prev={{ href: '#', title: 'Hemostasis Overview' }}
             next={{ href: '#', title: 'DIC Management' }}
           />
+          <TranscriptPanel />
 
           {/* Learn tab – static content */}
           {tab === "learn" && (
@@ -216,15 +223,35 @@ export default function LessonPage() {
           )}
         </div>
 
-        {/* Right: Sidebar */}
+        {/* Right: Sidebar (collapsible sections) */}
         {!focusMode && (
-          <div className="hidden lg:block space-y-4">
-            <Glossary />
-            <UniResources enabled={false} comingSoon />
-            <AnkiDownload comingSoon />
-            <ConceptChecklist items={["Concept A", "Concept B", "Concept C"]} comingSoon />
+          <div className="hidden lg:block space-y-3">
+            <details open className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
+              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Glossary</summary>
+              <div className="px-2 pb-2"><Glossary /></div>
+            </details>
+            <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
+              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Download center</summary>
+              <div className="space-y-3 px-2 pb-2">
+                <UniResources enabled={false} comingSoon />
+                <AnkiDownload comingSoon />
+              </div>
+            </details>
+            <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
+              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Concept check</summary>
+              <div className="px-2 pb-2">
+                <div className="rounded-xl border p-3 text-[12px] text-gray-600">Inline checks are embedded in the reading area.</div>
+              </div>
+            </details>
           </div>
         )}
+      </div>
+
+      {/* Mobile bottom nav for Learn/Practice/Notes (skeleton) */}
+      <div className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-3 gap-1 border-t bg-white p-2 shadow md:hidden">
+        {(['learn','practice','background'] as const).map((m) => (
+          <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-xl text-sm font-semibold ${tab===m ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{m}</button>
+        ))}
       </div>
     </div>
   );
