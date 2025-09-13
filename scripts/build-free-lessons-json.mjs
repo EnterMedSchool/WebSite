@@ -2,10 +2,18 @@
 // Export free lessons as static JSON for CDN serving to guests (no serverless calls).
 // Usage: node scripts/build-free-lessons-json.mjs
 
-import { sql } from "@vercel/postgres";
+import { createPool, sql as baseSql } from "@vercel/postgres";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+
+// Initialize DB connection using common env names
+const connectionString = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error("[free-lessons] Missing Postgres connection string. Set POSTGRES_URL or DATABASE_URL.");
+  process.exit(2);
+}
+const { sql } = createPool({ connectionString });
 
 function outDir() {
   return path.join(process.cwd(), "public", "free-lessons", "v1");
@@ -53,7 +61,7 @@ async function fetchLessonPayload(slug) {
   if (qr.rows.length) {
     const qids = qr.rows.map((r)=>Number(r.id));
     // Pass array properly to @vercel/postgres
-    const cr = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${sql.array(qids, 'int4')}) ORDER BY id`;
+    const cr = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${baseSql.array(qids, 'int4')}) ORDER BY id`;
     const byQ = new Map(); for (const c of cr.rows) {
       const arr = byQ.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ.set(Number(c.question_id), arr);
     }
@@ -64,12 +72,12 @@ async function fetchLessonPayload(slug) {
     let remaining = Math.max(0, MAX_CHAPTER_QUESTIONS - questions.length);
     if (remaining > 0) {
       const ids = lessons.map((x)=>Number(x.id));
-      const qr2 = await sql`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${sql.array(ids, 'int4')}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
+      const qr2 = await sql`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${baseSql.array(ids, 'int4')}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
       const capped = [];
       for (const r of qr2.rows) { if (remaining <= 0) break; capped.push(r); remaining--; }
       if (capped.length) {
         const qids2 = capped.map((r)=>Number(r.id));
-        const cr2 = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${sql.array(qids2, 'int4')}) ORDER BY id`;
+        const cr2 = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${baseSql.array(qids2, 'int4')}) ORDER BY id`;
         const byQ2 = new Map(); for (const c of cr2.rows) { const arr = byQ2.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ2.set(Number(c.question_id), arr); }
         for (const r of capped) {
           const lid = String(Number(r.lesson_id));
