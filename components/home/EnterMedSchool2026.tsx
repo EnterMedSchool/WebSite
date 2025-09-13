@@ -53,7 +53,7 @@ function CourseMatesWidget() {
       whileInView={{ rotate: 0, y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 100, damping: 14 }}
       viewport={{ once: true, amount: 0.4 }}
-      className="relative isolate w-full rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-4 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20"
+      className="relative isolate w-full rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20"
       aria-label="Course Mates Hub preview"
     >
       {/* subtle edge glow */}
@@ -208,7 +208,7 @@ export default function EnterMedSchool2026() {
         </div>
 
         {/* Right widget */}
-        <div className="relative">
+        <div className="relative md:justify-self-end md:w-[560px] lg:w-[680px] xl:w-[760px] md:translate-x-8 lg:translate-x-16 xl:translate-x-24 2xl:translate-x-32 md:scale-[1.06] lg:scale-[1.12]">
           <div className="pointer-events-none absolute -top-6 -right-6 -left-6 h-10 rounded-[32px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.08),transparent)]" />
           <CourseMatesWidget />
         </div>
