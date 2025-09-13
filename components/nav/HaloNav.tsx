@@ -66,7 +66,7 @@ export default function HaloNav({ className = "", children }: HaloNavProps) {
           width: rect.width,
           opacity: rect.visible ? 1 : 0,
         }}
-        className="pointer-events-none absolute inset-y-0 top-1/2 -z-10 h-8 -translate-y-1/2 rounded-full bg-white/15 shadow-[0_6px_18px_rgba(99,102,241,0.25)] transition-[transform,width,opacity] duration-300 ease-out"
+        className="pointer-events-none absolute inset-y-0 top-1/2 left-0 -z-10 h-8 -translate-y-1/2 rounded-full bg-white/15 shadow-[0_6px_18px_rgba(99,102,241,0.25)] transition-[transform,width,opacity] duration-300 ease-out"
       />
 
       {/* decorative aurora underlay */}

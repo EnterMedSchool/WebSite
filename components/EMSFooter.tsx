@@ -39,22 +39,22 @@ export default function EMSFooter() {
   return (
     <footer className="relative mt-24">
       {/* Night grid card with large rounded corners */}
-      <div className="relative mx-3 overflow-hidden rounded-t-[42px] bg-[#0A1333] text-white shadow-[0_30px_90px_rgba(9,9,30,0.35)] sm:mx-6">
+      <div className="relative mx-3 overflow-hidden rounded-t-[42px] bg-[#0B0F1F] text-white shadow-[0_30px_90px_rgba(9,9,30,0.35)] ring-1 ring-white/10 sm:mx-6">
         {/* Deep aurora gradient overlay */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.9]"
+        <div className="pointer-events-none absolute inset-0 opacity-[0.95]"
              style={{
                background:
-                 "radial-gradient(1200px 600px at 60% -20%, rgba(37,99,235,.32), transparent 60%)," +
-                 "radial-gradient(1000px 400px at 10% 30%, rgba(124,58,237,.20), transparent 60%)," +
-                 "radial-gradient(1000px 400px at 90% 60%, rgba(79,70,229,.22), transparent 65%)",
+                 "radial-gradient(1200px 600px at 65% -20%, rgba(79,70,229,.30), transparent 60%)," +
+                 "radial-gradient(1000px 420px at 8% 30%, rgba(99,102,241,.24), transparent 62%)," +
+                 "radial-gradient(1000px 380px at 92% 65%, rgba(124,58,237,.22), transparent 65%)",
              }}
         />
         {/* Subtle blueprint grid */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]"
              style={{
                backgroundImage:
-                 "linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px)," +
-                 "linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px)",
+                 "linear-gradient(to right, rgba(255,255,255,.45) 1px, transparent 1px)," +
+                 "linear-gradient(to bottom, rgba(255,255,255,.45) 1px, transparent 1px)",
                backgroundSize: "56px 56px",
                backgroundPosition: "center",
              }}
@@ -69,27 +69,27 @@ export default function EMSFooter() {
                 <span className="font-brand text-2xl tracking-wide">EnterMedSchool</span>
               </div>
               <h2 className="mt-6 text-3xl font-semibold leading-tight sm:text-4xl md:text-[40px]">
-                Join our newsletter. Get weekly IMAT tips and study wins.
+                Start your IMAT journey with a free account.
               </h2>
+              <p className="mt-3 max-w-xl text-white/80">
+                Track progress, join Course Mates, and access tailored study content.
+              </p>
 
-              <form action="/api/subscribe" method="POST" className="mt-6 max-w-xl">
-                <label htmlFor="email" className="block text-sm/6 text-white/80">Email Address</label>
-                <div className="mt-2 flex items-center gap-3 border-b border-white/40 pb-2 focus-within:border-white">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    className="w-full bg-transparent text-white placeholder-white/60 outline-none"
-                  />
-                  <button aria-label="Subscribe" className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                      <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                    </svg>
-                  </button>
-                </div>
-              </form>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('auth:open'))}
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(79,70,229,0.45)] ring-1 ring-white/10 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                >
+                  Create Free Account
+                </button>
+                <Link
+                  href="/imat-course"
+                  className="inline-flex items-center justify-center rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                >
+                  Explore IMAT Course
+                </Link>
+              </div>
 
               <div className="mt-6 flex items-center gap-4 text-white/80">
                 <a href="https://discord.gg/entermedschool" target="_blank" rel="noopener noreferrer" aria-label="Discord" className="ems-footer-icon rounded p-2 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">

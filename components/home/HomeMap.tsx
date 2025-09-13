@@ -361,9 +361,9 @@ export default function HomeMap() {
     }
   }, [selected, isSmall]);
 
-  // Default selection: Italy on initial mount
+  // Default selection: select Italy once data is available
   useEffect(() => {
-    if (selected) return;
+    if (selected || !uniData) return;
     const baseCenter: [number, number] = [12.567, 41.8719]; // Italy approximate centroid
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
     if (isSmall) {
@@ -377,7 +377,7 @@ export default function HomeMap() {
       setSelected({ name: "Italy", baseCenter, center });
       setPosition({ center, zoom: targetZoom });
     }
-  }, []);
+  }, [uniData, isSmall, selected]);
 
   return (
     <div className="relative">
@@ -543,7 +543,7 @@ export default function HomeMap() {
                         )}
                       </g>
                       {/* Hover tooltip with quick info */}
-                      {hoveredKey === key && (
+                      {false && hoveredKey === key && (
                         <g transform="translate(12, -28)">
                           <rect x={-6} y={-14} rx={6} ry={6} width={180} height={36} fill="#111827" opacity={0.85} />
                           <text x={4} y={0} fontSize={10} fontWeight={700} fill="#fff">{c.uni}</text>
