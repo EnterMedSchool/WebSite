@@ -13,6 +13,7 @@ import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
+import ChapterPath from "@/components/lesson/ChapterPath";
 
 export default function LessonPage() {
   const { slug: rawSlug } = useParams();
@@ -82,7 +83,7 @@ export default function LessonPage() {
               <span className="opacity-80">·</span>
               <span>Reviewed by — <span className="font-semibold">Prof. B. Reviewer</span></span>
               <span className="opacity-80">·</span>
-              <span className="inline-flex items-center gap-1">Recently completed <span className="inline-flex -space-x-2 overflow-hidden pl-1">
+              <span className="hidden inline-flex items-center gap-1">Recently completed <span className="inline-flex -space-x-2 overflow-hidden pl-1">
                 <span className="h-5 w-5 rounded-full bg-white/70 ring-1 ring-white/80" />
                 <span className="h-5 w-5 rounded-full bg-white/60 ring-1 ring-white/80" />
                 <span className="h-5 w-5 rounded-full bg-white/50 ring-1 ring-white/80" />
@@ -117,20 +118,16 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {/* Chapter stepper (clickable) */}
-      <div className="mt-4 rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
-        <div className="mb-2 text-sm font-semibold text-gray-900">Chapter path</div>
-        <ol className="flex flex-wrap items-center gap-2">
-          {chapterTimeline.map((s, i) => (
-            <li key={s.key} className="flex items-center gap-2">
-              <button className={`flex h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold ring-1 ${s.active ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-800 hover:bg-indigo-50 ring-gray-200'}`}>
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-700">{i+1}</span>
-                <span className="max-w-[160px] truncate sm:max-w-[240px]">{s.title}</span>
-              </button>
-              {i < chapterTimeline.length - 1 && <span className="text-gray-300">→</span>}
-            </li>
-          ))}
-        </ol>
+      {/* Chapter path with animated progress */}
+      <div className="mt-4">
+        <ChapterPath
+          steps={chapterTimeline.map((s) => ({
+            key: s.key,
+            title: s.title,
+            status: s.active ? "current" : undefined,
+          }))}
+          activeIndex={Math.max(0, chapterTimeline.findIndex((s) => s.active))}
+        />
       </div>
 
       {/* Toolbar */}

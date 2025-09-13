@@ -26,6 +26,7 @@ function WowFullGraph({ src }: { src: string }) {
   const ref = useRef<any>(null);
   const [focus, setFocus] = useState<string | null>(null);
   const [hover, setHover] = useState<any | null>(null);
+  const [, setFrame] = useState(0);
   const mouse = useRef<{x:number;y:number}>({x:0,y:0});
   const tRef = useRef(0);
 
@@ -195,12 +196,13 @@ function WowFullGraph({ src }: { src: string }) {
     return () => clearTimeout(t);
   }, [fgData]);
 
-  // Continuous rope animation
+  // Continuous rope animation (trigger canvas redraw via React re-render)
   useEffect(() => {
     let raf: number;
     const loop = () => {
       tRef.current += 0.02;
-      if (ref.current) ref.current.refresh();
+      // bump a noop state to trigger React re-render
+      setFrame((f) => (f + 1) % 1000000);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

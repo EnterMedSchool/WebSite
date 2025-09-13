@@ -165,7 +165,19 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
         <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] rounded-2xl border border-white/20 bg-white/95 shadow-xl backdrop-blur">
           <div className="absolute -top-2 right-6 h-4 w-4 rotate-45 rounded-sm border border-white/20 bg-white/95" />
           <div className="p-4">
-            <div className="mb-1 text-sm font-bold text-indigo-700">Your Progress</div>
+            <div className="mb-1 flex items-center justify-between">
+              <div className="text-sm font-bold text-indigo-700">Your Progress</div>
+              {/* UI-only refresh button (wired later) */}
+              <button
+                type="button"
+                title="Refresh"
+                aria-label="Refresh"
+                className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200/70 shadow-sm hover:bg-white"
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.9 6h-2.1a6 6 0 1 1-1.55-3.65L14 9h6V3z"/></svg>
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
             <div className="mb-3 text-xs text-gray-700">Level {dispLevel}{isMax ? ' (MAX)' : ''} - {dispSpan > 0 ? `${dispIn}/${dispSpan} XP to next` : ''}</div>
             {capToday && (
               <div className="mb-3 text-[11px] font-semibold text-amber-700">Daily XP cap reached. New XP won’t accumulate until tomorrow.</div>
