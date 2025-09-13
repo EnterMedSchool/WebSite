@@ -283,10 +283,49 @@ export const lmsEvents = pgTable(
     subjectType: varchar("subject_type", { length: 20 }).notNull(),
     subjectId: integer("subject_id").notNull(),
     action: varchar("action", { length: 20 }).notNull(),
-    payload: jsonb("payload"),
-    createdAt: timestamp("created_at").defaultNow(),
-    processedAt: timestamp("processed_at"),
+  payload: jsonb("payload"),
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
   }
+);
+
+// Paid access entitlements (per user+course)
+export const userCourseEntitlement = pgTable(
+  "user_course_entitlement",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    courseId: integer("course_id").notNull(),
+    source: varchar("source", { length: 16 }).default("grant").notNull(),
+    startsAt: timestamp("starts_at").defaultNow().notNull(),
+    endsAt: timestamp("ends_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    userCourseIdx: index("uce_user_course_idx").on(t.userId, t.courseId),
+    courseUserIdx: index("uce_course_user_idx").on(t.courseId, t.userId),
+    endsIdx: index("uce_ends_idx").on(t.endsAt),
+  })
+);
+
+// Compact per-course progress snapshot for a user
+export const userCourseProgressCompact = pgTable(
+  "user_course_progress_compact",
+  {
+    userId: integer("user_id").notNull(),
+    courseId: integer("course_id").notNull(),
+    data: jsonb("data"),
+    xpTotal: integer("xp_total").default(0).notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    version: integer("version").default(1).notNull(),
+  },
+  (t) => ({
+    userCourseUnique: uniqueIndex("user_course_progress_compact_user_course_key").on(
+      t.userId,
+      t.courseId
+    ),
+    courseIdx: index("ucpc_course_idx").on(t.courseId),
+  })
 );
 
 export const notifications = pgTable(
