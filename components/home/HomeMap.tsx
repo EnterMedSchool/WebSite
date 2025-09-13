@@ -700,24 +700,7 @@ export default function HomeMap() {
             <UniversitiesListMobile selectedName={sheetCustomItems ? (filters.country || 'Results') : selected!.name} items={(sheetCustomItems ?? cityDataSorted) as any} onAddCompare={(c:any)=> addToCompare(c)} compareSet={compareSet} />
           </BottomSheet>
         )}
-        {false && (!isSmall && selected && cityData.length>0) && (
-          <div ref={panelRef}>
-            <UniversitiesPanel
-              selectedName={selected!.name}
-              items={cityDataSorted as any}
-              topOffset={panelOffset}
-              onAddCompare={(c)=> addToCompare(c)}
-              compareSet={compareSet}
-              savedSet={savedSet}
-              onToggleSave={(c)=> toggleSaved(c)}
-              onHover={(c) => {
-                if (!c) { setHoveredKey(null); return; }
-                const key = `${(c as any).country || selected!.name}-${c.city}-${c.uni}`;
-                setHoveredKey(key);
-              }}
-            />
-          </div>
-        )}
+        {/* Legacy right-side panel was removed along with data fetching. */}
 
         {/* Compare FAB + Drawer */}
         <CompareFab count={compare.length} onOpen={() => setCompareOpen(true)} />
