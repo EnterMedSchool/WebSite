@@ -22,6 +22,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   const lr = await sql`SELECT id, slug, title, course_id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const cr = await sql`SELECT id, slug, title, visibility, meta FROM courses WHERE id=${lesson.course_id} LIMIT 1`;
+  const course = cr.rows[0] ? { id: Number(cr.rows[0].id), slug: String(cr.rows[0].slug), title: String(cr.rows[0].title) } : null;
 
   // Gate paid access (multiple paid courses supported via per-course entitlements)
   const access = await checkCourseAccess(userId, Number(lesson.course_id));
@@ -29,6 +31,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     const res = NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
     // Throttle repeated attempts for this course for ~10 minutes
     res.cookies.set(`ems_paid_denied_${Number(lesson.course_id)}`, String(Date.now()), { maxAge: 600, path: '/' });
+    // Also set a slug-based cookie to let middleware short-circuit without DB
+    try { res.cookies.set(`ems_paid_denied_l_${params.slug}`, '1', { maxAge: 600, path: '/' }); } catch {}
     return res;
   }
 
@@ -93,6 +97,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
   return NextResponse.json({
     lesson: { id: Number(lesson.id), slug: String(lesson.slug), title: String(lesson.title), courseId: Number(lesson.course_id) },
+    course,
     chapter,
     lessons: chapterLessons,
     questionsByLesson,

@@ -11,6 +11,8 @@ type Props = {
   locked?: boolean;
   lockReason?: string;
   onUnlock?: () => void;
+  overlayTitle?: string;
+  overlaySubtitle?: string;
   subtitles?: any; // integrated controls only (skeleton)
   prev?: { href: string; title: string } | null;
   next?: { href: string; title: string } | null;
@@ -35,7 +37,7 @@ function toYouTubeEmbed(url?: string): string | null {
   return null;
 }
 
-export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason, onUnlock, subtitles, prev, next, anchors }: Props) {
+export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason, onUnlock, overlayTitle, overlaySubtitle, subtitles, prev, next, anchors }: Props) {
   const yt = toYouTubeEmbed(src);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -65,8 +67,8 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-black/10" />
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                 <div className="text-white">
-                  <div className="text-xs opacity-90">Hematology • ~12 min</div>
-                  <div className="text-lg font-semibold">Disseminated intravascular coagulation</div>
+                  <div className="text-xs opacity-90">{overlaySubtitle || ''}</div>
+                  <div className="text-lg font-semibold">{overlayTitle || 'Lesson'}</div>
                 </div>
                 <button onClick={() => setPlaying(true)} className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>

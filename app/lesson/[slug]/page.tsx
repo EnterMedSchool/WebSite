@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import VideoPanel from "@/components/lesson/VideoPanel";
 import TranscriptPanel from "@/components/lesson/TranscriptPanel";
+import LessonBody from "@/components/lesson/LessonBody";
 // import AnkiDownload from "@/components/lesson/AnkiDownload";
 import FlashcardsCTA from "@/components/lesson/FlashcardsCTA";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
@@ -13,6 +14,8 @@ import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
 import UniResources from "@/components/lesson/UniResources";
+import SaveDock from "@/components/study/SaveDock";
+import { StudyStore } from "@/lib/study/store";
 
 type LessonQuestionItem = {
   id: string;
@@ -33,6 +36,8 @@ export default function LessonPage() {
   // Lesson bundle (questions + chapter lessons + progress) — requires login
   const [bundle, setBundle] = useState<any | null>(null);
   const [bundleErr, setBundleErr] = useState<string | null>(null);
+  const [player, setPlayer] = useState<any | null>(null);
+  const [playerErr, setPlayerErr] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
     setBundle(null); setBundleErr(null);
@@ -45,13 +50,24 @@ export default function LessonPage() {
         else setBundleErr('error');
       })
       .catch(() => alive && setBundleErr('error'));
+    // Player info (iframeSrc / locked)
+    setPlayer(null); setPlayerErr(null);
+    fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include' })
+      .then(async (r) => {
+        if (!alive) return;
+        if (r.status === 200) { setPlayer(await r.json()); }
+        else if (r.status === 401) setPlayerErr('unauthenticated');
+        else if (r.status === 403) setPlayerErr('forbidden');
+        else setPlayerErr('error');
+      })
+      .catch(() => alive && setPlayerErr('error'));
     return () => { alive = false; };
   }, [slug]);
 
   // Fake UI data (no network calls)
-  const course = { slug: "hematology", title: "Hematology" };
-  const chapter = { slug: "coagulation", title: "Coagulation Disorders" };
-  const lessonTitle = "Disseminated Intravascular Coagulation (DIC)";
+  const course = useMemo(() => ({ slug: String(bundle?.course?.slug || 'course'), title: String(bundle?.course?.title || 'Course') }), [bundle]);
+  const chapter = useMemo(() => ({ slug: String(bundle?.chapter?.slug || 'chapter'), title: String(bundle?.chapter?.title || 'Chapter') }), [bundle]);
+  const lessonTitle = useMemo(() => String(bundle?.lesson?.title || 'Lesson'), [bundle]);
   const courseProgress = { total: 42, completed: 19, pct: 45 };
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
 
@@ -136,7 +152,7 @@ export default function LessonPage() {
               {fav ? '♥' : '♡'}
             </button>
             <button
-              onClick={() => setCompleted((v) => !v)}
+              onClick={() => { const nv = !completed; setCompleted(nv); if (nv && bundle?.lesson?.courseId && bundle?.lesson?.id) { try { StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id)); } catch {} } }}
               className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${completed ? 'bg-emerald-100 text-emerald-700 ring-emerald-300' : 'bg-white/20 text-white/90 ring-white/40 hover:bg-white/30'}`}
             >
               {completed ? 'Completed' : 'Mark as complete'}
@@ -226,36 +242,22 @@ export default function LessonPage() {
         <div className="space-y-4">
           {/* Video panel – static example */}
           <VideoPanel
-            src="https://www.youtube.com/watch?v=8qRLS1oG6lY"
             poster="/graph/v1/course-2.jpg"
-            iframeSrc={undefined}
-            locked={false}
+            iframeSrc={player?.iframeSrc}
+            locked={!!player?.locked}
+            lockReason={player?.lockReason}
+            overlayTitle={lessonTitle}
+            overlaySubtitle={`${course.title || ''}`}
             subtitles={[]}
-            prev={{ href: '#', title: 'Hemostasis Overview' }}
-            next={{ href: '#', title: 'DIC Management' }}
+            prev={null}
+            next={null}
           />
           <TranscriptPanel />
 
-          {/* Learn tab – static content */}
+          {/* Learn tab — render lesson HTML body */}
           {tab === "learn" && (
-            <div className="prose prose-indigo max-w-none rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-              <h2>Overview</h2>
-              <p>
-                This is a simplified lesson UI. All data loading, analytics,
-                progress tracking, and backend integrations are removed so we
-                can iterate on visual design and interactions only.
-              </p>
-              <h3>Key Concepts</h3>
-              <ul>
-                <li>Clean, focused video experience</li>
-                <li>Lightweight reading area</li>
-                <li>Practice tab placeholder</li>
-                <li>Includes endocrine references like ACTH</li>
-              </ul>
-              <p>
-                We’ll re-introduce features step by step once the core UI feels
-                right and performance is solid.
-              </p>
+            <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
+              <LessonBody slug={slug} />
             </div>
           )}
 
@@ -328,6 +330,9 @@ export default function LessonPage() {
           <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-xl text-sm font-semibold ${tab===m ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{m}</button>
         ))}
       </div>
+
+      {/* Save dock */}
+      <SaveDock courseId={Number(bundle?.lesson?.courseId || 0)} />
     </div>
   );
 }

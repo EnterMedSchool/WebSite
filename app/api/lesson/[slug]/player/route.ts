@@ -56,7 +56,10 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     // Short cache to reduce DB hits while developing
     res.headers.set("Cache-Control", userId ? "private, max-age=30" : "public, max-age=60");
     if (locked) {
-      try { res.cookies.set(`ems_paid_denied_${Number((l as any).courseId)}`, String(Date.now()), { maxAge: 600, path: '/' }); } catch {}
+      try {
+        res.cookies.set(`ems_paid_denied_${Number((l as any).courseId)}`, String(Date.now()), { maxAge: 600, path: '/' });
+        res.cookies.set(`ems_paid_denied_l_${slug}`, '1', { maxAge: 600, path: '/' });
+      } catch {}
     }
     return res;
   } catch (e: any) {

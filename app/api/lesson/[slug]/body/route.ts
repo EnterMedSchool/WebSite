@@ -33,6 +33,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
         if (access.accessType === 'paid' && !access.allowed) {
           const res = NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
           res.cookies.set(`ems_paid_denied_${courseId}`, String(Date.now()), { maxAge: 600, path: '/' });
+          try { res.cookies.set(`ems_paid_denied_l_${slug}`, '1', { maxAge: 600, path: '/' }); } catch {}
           return res;
         }
       }
