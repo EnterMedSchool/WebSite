@@ -1,0 +1,44 @@
+);
+
+// Blog posts
+export const posts = pgTable(
+  "posts",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 160 }).notNull().unique(),
+    title: varchar("title", { length: 200 }).notNull(),
+    body: text("body").notNull(),
+    published: boolean("published").default(false).notNull(),
+    coverImageUrl: varchar("cover_image_url", { length: 500 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({ slugIdx: index("posts_slug_idx").on(t.slug) })
+);
+
+// Admin drafts for staging LMS changes (saved plans)
+// NOTE: defined above under "Admin working area for drafts/suggestions".
+
+// University data (for map and elsewhere)
+export const countries = pgTable(
+  "countries",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 120 }).notNull().unique(),
+    isoA3: varchar("iso_a3", { length: 3 }),
+    centerLat: doublePrecision("center_lat"),
+    centerLng: doublePrecision("center_lng"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ nameIdx: index("countries_name_idx").on(t.name) })
+);
+
+export const universities = pgTable(
+  "universities",
+  {
+    id: serial("id").primaryKey(),
+    countryId: integer("country_id").notNull(),
+    city: varchar("city", { length: 120 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    lat: doublePrecision("lat").notNull(),
+    lng: doublePrecision("lng").notNull(),

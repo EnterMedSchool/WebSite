@@ -59,10 +59,8 @@ export default async function Navbar() {
     { key: 'imat', label: 'IMAT COURSE', href: '/#imat' },
     { key: 'communities', label: 'COMMUNITIES', href: '/#communities' },
     { key: 'mates', label: 'COURSE MATES', href: '/course-mates' },
-    { key: 'materials', label: 'STUDY MATERIALS', href: '/blog' },
     ...(studyEnabled ? [{ key: 'library', label: 'VIRTUAL LIBRARY', href: '/study-rooms' }] : [] as any),
     { key: 'scholarships', label: 'SCHOLARSHIPS', href: '/#scholarships' },
-    { key: 'blog', label: 'BLOG', href: '/blog' },
     { key: 'search', label: 'SEARCH', kind: 'search' as const },
   ];
 

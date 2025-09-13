@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 
 type Item = { label: string; href: string; group?: string };
 
-const DEFAULT_ITEMS: Item[] = [
+  const DEFAULT_ITEMS: Item[] = [
   { label: "Universities", href: "/#universities", group: "Explore" },
   { label: "Entrance Exams", href: "/#exams", group: "Explore" },
   { label: "Communities", href: "/#communities", group: "Explore" },
   { label: "IMAT Course", href: "/#imat", group: "Explore" },
   { label: "Course Mates", href: "/course-mates", group: "Social" },
-  { label: "Study Materials", href: "/blog", group: "Resources" },
   { label: "Virtual Library", href: "/study-rooms", group: "Resources" },
   { label: "Scholarships", href: "/#scholarships", group: "Resources" },
   { label: "Leaderboard", href: "/leaderboard", group: "Profile" },
@@ -92,4 +91,3 @@ function groupBy<T, K extends string>(arr: T[], key: (t: T) => K): [K, T[]][] {
   }
   return Array.from(m.entries());
 }
-

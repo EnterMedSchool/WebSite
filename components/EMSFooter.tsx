@@ -30,7 +30,6 @@ export default function EMSFooter() {
     {
       title: "Resources",
       links: [
-        { label: "Blog", href: "/blog" },
         { label: "Scholarships", href: "/#scholarships" },
         { label: "Exams", href: "/#exams" },
         { label: "Universities", href: "/#universities" },

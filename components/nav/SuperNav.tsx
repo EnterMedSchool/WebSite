@@ -108,7 +108,6 @@ function RowTwo({ active, compact }: { active: TopKey; compact?: boolean }) {
       { label: "Live Classes", href: "/#imat" },
     ],
     search: [
-      { label: "Posts", href: "/blog" },
       { label: "Courses", href: "/#imat" },
       { label: "Questions", href: "/quiz" },
       { label: "Universities", href: "/#universities" },
@@ -137,22 +136,17 @@ function RowThree({ active, compact }: { active: TopKey; compact?: boolean }) {
       { label: "Student life", href: "/#communities", sub: "Communities" },
     ],
     exams: [
-      { label: "Past papers", href: "/blog", sub: "Practice sets" },
-      { label: "Timed mocks", href: "/blog", sub: "Performance mode" },
-      { label: "Strategy guides", href: "/blog", sub: "How to score" },
       { label: "Live classes", href: "/#imat", sub: "Enroll now" },
     ],
     imat: [
       { label: "Planner", href: "/imat-planner", sub: "Daily plan" },
       { label: "Dashboard", href: "/dashboard", sub: "Progress & streak" },
       { label: "Community", href: "/#communities", sub: "Discuss & help" },
-      { label: "Resources", href: "/blog", sub: "Notes & guides" },
     ],
     search: [
       { label: "Try: 'Pavia requirements'", href: "/#universities" },
       { label: "Try: 'IMAT timing'", href: "/#exams" },
       { label: "Open command palette", href: "#", sub: "Ctrl/Cmd K" },
-      { label: "Browse materials", href: "/blog" },
     ],
   };
   const items = content[active];
