@@ -16,7 +16,6 @@ export default async function NewPostPage() {
       <h1 className="text-2xl font-bold">New Post</h1>
       <div className="mt-4">
         {/* Client-side submit to API */}
-        {/* @ts-expect-error Server Component type */}
         <ClientWrapper />
       </div>
     </div>
@@ -25,7 +24,6 @@ export default async function NewPostPage() {
 
 // Split client logic into a Client Component wrapper
 function ClientWrapper() {
-  // @ts-expect-error async server boundary
   return <ClientInner/>;
 }
 

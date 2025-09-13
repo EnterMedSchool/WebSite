@@ -33,7 +33,6 @@ export default async function EditPostPage({ params }: { params: { id: string } 
         <PublishActions id={id} slug={post.slug as any} hasDeployHook={hasDeployHook} />
       </div>
       <div className="mt-4">
-        {/* @ts-expect-error Server Component type */}
         <ClientWrapper initial={initial} id={id} />
       </div>
     </div>
@@ -41,7 +40,6 @@ export default async function EditPostPage({ params }: { params: { id: string } 
 }
 
 function ClientWrapper({ initial, id }: { initial: any; id: number }) {
-  // @ts-expect-error async server boundary
   return <ClientInner initial={initial} id={id} />;
 }
 
