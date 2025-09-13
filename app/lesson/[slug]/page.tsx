@@ -14,6 +14,12 @@ import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
 import UniResources from "@/components/lesson/UniResources";
 
+type LessonQuestionItem = {
+  id: string;
+  title: string;
+  status: 'todo' | 'correct' | 'incorrect';
+};
+
 export default function LessonPage() {
   const { slug: rawSlug } = useParams();
   const slug = String(rawSlug || "lesson");
@@ -51,13 +57,13 @@ export default function LessonPage() {
 
   // Skeleton: questions relevant to this lesson only
   const lessonId = useMemo(() => Number(bundle?.lesson?.id || 0), [bundle]);
-  const relevantQuestions = useMemo(() => {
+  const relevantQuestions = useMemo<LessonQuestionItem[]>(() => {
     const arr = (bundle?.questionsByLesson && lessonId)
       ? (bundle.questionsByLesson[String(lessonId)] || [])
       : [];
-    if (!arr.length) return [] as { id: string; title: string; status: 'todo'|'correct'|'incorrect' }[];
+    if (!arr.length) return [];
     const qProg: Record<string, any> = (bundle?.progress?.questions || {}) as any;
-    return arr.map((q: any, i: number) => {
+    return arr.map((q: any, i: number): LessonQuestionItem => {
       const st = qProg && qProg[q.id]?.status;
       const status = st === 'correct' ? 'correct' : st === 'incorrect' ? 'incorrect' : 'todo';
       return { id: String(q.id), title: String(q.prompt || `Q${i+1}`), status };
