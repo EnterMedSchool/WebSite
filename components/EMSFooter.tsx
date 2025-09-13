@@ -41,22 +41,24 @@ export default function EMSFooter() {
   return (
     <footer className="relative mt-24">
       {/* Night grid card with large rounded corners */}
-      <div className="relative mx-3 overflow-hidden rounded-t-[42px] bg-[#0B0F1F] text-white shadow-[0_30px_90px_rgba(9,9,30,0.35)] ring-1 ring-white/10 sm:mx-6">
+      <div className="relative mx-3 overflow-hidden rounded-t-[42px] bg-[#0B1024] text-white shadow-[0_30px_90px_rgba(9,9,30,0.35)] ring-1 ring-white/10 sm:mx-6">
         {/* Deep aurora gradient overlay */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.95]"
              style={{
                background:
-                 "radial-gradient(1200px 600px at 65% -20%, rgba(79,70,229,.30), transparent 60%)," +
-                 "radial-gradient(1000px 420px at 8% 30%, rgba(99,102,241,.24), transparent 62%)," +
-                 "radial-gradient(1000px 380px at 92% 65%, rgba(124,58,237,.22), transparent 65%)",
+                 // Indigo core, violet edge, subtle cyan hint — matches site accents
+                 "radial-gradient(1100px 520px at 65% -18%, rgba(79,70,229,.28), transparent 60%)," +
+                 "radial-gradient(900px 380px at 10% 28%, rgba(37,99,235,.20), transparent 60%)," +
+                 "radial-gradient(1000px 420px at 92% 70%, rgba(124,58,237,.22), transparent 66%)",
              }}
         />
         {/* Subtle blueprint grid */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.10]"
              style={{
                backgroundImage:
-                 "linear-gradient(to right, rgba(255,255,255,.45) 1px, transparent 1px)," +
-                 "linear-gradient(to bottom, rgba(255,255,255,.45) 1px, transparent 1px)",
+                 // Slight indigo‑tinted grid
+                 "linear-gradient(to right, rgba(99,102,241,.35) 1px, transparent 1px)," +
+                 "linear-gradient(to bottom, rgba(99,102,241,.18) 1px, transparent 1px)",
                backgroundSize: "56px 56px",
                backgroundPosition: "center",
              }}
@@ -81,13 +83,13 @@ export default function EMSFooter() {
                 <button
                   type="button"
                   onClick={() => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('auth:open'))}
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(79,70,229,0.45)] ring-1 ring-white/10 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="btn-primary-shine h-10 px-5 text-sm"
                 >
                   Create Free Account
                 </button>
                 <Link
                   href="/imat-course"
-                  className="inline-flex items-center justify-center rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="inline-flex items-center justify-center rounded-full bg-indigo-400/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-indigo-300/20 transition hover:bg-indigo-400/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                 >
                   Explore IMAT Course
                 </Link>

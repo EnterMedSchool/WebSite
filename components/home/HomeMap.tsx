@@ -157,7 +157,24 @@ export default function HomeMap() {
     setCompare((arr) => {
       if (arr.some((x) => x.uni === item.uni)) return arr;
       if (arr.length >= 10) { try { alert('You can compare up to 10 universities at a time.'); } catch {} return arr; }
-      return [...arr, { uni: item.uni, country: item.country, city: item.city, kind: item.kind, language: item.language, exam: item.exam, rating: item.rating, lastScore: item.lastScore, logo: item.logo }];
+      // Preserve any prefetched trend data so Compare drawer can render offline
+      return [
+        ...arr,
+        {
+          uni: item.uni,
+          country: item.country,
+          city: item.city,
+          kind: item.kind,
+          language: item.language,
+          exam: item.exam,
+          rating: item.rating,
+          lastScore: item.lastScore,
+          logo: item.logo,
+          trendPoints: (item as any).trendPoints,
+          trendSeats: (item as any).trendSeats,
+          id: (item as any).id,
+        },
+      ];
     });
   }
   function removeFromCompare(uni: string) {
@@ -236,6 +253,22 @@ export default function HomeMap() {
         if (!res.ok) throw new Error("no markers");
         const json = await res.json();
         if (!off) setUniData(json as CountryCities);
+        // Optimistically prefetch Italy enrichment if available so the panel has scores immediately
+        try {
+          const r2 = await fetch(`/map/v1/countries/Italy.json`, { cache: "force-cache" });
+          if (r2.ok) {
+            const arr = await r2.json();
+            if (!off) {
+              setUniData((prev) => {
+                const base = (prev || (json as CountryCities)) as any;
+                const next: CountryCities = { ...base } as any;
+                next["Italy"] = arr as any;
+                return next;
+              });
+              setEnrichedCountries((s) => new Set(s).add("Italy"));
+            }
+          }
+        } catch {}
       } catch {
         // Fallback: try bundled demo data so UI isn't empty during setup
         try {
