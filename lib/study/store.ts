@@ -64,6 +64,15 @@ export const StudyStore = {
   getPendingCount(courseId: number): number {
     return count(courseId);
   },
+  getPendingHash(courseId: number): string {
+    const p = load(courseId);
+    try { return JSON.stringify({ l: p.lessons_completed.slice().sort((a,b)=>a-b), q: p.question_status.slice().sort((a,b)=>a[0]-b[0]) }); } catch { return `${p.lessons_completed.length}:${p.question_status.length}`; }
+  },
+  markSaved(courseId: number, hash: string) {
+    const p = load(courseId);
+    p.lastSavedHash = hash;
+    save(courseId, p);
+  },
   addLessonComplete(courseId: number, lessonId: number) {
     if (!courseId || !lessonId) return;
     const p = load(courseId);
@@ -87,4 +96,3 @@ export const StudyStore = {
     return () => listeners.delete(fn);
   },
 };
-

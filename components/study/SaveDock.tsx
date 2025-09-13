@@ -8,10 +8,12 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
   const [count, setCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [boom, setBoom] = useState(false);
+  const [lastHash, setLastHash] = useState<string>("");
 
   useEffect(() => {
     if (!cid) return;
     setCount(StudyStore.getPendingCount(cid));
+    setLastHash(StudyStore.getPendingHash(cid));
     const unsub = StudyStore.subscribe((c, n) => {
       if (c === cid) setCount(n);
     });
@@ -41,13 +43,49 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
         }),
       });
       if (res.ok) {
+        const hash = StudyStore.getPendingHash(cid);
+        StudyStore.markSaved(cid, hash);
         StudyStore.clear(cid);
         setBoom(true); setTimeout(()=>setBoom(false), 1200);
         setCount(0);
+        setLastHash(hash);
       }
     } catch {}
     setSaving(false);
   }
+
+  // Autosave every 120s only when there are changes vs last saved hash
+  useEffect(() => {
+    if (!cid) return;
+    const id = window.setInterval(async () => {
+      const pending = StudyStore.getPending(cid);
+      const hash = StudyStore.getPendingHash(cid);
+      const items = pending.lessons_completed.length + pending.question_status.length;
+      if (items === 0) return;
+      if (pending.lastSavedHash && pending.lastSavedHash === hash) return;
+      try {
+        setSaving(true);
+        const res = await fetch('/api/study/sync', {
+          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            course_id: cid,
+            lessons_completed: pending.lessons_completed.map((id) => [id, Date.now()]),
+            question_status: pending.question_status.map(([id, st]) => [id, st, Date.now()]),
+            version: 1,
+          }),
+          keepalive: true,
+        });
+        if (res.ok) {
+          StudyStore.markSaved(cid, hash);
+          StudyStore.clear(cid); // clear after autosave (no bubble)
+          setCount(0);
+          setLastHash(hash);
+        }
+      } catch {}
+      setSaving(false);
+    }, 120000);
+    return () => window.clearInterval(id);
+  }, [cid]);
 
   if (!cid) return null;
   if (count === 0 && !saving) return null;

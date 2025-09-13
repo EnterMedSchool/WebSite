@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-export default function LessonBody({ slug }: { slug: string }) {
-  const [html, setHtml] = useState<string>("");
+export default function LessonBody({ slug, html: htmlProp }: { slug: string; html?: string }) {
+  const [html, setHtml] = useState<string>(htmlProp || "");
   const [openId, setOpenId] = useState<string | null>(null);
   const [preview, setPreview] = useState<any>(null);
 
   useEffect(() => {
+    if (htmlProp != null) { setHtml(htmlProp); return; }
     if (!slug) return;
     let alive = true;
     (async () => {
@@ -22,7 +23,7 @@ export default function LessonBody({ slug }: { slug: string }) {
       }
     })();
     return () => { alive = false; };
-  }, [slug]);
+  }, [slug, htmlProp]);
 
   if (!html) return null;
   return (

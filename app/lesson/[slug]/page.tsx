@@ -13,6 +13,7 @@ import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
+import { getBundleCached, setBundleCached, getPlayerCached, setPlayerCached } from "@/lib/study/cache";
 import UniResources from "@/components/lesson/UniResources";
 import SaveDock from "@/components/study/SaveDock";
 import { StudyStore } from "@/lib/study/store";
@@ -38,63 +39,79 @@ export default function LessonPage() {
   const [bundleErr, setBundleErr] = useState<string | null>(null);
   const [player, setPlayer] = useState<any | null>(null);
   const [playerErr, setPlayerErr] = useState<string | null>(null);
+  const [guest, setGuest] = useState<any | null>(null); // static JSON for guests
   useEffect(() => {
     let alive = true;
     setBundle(null); setBundleErr(null);
-    fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter`, { credentials: 'include' })
-      .then(async (r) => {
-        if (!alive) return;
-        if (r.status === 200) { const j = await r.json(); setBundle(j); }
-        else if (r.status === 401) setBundleErr('unauthenticated');
-        else if (r.status === 403) setBundleErr('forbidden');
-        else setBundleErr('error');
-      })
-      .catch(() => alive && setBundleErr('error'));
-    // Player info (iframeSrc / locked)
+    // Use local cache first (5 min TTL) to avoid repeated API hits
+    const cachedB = getBundleCached<any>(slug, 5 * 60 * 1000);
+    if (cachedB) {
+      setBundle(cachedB);
+    } else {
+      fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter`, { credentials: 'include' })
+        .then(async (r) => {
+          if (!alive) return;
+          if (r.status === 200) { const j = await r.json(); setBundle(j); setBundleCached(slug, j); }
+          else if (r.status === 401) { setBundleErr('unauthenticated'); }
+          else if (r.status === 403) setBundleErr('forbidden');
+          else setBundleErr('error');
+        })
+        .catch(() => alive && setBundleErr('error'));
+    }
+    // Player info (iframeSrc / locked) — short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
-    fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include' })
-      .then(async (r) => {
-        if (!alive) return;
-        if (r.status === 200) { setPlayer(await r.json()); }
-        else if (r.status === 401) setPlayerErr('unauthenticated');
-        else if (r.status === 403) setPlayerErr('forbidden');
-        else setPlayerErr('error');
-      })
-      .catch(() => alive && setPlayerErr('error'));
+    const cachedP = getPlayerCached<any>(slug, 60 * 1000);
+    if (cachedP) {
+      setPlayer(cachedP);
+    } else {
+      fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include' })
+        .then(async (r) => {
+          if (!alive) return;
+          if (r.status === 200) { const j = await r.json(); setPlayer(j); setPlayerCached(slug, j); }
+          else if (r.status === 401) setPlayerErr('unauthenticated');
+          else if (r.status === 403) setPlayerErr('forbidden');
+          else setPlayerErr('error');
+        })
+        .catch(() => alive && setPlayerErr('error'));
+    }
+    // Try static guest JSON from CDN (free lessons)
+    fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' })
+      .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
+      .catch(() => {});
     return () => { alive = false; };
   }, [slug]);
 
   // Fake UI data (no network calls)
-  const course = useMemo(() => ({ slug: String(bundle?.course?.slug || 'course'), title: String(bundle?.course?.title || 'Course') }), [bundle]);
-  const chapter = useMemo(() => ({ slug: String(bundle?.chapter?.slug || 'chapter'), title: String(bundle?.chapter?.title || 'Chapter') }), [bundle]);
-  const lessonTitle = useMemo(() => String(bundle?.lesson?.title || 'Lesson'), [bundle]);
+  const course = useMemo(() => ({ slug: String((bundle?.course?.slug ?? guest?.course?.slug) || 'course'), title: String((bundle?.course?.title ?? guest?.course?.title) || 'Course') }), [bundle, guest]);
+  const chapter = useMemo(() => ({ slug: String((bundle?.chapter?.slug ?? guest?.chapter?.slug) || 'chapter'), title: String((bundle?.chapter?.title ?? guest?.chapter?.title) || 'Chapter') }), [bundle, guest]);
+  const lessonTitle = useMemo(() => String((bundle?.lesson?.title ?? guest?.lesson?.title) || 'Lesson'), [bundle, guest]);
   const courseProgress = { total: 42, completed: 19, pct: 45 };
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
 
   // Skeleton: questions relevant to this lesson only
-  const lessonId = useMemo(() => Number(bundle?.lesson?.id || 0), [bundle]);
+  const lessonId = useMemo(() => Number((bundle?.lesson?.id ?? guest?.lesson?.id) || 0), [bundle, guest]);
   const relevantQuestions = useMemo<LessonQuestionItem[]>(() => {
-    const arr = (bundle?.questionsByLesson && lessonId)
-      ? (bundle.questionsByLesson[String(lessonId)] || [])
-      : [];
+    let arr: any[] = [];
+    if (bundle?.questionsByLesson && lessonId) arr = bundle.questionsByLesson[String(lessonId)] || [];
+    else if (guest?.questions) arr = guest.questions || [];
     if (!arr.length) return [];
     const qProg: Record<string, any> = (bundle?.progress?.questions || {}) as any;
     return arr.map((q: any, i: number): LessonQuestionItem => {
       const st = qProg && qProg[q.id]?.status;
       const status = st === 'correct' ? 'correct' : st === 'incorrect' ? 'incorrect' : 'todo';
-      return { id: String(q.id), title: String(q.prompt || `Q${i+1}`), status };
+      return { id: String(q.id), title: String(q.prompt || q.text || `Q${i+1}`), status };
     });
-  }, [bundle, lessonId]);
+  }, [bundle, guest, lessonId]);
   const qTotal = relevantQuestions.length;
   const qCorrect = relevantQuestions.filter((q) => q.status === 'correct').length;
   const chapterTimeline = useMemo(() => {
-    const ls = bundle?.lessons as any[] | undefined;
+    const ls = (bundle?.lessons || guest?.lessons) as any[] | undefined;
     if (!ls?.length) return [
       { key: "intro", title: "Intro: Coagulation…", q: 0, active: false },
       { key: "dic", title: "Disseminated Intravascular…", q: 0, active: true },
     ];
     return ls.map((l) => ({ key: String(l.id), title: String(l.title), q: 0, active: Number(l.id) === lessonId }));
-  }, [bundle, lessonId]);
+  }, [bundle, guest, lessonId]);
 
   return (
     <div className="mx-auto max-w-[1400px] p-6">
@@ -243,7 +260,7 @@ export default function LessonPage() {
           {/* Video panel – static example */}
           <VideoPanel
             poster="/graph/v1/course-2.jpg"
-            iframeSrc={player?.iframeSrc}
+            iframeSrc={player?.iframeSrc || guest?.player?.iframeSrc}
             locked={!!player?.locked}
             lockReason={player?.lockReason}
             overlayTitle={lessonTitle}
@@ -257,7 +274,7 @@ export default function LessonPage() {
           {/* Learn tab — render lesson HTML body */}
           {tab === "learn" && (
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-              <LessonBody slug={slug} />
+              <LessonBody slug={slug} html={guest?.html} />
             </div>
           )}
 
@@ -266,7 +283,7 @@ export default function LessonPage() {
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
               <div className="mb-2 text-sm font-semibold text-indigo-900">Practice</div>
               {!bundle && !bundleErr && <p className="text-gray-700">Loading questions…</p>}
-              {bundleErr === 'unauthenticated' && (
+              {bundleErr === 'unauthenticated' && !guest && (
                 <p className="text-gray-700">Log in to see and practice questions.</p>
               )}
               {bundleErr === 'forbidden' && (
@@ -278,7 +295,20 @@ export default function LessonPage() {
                     <li key={q.id} className="rounded-xl border p-3">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-medium">{q.title}</div>
-                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${q.status==='correct' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : q.status==='incorrect' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-gray-100 text-gray-700 ring-gray-300'}`}>{q.status==='todo'?'To do': q.status==='correct'?'Correct':'Review'}</span>
+                        {bundle ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => { try { StudyStore.addQuestionStatus(Number(bundle?.lesson?.courseId||0), Number(q.id), 'correct'); } catch {}; }}
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${q.status==='correct' ? 'bg-emerald-600 text-white ring-emerald-700' : 'bg-emerald-50 text-emerald-700 ring-emerald-200'}`}
+                            >Correct</button>
+                            <button
+                              onClick={() => { try { StudyStore.addQuestionStatus(Number(bundle?.lesson?.courseId||0), Number(q.id), 'incorrect'); } catch {}; }}
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${q.status==='incorrect' ? 'bg-rose-600 text-white ring-rose-700' : 'bg-rose-50 text-rose-700 ring-rose-200'}`}
+                            >Review</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[11px] text-gray-500" title="Log in to practice">Login to practice</div>
+                        )}
                       </div>
                     </li>
                   ))}
@@ -336,3 +366,4 @@ export default function LessonPage() {
     </div>
   );
 }
+
