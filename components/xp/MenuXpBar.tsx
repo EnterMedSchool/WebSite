@@ -186,7 +186,7 @@ export default function MenuXpBar({ isAuthed, level, xpPct, xpInLevel, xpSpan, i
             <Mini24hAndStreak openTick={miniOpenTick} />
 
             <div className="mt-4 mb-2 text-sm font-semibold text-gray-900">Recent XP</div>
-            <RecentXpList />
+            <RecentXpList isAuthed={isAuthed} />
             <PowerUpsTray />
             <div className="mt-4 flex items-center justify-between text-[11px]">
               <div className="text-gray-500">Want more insights?</div>
@@ -303,9 +303,10 @@ function AnimatedStatPill({ loading, color, label, value, icon }: { loading: boo
   );
 }
 
-function RecentXpList() {
+function RecentXpList({ isAuthed = false }: { isAuthed?: boolean }) {
   const [rows, setRows] = useState<{ when: string; what: string; amount: number }[] | null>(null);
   useEffect(() => {
+    if (!isAuthed) { setRows([]); return; }
     (async () => {
       try {
         const r = await fetch('/api/me/xp');
@@ -316,7 +317,7 @@ function RecentXpList() {
         if (streakEl && j?.streakDays != null) streakEl.textContent = String(j.streakDays);
       } catch { setRows([]); }
     })();
-  }, []);
+  }, [isAuthed]);
   if (!rows) return <div className="h-10 animate-pulse rounded bg-gray-100" />;
   if (rows.length === 0) return <div className="text-xs text-gray-600">No XP yet. Complete a lesson to earn some!</div>;
   return (

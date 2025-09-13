@@ -42,7 +42,10 @@ export default function LessonPage() {
   const [guest, setGuest] = useState<any | null>(null); // static JSON for guests
   useEffect(() => {
     let alive = true;
-    setBundle(null); setBundleErr(null);
+    setBundle(null); setBundleErr(null); setGuest(null);
+    const hasAuth = typeof document !== 'undefined' && /(?:^|; )(__Secure-next-auth\.session-token|next-auth\.session-token)=/.test(document.cookie);
+
+    if (hasAuth) {
     // Use local cache first (5 min TTL) to avoid repeated API hits
     const cachedB = getBundleCached<any>(slug, 5 * 60 * 1000);
     if (cachedB) {
@@ -73,8 +76,7 @@ export default function LessonPage() {
           else setPlayerErr('error');
         })
         .catch(() => alive && setPlayerErr('error'));
-    }
-    // Try static guest JSON from CDN (free lessons)
+    }\n    }\n    // Try static guest JSON from CDN (free lessons)
     fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' })
       .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
       .catch(() => {});
@@ -367,4 +369,7 @@ export default function LessonPage() {
     </div>
   );
 }
+
+
+
 
