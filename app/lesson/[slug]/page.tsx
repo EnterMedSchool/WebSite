@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import VideoPanel from "@/components/lesson/VideoPanel";
 import TranscriptPanel from "@/components/lesson/TranscriptPanel";
@@ -24,6 +24,24 @@ export default function LessonPage() {
   const [fav, setFav] = useState(false);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
 
+  // Lesson bundle (questions + chapter lessons + progress) — requires login
+  const [bundle, setBundle] = useState<any | null>(null);
+  const [bundleErr, setBundleErr] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setBundle(null); setBundleErr(null);
+    fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter`, { credentials: 'include' })
+      .then(async (r) => {
+        if (!alive) return;
+        if (r.status === 200) { const j = await r.json(); setBundle(j); }
+        else if (r.status === 401) setBundleErr('unauthenticated');
+        else if (r.status === 403) setBundleErr('forbidden');
+        else setBundleErr('error');
+      })
+      .catch(() => alive && setBundleErr('error'));
+    return () => { alive = false; };
+  }, [slug]);
+
   // Fake UI data (no network calls)
   const course = { slug: "hematology", title: "Hematology" };
   const chapter = { slug: "coagulation", title: "Coagulation Disorders" };
@@ -32,25 +50,29 @@ export default function LessonPage() {
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
 
   // Skeleton: questions relevant to this lesson only
-  const relevantQuestions = [
-    { id: 'q1', title: 'Define DIC and common triggers', status: 'correct' as const },
-    { id: 'q2', title: 'Key lab pattern in DIC', status: 'incorrect' as const },
-    { id: 'q3', title: 'Role of fibrin degradation products', status: 'todo' as const },
-    { id: 'q4', title: 'Schistocytes and MAHA vs DIC', status: 'todo' as const },
-    { id: 'q5', title: 'Management priorities in DIC', status: 'todo' as const },
-    { id: 'q6', title: 'Causes of prolonged PT and aPTT', status: 'correct' as const },
-    { id: 'q7', title: 'D-dimer significance', status: 'correct' as const },
-    { id: 'q8', title: 'Transfusion thresholds', status: 'todo' as const },
-    { id: 'q9', title: 'Obstetric DIC scenarios', status: 'incorrect' as const },
-    { id: 'q10', title: 'Sepsis-induced coagulopathy', status: 'todo' as const },
-  ];
+  const lessonId = useMemo(() => Number(bundle?.lesson?.id || 0), [bundle]);
+  const relevantQuestions = useMemo(() => {
+    const arr = (bundle?.questionsByLesson && lessonId)
+      ? (bundle.questionsByLesson[String(lessonId)] || [])
+      : [];
+    if (!arr.length) return [] as { id: string; title: string; status: 'todo'|'correct'|'incorrect' }[];
+    const qProg: Record<string, any> = (bundle?.progress?.questions || {}) as any;
+    return arr.map((q: any, i: number) => {
+      const st = qProg && qProg[q.id]?.status;
+      const status = st === 'correct' ? 'correct' : st === 'incorrect' ? 'incorrect' : 'todo';
+      return { id: String(q.id), title: String(q.prompt || `Q${i+1}`), status };
+    });
+  }, [bundle, lessonId]);
   const qTotal = relevantQuestions.length;
-  const qCorrect = relevantQuestions.filter(q => q.status === 'correct').length;
-  const chapterTimeline = [
-    { key: "intro", title: "Intro: Coagulation…", q: 0, active: false },
-    { key: "dic", title: "Disseminated Intravascular…", q: 2, active: true },
-    { key: "ttp", title: "Thrombotic Thrombocytopenic…", q: 1, active: false },
-  ];
+  const qCorrect = relevantQuestions.filter((q) => q.status === 'correct').length;
+  const chapterTimeline = useMemo(() => {
+    const ls = bundle?.lessons as any[] | undefined;
+    if (!ls?.length) return [
+      { key: "intro", title: "Intro: Coagulation…", q: 0, active: false },
+      { key: "dic", title: "Disseminated Intravascular…", q: 0, active: true },
+    ];
+    return ls.map((l) => ({ key: String(l.id), title: String(l.title), q: 0, active: Number(l.id) === lessonId }));
+  }, [bundle, lessonId]);
 
   return (
     <div className="mx-auto max-w-[1400px] p-6">
@@ -231,11 +253,29 @@ export default function LessonPage() {
             </div>
           )}
 
-          {/* Practice tab – placeholder only */}
+          {/* Practice tab — shows bundled questions when available */}
           {tab === "practice" && (
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
               <div className="mb-2 text-sm font-semibold text-indigo-900">Practice</div>
-              <p className="text-gray-700">Practice questions will appear here. For now, this is a UI-only placeholder.</p>
+              {!bundle && !bundleErr && <p className="text-gray-700">Loading questions…</p>}
+              {bundleErr === 'unauthenticated' && (
+                <p className="text-gray-700">Log in to see and practice questions.</p>
+              )}
+              {bundleErr === 'forbidden' && (
+                <p className="text-gray-700">This course is paid. Your account doesn’t have access.</p>
+              )}
+              {!!relevantQuestions.length && (
+                <ul className="mt-2 space-y-2">
+                  {relevantQuestions.map((q) => (
+                    <li key={q.id} className="rounded-xl border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-medium">{q.title}</div>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${q.status==='correct' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : q.status==='incorrect' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-gray-100 text-gray-700 ring-gray-300'}`}>{q.status==='todo'?'To do': q.status==='correct'?'Correct':'Review'}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
