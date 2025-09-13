@@ -95,6 +95,40 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     }
   } catch {}
 
+  // Build lightweight chapter summary (per-lesson counts + completion) to avoid extra requests on client
+  let summary: any = null;
+  try {
+    const byLesson: Record<string, { total: number; correct: number; incorrect: number; attempted: number }> = {};
+    for (const l of chapterLessons.length ? chapterLessons : [{ id: Number(lesson.id) }]) {
+      byLesson[String(Number(l.id))] = { total: 0, correct: 0, incorrect: 0, attempted: 0 };
+    }
+    // Use already fetched questionsByLesson when available; otherwise compute totals by querying
+    if (Object.keys(questionsByLesson).length) {
+      for (const [lid, arr] of Object.entries<any[]>(questionsByLesson)) {
+        const stats = byLesson[lid] || (byLesson[lid] = { total: 0, correct: 0, incorrect: 0, attempted: 0 });
+        stats.total = arr.length;
+        for (const q of arr) {
+          const st = (progress.questions || {})[Number(q.id)]?.status;
+          if (st === 'correct') { stats.correct++; stats.attempted++; }
+          else if (st === 'incorrect') { stats.incorrect++; stats.attempted++; }
+        }
+      }
+    } else if (lessonIds.length) {
+      const qr = await sql`SELECT lesson_id, COUNT(*)::int AS n FROM questions WHERE lesson_id = ANY(${lessonIds as any}) GROUP BY lesson_id`;
+      for (const r of qr.rows) {
+        const key = String(Number(r.lesson_id));
+        const stats = byLesson[key] || (byLesson[key] = { total: 0, correct: 0, incorrect: 0, attempted: 0 });
+        stats.total = Number(r.n || 0);
+      }
+      // For attempted/correct/incorrect, rely on progress map
+      for (const [qid, v] of Object.entries<any>(progress.questions || {})) {
+        // We don't have q->lesson quickly; skip in this fallback to keep it cheap
+      }
+    }
+    const lessonsCompleted = Object.keys(progress.lessons || {}).map((k) => Number(k)).filter((id) => (chapterLessons.length ? chapterLessons.some((l:any)=> Number(l.id)===id) : id===Number(lesson.id)));
+    summary = { byLesson, lessonsCompleted };
+  } catch {}
+
   return NextResponse.json({
     lesson: { id: Number(lesson.id), slug: String(lesson.slug), title: String(lesson.title), courseId: Number(lesson.course_id) },
     course,
@@ -102,6 +136,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     lessons: chapterLessons,
     questionsByLesson,
     progress,
+    summary,
     scope,
   });
 }

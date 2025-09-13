@@ -39,6 +39,7 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
         body: JSON.stringify({
           course_id: cid,
           lessons_completed: p.lessons_completed.map((id) => [id, Date.now()]),
+          lessons_incomplete: (p.lessons_incomplete||[]).map((id) => [id, Date.now()]),
           question_status: p.question_status.map(([id, st]) => [id, st, Date.now()]),
           xp_delta: { lessons: p.lessons_completed.length },
           version: 1,
@@ -63,7 +64,7 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
     const id = window.setInterval(async () => {
       const pending = StudyStore.getPending(cid);
       const hash = StudyStore.getPendingHash(cid);
-      const items = pending.lessons_completed.length + pending.question_status.length;
+      const items = pending.lessons_completed.length + (pending.lessons_incomplete?.length || 0) + pending.question_status.length;
       if (items === 0) return;
       if (pending.lastSavedHash && pending.lastSavedHash === hash) return;
       try {
@@ -73,6 +74,7 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
           body: JSON.stringify({
             course_id: cid,
             lessons_completed: pending.lessons_completed.map((id) => [id, Date.now()]),
+            lessons_incomplete: (pending.lessons_incomplete||[]).map((id) => [id, Date.now()]),
             question_status: pending.question_status.map(([id, st]) => [id, st, Date.now()]),
             version: 1,
           }),

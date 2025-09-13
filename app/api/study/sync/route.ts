@@ -11,6 +11,7 @@ type SyncPayload = {
   idempotency_key?: string;
   client_ts?: string | number;
   lessons_completed?: [number, string | number][];
+  lessons_incomplete?: [number, string | number][];
   question_status?: [number, 'correct' | 'incorrect', string | number][];
   xp_delta?: { lessons?: number; correct?: number; attempted?: number; other?: number };
   version?: number;
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
   if (!courseId) return NextResponse.json({ error: 'invalid_course' }, { status: 400 });
 
   const lessons = Array.isArray(body.lessons_completed) ? body.lessons_completed : [];
+  const lessonsUndo = Array.isArray(body.lessons_incomplete) ? body.lessons_incomplete : [];
   const qstats = Array.isArray(body.question_status) ? body.question_status : [];
   const xpDelta = body.xp_delta || {};
   const version = Number(body.version || 1);
@@ -51,6 +53,17 @@ export async function POST(req: Request) {
     const current = data.lessons[lid];
     if (!current || !current.completed_at || new Date(ts) > new Date(current.completed_at)) {
       data.lessons[lid] = { completed_at: ts };
+    }
+  }
+
+  // Process lesson undo (remove when newer than existing)
+  for (const [lidRaw, tsRaw] of lessonsUndo) {
+    const lid = Number(lidRaw);
+    if (!Number.isFinite(lid)) continue;
+    const ts = toTs(tsRaw) || new Date().toISOString();
+    const current = data.lessons[lid];
+    if (!current || !current.completed_at || new Date(ts) >= new Date(current.completed_at)) {
+      delete data.lessons[lid];
     }
   }
 
@@ -79,4 +92,3 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true, xpTotal: newXp, version, etag: `v${version}-${Date.now()}` });
 }
-

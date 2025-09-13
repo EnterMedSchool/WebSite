@@ -33,6 +33,7 @@ export default function LessonPage() {
   const [completed, setCompleted] = useState(false);
   const [fav, setFav] = useState(false);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  const [authed, setAuthed] = useState(false);
 
   // Lesson bundle (questions + chapter lessons + progress) — requires login
   const [bundle, setBundle] = useState<any | null>(null);
@@ -44,6 +45,7 @@ export default function LessonPage() {
     let alive = true;
     setBundle(null); setBundleErr(null); setGuest(null);
     const hasAuth = typeof document !== 'undefined' && /(?:^|; )(__Secure-next-auth\.session-token|next-auth\.session-token)=/.test(document.cookie);
+    setAuthed(hasAuth);
 
     if (hasAuth) {
     // Use local cache first (5 min TTL) to avoid repeated API hits
@@ -106,6 +108,15 @@ export default function LessonPage() {
     } catch {}
     return () => { alive = false; };
   }, [slug]);
+
+  // Reflect server progress (when logged in) into local UI state
+  useEffect(() => {
+    try {
+      const lid = Number(bundle?.lesson?.id || 0);
+      const done = !!(lid && (bundle as any)?.progress?.lessons?.[lid]?.completed_at);
+      setCompleted(done);
+    } catch {}
+  }, [bundle]);
 
   // Fake UI data (no network calls)
   const course = useMemo(() => ({ slug: String((bundle?.course?.slug ?? guest?.course?.slug) || 'course'), title: String((bundle?.course?.title ?? guest?.course?.title) || 'Course') }), [bundle, guest]);
@@ -196,10 +207,25 @@ export default function LessonPage() {
               {fav ? '♥' : '♡'}
             </button>
             <button
-              onClick={() => { const nv = !completed; setCompleted(nv); if (nv && bundle?.lesson?.courseId && bundle?.lesson?.id) { try { StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id)); } catch {} } }}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${completed ? 'bg-emerald-100 text-emerald-700 ring-emerald-300' : 'bg-white/20 text-white/90 ring-white/40 hover:bg-white/30'}`}
+              disabled={!authed}
+              onClick={() => {
+                if (!authed) return;
+                if (bundle?.lesson?.courseId && bundle?.lesson?.id) {
+                  try {
+                    if (completed) {
+                      StudyStore.removeLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
+                      setCompleted(false);
+                    } else {
+                      StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
+                      setCompleted(true);
+                    }
+                  } catch {}
+                }
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${!authed ? 'bg-white/10 text-white/60 ring-white/25 cursor-not-allowed' : (completed ? 'bg-emerald-100 text-emerald-700 ring-emerald-300 hover:bg-emerald-100' : 'bg-white/20 text-white/90 ring-white/40 hover:bg-white/30')}`}
+              title={!authed ? 'Log in to track progress' : (completed ? 'Click to undo completion' : 'Mark this lesson complete')}
             >
-              {completed ? 'Completed' : 'Mark as complete'}
+              {!authed ? 'Login to complete' : (completed ? 'Completed (Undo)' : 'Mark as complete')}
             </button>
           </div>
         </div>
