@@ -173,12 +173,12 @@ export default function EnterMedSchool2026() {
   return (
     <section id="entermedschool-2026" className="relative mx-auto w-full max-w-6xl px-4">
       {/* Softer decorative blobs for depth */}
-      <div className="pointer-events-none absolute -top-24 right-[-10%] h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/15 via-violet-300/10 to-fuchsia-300/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-12 left-[-6%] h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/12 via-cyan-300/10 to-indigo-300/12 blur-3xl" />
+      <div className="pointer-events-none absolute -top-24 right-[-10%] -z-10 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/15 via-violet-300/10 to-fuchsia-300/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-12 left-[-6%] -z-10 h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/12 via-cyan-300/10 to-indigo-300/12 blur-3xl" />
 
       <div className="grid items-center gap-8 md:grid-cols-2">
         {/* Left copy (contrasty on white) */}
-        <div className="relative z-10 text-slate-900">
+        <div className="relative z-20 text-slate-900">
           <div className="mb-2 flex items-center gap-2">
             <NewBadge />
             <span className="text-xs font-medium uppercase tracking-wider text-indigo-700 dark:text-indigo-200">Feature wave</span>
@@ -214,4 +214,3 @@ export default function EnterMedSchool2026() {
     </section>
   );
 }
-

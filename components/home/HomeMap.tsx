@@ -4,11 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
-import ExplorerRail from "@/components/home/ExplorerRail";
 import FloatingPanel from "@/components/ui/FloatingPanel";
 import UniversitiesPanelFloating from "@/components/home/UniversitiesPanelFloating";
 import { useRouter, useSearchParams } from "next/navigation";
-import UniversitiesPanel from "@/components/home/UniversitiesPanel";
 import UniversitiesListMobile from "@/components/home/UniversitiesListMobile";
 import BottomSheet from "@/components/ui/BottomSheet";
 import CompareFab from "@/components/home/CompareFab";
@@ -65,9 +63,10 @@ export default function HomeMap() {
   const PANEL_GUTTER = 8;    // spacing from container bottom
   const PANEL_TOP_GAP = 4;   // small gap under menu
 
-  const [uniData, setUniData] = useState<CountryCities | null>(null);
-  const [enrichedCountries, setEnrichedCountries] = useState<Set<string>>(new Set());
-  const [enriching, setEnriching] = useState<string | null>(null);
+  // Data fetching disabled: keep empty dataset to preserve UI skeleton only
+  const [uniData] = useState<CountryCities | null>({});
+  const [enrichedCountries] = useState<Set<string>>(new Set());
+  const [enriching] = useState<string | null>(null);
   const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "" });
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<{ x: number; y: number; data: any } | null>(null);
@@ -227,91 +226,10 @@ export default function HomeMap() {
     return () => clearTimeout(t);
   }, [filters, router]);
 
-  // Load data from API (DB only; if it fails, show nothing instead of static demo)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        // Prefer localStorage cache by version to avoid network and Edge requests between visits
-        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? String(process.env.NEXT_PUBLIC_UNIS_DATA_V) : "v1";
-        const localKey = `unis:markers:${v}`;
-        try {
-          const cached = typeof window !== 'undefined' ? window.localStorage.getItem(localKey) : null;
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (!cancelled) setUniData(parsed as CountryCities);
-            return; // use local cache; network skipped
-          }
-        } catch {}
-        // Fallback to network
-        const res = await fetch(`/api/universities?scope=markers&v=${encodeURIComponent(v)}`);
-        const json = await res.json();
-        if (!cancelled) {
-          setUniData(json.data as CountryCities);
-          try { if (typeof window !== 'undefined') window.localStorage.setItem(localKey, JSON.stringify(json.data)); } catch {}
-        }
-      } catch {
-        if (!cancelled) setUniData({});
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Data fetching fully disabled; keep empty map markers.
+  // Intentionally no effect here to avoid any network or local cache usage.
 
-  // On country selection, fetch enriched data for that country once, then cache in memory
-  useEffect(() => {
-    const name = selected?.name;
-    if (!name || !uniData) return;
-    if (enrichedCountries.has(name) || enriching === name) return;
-    // If current list items already have trendPoints (from a previous enrichment), skip
-    const hasTrends = (uniData[name] || []).some((c: any) => Array.isArray((c as any).trendPoints) && (c as any).trendPoints.length > 0);
-    if (hasTrends) {
-      setEnrichedCountries((s) => new Set(s).add(name));
-      return;
-    }
-    let cancelled = false;
-    setEnriching(name);
-    (async () => {
-      try {
-        const vStr = process.env.NEXT_PUBLIC_UNIS_DATA_V ? String(process.env.NEXT_PUBLIC_UNIS_DATA_V) : "v1";
-        const localKey = `unis:country:${vStr}:${name}`;
-        // Try local first
-        try {
-          const cached = typeof window !== 'undefined' ? window.localStorage.getItem(localKey) : null;
-          if (cached) {
-            const arr = JSON.parse(cached);
-            // Only trust cache if it looks enriched enough (has emsCount or trend points/seats)
-            const looksEnriched = Array.isArray(arr) && arr.length > 0 && arr.some((c: any) => (
-              typeof c?.emsCount === 'number' || (Array.isArray(c?.trendPoints) && c.trendPoints.length > 0) || (Array.isArray(c?.trendSeats) && c.trendSeats.length > 0)
-            ));
-            if (looksEnriched) {
-              if (!cancelled) {
-                const next: CountryCities = { ...(uniData || {}) } as any;
-                next[name] = arr as any;
-                setUniData(next);
-                setEnrichedCountries((s) => new Set(s).add(name));
-              }
-              return; // cached copy is good enough
-            }
-            // else: fall through to network fetch to upgrade the stale cached copy
-          }
-        } catch {}
-        const res = await fetch(`/api/universities?scope=country&name=${encodeURIComponent(name)}&v=${encodeURIComponent(vStr)}`);
-        if (!res.ok) throw new Error("bad");
-        const json = await res.json();
-        if (cancelled) return;
-        const next: CountryCities = { ...(uniData || {}) } as any;
-        // Replace only the selected country's array
-        next[name] = (json.data?.[name] || []) as any;
-        setUniData(next);
-        setEnrichedCountries((s) => new Set(s).add(name));
-        try { if (typeof window !== 'undefined') window.localStorage.setItem(localKey, JSON.stringify(next[name])); } catch {}
-      } catch {}
-      finally {
-        if (!cancelled) setEnriching((s) => (s === name ? null : s));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [selected?.name, uniData, enrichedCountries, enriching]);
+  // Enrichment disabled: no per-country loading or caching.
 
   // No header measurement needed; panel is anchored inside the map container.
   // Detect small screens (sm/md) for sheet behavior
@@ -466,7 +384,8 @@ export default function HomeMap() {
                 return geographies.map((geo: any) => {
                   const name = (geo.properties.name as string) || "";
                   const isSelected = selected?.name === name;
-                  const hasData = countryHasData.has(name);
+                  // With data loading removed, allow interacting with any country
+                  const hasData = true;
                   const fill = isSelected ? "#C7D2FE" : hasData ? "#E6ECFF" : "#EEF2F7";
                   // Keep the same fill on hover to remove the hover reaction
                   const hoverFill = fill;
@@ -477,7 +396,7 @@ export default function HomeMap() {
                     <Geography
                       key={(geo as Feature).id}
                       geography={geo}
-                      onClick={hasData ? () => handleCountryClick(geo) : undefined}
+                      onClick={() => handleCountryClick(geo)}
                       style={{
                         default: { fill, outline: "none", stroke: strokeColor, strokeWidth: strokeW, cursor: hasData ? "pointer" : "default" },
                         // Mirror default stroke on hover so selection outline stays visible
@@ -676,7 +595,7 @@ export default function HomeMap() {
               />
             </FloatingPanel>
 
-            {selected && cityData.length > 0 && (
+            {selected && (
               <FloatingPanel
                 id="map-universities"
                 initialSize={{ width: 520, height: 600 }}

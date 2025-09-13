@@ -90,36 +90,9 @@ export default function CompareDrawer({
         points: (i.trendPoints || []).sort((a,b)=>a.year-b.year),
         seats: (i.trendSeats || []).sort((a,b)=>a.year-b.year),
       }));
-    const haveLocal = new Set(byLocal.map((s) => s.uni));
-    const missing = items.filter((i) => !haveLocal.has(i.uni));
-
-    let cancelled = false;
-    const done = (data: Series[]) => { if (!cancelled) setSeries(data); };
-
-    if (missing.length === 0) {
-      done(byLocal);
-      return () => { cancelled = true; };
-    }
-    // Fetch only missing; merge with local
-    (async () => {
-      try {
-        const ids = missing.map((i:any) => i.id).filter((n:any) => Number.isFinite(n));
-        const slugs = missing
-          .filter((i:any) => !Number.isFinite(i.id))
-          .map((i) => i.uni.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
-        const qsParts: string[] = [];
-        if (slugs.length) qsParts.push(`unis=${encodeURIComponent(slugs.join(","))}`);
-        if (ids.length) qsParts.push(`ids=${ids.join(",")}`);
-        const v = process.env.NEXT_PUBLIC_UNIS_DATA_V ? `&_v=${process.env.NEXT_PUBLIC_UNIS_DATA_V}` : "";
-        const res = await fetch(`/api/compare/scores?${qsParts.join("&")}${v}`);
-        const json = await res.json();
-        const merged: Series[] = [...byLocal, ...(json.series || [])];
-        done(merged);
-      } catch {
-        done(byLocal);
-      }
-    })();
-    return () => { cancelled = true; };
+    // Network disabled: show only any locally attached prefetch data.
+    setSeries(byLocal);
+    return () => {};
   }, [open, slugs, items]);
 
   return (
