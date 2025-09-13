@@ -28,7 +28,6 @@ jobs:
       - name: Build free lessons JSON
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL }}
           DATABASE_URL: ${{ secrets.POSTGRES_URL }}
           FREE_JSON_MAX_CHAPTER_Q: '400'
         run: npm run lessons:free

@@ -2,18 +2,20 @@
 // Export free lessons as static JSON for CDN serving to guests (no serverless calls).
 // Usage: node scripts/build-free-lessons-json.mjs
 
-import { createClient, sql as baseSql } from "@vercel/postgres";
+import { createClient, createPool, sql as baseSql } from "@vercel/postgres";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 
-// Initialize DB connection using common env names
-const connectionString = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
-if (!connectionString) {
-  console.error("[free-lessons] Missing Postgres connection string. Set POSTGRES_URL or DATABASE_URL.");
+// Resolve DSNs: prefer non-pooling DSN for createClient when provided; otherwise use pooled DSN
+const NON_POOLING_DSN = process.env.POSTGRES_URL_NON_POOLING || "";
+const POOLED_DSN = process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
+if (!NON_POOLING_DSN && !POOLED_DSN) {
+  console.error("[free-lessons] Missing Postgres connection string. Set POSTGRES_URL or POSTGRES_URL_NON_POOLING or DATABASE_URL.");
   process.exit(2);
 }
-let db; // set in main() after connecting a client
+let db; // query tag function bound to the chosen connection
+let cleanup = async () => {};
 
 function outDir() {
   return path.join(process.cwd(), "public", "free-lessons", "v1");
@@ -110,10 +112,18 @@ async function fetchLessonPayload(slug) {
 }
 
 async function main() {
-  // connect client
-  const client = createClient({ connectionString });
-  await client.connect();
-  db = client.sql;
+  if (NON_POOLING_DSN) {
+    const client = createClient({ connectionString: NON_POOLING_DSN });
+    await client.connect();
+    db = client.sql;
+    cleanup = async () => { try { await client.end(); } catch {} };
+    console.log('[free-lessons] Using non-pooling client');
+  } else {
+    const { sql: pooledSql } = createPool({ connectionString: POOLED_DSN });
+    db = pooledSql;
+    cleanup = async () => {};
+    console.log('[free-lessons] Using pooled connection');
+  }
   const dir = outDir();
   fs.mkdirSync(dir, { recursive: true });
   const slugs = await fetchFreeLessonSlugs();
@@ -153,7 +163,7 @@ async function main() {
     }
   }
   fs.writeFileSync(path.join(dir, `index.json`), JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), lessons: index }));
-  try { await client.end(); } catch {}
+  await cleanup();
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
