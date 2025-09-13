@@ -34,6 +34,32 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Early short-circuit for lesson APIs based on denial cookie (avoid DB)
+  const m = pathname.match(/^\/api\/lesson\/([^/]+)\/(bundle|player|body)(?:\/|$)/);
+  if (m) {
+    const slug = m[1];
+    // If we've recently denied this slug, return fast 403
+    const denied = req.cookies.get(`ems_paid_denied_l_${slug}`)?.value;
+    if (denied) {
+      return new NextResponse(
+        JSON.stringify({ error: 'forbidden_cached', reason: 'paid_course' }),
+        { status: 403, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
+      );
+    }
+    // For bundle specifically, require auth quickly (saves work inside the route)
+    if (/\/bundle(?:\/|$)/.test(pathname)) {
+      try {
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+        if (!token) {
+          return new NextResponse(
+            JSON.stringify({ error: 'unauthenticated' }),
+            { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
+          );
+        }
+      } catch {}
+    }
+  }
+
   const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
   if (!isAdminPath) return NextResponse.next();
 
@@ -86,6 +112,8 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/api/admin/:path*',
+    // Lesson APIs guarded with early checks
+    '/api/lesson/:path*',
     // Blocked sections
     '/course/:path*',
     '/courses/:path*',
@@ -96,22 +124,3 @@ export const config = {
     '/api/todos/:path*',
   ],
 };
-  // Early short-circuit for lesson APIs based on denial cookie (avoid DB)
-  const m = pathname.match(/^\/api\/lesson\/([^/]+)\/(bundle|player|body)(?:\/|$)/);
-  if (m) {
-    const slug = m[1];
-    // If we've recently denied this slug, return fast 403
-    const denied = req.cookies.get(`ems_paid_denied_l_${slug}`)?.value;
-    if (denied) {
-      return new NextResponse(JSON.stringify({ error: 'forbidden_cached', reason: 'paid_course' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-    }
-    // For bundle specifically, require auth quickly (saves work inside the route)
-    if (/\/bundle(?:\/|$)/.test(pathname)) {
-      try {
-        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-        if (!token) {
-          return new NextResponse(JSON.stringify({ error: 'unauthenticated' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-        }
-      } catch {}
-    }
-  }

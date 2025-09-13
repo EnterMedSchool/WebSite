@@ -12,7 +12,15 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
   useEffect(() => {
     if (!cid) return;
     setCount(StudyStore.getPendingCount(cid));
-    return StudyStore.subscribe((c, n) => { if (c === cid) setCount(n); });
+    const unsub = StudyStore.subscribe((c, n) => {
+      if (c === cid) setCount(n);
+    });
+    return () => {
+      if (typeof unsub === 'function') {
+        // Call and ignore any return value to satisfy Effect cleanup type
+        void unsub();
+      }
+    };
   }, [cid]);
 
   const disabled = !cid || count === 0 || saving;
@@ -64,4 +72,3 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
     </div>
   );
 }
-
