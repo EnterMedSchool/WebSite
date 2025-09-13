@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import VideoPanel from "@/components/lesson/VideoPanel";
 import TranscriptPanel from "@/components/lesson/TranscriptPanel";
-import UniResources from "@/components/lesson/UniResources";
 // import AnkiDownload from "@/components/lesson/AnkiDownload";
 import FlashcardsCTA from "@/components/lesson/FlashcardsCTA";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
@@ -146,6 +145,17 @@ export default function LessonPage() {
         {/* Left: Chapter progress */}
         {!focusMode && (
           <aside className="order-first space-y-3">
+            {/* Flashcards above question progress */}
+            <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+              <div className="text-[12px] font-semibold text-indigo-900">Flashcards</div>
+              <div className="mt-2">
+                <FlashcardsCTA
+                  count={10}
+                  tags={["hematology", "coagulation", "DIC"]}
+                  onStart={() => setFlashcardsOpen(true)}
+                />
+              </div>
+            </div>
             <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
               <div className="text-[12px] font-semibold text-indigo-900">Question progress</div>
 
@@ -259,13 +269,7 @@ export default function LessonPage() {
               <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Glossary</summary>
               <div className="px-2 pb-2"><Glossary /></div>
             </details>
-            <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
-              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Flashcards</summary>
-              <div className="space-y-3 px-2 pb-2">
-                <FlashcardsCTA count={10} tags={["hematology","coagulation","DIC"]} onStart={() => setFlashcardsOpen(true)} />
-                <UniResources enabled={false} comingSoon />
-              </div>
-            </details>
+            {/* Flashcards moved to left sidebar above question progress */}
             <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
               <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Concept check</summary>
               <div className="px-2 pb-2">
