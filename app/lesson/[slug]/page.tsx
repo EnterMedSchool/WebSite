@@ -72,6 +72,12 @@ export default function LessonPage() {
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">{course.title}</span>
             <button
+              className="rounded-full px-3 py-1 text-xs font-semibold bg-white/20 text-white/90 hover:bg-white/30"
+              title="Open all chapters"
+            >
+              open all chapters
+            </button>
+            <button
               onClick={() => setFav((v) => !v)}
               className={`rounded-full px-2 py-1 text-xs font-semibold ${fav ? 'bg-rose-500 text-white' : 'bg-white/20 text-white/90 hover:bg-white/30'}`}
               title={fav ? 'Unfavorite' : 'Favorite'}
@@ -147,6 +153,10 @@ export default function LessonPage() {
                   </li>
                 ))}
               </ul>
+              {/* Footer actions */}
+              <div className="mt-2 flex justify-end">
+                <button type="button" className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">All chapters</button>
+              </div>
             </div>
           </aside>
         )}
@@ -177,6 +187,7 @@ export default function LessonPage() {
                 <li>Clean, focused video experience</li>
                 <li>Lightweight reading area</li>
                 <li>Practice tab placeholder</li>
+                <li>Includes endocrine references like ACTH</li>
               </ul>
               <p>
                 We’ll re-introduce features step by step once the core UI feels
