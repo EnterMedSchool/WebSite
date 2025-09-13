@@ -14,6 +14,16 @@ function isAdminEmail(email: string | null | undefined): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Temporary block: courses and chapters pages (focus on lessons only)
+  // - Block top-level /course and /courses (but not /course-mates)
+  // - Also block any /chapters or /chapter paths if present
+  const blockCourses = /^\/(courses?)(\/|$)/.test(pathname);
+  const blockCourseSingular = /^\/course(\/|$)/.test(pathname);
+  const blockChapters = /^\/(chapters?|chapter)(\/|$)/.test(pathname);
+  if (blockCourses || blockCourseSingular || blockChapters) {
+    return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  }
+
   // Feature guard: Timer/Tasks APIs hidden unless explicitly enabled
   const isWidgetsApi = pathname.startsWith('/api/timer') || pathname.startsWith('/api/todos');
   if (isWidgetsApi) {
@@ -76,6 +86,11 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/api/admin/:path*',
+    // Blocked sections
+    '/course/:path*',
+    '/courses/:path*',
+    '/chapter/:path*',
+    '/chapters/:path*',
     // Feature-flag block for widgets APIs
     '/api/timer/:path*',
     '/api/todos/:path*',
