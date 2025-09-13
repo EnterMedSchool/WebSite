@@ -9,11 +9,13 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
   const [saving, setSaving] = useState(false);
   const [boom, setBoom] = useState(false);
   const [lastHash, setLastHash] = useState<string>("");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (!cid) return;
     setCount(StudyStore.getPendingCount(cid));
     setLastHash(StudyStore.getPendingHash(cid));
+    setLastSavedAt(StudyStore.getLastSavedAt(cid));
     const unsub = StudyStore.subscribe((c, n) => {
       if (c === cid) setCount(n);
     });
@@ -49,6 +51,7 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
         setBoom(true); setTimeout(()=>setBoom(false), 1200);
         setCount(0);
         setLastHash(hash);
+        setLastSavedAt(Date.now());
       }
     } catch {}
     setSaving(false);
@@ -80,6 +83,7 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
           StudyStore.clear(cid); // clear after autosave (no bubble)
           setCount(0);
           setLastHash(hash);
+          setLastSavedAt(Date.now());
         }
       } catch {}
       setSaving(false);
@@ -96,6 +100,11 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
         <span>Save progress</span>
         {count > 0 && <span className="grid h-5 w-5 place-items-center rounded-full bg-white/20 text-[11px]">{count}</span>}
       </button>
+      {lastSavedAt && (
+        <div className="mt-1 text-right text-[11px] text-gray-600">
+          Last saved {timeAgo(lastSavedAt)}
+        </div>
+      )}
       {boom && (
         <div className="pointer-events-none absolute -bottom-6 right-2 h-0 w-0">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -109,4 +118,13 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
       )}
     </div>
   );
+}
+
+function timeAgo(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 10) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24); return `${d}d ago`;
 }

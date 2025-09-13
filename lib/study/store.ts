@@ -10,6 +10,7 @@ type Pending = {
   question_status: [number, QuestionStatus][]; // [question_id, status]
   lastSavedHash?: string; // for autosave diffing
   updatedAt?: number;
+  lastSavedAt?: number; // unix ms
 };
 
 const CH = typeof window !== "undefined" ? new BroadcastChannel("ems-study-sync") : null;
@@ -71,8 +72,10 @@ export const StudyStore = {
   markSaved(courseId: number, hash: string) {
     const p = load(courseId);
     p.lastSavedHash = hash;
+    p.lastSavedAt = Date.now();
     save(courseId, p);
   },
+  getLastSavedAt(courseId: number): number | null { return load(courseId).lastSavedAt || null; },
   addLessonComplete(courseId: number, lessonId: number) {
     if (!courseId || !lessonId) return;
     const p = load(courseId);

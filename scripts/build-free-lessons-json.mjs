@@ -5,6 +5,7 @@
 import { sql } from "@vercel/postgres";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 function outDir() {
   return path.join(process.cwd(), "public", "free-lessons", "v1");
@@ -44,9 +45,11 @@ async function fetchLessonPayload(slug) {
     lessons = lsr.rows.map((r)=>({ id: Number(r.id), slug: String(r.slug), title: String(r.title), position: Number(r.position||0) }));
   }
 
-  // questions without correct flags
+  // questions without correct flags (lesson + optional chapter-wide with cap)
+  const MAX_CHAPTER_QUESTIONS = Number(process.env.FREE_JSON_MAX_CHAPTER_Q || 400);
   const qr = await sql`SELECT id, prompt FROM questions WHERE lesson_id=${l.id} ORDER BY COALESCE(rank_key,'')`;
   let questions = [];
+  let questionsByLesson = {};
   if (qr.rows.length) {
     const qids = qr.rows.map((r)=>Number(r.id));
     const cr = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${qids as any}) ORDER BY id`;
@@ -54,6 +57,26 @@ async function fetchLessonPayload(slug) {
       const arr = byQ.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ.set(Number(c.question_id), arr);
     }
     questions = qr.rows.map((q)=>({ id: Number(q.id), prompt: String(q.prompt), choices: byQ.get(Number(q.id)) || [] }));
+  }
+  // Chapter-wide (cap total number to keep files reasonably small)
+  if (lessons.length) {
+    let remaining = Math.max(0, MAX_CHAPTER_QUESTIONS - questions.length);
+    if (remaining > 0) {
+      const ids = lessons.map((x)=>Number(x.id));
+      const qr2 = await sql`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${ids as any}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
+      const capped = [];
+      for (const r of qr2.rows) { if (remaining <= 0) break; capped.push(r); remaining--; }
+      if (capped.length) {
+        const qids2 = capped.map((r)=>Number(r.id));
+        const cr2 = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${qids2 as any}) ORDER BY id`;
+        const byQ2 = new Map(); for (const c of cr2.rows) { const arr = byQ2.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ2.set(Number(c.question_id), arr); }
+        for (const r of capped) {
+          const lid = String(Number(r.lesson_id));
+          if (!questionsByLesson[lid]) questionsByLesson[lid] = [];
+          questionsByLesson[lid].push({ id: Number(r.id), prompt: String(r.prompt), choices: byQ2.get(Number(r.id)) || [] });
+        }
+      }
+    }
   }
 
   // Player info for guests: best-effort extraction of iframe src if YouTube
@@ -73,6 +96,7 @@ async function fetchLessonPayload(slug) {
     player: { iframeSrc, src },
     html: String(l.body || ''),
     questions,
+    questionsByLesson,
   };
 }
 
@@ -81,14 +105,36 @@ async function main() {
   fs.mkdirSync(dir, { recursive: true });
   const slugs = await fetchFreeLessonSlugs();
   const index = [];
+  const sha1 = (obj) => crypto.createHash('sha1').update(JSON.stringify(obj)).digest('hex');
   for (const slug of slugs) {
     try {
       const data = await fetchLessonPayload(slug);
       if (!data) continue;
+      // Add hash for change detection
+      const hash = sha1({
+        l: data.lesson,
+        c: data.course,
+        ch: data.chapter,
+        ls: data.lessons,
+        p: data.player,
+        h: data.html,
+        q: data.questions,
+        qb: data.questionsByLesson || null,
+      });
+      data.hash = hash;
       const p = path.join(dir, `${slug}.json`);
-      fs.writeFileSync(p, JSON.stringify(data));
+      let shouldWrite = true;
+      if (fs.existsSync(p)) {
+        try {
+          const prev = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (prev?.hash && prev.hash === hash) shouldWrite = false;
+        } catch {}
+      }
+      if (shouldWrite) {
+        fs.writeFileSync(p, JSON.stringify(data));
+        console.log(`[free-lessons] wrote ${p}`);
+      }
       index.push({ slug, title: data.lesson.title, courseSlug: data.course.slug });
-      console.log(`[free-lessons] wrote ${p}`);
     } catch (e) {
       console.warn(`[free-lessons] failed for ${slug}:`, e.message);
     }
@@ -97,4 +143,3 @@ async function main() {
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
-

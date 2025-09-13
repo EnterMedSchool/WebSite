@@ -1,0 +1,45 @@
+name: Build Free Lessons JSON
+
+on:
+  push:
+    branches: [ main, master ]
+  schedule:
+    - cron: '17 */6 * * *' # every 6 hours at :17
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: free-lessons-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        run: npm ci
+
+      - name: Build free lessons JSON
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          FREE_JSON_MAX_CHAPTER_Q: '400'
+        run: npm run lessons:free
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore(free-lessons): refresh static JSON"
+            git push
+          fi

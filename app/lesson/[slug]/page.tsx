@@ -93,6 +93,7 @@ export default function LessonPage() {
   const relevantQuestions = useMemo<LessonQuestionItem[]>(() => {
     let arr: any[] = [];
     if (bundle?.questionsByLesson && lessonId) arr = bundle.questionsByLesson[String(lessonId)] || [];
+    else if (guest?.questionsByLesson && lessonId) arr = guest.questionsByLesson[String(lessonId)] || [];
     else if (guest?.questions) arr = guest.questions || [];
     if (!arr.length) return [];
     const qProg: Record<string, any> = (bundle?.progress?.questions || {}) as any;
