@@ -53,7 +53,7 @@ function CourseMatesWidget() {
       whileInView={{ rotate: 0, y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 100, damping: 14 }}
       viewport={{ once: true, amount: 0.4 }}
-      className="relative isolate w-full rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20"
+      className="relative isolate w-full rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-4 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20"
       aria-label="Course Mates Hub preview"
     >
       {/* subtle edge glow */}
@@ -177,22 +177,20 @@ export default function EnterMedSchool2026() {
       <div className="pointer-events-none absolute -bottom-12 left-[-6%] h-72 w-72 rounded-full bg-gradient-to-tr from-emerald-300/12 via-cyan-300/10 to-indigo-300/12 blur-3xl" />
 
       <div className="grid items-center gap-8 md:grid-cols-2">
-        {/* Left copy (darker to sit on the white page background) */}
-        <div className="relative z-10">
+        {/* Left copy (contrasty on white) */}
+        <div className="relative z-10 text-slate-900">
           <div className="mb-2 flex items-center gap-2">
             <NewBadge />
-            <span className="text-xs font-medium uppercase tracking-wider text-indigo-700/90 dark:text-indigo-200/90">Feature wave</span>
+            <span className="text-xs font-medium uppercase tracking-wider text-indigo-700 dark:text-indigo-200">Feature wave</span>
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
             EnterMedSchool <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 via-violet-600 to-fuchsia-600">2026</span>
           </h2>
-          <p className="mt-3 text-base leading-7 text-slate-900 dark:text-slate-100">
-            Enter<span className="relative inline-block">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600">ed</span>
-            </span>{" "}
-            med school already? Cool! Use our website for study material during med school, check the latest events, study materials, and updates from your classmates, gather XP together, compete against other schools, solve clinical cases together — and much more!
+          <p className="mt-3 text-base leading-7 text-slate-800 dark:text-slate-100">
+            Enter<span className="relative inline-block"><span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-600 to-fuchsia-600">ed</span></span>{" "}
+            med school already? Cool! Use our website for study material during med school, check the latest events, study materials, and updates from your classmates, gather XP together, compete against other schools, solve clinical cases together - and much more!
           </p>
-          <ul className="mt-4 grid gap-2 text-sm text-slate-900 dark:text-slate-100">
+          <ul className="mt-4 grid gap-2 text-sm text-slate-800 dark:text-slate-100">
             <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500"/> Course Mates hub with events, notes, and live feed</li>
             <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-500"/> XP, weekly leaderboards, and school vs. school challenges</li>
             <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-fuchsia-500"/> Clinical cases, sprints, and quiz nights</li>
@@ -207,8 +205,8 @@ export default function EnterMedSchool2026() {
           <div className="mt-6 flex flex-wrap gap-2 opacity-80">{news}</div>
         </div>
 
-        {/* Right widget */}
-        <div className="relative md:justify-self-end md:w-[560px] lg:w-[680px] xl:w-[760px] md:translate-x-8 lg:translate-x-16 xl:translate-x-24 2xl:translate-x-32 md:scale-[1.06] lg:scale-[1.12]">
+        {/* Right widget (original size) */}
+        <div className="relative">
           <div className="pointer-events-none absolute -top-6 -right-6 -left-6 h-10 rounded-[32px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.08),transparent)]" />
           <CourseMatesWidget />
         </div>
@@ -216,3 +214,4 @@ export default function EnterMedSchool2026() {
     </section>
   );
 }
+
