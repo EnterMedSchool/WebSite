@@ -30,7 +30,6 @@ function ClientWrapper() {
 }
 
 // Actual Client Component with submission logic
-// eslint-disable-next-line @next/next/no-unstable-nested-components
 function ClientInner() {
   async function onSubmit(values: PostFormValues) {
     const res = await fetch('/api/admin/blog/posts', {
@@ -48,4 +47,3 @@ function ClientInner() {
   }
   return <PostForm onSubmit={onSubmit} submitLabel="Create"/>;
 }
-

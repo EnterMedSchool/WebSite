@@ -45,7 +45,6 @@ function ClientWrapper({ initial, id }: { initial: any; id: number }) {
   return <ClientInner initial={initial} id={id} />;
 }
 
-// eslint-disable-next-line @next/next/no-unstable-nested-components
 function ClientInner({ initial, id }: { initial: any; id: number }) {
   async function onSubmit(values: PostFormValues) {
     const res = await fetch(`/api/admin/blog/posts/${id}`, {
@@ -64,7 +63,6 @@ function ClientInner({ initial, id }: { initial: any; id: number }) {
 }
 
 // Client buttons: open public URL and trigger redeploy
-// eslint-disable-next-line @next/next/no-unstable-nested-components
 function PublishActions({ id, slug, hasDeployHook }: { id: number; slug: string; hasDeployHook: boolean }) {
   async function redeploy() {
     const res = await fetch('/api/admin/redeploy', { method: 'POST' });
