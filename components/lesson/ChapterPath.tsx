@@ -49,20 +49,20 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
     N - 1
   );
 
-  // SVG geometry: responsive via viewBox; layout is 1000x140 units
+  // SVG geometry: responsive via viewBox; compact layout
   const viewW = 1000;
-  const viewH = 140;
+  const viewH = 80;
   const padX = 60;
   const baseY = viewH / 2; // baseline
-  const amp = 28; // amplitude of the wave
+  const amp = 12; // small amplitude for a flatter line
 
   const points = useMemo(() => {
     const out: { x: number; y: number }[] = [];
     for (let i = 0; i < N; i++) {
       const t = i / Math.max(1, N - 1);
       const x = padX + (viewW - padX * 2) * t;
-      // Zigzag gently up/down along the baseline for interest
-      const y = baseY + (i % 2 === 0 ? -amp : amp);
+      // Gentle single-wave curve across the path for compact height
+      const y = baseY + Math.sin(t * Math.PI) * amp * 0.8;
       out.push({ x, y });
     }
     return out;
@@ -107,17 +107,17 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
   }, [length, targetOffset, animate]);
 
   return (
-    <div className="rounded-2xl border bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <div className="mb-2 text-sm font-semibold text-gray-900">Chapter path</div>
+    <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+      <div className="mb-1 text-sm font-semibold text-gray-900">Chapter path</div>
       <div className="relative">
-        <svg viewBox={`0 0 ${viewW} ${viewH}`} className="block h-28 w-full">
+        <svg viewBox={`0 0 ${viewW} ${viewH}`} className="block h-16 w-full">
           {/* Track */}
           <path
             ref={pathRef}
             d={pathD}
             fill="none"
             stroke="url(#trackGradient)"
-            strokeWidth={8}
+            strokeWidth={7}
             strokeLinecap="round"
           />
           {/* Animated progress overlay */}
@@ -126,7 +126,7 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
             d={pathD}
             fill="none"
             stroke="url(#progressGradient)"
-            strokeWidth={9}
+            strokeWidth={8}
             strokeLinecap="round"
             style={{ strokeDasharray: length, strokeDashoffset: length }}
           />
@@ -148,19 +148,16 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
             const current = i === currentIndex;
             const fill = done ? "#10B981" : current ? "#4F46E5" : "#FFFFFF";
             const stroke = done ? "#047857" : current ? "#4338CA" : "#D1D5DB";
-            const r = current ? 9 : 8;
+            const r = current ? 8 : 7;
             return (
               <g key={`dot-${i}`}>
-                {/* Outer ring */}
-                <circle cx={p.x} cy={p.y} r={r + 3} fill="#FFFFFF" stroke={stroke} strokeWidth={2} />
-                {/* Inner dot */}
+                <circle cx={p.x} cy={p.y} r={r + 2} fill="#FFFFFF" stroke={stroke} strokeWidth={2} />
                 <circle cx={p.x} cy={p.y} r={r} fill={fill} stroke={stroke} strokeWidth={1} />
-                {/* Number */}
                 <text
                   x={p.x}
-                  y={p.y + 4}
+                  y={p.y + 3}
                   textAnchor="middle"
-                  fontSize="10"
+                  fontSize="9"
                   fontWeight={700}
                   fill={done || current ? "#FFFFFF" : "#6B7280"}
                 >
@@ -170,31 +167,7 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
             );
           })}
         </svg>
-
-        {/* Step labels (below) */}
-        <ol className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {steps.map((s, i) => {
-            const done = i < currentIndex;
-            const current = i === currentIndex;
-            const cls = done
-              ? "bg-emerald-50 text-emerald-900 ring-emerald-200"
-              : current
-                ? "bg-indigo-600 text-white ring-indigo-600"
-                : "bg-white text-gray-800 hover:bg-indigo-50 ring-gray-200";
-            return (
-              <li key={s.key} className="min-w-0">
-                <div className={`inline-flex max-w-full items-center gap-2 truncate rounded-full px-3 py-2 text-sm font-semibold ring-1 transition ${cls}`}>
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-700">
-                    {i + 1}
-                  </span>
-                  <span className="truncate">{s.title}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
       </div>
     </div>
   );
 }
-
