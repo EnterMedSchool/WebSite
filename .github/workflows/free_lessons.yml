@@ -7,6 +7,9 @@ on:
     - cron: '17 */6 * * *' # every 6 hours at :17
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     if: ${{ github.actor != 'github-actions[bot]' }}
@@ -24,11 +27,12 @@ jobs:
           node-version: '20'
 
       - name: Install
-        run: npm ci
+        run: npm ci || npm i
 
       - name: Build free lessons JSON
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL }}
           FREE_JSON_MAX_CHAPTER_Q: '400'
         run: npm run lessons:free
 
