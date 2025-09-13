@@ -1,10 +1,6 @@
 name: Build Free Lessons JSON
 
 on:
-  push:
-    branches: [ main, master ]
-  schedule:
-    - cron: '17 */6 * * *' # every 6 hours at :17
   workflow_dispatch: {}
 
 permissions:
