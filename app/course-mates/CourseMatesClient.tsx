@@ -47,6 +47,8 @@ export default function CourseMatesClient({ authed, initial }: {
   const [isPublic, setIsPublic] = useState<boolean>(false);
   const [lb, setLb] = useState<{ weekly: any[]; all: any[] } | null>(null);
   const [isAdmin] = useState<boolean>(Boolean((initial as any).isAdmin));
+  const [refreshing, setRefreshing] = useState(false);
+  const now = new Date();
 
   // Load privacy flag on mount if authed
   useEffect(() => {
@@ -61,6 +63,66 @@ export default function CourseMatesClient({ authed, initial }: {
     (async () => { try { const r = await fetch('/api/course-mates/leaderboard', { credentials: 'include' }); if (r.ok) setLb(await r.json()); } catch {} })();
   }, [authed]);
 
+  async function reloadAll() {
+    try {
+      setRefreshing(true);
+      const [f, e, p, l] = await Promise.all([
+        fetch('/api/course-mates/feed', { credentials: 'include' }),
+        fetch('/api/course-mates/events', { credentials: 'include' }),
+        fetch('/api/course-mates/photos', { credentials: 'include' }),
+        fetch('/api/course-mates/leaderboard', { credentials: 'include' }),
+      ]);
+      if (f.ok) { const j = await f.json(); setFeed(j.data || j || []); }
+      if (e.ok) { const j = await e.json(); setEvents(j.data || j || []); }
+      if (p.ok) { const j = await p.json(); setPhotos(j.data || j || []); }
+      if (l.ok) { setLb(await l.json()); }
+    } catch {}
+    finally { setRefreshing(false); }
+  }
+
+  // tiny sparkline helper (placeholder for course XP series)
+  const Spark = ({ values, color = '#6366f1' }: { values: number[]; color?: string }) => {
+    const W = 140, H = 40, P = 4; const n = Math.max(1, values.length);
+    const max = Math.max(1, ...values);
+    const x = (i: number) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
+    const y = (v: number) => H - P - (v / max) * (H - 2 * P);
+    const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' ');
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-8 w-36">
+        <path d={d} fill="none" stroke={color} strokeWidth="2" />
+      </svg>
+    );
+  };
+
+  const feedLimited = (feed || []).slice(0, 5);
+
+  // derive past events for gallery cards
+  const pastEvents = useMemo(() => {
+    const list = (events || []).filter((e: any) => {
+      const t = new Date(e.start_at || e.startAt || e.date || 0).getTime();
+      return Number.isFinite(t) && t < Date.now();
+    });
+    list.sort((a: any, b: any) => new Date(b.start_at || b.startAt || 0).getTime() - new Date(a.start_at || a.startAt || 0).getTime());
+    return list.slice(0, 6);
+  }, [events]);
+
+  // photo counts keyed by event id if available
+  const photoCountByEvent: Record<string, number> = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const p of photos || []) {
+      const k = String((p as any).event_id || (p as any).eventId || (p as any).event || '');
+      if (!k) continue; map[k] = (map[k] || 0) + 1;
+    }
+    return map;
+  }, [photos]);
+
+  // placeholder 7-day course XP sparkline
+  const xp7 = useMemo(() => {
+    const base = Math.max(3, Number(summary?.matesCount || 5));
+    const seed = now.getDate() % 7;
+    return new Array(7).fill(0).map((_, i) => Math.round(base * (1 + ((i + seed) % 3) * 0.4)));
+  }, [summary?.matesCount]);
+
   const initials = useMemo(() => (name?: string | null) => {
     const n = (name || "").trim();
     if (!n) return "U";
@@ -68,9 +130,13 @@ export default function CourseMatesClient({ authed, initial }: {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <h1 className="text-2xl font-semibold">Your Course Mates</h1>
-      <p className="text-gray-600">Connect with students from your university, school and course. Set your details to see your mates and relevant student organizations.</p>
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      {/* Mobile placeholder, desktop-only for now */}
+      <div className="md:hidden rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-700">
+        Course Hub is optimized for desktop. Mobile layout coming soon.
+      </div>
+      <h1 className="hidden md:block text-2xl font-semibold text-gray-900">Your Course Mates</h1>
+      <p className="hidden md:block text-gray-600">Connect with students from your university, school and course. Set your details to see your mates and relevant student organizations.</p>
 
       {(access === "verified" || access === "pending") && (
         <div className="mt-6 space-y-6">
@@ -104,7 +170,7 @@ export default function CourseMatesClient({ authed, initial }: {
               <div className="text-lg font-semibold">Highlights</div>
               <a href="#feed" className="text-xs font-semibold text-indigo-700 hover:underline">See feed</a>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-4">
               <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
                 <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Active now</div>
                 <div className="mt-1 text-2xl font-extrabold text-indigo-900">{summary?.activeNow ?? 0}</div>
@@ -125,38 +191,24 @@ export default function CourseMatesClient({ authed, initial }: {
                 <div className="mt-1 text-2xl font-extrabold text-amber-900">{summary?.matesCount ?? 0}</div>
                 <div className="text-xs text-amber-800/80">verified classmates</div>
               </div>
-            </div>
-            {/* Privacy toggle */}
-            <div className="mt-3 rounded-xl border bg-gray-50 p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
-                  <div className="text-[11px] text-gray-600">Public profiles appear across the website (e.g., university counts and Course Mates). This includes your name, username and profile picture. You can change this anytime.</div>
+              <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Course XP</div>
+                  <span className="text-[10px] text-indigo-700/80">Last 7 days</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={async()=>{
-                    const next = !isPublic;
-                    if (next) {
-                      const ok = window.confirm('Are you sure you want to make your profile public?\n\nYour name, username and profile picture will be visible across EnterMedSchool (e.g., Course Mates and university pages). You can switch this off anytime.');
-                      if (!ok) return;
-                    }
-                    setIsPublic(next);
-                    try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {}
-                  }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
-                  aria-pressed={isPublic}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+                <div className="mt-1 flex items-end justify-between">
+                  <div className="text-2xl font-extrabold text-indigo-900">—</div>
+                  <Spark values={xp7} />
+                </div>
               </div>
             </div>
+            {/* Privacy toggle moved to Settings (below) */}
           </div>
 
           {/* Feed */}
           <div id="feed" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <div className="text-lg font-semibold">Course Feed</div>
+              <div className="text-lg font-semibold">Latest Updates</div>
               {access === 'verified' && (
                 <form className="flex items-center gap-2" onSubmit={async (e)=>{ e.preventDefault(); const t = newPost.trim(); if(!t) return; try { const r = await fetch('/api/course-mates/feed', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: t }) }); if(r.ok){ const j = await r.json(); setFeed(j.data || []); setNewPost(''); } } catch{} }}>
                   <input value={newPost} onChange={(e)=>setNewPost(e.target.value)} placeholder="Post an update" className="w-64 rounded-lg border px-3 py-1.5 text-sm" />
@@ -165,7 +217,7 @@ export default function CourseMatesClient({ authed, initial }: {
               )}
             </div>
             <ul className="space-y-3">
-              {feed.map((p:any) => (
+              {feedLimited.map((p:any) => (
                 <li key={p.id} className="rounded-xl border border-gray-200 p-3">
                   <div className="flex items-start gap-3">
                     <div className="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{initials(p.name || p.username)}</div>
@@ -181,29 +233,61 @@ export default function CourseMatesClient({ authed, initial }: {
               ))}
               {!feed.length && <li className="rounded-xl border border-gray-200 p-3 text-sm text-gray-600">No posts yet.</li>}
             </ul>
+            {feed.length > 5 && (
+              <div className="mt-3 text-center text-xs text-gray-600">Showing latest 5 updates.</div>
+            )}
           </div>
 
           {/* Leaderboard */}
           <div id="leaderboard" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 text-lg font-semibold">Leaderboard</div>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Leaderboard</div>
+              <div className="text-[11px] text-gray-500">Top performers in your course</div>
+            </div>
             <div className="text-xs font-semibold text-gray-600">This Week</div>
             <ul className="mt-1 space-y-1">
-              {(lb?.weekly || []).map((r:any, i:number) => (
-                <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-1.5 text-sm">
-                  <div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">#{i+1}</span><span className="font-medium text-gray-800">{r.name || r.username || 'Student'}</span></div>
-                  <span className="text-xs text-indigo-700">{Number(r.weekly_xp || 0)} XP</span>
-                </li>
-              ))}
+              {(lb?.weekly || []).map((r:any, i:number) => {
+                const isTop3 = i < 3; const medal = i===0? '🥇' : i===1? '🥈' : i===2? '🥉' : null;
+                const xp = Number(r.weekly_xp || 0);
+                const bar = Math.min(100, Math.round((xp / Math.max(1, Number((lb?.weekly?.[0]||{}).weekly_xp || xp))) * 100));
+                return (
+                  <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${isTop3 ? 'bg-gradient-to-r from-indigo-50 to-fuchsia-50 ring-indigo-200' : 'bg-white ring-gray-200'}`}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`grid h-7 w-7 place-items-center rounded-full ${isTop3 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>{medal || `#${i+1}`}</span>
+                      <span className="truncate font-medium text-gray-800">{r.name || r.username || 'Student'}</span>
+                    </div>
+                    <div className="ml-3 flex w-40 items-center gap-2">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div className={`h-2 rounded-full ${isTop3 ? 'bg-indigo-500' : 'bg-gray-300'}`} style={{ width: `${bar}%` }} />
+                      </div>
+                      <span className={`shrink-0 text-xs ${isTop3 ? 'text-indigo-700' : 'text-gray-700'}`}>{xp} XP</span>
+                    </div>
+                  </li>
+                );
+              })}
               {!lb?.weekly?.length && <li className="rounded-lg border px-3 py-1.5 text-sm text-gray-600">No data yet.</li>}
             </ul>
             <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
             <ul className="mt-1 space-y-1">
-              {(lb?.all || []).map((r:any, i:number) => (
-                <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-1.5 text-sm">
-                  <div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">#{i+1}</span><span className="font-medium text-gray-800">{r.name || r.username || 'Student'}</span></div>
-                  <span className="text-xs text-amber-700">{Number(r.xp || 0)} XP</span>
-                </li>
-              ))}
+              {(lb?.all || []).map((r:any, i:number) => {
+                const isTop3 = i < 3; const medal = i===0? '🏆' : i===1? '🥈' : i===2? '🥉' : null;
+                const xp = Number(r.xp || 0);
+                const bar = Math.min(100, Math.round((xp / Math.max(1, Number((lb?.all?.[0]||{}).xp || xp))) * 100));
+                return (
+                  <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${isTop3 ? 'bg-gradient-to-r from-amber-50 to-rose-50 ring-amber-200' : 'bg-white ring-gray-200'}`}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`grid h-7 w-7 place-items-center rounded-full ${isTop3 ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>{medal || `#${i+1}`}</span>
+                      <span className="truncate font-medium text-gray-800">{r.name || r.username || 'Student'}</span>
+                    </div>
+                    <div className="ml-3 flex w-40 items-center gap-2">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div className={`h-2 rounded-full ${isTop3 ? 'bg-amber-500' : 'bg-gray-300'}`} style={{ width: `${bar}%` }} />
+                      </div>
+                      <span className={`shrink-0 text-xs ${isTop3 ? 'text-amber-700' : 'text-gray-700'}`}>{xp} XP</span>
+                    </div>
+                  </li>
+                );
+              })}
               {!lb?.all?.length && <li className="rounded-lg border px-3 py-1.5 text-sm text-gray-600">No data yet.</li>}
             </ul>
           </div>

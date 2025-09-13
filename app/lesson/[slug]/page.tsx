@@ -5,11 +5,14 @@ import { useParams } from "next/navigation";
 import VideoPanel from "@/components/lesson/VideoPanel";
 import TranscriptPanel from "@/components/lesson/TranscriptPanel";
 import UniResources from "@/components/lesson/UniResources";
-import AnkiDownload from "@/components/lesson/AnkiDownload";
+// import AnkiDownload from "@/components/lesson/AnkiDownload";
+import FlashcardsCTA from "@/components/lesson/FlashcardsCTA";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
 import BackgroundMap from "@/components/lesson/BackgroundMap";
 import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
+import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
+import { dicDeck } from "@/data/flashcards/dic";
 
 export default function LessonPage() {
   const { slug: rawSlug } = useParams();
@@ -19,6 +22,7 @@ export default function LessonPage() {
   const [focusMode, setFocusMode] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [fav, setFav] = useState(false);
+  const [flashcardsOpen, setFlashcardsOpen] = useState(false);
 
   // Fake UI data (no network calls)
   const course = { slug: "hematology", title: "Hematology" };
@@ -50,6 +54,7 @@ export default function LessonPage() {
 
   return (
     <div className="mx-auto max-w-[1400px] p-6">
+      <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
       {/* Header – UI only */}
       <div className="sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -258,10 +263,10 @@ export default function LessonPage() {
               <div className="px-2 pb-2"><Glossary /></div>
             </details>
             <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
-              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Download center</summary>
+              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Flashcards</summary>
               <div className="space-y-3 px-2 pb-2">
+                <FlashcardsCTA count={10} tags={["hematology","coagulation","DIC"]} onStart={() => setFlashcardsOpen(true)} />
                 <UniResources enabled={false} comingSoon />
-                <AnkiDownload comingSoon />
               </div>
             </details>
             <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
