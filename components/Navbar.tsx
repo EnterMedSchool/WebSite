@@ -6,8 +6,6 @@ import { authOptions } from "@/lib/auth";
 import UserMenu from "@/components/auth/UserMenu";
 import AdaptiveNav from "@/components/nav/AdaptiveNav";
 import CommandPalette from "@/components/nav/CommandPalette";
-import SearchTrigger from "@/components/nav/SearchTrigger";
-import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 import LeoLogo from "@/assets/LeoLogoWebsite.png";
 import { db, sql } from "@/lib/db";
 import { users } from "@/drizzle/schema";
@@ -56,7 +54,7 @@ export default async function Navbar() {
 
   const studyEnabled = (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === '1') || (process.env.NEXT_PUBLIC_STUDY_ROOMS_ENABLED === 'true') || (process.env.STUDY_ROOMS_ENABLED === '1') || (process.env.STUDY_ROOMS_ENABLED === 'true');
   const navItems = [
-    { key: 'universities', label: 'UNIVERSITIES', element: (<UniversitiesMenu />) },
+    { key: 'universities', label: 'UNIVERSITIES', kind: 'universities' as const },
     { key: 'exams', label: 'EXAMS', href: '/#exams' },
     { key: 'imat', label: 'IMAT COURSE', href: '/#imat' },
     { key: 'communities', label: 'COMMUNITIES', href: '/#communities' },
@@ -65,7 +63,7 @@ export default async function Navbar() {
     ...(studyEnabled ? [{ key: 'library', label: 'VIRTUAL LIBRARY', href: '/study-rooms' }] : [] as any),
     { key: 'scholarships', label: 'SCHOLARSHIPS', href: '/#scholarships' },
     { key: 'blog', label: 'BLOG', href: '/blog' },
-    { key: 'search', label: 'SEARCH', element: (<SearchTrigger />) },
+    { key: 'search', label: 'SEARCH', kind: 'search' as const },
   ];
 
   return (

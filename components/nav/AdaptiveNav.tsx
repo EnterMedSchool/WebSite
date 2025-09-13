@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import HaloNav from "@/components/nav/HaloNav";
+import SearchTrigger from "@/components/nav/SearchTrigger";
+import UniversitiesMenu from "@/components/nav/UniversitiesMenu";
 
 export type AdaptiveItem = {
   key: string;
   label: string;
   href?: string;
-  element?: ReactNode; // custom trigger like UniversitiesMenu or SearchTrigger
+  // Built-in interactive items rendered on the client to avoid passing
+  // elements with event handlers from server → client via props.
+  kind?: "link" | "universities" | "search";
 };
 
 type Props = {
@@ -72,8 +76,10 @@ export default function AdaptiveNav({ items }: Props) {
       <HaloNav className="hidden w-full min-w-0 overflow-hidden md:flex items-center justify-center gap-1">
         {visible.map((it) => (
           <div key={it.key} className="shrink-0">
-            {it.element ? (
-              it.element
+            {it.kind === 'universities' ? (
+              <UniversitiesMenu />
+            ) : it.kind === 'search' ? (
+              <SearchTrigger />
             ) : (
               <Link data-nav-link href={it.href || '#'} className="rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white/90 hover:text-white">
                 {it.label}
@@ -98,8 +104,10 @@ export default function AdaptiveNav({ items }: Props) {
               <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[220px] rounded-2xl border border-white/20 bg-white/95 p-1 shadow-xl backdrop-blur">
                 {hidden.map((it) => (
                   <div key={it.key} className="p-1">
-                    {it.element ? (
-                      it.element
+                    {it.kind === 'universities' ? (
+                      <UniversitiesMenu />
+                    ) : it.kind === 'search' ? (
+                      <SearchTrigger />
                     ) : (
                       <Link href={it.href || '#'} className="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-800 hover:bg-indigo-50">
                         {it.label}
@@ -122,11 +130,7 @@ export default function AdaptiveNav({ items }: Props) {
             }}
             className="shrink-0"
           >
-            {it.element ? (
-              <span className="inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide">{it.label}</span>
-            ) : (
-              <span className="inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide">{it.label}</span>
-            )}
+            <span className="inline-block rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide">{it.label}</span>
           </div>
         ))}
         <button ref={moreRef} className="rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wide">More</button>
