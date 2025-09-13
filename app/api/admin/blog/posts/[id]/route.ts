@@ -9,7 +9,22 @@ export const revalidate = 0;
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "invalid_id" }, { status: 400 });
-  const row = (await db.select().from(posts).where(eq(posts.id as any, id)).limit(1))[0];
+  const row = (
+    await db
+      .select({
+        id: posts.id,
+        slug: posts.slug,
+        title: posts.title,
+        body: posts.body,
+        published: posts.published,
+        coverImageUrl: posts.coverImageUrl,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(eq(posts.id as any, id))
+      .limit(1)
+  )[0];
   if (!row) return NextResponse.json({ error: "not_found" }, { status: 404 });
   return NextResponse.json(row);
 }

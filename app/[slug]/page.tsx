@@ -4,43 +4,60 @@ import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-export const dynamic = "error"; // force SSG
+// This page uses DB data and global Navbar calls noStore(),
+// so force dynamic rendering to avoid SSG/export failures.
+export const dynamic = "force-dynamic";
 
 async function getPostBySlug(slug: string) {
-  const row = (await db.select().from(posts).where(eq(posts.slug as any, slug)).limit(1))[0];
+  // Select only stable columns (omit recently added ones like `excerpt`).
+  const row = (
+    await db
+      .select({
+        id: posts.id,
+        slug: posts.slug,
+        title: posts.title,
+        body: posts.body,
+        published: posts.published,
+        coverImageUrl: posts.coverImageUrl,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(eq(posts.slug as any, slug))
+      .limit(1)
+  )[0];
   return row as any;
 }
 
-export async function generateStaticParams() {
-  const list = await db.select({ slug: posts.slug }).from(posts).where(eq(posts.published as any, true));
-  return list.map(({ slug }) => ({ slug }));
-}
+// Disable pre-rendering of all post slugs during build. The DB schema
+// may differ across environments; rendering at request time is safer.
+// If you want SSG later, re-enable and ensure DB has needed columns.
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { slug } = params;
   const p = await getPostBySlug(slug);
   if (!p || !p.published) return {};
-  const title = p.metaTitle || p.title;
-  const description = p.metaDescription || p.excerpt || undefined;
-  const canonical = p.canonicalUrl || `/${p.slug}`;
-  const ogImage = p.ogImageUrl || p.coverImageUrl || undefined;
-  const twitterImage = p.twitterImageUrl || ogImage;
+  const title = p.title;
+  const description = undefined;
+  const canonical = `/${p.slug}`;
+  const ogImage = p.coverImageUrl || undefined;
+  const twitterImage = ogImage;
   return {
     title,
     description,
-    robots: { index: !p.noindex },
+    robots: { index: true },
     alternates: { canonical },
     openGraph: {
-      title: p.ogTitle || title,
-      description: p.ogDescription || description,
+      title,
+      description,
       url: canonical,
       type: "article",
       images: ogImage ? [{ url: ogImage }] : undefined,
     },
     twitter: {
-      card: (p.twitterCard as any) || "summary_large_image",
-      title: p.twitterTitle || title,
-      description: p.twitterDescription || description,
+      card: "summary_large_image",
+      title,
+      description,
       images: twitterImage ? [twitterImage] : undefined,
     },
   };
@@ -78,4 +95,3 @@ export default async function PostPage({ params }: { params: { slug: string } })
     </article>
   );
 }
-

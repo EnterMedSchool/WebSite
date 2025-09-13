@@ -9,7 +9,11 @@ export const revalidate = 0;
 export default async function AdminBlogIndexPage() {
   const admin = await requireAdminEmail();
   if (!admin) return <div className="p-6 text-red-600">Access denied.</div>;
-  const list = await db.select().from(posts).orderBy(desc(posts.updatedAt as any)).limit(100);
+  const list = await db
+    .select({ id: posts.id, title: posts.title, slug: posts.slug, published: posts.published, updatedAt: posts.updatedAt })
+    .from(posts)
+    .orderBy(desc(posts.updatedAt as any))
+    .limit(100);
   return (
     <div className="mx-auto max-w-6xl p-6">
       <div className="flex items-center justify-between">
@@ -47,4 +51,3 @@ export default async function AdminBlogIndexPage() {
     </div>
   );
 }
-

@@ -11,7 +11,22 @@ export default async function EditPostPage({ params }: { params: { id: string } 
   const admin = await requireAdminEmail();
   if (!admin) return <div className="p-6 text-red-600">Access denied.</div>;
   const id = Number(params.id);
-  const post = (await db.select().from(posts).where(eq(posts.id as any, id)).limit(1))[0];
+  const post = (
+    await db
+      .select({
+        id: posts.id,
+        slug: posts.slug,
+        title: posts.title,
+        body: posts.body,
+        published: posts.published,
+        coverImageUrl: posts.coverImageUrl,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(eq(posts.id as any, id))
+      .limit(1)
+  )[0];
   if (!post) return <div className="p-6">Post not found.</div>;
   const hasDeployHook = Boolean(process.env.VERCEL_DEPLOY_HOOK_URL);
 
