@@ -2,7 +2,7 @@
 // Export free lessons as static JSON for CDN serving to guests (no serverless calls).
 // Usage: node scripts/build-free-lessons-json.mjs
 
-import { createPool, sql as baseSql } from "@vercel/postgres";
+import { createClient, sql as baseSql } from "@vercel/postgres";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -13,14 +13,14 @@ if (!connectionString) {
   console.error("[free-lessons] Missing Postgres connection string. Set POSTGRES_URL or DATABASE_URL.");
   process.exit(2);
 }
-const { sql } = createPool({ connectionString });
+let db; // set in main() after connecting a client
 
 function outDir() {
   return path.join(process.cwd(), "public", "free-lessons", "v1");
 }
 
 async function fetchFreeLessonSlugs() {
-  const r = await sql`
+  const r = await db`
     SELECT l.slug
     FROM lessons l
     JOIN courses c ON c.id = l.course_id
@@ -31,7 +31,7 @@ async function fetchFreeLessonSlugs() {
 }
 
 async function fetchLessonPayload(slug) {
-  const lr = await sql`SELECT l.id, l.slug, l.title, l.course_id, l.video_html, l.body,
+  const lr = await db`SELECT l.id, l.slug, l.title, l.course_id, l.video_html, l.body,
                               c.id AS course_id2, c.slug AS course_slug, c.title AS course_title
                          FROM lessons l JOIN courses c ON c.id=l.course_id
                         WHERE l.slug=${slug} LIMIT 1`;
@@ -39,14 +39,14 @@ async function fetchLessonPayload(slug) {
   if (!l) return null;
 
   // chapter and lessons in chapter
-  const ch = await sql`SELECT c.id, c.slug, c.title, c.position, cl.chapter_id
+  const ch = await db`SELECT c.id, c.slug, c.title, c.position, cl.chapter_id
                          FROM chapter_lessons cl JOIN chapters c ON c.id=cl.chapter_id
                         WHERE cl.lesson_id=${l.id}
                      ORDER BY cl.position ASC, cl.chapter_id ASC LIMIT 1`;
   let chapter = null; let lessons = [];
   if (ch.rows[0]?.chapter_id) {
     chapter = { id: Number(ch.rows[0].id), slug: String(ch.rows[0].slug), title: String(ch.rows[0].title), position: Number(ch.rows[0].position||0) };
-    const lsr = await sql`SELECT l.id, l.slug, l.title, cl.position
+    const lsr = await db`SELECT l.id, l.slug, l.title, cl.position
                             FROM chapter_lessons cl JOIN lessons l ON l.id=cl.lesson_id
                            WHERE cl.chapter_id=${ch.rows[0].chapter_id}
                         ORDER BY cl.position ASC, l.id ASC`;
@@ -55,13 +55,13 @@ async function fetchLessonPayload(slug) {
 
   // questions without correct flags (lesson + optional chapter-wide with cap)
   const MAX_CHAPTER_QUESTIONS = Number(process.env.FREE_JSON_MAX_CHAPTER_Q || 400);
-  const qr = await sql`SELECT id, prompt FROM questions WHERE lesson_id=${l.id} ORDER BY COALESCE(rank_key,'')`;
+  const qr = await db`SELECT id, prompt FROM questions WHERE lesson_id=${l.id} ORDER BY COALESCE(rank_key,'')`;
   let questions = [];
   let questionsByLesson = {};
   if (qr.rows.length) {
     const qids = qr.rows.map((r)=>Number(r.id));
     // Pass array properly to @vercel/postgres
-    const cr = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${baseSql.array(qids, 'int4')}) ORDER BY id`;
+    const cr = await db`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${baseSql.array(qids, 'int4')}) ORDER BY id`;
     const byQ = new Map(); for (const c of cr.rows) {
       const arr = byQ.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ.set(Number(c.question_id), arr);
     }
@@ -72,12 +72,12 @@ async function fetchLessonPayload(slug) {
     let remaining = Math.max(0, MAX_CHAPTER_QUESTIONS - questions.length);
     if (remaining > 0) {
       const ids = lessons.map((x)=>Number(x.id));
-      const qr2 = await sql`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${baseSql.array(ids, 'int4')}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
+      const qr2 = await db`SELECT id, prompt, lesson_id FROM questions WHERE lesson_id = ANY(${baseSql.array(ids, 'int4')}) ORDER BY lesson_id, COALESCE(rank_key,'')`;
       const capped = [];
       for (const r of qr2.rows) { if (remaining <= 0) break; capped.push(r); remaining--; }
       if (capped.length) {
         const qids2 = capped.map((r)=>Number(r.id));
-        const cr2 = await sql`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${baseSql.array(qids2, 'int4')}) ORDER BY id`;
+        const cr2 = await db`SELECT id, question_id, content FROM choices WHERE question_id = ANY(${baseSql.array(qids2, 'int4')}) ORDER BY id`;
         const byQ2 = new Map(); for (const c of cr2.rows) { const arr = byQ2.get(Number(c.question_id)) || []; arr.push({ id: Number(c.id), text: String(c.content) }); byQ2.set(Number(c.question_id), arr); }
         for (const r of capped) {
           const lid = String(Number(r.lesson_id));
@@ -110,6 +110,10 @@ async function fetchLessonPayload(slug) {
 }
 
 async function main() {
+  // connect client
+  const client = createClient({ connectionString });
+  await client.connect();
+  db = client.sql;
   const dir = outDir();
   fs.mkdirSync(dir, { recursive: true });
   const slugs = await fetchFreeLessonSlugs();
@@ -149,6 +153,7 @@ async function main() {
     }
   }
   fs.writeFileSync(path.join(dir, `index.json`), JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), lessons: index }));
+  try { await client.end(); } catch {}
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
