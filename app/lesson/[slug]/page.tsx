@@ -33,7 +33,10 @@ export default function LessonPage() {
   const [completed, setCompleted] = useState(false);
   const [fav, setFav] = useState(false);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return !!(window as any).__ems_authed;
+  });
 
   // Lesson bundle (questions + chapter lessons + progress) — requires login
   const [bundle, setBundle] = useState<any | null>(null);
@@ -44,7 +47,7 @@ export default function LessonPage() {
   useEffect(() => {
     let alive = true;
     setBundle(null); setBundleErr(null); setGuest(null);
-    const hasAuth = typeof document !== 'undefined' && /(?:^|; )(__Secure-next-auth\.session-token|next-auth\.session-token)=/.test(document.cookie);
+    const hasAuth = typeof window !== 'undefined' ? !!(window as any).__ems_authed : false;
     setAuthed(hasAuth);
 
     if (hasAuth) {
@@ -108,6 +111,8 @@ export default function LessonPage() {
     } catch {}
     return () => { alive = false; };
   }, [slug]);
+
+  
 
   // Reflect server progress (when logged in) into local UI state
   useEffect(() => {
@@ -207,7 +212,7 @@ export default function LessonPage() {
               {fav ? '♥' : '♡'}
             </button>
             <button
-              disabled={!authed}
+              disabled={!authed || !bundle?.lesson?.courseId || !bundle?.lesson?.id}
               onClick={() => {
                 if (!authed) return;
                 if (bundle?.lesson?.courseId && bundle?.lesson?.id) {
