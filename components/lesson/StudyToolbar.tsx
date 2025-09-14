@@ -15,8 +15,10 @@ type Props = {
   practiceHint?: string;
   chapterCount?: number;
   activeStep?: number;
-  chapterLabels?: string[];
-  chapterCompleted?: boolean[];
+  chapterLabels?: string[]; // tooltips for dots (0 = chapter overview, rest = lessons)
+  chapterCompleted?: boolean[]; // flags per dot (0..N-1)
+  // Optional expanded menu of lessons to navigate to. Excludes the synthetic "chapter" dot.
+  lessonMenu?: { title: string; href: string; total?: number; done?: boolean; current?: boolean }[];
 };
 
 function IconBook() {
@@ -64,9 +66,10 @@ function IconGPT() {
   );
 }
 
-export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint, chapterCount, activeStep, chapterLabels, chapterCompleted }: Props) {
+export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint, chapterCount, activeStep, chapterLabels, chapterCompleted, lessonMenu }: Props) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pathOpen, setPathOpen] = useState(false);
   async function share() {
     try {
       if (navigator.share) {
@@ -116,8 +119,50 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
 
             {/* Inline chapter path between tabs and primary CTA */}
             {typeof chapterCount === 'number' && typeof activeStep === 'number' && (
-              <div className="w-full min-w-[120px] flex-1 md:ml-1">
-                <ChapterPathMini count={chapterCount} currentIndex={activeStep} labels={chapterLabels} completed={chapterCompleted} />
+              <div
+                className="relative w-full min-w-[120px] flex-1 md:ml-1"
+                onMouseEnter={() => setPathOpen(true)}
+                onMouseLeave={() => setPathOpen(false)}
+              >
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={pathOpen}
+                  onClick={() => setPathOpen((v) => !v)}
+                  className="block w-full text-left"
+                >
+                  <ChapterPathMini
+                    count={chapterCount}
+                    currentIndex={activeStep}
+                    labels={chapterLabels}
+                    completed={chapterCompleted}
+                  />
+                </button>
+                {pathOpen && Array.isArray(lessonMenu) && lessonMenu.length > 0 && (
+                  <div className="absolute left-0 right-0 z-10 mt-2 max-h-72 overflow-auto rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-black/5">
+                    {lessonMenu.map((it, i) => {
+                      const chip = it.done ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-gray-300';
+                      const isCurrent = it.current;
+                      return (
+                        <a
+                          key={i}
+                          href={it.href}
+                          className={`flex items-center justify-between gap-2 rounded-lg px-2 py-2 hover:bg-indigo-50 ${isCurrent ? 'bg-indigo-50' : ''}`}
+                          role="option"
+                          aria-selected={!!isCurrent}
+                        >
+                          <div className="min-w-0 truncate font-medium text-gray-900">{it.title}</div>
+                          <div className="shrink-0 inline-flex items-center gap-2">
+                            {typeof it.total === 'number' && (
+                              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 ring-1 ring-inset ring-gray-300">{it.total} Q</span>
+                            )}
+                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{it.done ? 'Done' : 'To do'}</span>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

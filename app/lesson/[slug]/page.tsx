@@ -271,6 +271,39 @@ export default function LessonPage() {
     return [false, ...lessonsList.map((l: any) => ids.includes(Number(l.id)) )];
   }, [chapterSummary, lessonsList]);
 
+  // Build richer tooltips for the mini path and a lessons menu for quick nav
+  const byLessonMap = useMemo(() => {
+    const m = (chapterSummary && ((chapterSummary as any).byLesson || (chapterSummary as any).summary?.byLesson)) as Record<string, any> | undefined;
+    return m || {};
+  }, [chapterSummary]);
+  const completedIdSet = useMemo(() => {
+    const ids: number[] = ((chapterSummary && (((chapterSummary as any).lessonsCompleted || (chapterSummary as any).summary?.lessonsCompleted) as number[])) || []) as number[];
+    return new Set<number>(ids.map((n) => Number(n)));
+  }, [chapterSummary]);
+  const chapterLabelsDetailed = useMemo(() => {
+    const arr: string[] = [];
+    try {
+      arr.push(`${String(chapter.title || 'Chapter')} – ${Number(chapterQCorrect||0)}/${Number(chapterQTotal||0)} correct across ${Math.max(0, lessonsList.length)} lessons`);
+    } catch { arr.push(String(chapter.title || 'Chapter')); }
+    for (const l of lessonsList as any[]) {
+      const s = byLessonMap[String(Number(l.id))] || {};
+      const q = Number(s.total || 0);
+      const done = completedIdSet.has(Number(l.id));
+      arr.push(`${String(l.title)} – ${done ? 'Done' : 'To do'} – ${q} questions`);
+    }
+    return arr;
+  }, [chapter.title, lessonsList, byLessonMap, completedIdSet, chapterQTotal, chapterQCorrect]);
+
+  const chapterLessonMenu = useMemo(() => {
+    return (lessonsList as any[]).map((l) => ({
+      title: String(l.title),
+      href: `/lesson/${String(l.slug)}`,
+      total: Number((byLessonMap[String(Number(l.id))] || {}).total || 0),
+      done: completedIdSet.has(Number(l.id)),
+      current: Number(l.id) === Number(lessonId),
+    }));
+  }, [lessonsList, byLessonMap, completedIdSet, lessonId]);
+
   // Compute effective video iframe src once for simpler JSX below
   // Compute effective iframe src once for simpler JSX below
   const effectiveIframeSrc = useMemo(() => {
@@ -358,12 +391,7 @@ export default function LessonPage() {
           {/* Actions cluster: course pill, favorite, mark complete (UI only) */}
           <div className="hidden sm:flex items-center gap-2">
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">{course.title}</span>
-            <button
-              className="rounded-full px-3 py-1 text-xs font-semibold bg-white/20 text-white/90 hover:bg-white/30"
-              title="Open all chapters"
-            >
-              open all chapters
-            </button>
+            {/* Removed: open all chapters (redundant) */}
             <button
               onClick={() => setFav((v) => !v)}
               className={`rounded-full px-2 py-1 text-xs font-semibold ${fav ? 'bg-rose-500 text-white' : 'bg-white/20 text-white/90 hover:bg-white/30'}`}
@@ -406,8 +434,9 @@ export default function LessonPage() {
           softLockPractice={false}
           chapterCount={chapterDotsCount}
           activeStep={activeDot}
-          chapterLabels={[String(chapter.title || 'Chapter'), ...lessonsList.map((l:any)=> String(l.title))]}
+          chapterLabels={chapterLabelsDetailed}
           chapterCompleted={chapterCompletedList}
+          lessonMenu={chapterLessonMenu}
         />
       </div>
 

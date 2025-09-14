@@ -164,7 +164,7 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
 @media (max-width: 768px) {
   .lesson-root {
     /* breathing room plus space for bottom dock */
-    padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 84px) 16px !important;
+    padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 96px) 16px !important;
     overflow-x: clip; /* prevent any accidental horizontal leak on phones */
     isolation: isolate; /* keep fixed elements and z-index local */
   }
@@ -178,12 +178,7 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
     position: relative;
   }
   .lesson-header::after {
-    content: "";
-    position: absolute; inset: -10% -20% -10% -40%;
-    background: linear-gradient(105deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.25) 50%, rgba(255,255,255,0) 60%);
-    transform: translateX(-30%);
-    pointer-events: none;
-    animation: heroSweep 7.5s ease-in-out infinite;
+    display: none; /* disable sheen on mobile to avoid any Safari overflow quirks */
   }
   .video-card {
     /* aspect handled inline; just bump radius/shadow */
@@ -199,6 +194,12 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
   .lesson-bottom-nav button {
     box-shadow: 0 6px 14px rgba(2,6,23,0.06);
   }
+  /* Ensure sticky blocks span the container and don't jiggle */
+  .lesson-root .sticky { left: 0; right: 0; }
+  .lesson-root .lesson-toolbar,
+  .lesson-root .lesson-header,
+  .lesson-root .video-card,
+  .lesson-root .ios-card { max-width: 100%; width: 100%; margin-left: 0; margin-right: 0; }
 }
 
 @keyframes heroSweep {

@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body data-authed={isAuthed ? '1' : '0'} className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900 flex flex-col`}>
         <Providers>
           <Navbar />
-          <main className="mx-auto max-w-[1400px] p-6 flex-1">{children}</main>
+          <main className="mx-auto max-w-[1400px] px-0 sm:px-6 py-6 flex-1">{children}</main>
           <EMSFooter />
           <RewardsOverlay />
           <TimerWidget />
