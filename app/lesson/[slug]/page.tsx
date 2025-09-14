@@ -416,8 +416,8 @@ export default function LessonPage() {
         {/* Left: Chapter progress */}
         {!focusMode && (
           <aside className="order-first space-y-3">
-            {/* Flashcards (Coming soon overlay) */}
-            <div className="ios-card relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+            {/* Flashcards (hide on mobile for now) */}
+            <div className="ios-card relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5 hidden md:block">
               <div className="text-[12px] font-semibold text-indigo-900">Flashcards</div>
               <div className="mt-2 opacity-40 pointer-events-none select-none">
                 <FlashcardsCTA count={10} tags={["hematology", "coagulation", "DIC"]} onStart={() => {}} />

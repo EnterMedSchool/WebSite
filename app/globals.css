@@ -139,6 +139,7 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
   /* Soft floating card look */
   .ios-card {
     @apply rounded-3xl bg-white ring-1 ring-black/5 shadow-[0_8px_32px_rgba(2,6,23,0.06)];
+    animation: iosCardIn 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   /* Video card tweaks */
   .video-card {
@@ -154,19 +155,35 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
   }
 }
 
+@keyframes iosCardIn {
+  from { opacity: 0; transform: translateY(6px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Mobile-only layout refinements */
 @media (max-width: 768px) {
   .lesson-root {
     /* breathing room plus space for bottom dock */
     padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 84px) 16px !important;
+    overflow-x: clip; /* prevent any accidental horizontal leak on phones */
+    isolation: isolate; /* keep fixed elements and z-index local */
   }
   .lesson-header {
-    /* fuller hero feel */
-    margin-left: -8px;
-    margin-right: -8px;
+    /* fuller hero feel, without overflowing the viewport */
+    margin-left: 0;
+    margin-right: 0;
     border-radius: 24px;
     padding: 18px !important;
     box-shadow: 0 16px 40px rgba(49,46,129,0.28);
+    position: relative;
+  }
+  .lesson-header::after {
+    content: "";
+    position: absolute; inset: -10% -20% -10% -40%;
+    background: linear-gradient(105deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.25) 50%, rgba(255,255,255,0) 60%);
+    transform: translateX(-30%);
+    pointer-events: none;
+    animation: heroSweep 7.5s ease-in-out infinite;
   }
   .video-card {
     /* aspect handled inline; just bump radius/shadow */
@@ -182,4 +199,19 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
   .lesson-bottom-nav button {
     box-shadow: 0 6px 14px rgba(2,6,23,0.06);
   }
+}
+
+@keyframes heroSweep {
+  0% { transform: translateX(-40%); opacity: .25; }
+  60% { transform: translateX(60%); opacity: .35; }
+  100% { transform: translateX(80%); opacity: .10; }
+}
+
+/* Content safety: make embedded media responsive within lessons */
+.lesson-root .prose img,
+.lesson-root .prose video,
+.lesson-root .prose iframe,
+.lesson-root .prose table {
+  max-width: 100%;
+  width: 100%;
 }

@@ -98,7 +98,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   }
 
   return (
-    <div className="lesson-toolbar sticky top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <div className="lesson-toolbar sticky top-20 sm:top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {!focus ? (
           <>
@@ -116,7 +116,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
 
             {/* Inline chapter path between tabs and primary CTA */}
             {typeof chapterCount === 'number' && typeof activeStep === 'number' && (
-              <div className="hidden min-w-[120px] flex-1 md:ml-1 md:block">
+              <div className="w-full min-w-[120px] flex-1 md:ml-1">
                 <ChapterPathMini count={chapterCount} currentIndex={activeStep} labels={chapterLabels} completed={chapterCompleted} />
               </div>
             )}
