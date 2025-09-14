@@ -367,10 +367,10 @@ export default function LessonPage() {
           {/* Video embed */}
           <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
             <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-              {effectiveIframeSrc ? (
+              {((() => { const p = player?.iframeSrc; if (p) return p; const g = guest?.player?.iframeSrc; if (g) return g; const h = guest?.html || ""; const m = h.match(/<iframe[^>]*src=\"([^\"]+)\"/i); if (m?.[1]) return m[1]; const y = h.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/)([A-Za-z0-9_-]+)/i); if (y?.[1]) return `https://www.youtube-nocookie.com/embed/${y[1]}`; return ""; })()) ? (
                 <iframe
                   className="absolute inset-0 h-full w-full"
-                  src={effectiveIframeSrc}
+                  src={((() => { const p = player?.iframeSrc; if (p) return p; const g = guest?.player?.iframeSrc; if (g) return g; const h = guest?.html || ""; const m = h.match(/<iframe[^>]*src=\"([^\"]+)\"/i); if (m?.[1]) return m[1]; const y = h.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/)([A-Za-z0-9_-]+)/i); if (y?.[1]) return `https://www.youtube-nocookie.com/embed/${y[1]}`; return ""; })()) as string}
                   title="Lesson video"
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
@@ -388,7 +388,7 @@ export default function LessonPage() {
                   </div>
                 </div>
               )}
-              {effectiveIframeSrc && (
+              {((() => { const p = player?.iframeSrc; if (p) return p; const g = guest?.player?.iframeSrc; if (g) return g; const h = guest?.html || ""; const m = h.match(/<iframe[^>]*src=\"([^\"]+)\"/i); if (m?.[1]) return m[1]; const y = h.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/)([A-Za-z0-9_-]+)/i); if (y?.[1]) return `https://www.youtube-nocookie.com/embed/${y[1]}`; return ""; })()) && (
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <div className="text-xs opacity-90">{course.title}</div>
                   <div className="text-lg font-semibold">{lessonTitle}</div>
@@ -495,6 +495,7 @@ export default function LessonPage() {
     </div>
   );
 }
+
 
 
 

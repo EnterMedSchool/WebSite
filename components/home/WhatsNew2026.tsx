@@ -20,9 +20,13 @@ export default function WhatsNew2026() {
           <div className="select-none font-extrabold tracking-tight leading-[0.9]">
             <div className="mx-auto">
               <span className="block text-[clamp(28px,5vw,42px)] text-indigo-900/70">
-                What is new on
+                What is <span className="new-pill">NEW
+                  <svg className="ml-1 h-[14px] w-[14px] text-white/95 drop-shadow" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 2l1.8 4.6L18 8.4l-4.2 1.7L12 15l-1.8-4.9L6 8.4l4.2-1.8L12 2z" />
+                  </svg>
+                </span> on
               </span>
-              <div className="relative mt-1">
+              <div className="relative mt-4 sm:mt-6">
                 <span
                   aria-hidden
                   className="block text-transparent heading-gradient text-[clamp(36px,12vw,110px)]"
@@ -95,6 +99,40 @@ export default function WhatsNew2026() {
           animation: wn2026-shimmer 10s linear infinite;
           text-shadow: 0 6px 30px rgba(99, 102, 241, 0.25);
         }
+        .new-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border-radius: 9999px;
+          font-weight: 900;
+          letter-spacing: 0.06em;
+          color: white;
+          text-transform: uppercase;
+          position: relative;
+          overflow: hidden;
+          background-image: linear-gradient(90deg, #f59e0b, #fb7185, #a855f7);
+          box-shadow: 0 8px 22px rgba(168, 85, 247, 0.25), 0 2px 8px rgba(255, 255, 255, 0.4) inset;
+          filter: drop-shadow(0 6px 14px rgba(99, 102, 241, 0.18));
+        }
+        /* Glossy sweep */
+        .new-pill::before {
+          content: "";
+          position: absolute;
+          inset: -30% auto -30% -60%;
+          width: 40%;
+          transform: skewX(-20deg) translateX(0);
+          background: linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.65) 45%, rgba(255,255,255,0) 80%);
+          animation: wn2026-shine 2.75s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+        /* Soft top gloss */
+        .new-pill::after {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 45%;
+          background: linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0));
+          pointer-events: none;
+        }
         @keyframes wn2026-shimmer {
           0% {
             background-position: 0% 50%;
@@ -102,6 +140,10 @@ export default function WhatsNew2026() {
           100% {
             background-position: 200% 50%;
           }
+        }
+        @keyframes wn2026-shine {
+          0% { transform: skewX(-20deg) translateX(-120%); }
+          100% { transform: skewX(-20deg) translateX(260%); }
         }
         .dash-path {
           stroke-dasharray: 180 22;
