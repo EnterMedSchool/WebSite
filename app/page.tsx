@@ -2,10 +2,7 @@ import dynamic from "next/dynamic";
 import MissionShowcase from "@/components/home/MissionShowcase";
 import WhatsNew2026 from "@/components/home/WhatsNew2026";
 import HomeBackdrop from "@/components/home/HomeBackdrop";
-import NewCourseShowcase from "@/components/home/NewCourseShowcase";
-import StatsBar from "@/components/home/StatsBar";
-import StudyRoomsShowcase from "@/components/home/StudyRoomsShowcase";
-import LeaderboardsShowcase from "@/components/home/LeaderboardsShowcase";
+import ScrollShow from "@/components/home/ScrollShow";
 import StickyCTADock from "@/components/home/StickyCTADock";
 
 const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
@@ -37,15 +34,8 @@ export default function HomePage() {
       {/* Full‑bleed: What’s New 2026 */}
       <WhatsNew2026 />
 
-      {/* Feature: New Course System (fake interactive) */}
-      <NewCourseShowcase />
-
-      {/* Live stats strip */}
-      <StatsBar />
-
-      {/* Additional feature demos */}
-      <StudyRoomsShowcase />
-      <LeaderboardsShowcase />
+      {/* Scroll-driven showcase (pinned scenes) */}
+      <ScrollShow />
 
       {/* Sticky CTA at the bottom after scroll */}
       <StickyCTADock />
