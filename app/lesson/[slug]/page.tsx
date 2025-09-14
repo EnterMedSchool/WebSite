@@ -23,6 +23,9 @@ type LessonQuestionItem = {
   status: 'todo' | 'correct' | 'incorrect';
 };
 
+// Local status alias to keep TSX parsing simple
+type QStatus = 'correct' | 'incorrect' | undefined;
+
 export default function LessonPage() {
   const { slug: rawSlug } = useParams();
   const slug = String(rawSlug || "lesson");
@@ -225,7 +228,7 @@ export default function LessonPage() {
 
   // Initial status comes from bundled compact progress (server)
   const initialStatus = useMemo(() => {
-    const m: Record<number, 'correct'|'incorrect'|undefined> = {};
+    const m: Record<number, QStatus> = {};
     const p = (bundle as any)?.progress?.questions || {};
     for (const [qid, v] of Object.entries<any>(p)) {
       const st = v?.status;
@@ -246,7 +249,7 @@ export default function LessonPage() {
   return (
     <div className="mx-auto max-w-[1400px] p-6">
       <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
-      {/* Header  UI only */}
+      {/* Header - UI only */}
       <div className="sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
