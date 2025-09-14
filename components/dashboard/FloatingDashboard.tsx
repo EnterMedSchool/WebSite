@@ -3,13 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<'overview'|'learning'|'tasks'|'goals'|'insights'|'settings'>('overview');
+  const [tab, setTab] = useState<'overview'|'learning'|'class'|'settings'>('overview');
   const [name] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<{ id: number; label: string; done: boolean }[]>([
-    { id: 1, label: 'Watch a lesson', done: false },
-    { id: 2, label: 'Answer 10 questions', done: false },
-    { id: 3, label: 'Review flashcards', done: false },
-  ]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -24,8 +19,8 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/40 via-indigo-900/10 to-fuchsia-900/10 backdrop-blur-[2px] p-4" onClick={onClose}>
-      <div className="relative w-full max-w-7xl my-4 rounded-[28px] border border-violet-200/60 bg-white/90 shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/60 via-indigo-900/20 to-fuchsia-900/20 backdrop-blur-[2px] p-4" onClick={onClose}>
+      <div className="relative w-full max-w-7xl my-4 rounded-[28px] border border-violet-200/60 bg-white shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
         {/* Left rail */}
         <div className="absolute left-0 top-0 h-full w-56 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
           <div className="flex h-full flex-col justify-between py-5">
@@ -38,14 +33,8 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
                 { key: 'learning', label: 'Learning', icon: (
                   <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 3l9 4.5-9 4.5L3 7.5 12 3zm0 6.75L20.25 6V18l-8.25 3.75V9.75zM3.75 18V6L12 9.75V21L3.75 18z"/></svg>
                 )},
-                { key: 'tasks', label: 'Tasks', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
-                )},
-                { key: 'goals', label: 'Goals', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2 20 7l-8 5-8-5 8-5Zm0 7 8 5-8 5-8-5 8-5Z"/></svg>
-                )},
-                { key: 'insights', label: 'Insights', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h6v8H3v-8m12-4h6v12h-6V9M9 3h6v18H9V3Z"/></svg>
+                { key: 'class', label: 'Class', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z"/></svg>
                 )},
                 { key: 'settings', label: 'Settings', icon: (
                   <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 8a4 4 0 1 1-4 4 4 4 0 0 1 4-4m0-6 2.1 3.5 4-.5-.9 3.9 3.3 2.3-3.3 2.3.9 3.9-4-.5L12 22l-2.1-3.5-4 .5.9-3.9L3.5 13l3.3-2.3-.9-3.9 4 .5L12 2Z"/></svg>
@@ -87,10 +76,8 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             <>
               {/* Stats pills */}
               <div className="space-y-2 md:col-span-2">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <StatPill color="indigo" label="Minutes today" value={`—`} />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
                   <StatPill color="emerald" label="Correct today" value={`—`} />
-                  <StatPill color="amber" label="Tasks today" value={`—`} />
                   <StatPill color="sky" label="Streak" value={`—`} />
                 </div>
                 <div className="rounded-2xl border bg-white p-3 ring-1 ring-gray-100">
@@ -193,56 +180,93 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
             </div>
           )}
 
-          {tab === 'tasks' && (
-            <div className="col-span-full grid gap-4 sm:grid-cols-2">
-              <SectionCard title="Today’s tasks">
-                <ul className="space-y-2 text-sm">
-                  {tasks.map(t => (
-                    <li key={t.id} className="flex items-center justify-between rounded-xl border px-3 py-2">
-                      <label className="flex items-center gap-2 text-gray-800">
-                        <input type="checkbox" checked={t.done} onChange={()=> setTasks(ts => ts.map(x => x.id===t.id ? { ...x, done: !x.done } : x))} />
-                        <span className={t.done ? 'line-through text-gray-500' : ''}>{t.label}</span>
-                      </label>
-                      <span className="text-[11px] text-gray-500">+10m</span>
+          {tab === 'class' && (
+            <div className="col-span-full space-y-4">
+              <div className="overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 p-5 text-white shadow ring-1 ring-white/30">
+                <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-white/80">Course Hub</div>
+                    <h2 className="mt-1 text-2xl font-extrabold leading-tight sm:text-3xl">Your Course</h2>
+                    <div className="mt-1 text-sm text-indigo-100">Year —</div>
+                  </div>
+                  <div className="hidden w-full flex-wrap items-center gap-2 sm:flex sm:w-auto">
+                    <a href="#feed" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30">Post update</a>
+                    <a href="#events" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30">Create event</a>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/90">
+                  {['Overview','Feed','Leaderboard','Photos','Events','Orgs'].map((t,i)=> (
+                    <a key={i} href={`#${t.toLowerCase()}`} className="rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15">{t}</a>
+                  ))}
+                </div>
+              </div>
+
+              {/* Highlights */}
+              <div id="overview" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-lg font-semibold">Highlights</div>
+                  <a href="#feed" className="text-xs font-semibold text-indigo-700 hover:underline">See feed</a>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <SmallStatCard title="Active now" value="—" note="classmates online" />
+                  <SmallStatCard title="Study vibe" value="—" note="set by moderators" />
+                  <SmallStatCard title="Members" value="—" note="verified classmates" />
+                  <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Course Activity</div>
+                      <span className="text-[10px] text-indigo-700/80">Last 7 days</span>
+                    </div>
+                    <div className="mt-2 h-8 w-full rounded bg-white/60" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Leaderboard skeleton */}
+              <div id="leaderboard" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-lg font-semibold">Leaderboard</div>
+                  <div className="text-[11px] text-gray-500">Top performers in your course</div>
+                </div>
+                <div className="text-xs font-semibold text-gray-600">This Week</div>
+                <ul className="mt-1 space-y-1">
+                  {[1,2,3,4,5].map((i)=> (
+                    <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${i<=3 ? 'bg-gradient-to-r from-indigo-50 to-fuchsia-50 ring-indigo-200' : 'bg-white ring-gray-200'}`}>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`grid h-7 w-7 place-items-center rounded-full ${i<=3 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>#{i}</span>
+                        <span className="truncate font-medium text-gray-800">Student {i}</span>
+                      </div>
+                      <span className={`${i<=3 ? 'text-indigo-700' : 'text-gray-700'} text-xs`}>— XP</span>
                     </li>
                   ))}
                 </ul>
-              </SectionCard>
-              <SectionCard title="Focus timer">
-                <div className="grid place-items-center rounded-2xl bg-gray-50 p-6">
-                  <div className="text-4xl font-extrabold text-gray-800">25:00</div>
-                  <div className="mt-2 flex gap-2">
-                    <button className="rounded-full bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white">Start</button>
-                    <button className="rounded-full bg-gray-200 px-4 py-1.5 text-sm font-semibold text-gray-700">Reset</button>
+              </div>
+
+              {/* Events + Photos */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SectionCard title="Upcoming Events">
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {[1,2,3].map(i => (
+                      <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-10 w-10 rounded bg-gray-100" />
+                          <div>
+                            <div className="font-semibold">Event {i}</div>
+                            <div className="text-xs text-gray-600">Soon · Location</div>
+                          </div>
+                        </div>
+                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Remind me</span>
+                      </li>
+                    ))}
+                  </ul>
+                </SectionCard>
+                <SectionCard title="Photos from Events">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[1,2,3,4,5,6].map(i => (
+                      <div key={i} className="aspect-[4/3] w-full rounded-lg bg-gray-100" />
+                    ))}
                   </div>
-                </div>
-              </SectionCard>
-            </div>
-          )}
-
-          {tab === 'goals' && (
-            <div className="col-span-full grid gap-4 sm:grid-cols-2">
-              <SectionCard title="Study goals">
-                <div className="space-y-2 text-sm">
-                  {[['Daily minutes','30'], ['Weekly lessons','4'], ['Correct answers','100']].map(([k,v],i)=>(
-                    <div key={i} className="flex items-center justify-between rounded-xl border bg-white px-3 py-2">
-                      <div className="font-semibold text-gray-900">{k}</div>
-                      <div className="text-[11px] text-gray-600">Target: {v}</div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-              <SectionCard title="Motivation">
-                <div className="rounded-xl bg-gradient-to-br from-amber-100 via-rose-50 to-fuchsia-100 p-4 text-sm text-amber-900 ring-1 ring-amber-200/60">Small steps build strong habits. Keep going!</div>
-              </SectionCard>
-            </div>
-          )}
-
-          {tab === 'insights' && (
-            <div className="col-span-full grid gap-4 sm:grid-cols-3">
-              <InsightCard title="Strongest topics" items={["Hematology", "Biochemistry", "Physiology"]} />
-              <InsightCard title="Needs attention" items={["Anatomy", "Pathology"]} accent="rose" />
-              <InsightCard title="Best study time" items={["Evenings", "Weekends"]} accent="emerald" />
+                </SectionCard>
+              </div>
             </div>
           )}
 
@@ -360,4 +384,3 @@ function InsightCard({ title, items, accent }: { title: string; items: string[];
     </div>
   );
 }
-
