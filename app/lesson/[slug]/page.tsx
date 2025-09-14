@@ -211,9 +211,9 @@ export default function LessonPage() {
 
             {/* Credits row */}
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-white/90">
-              <span>Author — <span className="font-semibold">Dr. A. Example</span></span>
+              <span>Author – <span className="font-semibold">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || '—'}</span></span>
               <span className="opacity-80">·</span>
-              <span>Reviewed by — <span className="font-semibold">Prof. B. Reviewer</span></span>
+              <span>Reviewed by – <span className="font-semibold">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || '—'}</span></span>
               <span className="opacity-80">·</span>
               <span className="hidden inline-flex items-center gap-1">Recently completed <span className="inline-flex -space-x-2 overflow-hidden pl-1">
                 <span className="h-5 w-5 rounded-full bg-white/70 ring-1 ring-white/80" />
