@@ -5,15 +5,19 @@ export default function WhatsNew2026() {
   return (
     <section
       id="whats-new-2026"
-      className="relative mx-auto w-full max-w-6xl px-4"
+      className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10 sm:py-14 md:py-16"
       aria-labelledby="whats-new-2026-heading"
     >
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-50 to-white p-6 sm:p-10 ring-1 ring-indigo-100 shadow-[0_18px_50px_rgba(49,46,129,0.12)]">
-        <div className="relative text-center">
-          {/* Accessible heading */}
-          <h2 id="whats-new-2026-heading" className="sr-only">
-            What is new on EnterMedSchool 2026
-          </h2>
+      {/* Full-bleed soft gradient background */}
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgba(99,102,241,0.08)_0%,rgba(99,102,241,0.05)_12%,rgba(246,247,251,1)_100%)]" />
+
+      <div className="mx-auto w-full max-w-5xl px-4">
+        <div className="relative overflow-hidden rounded-[28px] bg-white p-6 sm:p-10 ring-1 ring-indigo-100 shadow-[0_24px_60px_rgba(49,46,129,0.18)]">
+          <div className="relative text-center">
+            {/* Accessible heading */}
+            <h2 id="whats-new-2026-heading" className="sr-only">
+              What is new on EnterMedSchool 2026
+            </h2>
 
           {/* Animated headline */}
           <div className="select-none font-extrabold tracking-tight leading-[0.9]">
@@ -68,11 +72,12 @@ export default function WhatsNew2026() {
             </svg>
           </div>
 
-          {/* Subtext / placeholder for important updates that will sit under this title */}
-          <p className="mx-auto mt-4 max-w-3xl text-sm sm:text-base text-indigo-900/70">
-            Big updates are here. Explore the improvements and new features we
-            built for the 2026 season.
-          </p>
+            {/* Subtext / placeholder for important updates that will sit under this title */}
+            <p className="mx-auto mt-4 max-w-3xl text-sm sm:text-base text-indigo-900/70">
+              Big updates are here. Explore the improvements and new features we
+              built for the 2026 season.
+            </p>
+          </div>
         </div>
       </div>
 
