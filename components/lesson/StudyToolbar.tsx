@@ -84,9 +84,9 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   function askAI() { try { window.dispatchEvent(new CustomEvent('ai:open')); } catch {} onAskAI?.(); }
 
   // 44px hit-targets
-  const segBtn = (active: boolean) => `inline-flex h-11 items-center gap-1 rounded-full px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-800 hover:text-indigo-700'}`;
-  const ghostBtn = `inline-flex h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
-  const primaryBtn = `inline-flex h-11 items-center gap-2 rounded-full bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700`;
+  const segBtn = (active: boolean) => `inline-flex h-10 md:h-11 items-center gap-1 rounded-full px-3 md:px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-800 hover:text-indigo-700'}`;
+  const ghostBtn = `inline-flex h-10 md:h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
+  const primaryBtn = `inline-flex h-10 md:h-11 items-center gap-2 rounded-full bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 active:scale-[.98]`;
   // Focus should be primary (blue) in both states
   const toggleBtn = primaryBtn;
   function goUniResources() {
@@ -98,12 +98,12 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   }
 
   return (
-    <div className="sticky top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <div className="lesson-toolbar sticky top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {!focus ? (
           <>
             {/* Mode switch */}
-            <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+            <div className="ios-segmented inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
               <button onClick={() => onMode('learn')} className={segBtn(mode==='learn')}><IconBook /><span>Learn</span></button>
               {/* Practice tab removed as requested */}
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>

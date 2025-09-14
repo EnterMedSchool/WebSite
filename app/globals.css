@@ -130,3 +130,56 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
 
 /* Footer icon sizing fallback (ensures SVGs don't default to 300px) */
 .ems-footer-icon svg { width: 20px; height: 20px; display: block; }
+
+/* ------------------------
+   Lesson page: iOS-style mobile polish
+   Purely presentational, no logic changes
+   ------------------------ */
+@layer components {
+  /* Soft floating card look */
+  .ios-card {
+    @apply rounded-3xl bg-white ring-1 ring-black\/5 shadow-[0_8px_32px_rgba(2,6,23,0.06)];
+  }
+  /* Video card tweaks */
+  .video-card {
+    @apply overflow-hidden;
+  }
+  /* Segmented control refinement */
+  .ios-segmented {
+    @apply bg-white/90 supports-[backdrop-filter]:backdrop-blur-md shadow-[0_6px_18px_rgba(2,6,23,0.08)] ring-white/70;
+  }
+  /* Toolbar surface on mobile should be more airy */
+  .lesson-toolbar {
+    @apply supports-[backdrop-filter]:bg-white/70 bg-white/90;
+  }
+}
+
+/* Mobile-only layout refinements */
+@media (max-width: 768px) {
+  .lesson-root {
+    /* breathing room plus space for bottom dock */
+    padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 84px) 16px !important;
+  }
+  .lesson-header {
+    /* fuller hero feel */
+    margin-left: -8px;
+    margin-right: -8px;
+    border-radius: 24px;
+    padding: 18px !important;
+    box-shadow: 0 16px 40px rgba(49,46,129,0.28);
+  }
+  .video-card {
+    /* aspect handled inline; just bump radius/shadow */
+    border-radius: 22px !important;
+    box-shadow: 0 14px 34px rgba(2,6,23,0.12);
+  }
+  .lesson-bottom-nav {
+    /* iOS dock: glass, safe-area padding, soft shadow */
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    border-top: 1px solid rgba(255,255,255,0.6) !important;
+    box-shadow: 0 -12px 30px rgba(2,6,23,0.18);
+  }
+  .lesson-bottom-nav button {
+    box-shadow: 0 6px 14px rgba(2,6,23,0.06);
+  }
+}

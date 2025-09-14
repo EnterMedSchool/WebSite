@@ -318,10 +318,10 @@ export default function LessonPage() {
   }, [bundle, courseIdNum]);
 
   return (
-    <div className="mx-auto max-w-[1400px] p-6">
+    <div className="lesson-root mx-auto max-w-[1400px] p-6">
       <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
       {/* Header - UI only */}
-      <div className="sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
+      <div className="lesson-header sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             {/* Breadcrumb-like pill with course > chapter (UI only) */}
@@ -356,7 +356,7 @@ export default function LessonPage() {
           </div>
 
           {/* Actions cluster: course pill, favorite, mark complete (UI only) */}
-          <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2">
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">{course.title}</span>
             <button
               className="rounded-full px-3 py-1 text-xs font-semibold bg-white/20 text-white/90 hover:bg-white/30"
@@ -417,7 +417,7 @@ export default function LessonPage() {
         {!focusMode && (
           <aside className="order-first space-y-3">
             {/* Flashcards (Coming soon overlay) */}
-            <div className="relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+            <div className="ios-card relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
               <div className="text-[12px] font-semibold text-indigo-900">Flashcards</div>
               <div className="mt-2 opacity-40 pointer-events-none select-none">
                 <FlashcardsCTA count={10} tags={["hematology", "coagulation", "DIC"]} onStart={() => {}} />
@@ -431,7 +431,7 @@ export default function LessonPage() {
                 </div>
               )}
             </div>
-            <div className="relative rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+            <div className="ios-card relative rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
               <div className="text-[12px] font-semibold text-indigo-900">Question progress</div>
 
               {/* Lesson summary */}
@@ -489,7 +489,7 @@ export default function LessonPage() {
         {/* Middle: Main */}
         <div className="space-y-4">
           {/* Video embed */}
-          <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
+          <div className="video-card ios-card relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
             <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
               {effectiveIframeSrc ? (
                 <iframe
@@ -523,7 +523,7 @@ export default function LessonPage() {
 
           {/* Learn tab  render lesson HTML body */}
           {tab === "learn" && (
-            <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
+            <div className="ios-card rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
               {!bodyHtml ? (
                 <div aria-busy="true" className="relative">
                   <div className="animate-pulse space-y-3">
@@ -551,7 +551,7 @@ export default function LessonPage() {
 
           {/* Practice tab - shows bundled questions when available */}
           {tab === "practice" && (
-            <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
+            <div className="ios-card rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
               <div className="mb-2 text-sm font-semibold text-indigo-900">Practice</div>
               {!bundle && !bundleErr && <p className="text-gray-700">Loading questions</p>}
               {bundleErr === 'unauthenticated' && !guest && (
@@ -579,7 +579,7 @@ export default function LessonPage() {
           {/* Background tab  placeholder only */}
           {tab === "background" && (
             <>
-              <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
+              <div className="ios-card rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
                 <div className="mb-2 text-sm font-semibold text-indigo-900">Background knowledge</div>
                 <p className="text-gray-700">Relevant foundations and reference material will appear here.</p>
               </div>
@@ -617,9 +617,9 @@ export default function LessonPage() {
       </div>
 
       {/* Mobile bottom nav for Learn/Practice/Notes (skeleton) */}
-      <div className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-3 gap-1 border-t bg-white p-2 shadow md:hidden">
+      <div className="lesson-bottom-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t bg-white/90 p-3 shadow md:hidden supports-[backdrop-filter]:backdrop-blur-lg">
         {(['learn','practice','background'] as const).map((m) => (
-          <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-xl text-sm font-semibold ${tab===m ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{m}</button>
+          <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-2xl text-sm font-semibold transition active:scale-[.98] ${tab===m ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 text-gray-800'}`}>{m}</button>
         ))}
       </div>
 
