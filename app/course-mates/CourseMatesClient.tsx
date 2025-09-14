@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { Skeleton, SkeletonAvatar, SkeletonText } from "@/components/ui/Skeleton";
+import { useEffect, useMemo, useState } from "react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type Option = { id: number; name: string; slug?: string };
-type Org = { id: number; name: string; slug: string; website?: string | null; description?: string | null };
+type Org = { id: number; name: string; slug?: string; website?: string | null; description?: string | null };
 type Mate = { id: number; name?: string | null; username?: string | null; image?: string | null };
 
 type Summary = { matesCount: number; courseName?: string | null; schoolName?: string | null; studyYear?: number | null; activeNow?: number | null } | null;
@@ -12,12 +12,12 @@ type Summary = { matesCount: number; courseName?: string | null; schoolName?: st
 export default function CourseMatesClient({ authed, initial }: {
   authed: boolean;
   initial: {
-    universities: Option[];
-    schools: Option[];
-    courses: Option[];
-    organizations: Org[];
-    mates: Mate[];
-    me: any;
+    universities?: Option[];
+    schools?: Option[];
+    courses?: Option[];
+    organizations?: Org[];
+    mates?: Mate[];
+    me?: any;
     access: "verified" | "pending" | "unset" | null;
     summary: Summary;
     studyVibe: string | null;
@@ -26,172 +26,147 @@ export default function CourseMatesClient({ authed, initial }: {
     events: any[];
     photos: any[];
     moderators: Mate[];
-    modRequestPending?: boolean;
+    uniModerators?: Mate[];
     isAdmin?: boolean;
+    coverUrl?: string | null;
+    sidePhotos?: string[] | null;
   };
 }) {
-  const [isAuthed] = useState<boolean | null>(authed);
+  const [isAuthed] = useState<boolean>(authed);
   const [access] = useState<"verified" | "pending" | "unset" | null>(initial.access || null);
-  const [summary] = useState<Summary>(initial.summary || null);
+  const [summary, setSummary] = useState<Summary>(initial.summary || null);
   const [studyVibe, setStudyVibe] = useState<string | null>(initial.studyVibe || null);
-  const [isModerator] = useState<boolean>(initial.isModerator || false);
-  const [modPending, setModPending] = useState<boolean>(Boolean((initial as any).modRequestPending));
-  const [uniModerators] = useState<Mate[]>((initial as any).uniModerators || []);
-  const [uniModPending, setUniModPending] = useState<boolean>(Boolean((initial as any).uniModRequestPending));
-  const isUniModerator = Boolean((initial as any).isUniModerator);
+  const [isModerator] = useState<boolean>(Boolean(initial.isModerator));
   const [feed, setFeed] = useState<any[]>(initial.feed || []);
   const [events, setEvents] = useState<any[]>(initial.events || []);
   const [photos, setPhotos] = useState<any[]>(initial.photos || []);
   const [organizations] = useState<Org[]>(initial.organizations || []);
   const [moderators] = useState<Mate[]>(initial.moderators || []);
-  const [newPost, setNewPost] = useState("");
+  const [uniModerators] = useState<Mate[]>((initial as any).uniModerators || []);
   const [isPublic, setIsPublic] = useState<boolean>(false);
   const [lb, setLb] = useState<{ weekly: any[]; all: any[] } | null>(null);
-  const [isAdmin] = useState<boolean>(Boolean((initial as any).isAdmin));
+  const [newPost, setNewPost] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const now = new Date();
   const [showHomepage, setShowHomepage] = useState(false);
-  // Cover + Side Photos (UI-only placeholders)
-  const coverUrl = (initial as any)?.coverUrl || 'https://lh3.googleusercontent.com/pw/AP1GczMr5O1wlREX3ue3C4Nn85hh1IIT_-u24Y0xgkrxV_dgAIeYOHzu247rXjfLO7M_p4g0DMEW_ZYun6OvL7xscLqCN2FYTMYxhv32_raakzhjKpkWNEFArYKgTAbDT6046w5Jj3Tdhk_Rcl97t7gjdTbf=w1273-h848-s-no-gm?authuser=0';
-  const sidePhotos: string[] = (initial as any)?.sidePhotos || [
+  const [ankiTab, setAnkiTab] = useState<'overview'|'leaderboard'>('overview');
+
+  // cover + side images (UI only)
+  const coverUrl = (initial as any).coverUrl || 'https://lh3.googleusercontent.com/pw/AP1GczMr5O1wlREX3ue3C4Nn85hh1IIT_-u24Y0xgkrxV_dgAIeYOHzu247rXjfLO7M_p4g0DMEW_ZYun6OvL7xscLqCN2FYTMYxhv32_raakzhjKpkWNEFArYKgTAbDT6046w5Jj3Tdhk_Rcl97t7gjdTbf=w1273-h848-s-no-gm?authuser=0';
+  const sidePhotos: string[] = (initial as any).sidePhotos && (initial as any).sidePhotos.length ? (initial as any).sidePhotos : [
     'https://lh3.googleusercontent.com/pw/AP1GczNII8GvBGeyCkBjHhiA_w4fP8UtC3hTSWtrct2CcFqIOfgDaEpWCBFIVgo6G49M2O6FFJEIUQ5tYXgoLVcbs2TnHnMwJMeGx6y-sCilOHyAxZ70sNlYa8WND6wYlc4lsn_qiiTkVg_fjdeBxUexKdgZ=w1273-h848-s-no-gm?authuser=0',
     'https://lh3.googleusercontent.com/pw/AP1GczNM1VEY1T21xH-NYcSbvz0JBn4E5Iafb6v3qoS6hqlUsHK7apCX-BJC2cN4BoZdBzQZFKWLTOH5vwLXQJCSPw7D5A7JZo1xNuCFLpy-l7kj8hUyWTl83bPVXNH--nrSFbVD3t29AP5zrHiDKP8EoX-J=w1273-h848-s-no-gm?authuser=0',
   ];
 
-  // Load privacy flag on mount if authed
+  // Load privacy + leaderboard on mount
   useEffect(() => {
-    if (!authed) return;
-    (async () => {
-      try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(!!j?.public); } } catch {}
-    })();
-  }, [authed]);
+    if (!isAuthed) return;
+    (async () => { try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(Boolean(j?.public)); } } catch {} })();
+  }, [isAuthed]);
 
   useEffect(() => {
-    if (!authed) return;
+    if (!isAuthed) return;
     (async () => { try { const r = await fetch('/api/course-mates/leaderboard', { credentials: 'include' }); if (r.ok) setLb(await r.json()); } catch {} })();
-  }, [authed]);
+  }, [isAuthed]);
 
   async function reloadAll() {
+    setRefreshing(true);
     try {
-      setRefreshing(true);
-      const [f, e, p, l] = await Promise.all([
+      const [f, e, p, s] = await Promise.all([
         fetch('/api/course-mates/feed', { credentials: 'include' }),
         fetch('/api/course-mates/events', { credentials: 'include' }),
         fetch('/api/course-mates/photos', { credentials: 'include' }),
-        fetch('/api/course-mates/leaderboard', { credentials: 'include' }),
+        fetch('/api/course-mates/summary', { credentials: 'include' }),
       ]);
       if (f.ok) { const j = await f.json(); setFeed(j.data || j || []); }
       if (e.ok) { const j = await e.json(); setEvents(j.data || j || []); }
       if (p.ok) { const j = await p.json(); setPhotos(j.data || j || []); }
-      if (l.ok) { setLb(await l.json()); }
+      if (s.ok) { const j = await s.json(); setSummary(j || null); }
     } catch {}
-    finally { setRefreshing(false); }
+    setRefreshing(false);
   }
 
-  // tiny sparkline helper (placeholder for course XP series)
+  // tiny sparkline helper
   const Spark = ({ values, color = '#6366f1' }: { values: number[]; color?: string }) => {
     const W = 140, H = 40, P = 4; const n = Math.max(1, values.length);
     const max = Math.max(1, ...values);
     const x = (i: number) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
     const y = (v: number) => H - P - (v / max) * (H - 2 * P);
     const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' ');
-    return (
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-8 w-36">
-        <path d={d} fill="none" stroke={color} strokeWidth="2" />
-      </svg>
-    );
+    return <svg viewBox={`0 0 ${W} ${H}`} className="h-8 w-36"><path d={d} fill="none" stroke={color} strokeWidth="2" /></svg>;
   };
 
-  const feedLimited = (feed || []).slice(0, 5);
-
-  // derive past events for gallery cards
-  const pastEvents = useMemo(() => {
-    const list = (events || []).filter((e: any) => {
-      const t = new Date(e.start_at || e.startAt || e.date || 0).getTime();
-      return Number.isFinite(t) && t < Date.now();
-    });
-    list.sort((a: any, b: any) => new Date(b.start_at || b.startAt || 0).getTime() - new Date(a.start_at || a.startAt || 0).getTime());
-    return list.slice(0, 6);
-  }, [events]);
-
-  // photo counts keyed by event id if available
-  const photoCountByEvent: Record<string, number> = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const p of photos || []) {
-      const k = String((p as any).event_id || (p as any).eventId || (p as any).event || '');
-      if (!k) continue; map[k] = (map[k] || 0) + 1;
-    }
-    return map;
-  }, [photos]);
-
-  // placeholder 7-day course XP sparkline
-  const xp7 = useMemo(() => {
-    const base = Math.max(3, Number(summary?.matesCount || 5));
-    const seed = now.getDate() % 7;
-    return new Array(7).fill(0).map((_, i) => Math.round(base * (1 + ((i + seed) % 3) * 0.4)));
-  }, [summary?.matesCount, now]);
-
   const initials = useMemo(() => (name?: string | null) => {
-    const n = (name || "").trim();
-    if (!n) return "U";
+    const n = (name || "").trim(); if (!n) return "U";
     return n.split(/\s+/).slice(0, 2).map((s) => s[0]).join("").toUpperCase();
   }, []);
 
-  // Anki UI skeleton state
-  const [ankiTab, setAnkiTab] = useState<'overview'|'leaderboard'>('overview');
-  const ankiBoard = useMemo(() => (
-    Array.from({ length: 8 }).map((_, i) => ({
-      name: `Student ${i+1}`,
-      reviews: Math.max(10, Math.round(320 - i * 23 + (i%2? 17: -9))),
-      mature: Math.max(4, Math.round(90 - i * 7 + (i%3? 8: -5))),
-    }))
-  ), []);
+  const xp7 = useMemo(() => [4, 6, 5, 8, 7, 9, 10], []);
+  const feedLimited = useMemo(() => (feed || []).slice(0, 6), [feed]);
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
-      {/* Mobile placeholder, desktop-only for now */}
-      <div className="md:hidden rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-700">
-        Course Hub is optimized for desktop. Mobile layout coming soon.
+  if (!isAuthed) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-700">Sign in to view your course hub.</div>
       </div>
-      <h1 className="hidden md:block text-2xl font-semibold text-gray-900">Your Course Mates</h1>
-      <p className="hidden md:block text-gray-600">Connect with students from your university, school and course. Set your details to see your mates and relevant student organizations.</p>
-
-      {(access === "verified" || access === "pending") && (
-        <div className="mt-6 space-y-6">
-          <div className="overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-md">
-            <div className="relative px-6 py-8 sm:px-8">
-              {/* Side photo effect + optional cover (UI only) */}
-              <div className="pointer-events-none absolute inset-0 hidden md:block">
-                <img src={coverUrl} alt="Cover" className="absolute inset-0 h-full w-full object-cover opacity-20" />
-                <img src={sidePhotos[0]} alt="side-left" className="absolute left-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
-                <img src={sidePhotos[1]} alt="side-right" className="absolute right-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
-                <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-white/60" />
-              </div>
-              <div className="absolute inset-0 opacity-20 [background:radial-gradient(ellipse_at_top_left,white_0%,transparent_60%),radial-gradient(ellipse_at_bottom_right,white_0%,transparent_60%)]" />
-              <div className="relative">
-                <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-white/80">Course Hub</div>
-                    <h2 className="mt-1 text-2xl font-extrabold leading-tight text-white sm:text-3xl">{summary?.courseName || 'Your Course'}</h2>
-                    <div className="mt-1 text-sm text-indigo-100">Year {summary?.studyYear ?? '—'}</div>
-                  </div>
-                  <div className="hidden sm:flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                    <a href="#feed" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Post update</a>
-                    {isModerator && <a href="#events" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Create event</a>}
-                    <button onClick={()=>setShowHomepage(true)} className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Set as homepage</button>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-indigo-100/90">
-                {['Overview','Invite','Feed','Leaderboard','Anki','Photos','Events','Orgs','Rotations','Reviews','Help','Polls','Resources','Kudos'].map((t, i) => (
-                  <a key={i} href={`#${t.toLowerCase()}`} className="rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15">{t}</a>
-                ))}
-                </div>
-              </div>
+    );
+  }
+  if (isAuthed && access === "unset") {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16">
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 text-sm text-indigo-900">
+          Set your university, school, course and study year in <a href="/me/profile" className="font-semibold underline">Edit profile</a> to unlock your Course Hub.
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-indigo-200/60 shadow-md">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-violet-700 to-fuchsia-700 opacity-80" />
+          <img src={coverUrl} alt="Cover" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/30" />
+        </div>
+        <div className="pointer-events-none absolute inset-0 hidden md:block">
+          <img src={sidePhotos[0]} alt="left" className="absolute left-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
+          <img src={sidePhotos[1]} alt="right" className="absolute right-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/20 to-white/60 mix-blend-screen" />
+        </div>
+        <div className="relative px-6 py-8 sm:px-8">
+          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-white/80">Course Hub</div>
+              <h1 className="mt-1 text-2xl font-extrabold leading-tight text-white md:text-3xl">{summary?.courseName || 'Your Course'}</h1>
+              <div className="mt-1 text-sm text-indigo-100">Year {summary?.studyYear ?? '-'}</div>
+            </div>
+            <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+              <a href="#feed" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Post update</a>
+              {isModerator && <a href="#events" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Create event</a>}
+              <button onClick={()=>setShowHomepage(true)} className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Set as homepage</button>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* 3-column layout shell */}
+      <div className="mt-6 grid grid-cols-12 gap-6">
+        {/* Left sticky nav */}
+        <aside className="col-span-12 md:col-span-3">
+          <div className="sticky top-6 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-600">Sections</div>
+            <nav className="grid gap-1 text-sm">
+              {['overview','invite','feed','leaderboard','anki','events','photos','rotations','reviews','help','polls','resources','improvements','orgs','reps','kudos','settings'].map((id) => (
+                <a key={id} href={`#${id}`} className="rounded-lg px-2 py-1.5 text-gray-700 hover:bg-gray-50">{id[0].toUpperCase()+id.slice(1)}</a>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main content scaffold */}
+        <main className="col-span-12 md:col-span-6 space-y-6">
           {/* Highlights */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm" id="overview">
+          <section id="overview" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-lg font-semibold">Highlights</div>
               <a href="#feed" className="text-xs font-semibold text-indigo-700 hover:underline">See feed</a>
@@ -206,9 +181,6 @@ export default function CourseMatesClient({ authed, initial }: {
                 <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Study vibe</div>
                 <div className="mt-1 flex items-center gap-2 text-2xl font-extrabold text-emerald-900">
                   <span>{studyVibe || '—'}</span>
-                  {isModerator && (
-                    <button title="Edit" onClick={async()=>{ const v = window.prompt('Set study vibe', studyVibe || '') || ''; try { const r = await fetch('/api/course-mates/settings', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ studyVibe: v }) }); if (r.ok) { const j = await r.json(); setStudyVibe(j?.settings?.studyVibe ?? v); } } catch {} }} className="ml-1 rounded-md border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700">Edit</button>
-                  )}
                 </div>
                 <div className="text-xs text-emerald-800/80">set by course moderators</div>
               </div>
@@ -218,847 +190,211 @@ export default function CourseMatesClient({ authed, initial }: {
                 <div className="text-xs text-amber-800/80">verified classmates</div>
               </div>
               <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Course XP</div>
-                  <span className="text-[10px] text-indigo-700/80">Last 7 days</span>
-                </div>
-                <div className="mt-1 flex items-end justify-between">
-                  <div className="text-2xl font-extrabold text-indigo-900">—</div>
-                  <Spark values={xp7} />
-                </div>
+                <div className="flex items-center justify-between"><div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Course XP</div><span className="text-[10px] text-indigo-700/80">Last 7 days</span></div>
+                <div className="mt-1 flex items-end justify-between"><div className="text-2xl font-extrabold text-indigo-900">—</div><Spark values={[4,6,5,8,7,9,10]} /></div>
               </div>
             </div>
-            {/* Privacy toggle moved to Settings (below) */}
-          </div>
+          </section>
 
-          {/* Invite classmates */}
-          <div id="invite" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Invite Your Classmates</div>
-              <div className="text-[11px] text-gray-600">Private hub — verified students only</div>
+          {/* Feed & Leaderboard (skeleton) */}
+          <section id="feed" className="grid gap-6 md:grid-cols-2">
+            {/* Feed */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-lg font-semibold">Latest Updates</div>
+                <div className="flex items-center gap-2">
+                  <button onClick={()=>{}} disabled className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 disabled:opacity-60">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+              <ul className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <li key={`fd-${i}`} className="rounded-xl border border-gray-200 p-3">
+                    <div className="flex items-start gap-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between"><Skeleton className="h-3 w-40 rounded" /><Skeleton className="h-3 w-24 rounded" /></div>
+                        <Skeleton className="h-3 w-full rounded" />
+                        <Skeleton className="h-3 w-4/5 rounded" />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {/* Leaderboard */}
+            <div id="leaderboard" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Leaderboard</div><div className="text-[11px] text-gray-500">Top performers</div></div>
+              <div className="text-xs font-semibold text-gray-600">This Week</div>
+              <ul className="mt-1 space-y-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <li key={`lbw-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
+                    <div className="flex min-w-0 items-center gap-2"><Skeleton className="h-7 w-7 rounded-full" /><Skeleton className="h-3 w-32 rounded" /></div>
+                    <div className="ml-3 flex w-40 items-center gap-2"><Skeleton className="h-2 w-full rounded-full" /><Skeleton className="h-3 w-12 rounded" /></div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
+              <ul className="mt-1 space-y-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <li key={`lba-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
+                    <div className="flex min-w-0 items-center gap-2"><Skeleton className="h-7 w-7 rounded-full" /><Skeleton className="h-3 w-32 rounded" /></div>
+                    <div className="ml-3 flex w-40 items-center gap-2"><Skeleton className="h-2 w-full rounded-full" /><Skeleton className="h-3 w-12 rounded" /></div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          {/* Invite block */}
+          <section id="invite" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Invite Your Classmates</div><div className="text-[11px] text-gray-600">Private hub — verified students only</div></div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <div className="flex-1">
                 <div className="text-sm text-gray-700">Share this link in your class chat to grow your hub.</div>
                 <div className="mt-1 flex items-center gap-2">
                   <input readOnly value={typeof window !== 'undefined' ? (window.location.origin + '/course-mates') : '/course-mates'} className="w-full rounded-lg border px-3 py-1.5 text-sm" />
-                  <button onClick={()=>{ const v = typeof window !== 'undefined' ? (window.location.origin + '/course-mates') : '/course-mates'; navigator?.clipboard?.writeText?.(v); }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Copy</button>
+                  <button onClick={()=>{ const v = typeof window !== 'undefined' ? (window.location.origin + '/course-mates') : '/course-mates'; try { (navigator as any)?.clipboard?.writeText?.(v); } catch {} }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Copy</button>
                 </div>
               </div>
-              <div className="grid h-16 w-full max-w-[12rem] place-items-center rounded-xl bg-gradient-to-r from-indigo-50 to-fuchsia-50 text-indigo-800 ring-1 ring-indigo-200">
-                <div className="text-center text-sm font-semibold">+ Invite classmates</div>
-              </div>
+              <div className="grid h-16 w-full max-w-[12rem] place-items-center rounded-xl bg-gradient-to-r from-indigo-50 to-fuchsia-50 text-indigo-800 ring-1 ring-indigo-200"><div className="text-center text-sm font-semibold">+ Invite classmates</div></div>
             </div>
-          </div>
+          </section>
 
-          {/* Feed */}
-          <div id="feed" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-lg font-semibold">Latest Updates</div>
-              <div className="flex items-center gap-2">
-                <button onClick={reloadAll} disabled={refreshing} title="Refresh"
-                  className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 hover:bg-gray-200 disabled:opacity-60">
-                  <svg viewBox="0 0 24 24" className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}><path fill="currentColor" d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
-                  Refresh
-                </button>
-                {access === 'verified' && (
-                  <form className="flex items-center gap-2" onSubmit={async (e)=>{ e.preventDefault(); const t = newPost.trim(); if(!t) return; try { const r = await fetch('/api/course-mates/feed', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: t }) }); if(r.ok){ const j = await r.json(); setFeed(j.data || []); setNewPost(''); } } catch{} }}>
-                    <input value={newPost} onChange={(e)=>setNewPost(e.target.value)} placeholder="Post an update" className="w-64 rounded-lg border px-3 py-1.5 text-sm" />
-                    <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Post</button>
-                  </form>
-                )}
-              </div>
-            </div>
-            <ul className="space-y-3">
-              {refreshing && (
-                <>
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <li key={`fd-skel-${i}`} className="rounded-xl border border-gray-200 p-3">
-                      <div className="flex items-start gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Skeleton className="h-3 w-40 rounded" />
-                            <Skeleton className="h-3 w-24 rounded" />
-                          </div>
-                          <Skeleton className="h-3 w-full rounded" />
-                          <Skeleton className="h-3 w-4/5 rounded" />
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </>
-              )}
-              {feedLimited.map((p:any) => (
-                <li key={p.id} className="rounded-xl border border-gray-200 p-3">
-                  <div className="flex items-start gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{initials(p.name || p.username)}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-gray-900">{p.name || p.username || 'Student'}</div>
-                        <div className="text-xs text-gray-500">{new Date(p.created_at || Date.now()).toLocaleString()}</div>
-                      </div>
-                      <div className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{p.content}</div>
-                    </div>
-                  </div>
-                </li>
+          {/* Anki (UI-only skeleton) */}
+          <section id="anki" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Anki — Course Insights</div><div className="flex gap-1 rounded-full bg-gray-100 p-1 text-xs"><button className="rounded-full bg-white px-2 py-1 font-semibold shadow-sm">Overview</button><button className="rounded-full px-2 py-1 font-semibold">Leaderboard</button></div></div>
+            <div className="grid gap-3 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-4">
+                  <div className="h-3 w-28 rounded bg-gray-100" />
+                  <div className="mt-2 flex items-end justify-between"><div className="h-6 w-14 rounded bg-gray-100" /><Skeleton className="h-8 w-36 rounded" /></div>
+                </div>
               ))}
-              {!feed.length && <li className="rounded-xl border border-gray-200 p-3 text-sm text-gray-600">No posts yet.</li>}
-            </ul>
-            {feed.length > 5 && (
-              <div className="mt-3 text-center text-xs text-gray-600">Showing latest 5 updates.</div>
-            )}
-          </div>
-
-          {/* Leaderboard */}
-          <div id="leaderboard" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Leaderboard</div>
-              <div className="text-[11px] text-gray-500">Top performers in your course</div>
             </div>
-            <div className="text-xs font-semibold text-gray-600">This Week</div>
-            <ul className="mt-1 space-y-1">
-              {lb === null && (
-                <>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <li key={`w-skel-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <Skeleton className="h-7 w-7 rounded-full" />
-                        <Skeleton className="h-3 w-32 rounded" />
-                      </div>
-                      <div className="ml-3 flex w-40 items-center gap-2">
-                        <Skeleton className="h-2 w-full rounded-full" />
-                        <Skeleton className="h-3 w-12 rounded" />
-                      </div>
-                    </li>
-                  ))}
-                </>
-              )}
-              {(lb?.weekly || []).map((r:any, i:number) => {
-                const isTop3 = i < 3; const medal = i===0? '🥇' : i===1? '🥈' : i===2? '🥉' : null;
-                const xp = Number(r.weekly_xp || 0);
-                const bar = Math.min(100, Math.round((xp / Math.max(1, Number((lb?.weekly?.[0]||{}).weekly_xp || xp))) * 100));
-                return (
-                  <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${isTop3 ? 'bg-gradient-to-r from-indigo-50 to-fuchsia-50 ring-indigo-200' : 'bg-white ring-gray-200'}`}>
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className={`grid h-7 w-7 place-items-center rounded-full ${isTop3 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>{medal || `#${i+1}`}</span>
-                      <span className="truncate font-medium text-gray-800">{r.name || r.username || 'Student'}</span>
-                    </div>
-                    <div className="ml-3 flex w-40 items-center gap-2">
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                        <div className={`h-2 rounded-full ${isTop3 ? 'bg-indigo-500' : 'bg-gray-300'}`} style={{ width: `${bar}%` }} />
-                      </div>
-                      <span className={`shrink-0 text-xs ${isTop3 ? 'text-indigo-700' : 'text-gray-700'}`}>{xp} XP</span>
-                    </div>
-                  </li>
-                );
-              })}
-              {!lb?.weekly?.length && <li className="rounded-lg border px-3 py-1.5 text-sm text-gray-600">No data yet.</li>}
-            </ul>
-            <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
-            <ul className="mt-1 space-y-1">
-              {lb === null && (
-                <>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <li key={`a-skel-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <Skeleton className="h-7 w-7 rounded-full" />
-                        <Skeleton className="h-3 w-32 rounded" />
-                      </div>
-                      <div className="ml-3 flex w-40 items-center gap-2">
-                        <Skeleton className="h-2 w-full rounded-full" />
-                        <Skeleton className="h-3 w-12 rounded" />
-                      </div>
-                    </li>
-                  ))}
-                </>
-              )}
-              {(lb?.all || []).map((r:any, i:number) => {
-                const isTop3 = i < 3; const medal = i===0? '🏆' : i===1? '🥈' : i===2? '🥉' : null;
-                const xp = Number(r.xp || 0);
-                const bar = Math.min(100, Math.round((xp / Math.max(1, Number((lb?.all?.[0]||{}).xp || xp))) * 100));
-                return (
-                  <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${isTop3 ? 'bg-gradient-to-r from-amber-50 to-rose-50 ring-amber-200' : 'bg-white ring-gray-200'}`}>
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className={`grid h-7 w-7 place-items-center rounded-full ${isTop3 ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>{medal || `#${i+1}`}</span>
-                      <span className="truncate font-medium text-gray-800">{r.name || r.username || 'Student'}</span>
-                    </div>
-                    <div className="ml-3 flex w-40 items-center gap-2">
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                        <div className={`h-2 rounded-full ${isTop3 ? 'bg-amber-500' : 'bg-gray-300'}`} style={{ width: `${bar}%` }} />
-                      </div>
-                      <span className={`shrink-0 text-xs ${isTop3 ? 'text-amber-700' : 'text-gray-700'}`}>{xp} XP</span>
-                    </div>
-                  </li>
-                );
-              })}
-              {!lb?.all?.length && <li className="rounded-lg border px-3 py-1.5 text-sm text-gray-600">No data yet.</li>}
-            </ul>
-          </div>
+          </section>
 
-          {/* Anki Stats & Leaderboard (UI only) */}
-          <div id="anki" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Anki — Course Insights</div>
-              <div className="flex gap-1 rounded-full bg-gray-100 p-1 text-xs">
-                <button onClick={()=>setAnkiTab('overview')} className={`rounded-full px-2 py-1 font-semibold ${ankiTab==='overview' ? 'bg-white shadow-sm' : ''}`}>Overview</button>
-                <button onClick={()=>setAnkiTab('leaderboard')} className={`rounded-full px-2 py-1 font-semibold ${ankiTab==='leaderboard' ? 'bg-white shadow-sm' : ''}`}>Leaderboard</button>
-              </div>
-            </div>
-            {ankiTab==='overview' && (
-              <div className="grid gap-3 sm:grid-cols-4">
-                <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Total reviews (7d)</div>
-                  <div className="mt-1 flex items-end justify-between">
-                    <div className="text-2xl font-extrabold text-indigo-900">—</div>
-                    <Spark values={[3,5,4,6,8,7,9]} />
-                  </div>
-                </div>
-                <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/60 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Mature cards</div>
-                  <div className="mt-1 text-2xl font-extrabold text-emerald-900">—</div>
-                </div>
-                <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Avg daily</div>
-                  <div className="mt-1 text-2xl font-extrabold text-amber-900">—</div>
-                </div>
-                <div className="rounded-xl border border-fuchsia-200/60 bg-fuchsia-50/60 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-fuchsia-700">Retention</div>
-                  <div className="mt-1 text-2xl font-extrabold text-fuchsia-900">—%</div>
-                </div>
-              </div>
-            )}
-            {ankiTab==='leaderboard' && (
-              <ul className="mt-2 space-y-1">
-                {ankiBoard.map((r, i) => (
-                  <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${i<3 ? 'bg-gradient-to-r from-emerald-50 to-cyan-50 ring-emerald-200' : 'bg-white ring-gray-200'}`}>
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className={`grid h-7 w-7 place-items-center rounded-full ${i<3 ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>{`#${i+1}`}</span>
-                      <span className="truncate font-medium text-gray-800">{r.name}</span>
-                    </div>
-                    <div className="ml-3 flex w-56 items-center gap-3">
-                      <div className="flex items-center gap-2 text-xs text-gray-700"><span className="font-semibold">{r.reviews}</span> reviews</div>
-                      <div className="flex items-center gap-2 text-xs text-gray-700"><span className="font-semibold">{r.mature}</span> mature</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-3 text-[11px] text-gray-600">This section will sync with an optional Anki add‑on to aggregate course‑level stats. UI only for now.</div>
-          </div>
-
-          {/* Events + Mini Calendar */}
-          <div id="events" className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-lg font-semibold">Upcoming Events</div>
-                {isModerator && (
-                  <button onClick={async()=>{ const title = window.prompt('Event title'); if(!title) return; const when = window.prompt('Start (YYYY-MM-DD HH:mm)', ''); const startAt = when ? new Date((when as any).replace(' ', 'T')) : new Date(); const location = window.prompt('Location (optional)') || null; const thumbUrl = window.prompt('Thumbnail URL (optional)') || null; try { const r = await fetch('/api/course-mates/events', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, startAt, location, thumbUrl }) }); if(r.ok){ const j = await r.json(); setEvents(j.data || []);} } catch{} }} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Add event</button>
-                )}
-              </div>
-              <ul className="space-y-2 text-sm text-gray-700">
-                {refreshing && (
-                  <>
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <li key={`ev-skel-${i}`} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-10 w-10 rounded" />
-                          <div className="space-y-2">
-                            <Skeleton className="h-3 w-40 rounded" />
-                            <Skeleton className="h-3 w-28 rounded" />
-                          </div>
-                        </div>
-                        <Skeleton className="h-6 w-20 rounded-full" />
-                      </li>
-                    ))}
-                  </>
-                )}
-                {events.map((ev:any)=> (
-                  <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    {ev.thumb_url && <img src={ev.thumb_url} alt="thumb" className="h-10 w-10 rounded object-cover" />}
-                    <div>
-                      <div className="font-semibold">{ev.title}</div>
-                      <div className="text-xs text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleString()} {ev.location ? '· '+ev.location : ''}</div>
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Remind me</span>
-                </li>
+          {/* Events (skeleton list) */}
+          <section id="events" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Upcoming Events</div><div className="text-[11px] text-gray-600">UI only</div></div>
+            <ul className="space-y-2 text-sm text-gray-700">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-2"><div className="flex items-center gap-2"><Skeleton className="h-10 w-10 rounded" /><div><div className="h-3 w-40 rounded bg-gray-100" /><div className="mt-1 h-3 w-32 rounded bg-gray-100" /></div></div><span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">Remind me</span></li>
               ))}
-              {!events.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No upcoming events.</li>}
-              </ul>
-            </div>
-            <CuteCalendar events={events} />
-          </div>
+            </ul>
+          </section>
 
-          {/* Past events gallery */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-lg font-semibold">Past Events</div>
-              <div className="text-xs text-gray-600">Thumbnails with key details</div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-              {pastEvents.map((ev: any) => {
-                const id = (ev as any).id ?? (ev as any).event_id ?? (ev as any).eventId;
-                const count = id != null ? (photoCountByEvent[String(id)] || 0) : 0;
-                return (
-                  <div key={`past-${id}`} className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
-                      {ev.thumb_url && <img src={ev.thumb_url} alt={ev.title} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />}
-                    </div>
-                    <div className="p-3">
-                      <div className="truncate font-semibold text-gray-900" title={ev.title}>{ev.title}</div>
-                      <div className="mt-0.5 text-[11px] text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleDateString()} · by {ev.created_by || 'moderator'} · {count} photos</div>
-                    </div>
-                  </div>
-                );
-              })}
-              {!pastEvents.length && <div className="rounded-xl border p-6 text-center text-sm text-gray-600">No past events yet.</div>}
-            </div>
-          </div>
-
-          {/* Photos */}
-          <div id="photos" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-lg font-semibold">Photos from Events</div>
-              {isModerator && (
-                <button onClick={async()=>{ const url = window.prompt('Link URL (folder or image)'); if(!url) return; const caption = window.prompt('Caption (optional)') || null; const thumbUrl = window.prompt('Thumbnail URL (optional)') || null; try { const r = await fetch('/api/course-mates/photos', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url, caption, thumbUrl }) }); if(r.ok){ const j = await r.json(); setPhotos(j.data || []);} } catch{} }} className="text-xs font-semibold text-indigo-700 hover:underline">Add link</button>
-              )}
-            </div>
+          {/* Photos (skeleton) */}
+          <section id="photos" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Photos from Events</div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {refreshing && (
-                <>
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Skeleton key={`ph-skel-${i}`} className="aspect-[4/3] w-full rounded-xl" />
-                  ))}
-                </>
-              )}
-              {photos.map((p:any)=> (
-                <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="group block aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-black/5">
-                  <img src={p.thumb_url || p.url} alt={p.caption || 'Event photo'} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
-                </a>
+              {Array.from({ length: 6 }).map((_, i) => (<Skeleton key={i} className="aspect-[4/3] w-full rounded-xl" />))}
+            </div>
+          </section>
+
+          {/* Resources exchange (skeleton) */}
+          <section id="resources" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Resources Exchange</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3"><div className="flex items-center gap-2"><Skeleton className="h-8 w-8 rounded-full" /><div className="space-y-2"><Skeleton className="h-3 w-40 rounded" /><Skeleton className="h-3 w-28 rounded" /></div></div><div className="mt-2 flex flex-wrap gap-1"><Skeleton className="h-5 w-24 rounded-full" /><Skeleton className="h-5 w-28 rounded-full" /></div><div className="mt-2 flex items-center gap-2"><Skeleton className="h-7 w-16 rounded-full" /><Skeleton className="h-7 w-16 rounded-full" /></div></div>
               ))}
-              {!photos.length && <div className="rounded-xl border p-6 text-center text-sm text-gray-600">No photos yet.</div>}
             </div>
-          </div>
+          </section>
 
-          {/* Rotations calendar (UI only) */}
-          <div id="rotations" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Hospital Rotations</div>
-              <div className="text-[11px] text-gray-500">Last updated —</div>
-            </div>
-            <RotationsSkeleton />
-          </div>
-
-          {/* Department Reviews / Tips (UI only) */}
-          <div id="reviews" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 text-lg font-semibold">Department Reviews & Tips</div>
-            <DeptReviewsSkeleton />
-          </div>
-
-          {/* Collaboration / Improvement board (UI only) */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 text-lg font-semibold">Course Improvement Board</div>
-            <ImprovementBoardSkeleton />
-          </div>
-
-          {/* Help Board (UI only) */}
-          <div id="help" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Help Board</div>
-              <div className="text-[11px] text-gray-600">Ask for help, or volunteer</div>
-            </div>
-            <HelpBoardSkeleton />
-          </div>
-
-          {/* Quick Polls (UI only) */}
-          <div id="polls" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Quick Polls & Decisions</div>
-              <div className="text-[11px] text-gray-600">Lightweight consensus for the cohort</div>
-            </div>
-            <PollsSkeleton />
-          </div>
-
-          {/* Resources Exchange (UI only) */}
-          <div id="resources" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Resources Exchange</div>
-              <div className="text-[11px] text-gray-600">Notes, decks, practice; linked to lessons</div>
-            </div>
-            <ResourcesSkeleton />
-          </div>
-
-          {/* Kudos & Recognition (UI only) */}
-          <div id="kudos" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Kudos & Recognition</div>
-              <div className="text-[11px] text-gray-600">Say thanks and highlight contributions</div>
-            </div>
-            <KudosSkeleton />
-          </div>
-
-          {/* Organizations */}
-          <div id="orgs" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 text-lg font-semibold">Student Organizations</div>
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {organizations.map((o)=> (
-                <li key={o.id} className="rounded-xl border p-3">
-                  <div className="font-semibold text-gray-900">{o.name}</div>
-                  {o.website && <a href={o.website} target="_blank" rel="noreferrer" className="text-xs text-indigo-700 hover:underline">Website</a>}
-                  {o.description && <div className="mt-1 text-xs text-gray-600 line-clamp-2">{o.description}</div>}
-                </li>
-              ))}
-              {!organizations.length && <li className="rounded-xl border p-3 text-sm text-gray-600">No organizations yet.</li>}
-            </ul>
-          </div>
-
-          {/* Representatives */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 text-lg font-semibold">Representatives</div>
+          {/* Help board (skeleton) */}
+          <section id="help" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Help Board</div>
             <ul className="space-y-2">
-              {moderators.map((m)=> (
-                <li key={m.id} className="flex items-center gap-3">
-                  <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name || m.username)}</div>
-                  <div className="text-sm text-gray-900">{m.name || m.username}</div>
-                  {isAdmin && (
-                    <button
-                      onClick={async()=>{ try { await fetch('/api/admin/course-mates/moderators', { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ courseId: (initial as any).me?.medicalCourseId, userId: m.id }) }); location.reload(); } catch {} }}
-                      className="ml-auto rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200"
-                    >Remove</button>
-                  )}
-                </li>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="flex items-center gap-3 rounded-xl border px-3 py-2"><Skeleton className="h-5 w-20 rounded-full" /><div className="flex-1 space-y-1"><Skeleton className="h-3 w-60 rounded" /><Skeleton className="h-3 w-24 rounded" /></div><Skeleton className="h-7 w-24 rounded-full" /></li>
               ))}
-              {!moderators.length && <li className="text-sm text-gray-600">No representatives assigned yet.</li>}
             </ul>
-            <div className="mt-2 text-[11px] text-gray-500">Your EnterMedSchool representatives, who have edit access to this private student hub.</div>
-            {!isModerator && access==='verified' && (
-              <div className="mt-3">
-                <button disabled={modPending} onClick={async()=>{ try { const r = await fetch('/api/course-mates/moderators/apply', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) }); if (r.ok) setModPending(true); } catch {} }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{modPending ? 'Application sent' : 'Apply as a representative'}</button>
-              </div>
-            )}
+          </section>
 
-            {/* University reps subsection */}
-            <div className="mt-5 border-t pt-3">
-              <div className="mb-2 text-sm font-semibold">University Representatives</div>
-              <ul className="space-y-2">
-                {((uniModerators as any) || []).map((m: any) => (
-                  <li key={m.id} className="flex items-center gap-3">
-                    <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name || m.username)}</div>
-                    <div className="text-sm text-gray-900">{m.name || m.username}</div>
-                    {isAdmin && (
-                      <button onClick={async()=>{ try { await fetch('/api/admin/universities/moderators', { method:'DELETE', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ universityId: (initial as any).me?.universityId, userId: m.id }) }); location.reload(); } catch {} }} className="ml-auto rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200">Remove</button>
-                    )}
-                  </li>
-                ))}
-                {(!uniModerators || (uniModerators as any).length===0) && <li className="text-sm text-gray-600">No university reps yet.</li>}
-              </ul>
-              {!isUniModerator && access==='verified' && (
-                <div className="mt-3">
-                  <button disabled={uniModPending} onClick={async()=>{ try { const r = await fetch('/api/universities/moderators/apply', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) }); if (r.ok) setUniModPending(true); } catch {} }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{uniModPending ? 'Application sent' : 'Apply as a university representative'}</button>
-                </div>
-              )}
+          {/* Polls (skeleton) */}
+          <section id="polls" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Quick Polls & Decisions</div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3"><Skeleton className="h-3 w-64 rounded" /><div className="mt-2 space-y-2"><Skeleton className="h-8 w-full rounded-lg" /><Skeleton className="h-8 w-full rounded-lg" /><Skeleton className="h-8 w-full rounded-lg" /></div></div>
+              ))}
             </div>
-          </div>
-          
-          {/* Settings */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          </section>
+
+          {/* Improvements (skeleton) */}
+          <section id="improvements" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Course Improvement Board</div>
+            <ul className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="flex items-center gap-2 rounded-xl border px-3 py-2"><Skeleton className="h-7 w-7 rounded-full" /><div className="flex-1 space-y-1"><Skeleton className="h-3 w-56 rounded" /><Skeleton className="h-3 w-24 rounded" /></div><Skeleton className="h-7 w-20 rounded-full" /></li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Orgs (skeleton) */}
+          <section id="orgs" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Student Organizations</div>
+            <div className="grid gap-2 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => (<div key={i} className="rounded-xl border p-3"><Skeleton className="h-3 w-40 rounded" /><Skeleton className="mt-2 h-3 w-24 rounded" /><Skeleton className="mt-2 h-10 w-full rounded" /></div>))}</div>
+          </section>
+
+          {/* Reps (skeleton) */}
+          <section id="reps" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Representatives</div>
+            <ul className="space-y-2">{Array.from({ length: 4 }).map((_, i) => (<li key={i} className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-3 w-40 rounded" /></li>))}</ul>
+          </section>
+
+          {/* Kudos (skeleton) */}
+          <section id="kudos" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Kudos & Recognition</div>
+            <ul className="space-y-2">{Array.from({ length: 3 }).map((_, i) => (<li key={i} className="flex items-center gap-3 rounded-xl border px-3 py-2"><Skeleton className="h-8 w-8 rounded-full" /><div className="flex-1"><Skeleton className="h-3 w-56 rounded" /><Skeleton className="mt-1 h-3 w-40 rounded" /></div><Skeleton className="h-7 w-20 rounded-full" /></li>))}</ul>
+          </section>
+
+          {/* Settings (skeleton) */}
+          <section id="settings" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-2 text-lg font-semibold">Settings</div>
-            <div className="rounded-xl border bg-gray-50 p-3">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
-                  <div className="text-[11px] text-gray-600">Public profiles appear across the website (e.g., university counts and Course Mates). Includes your name, username and profile picture.</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={async()=>{
-                    const next = !isPublic;
-                    if (next) { const ok = window.confirm('Are you sure you want to make your profile public?\n\nYour name, username and profile picture will be visible across EnterMedSchool (e.g., Course Mates and university pages). You can switch this off anytime.'); if (!ok) return; }
-                    setIsPublic(next);
-                    try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {}
-                  }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
-                  aria-pressed={isPublic}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+            <div className="rounded-xl border bg-gray-50 p-3"><div className="flex items-center justify-between gap-4"><div><div className="h-3 w-40 rounded bg-gray-200" /><div className="mt-1 h-3 w-80 rounded bg-gray-100" /></div><Skeleton className="h-6 w-11 rounded-full" /></div></div>
+          </section>
+        </main>
+
+        {/* Right rail scaffold */}
+        <aside className="col-span-12 md:col-span-3">
+          <div className="sticky top-6 space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="mb-2 text-sm font-semibold">From recent events</div>
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square w-full rounded-lg" />)}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="mb-2 text-sm font-semibold">Quick actions</div>
+              <div className="grid gap-2">
+                <a href="#invite" className="rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200">Invite classmates</a>
+                <button onClick={()=>setShowHomepage(true)} className="rounded-lg bg-gray-50 px-3 py-2 text-left text-sm font-semibold text-gray-800 ring-1 ring-gray-200">Set as homepage</button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </aside>
+      </div>
 
-      {/* Signed-in but no access */}
-      {isAuthed && access === "unset" && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
-          Set your university, school, course and study year in <a href="/me/profile" className="font-semibold underline">Edit profile</a> to unlock your Course Hub.
-        </div>
-      )}
-
-      {/* Signed-out minimal message */}
-      {!isAuthed && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-700">Sign in to view your course hub.</div>
-      )}
-
-      {/* Set as homepage modal (instructions, UI only) */}
+      {/* Homepage modal */}
       {showHomepage && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-lg font-semibold">Set as browser homepage</div>
-              <button onClick={()=>setShowHomepage(false)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">✕</button>
-            </div>
-            <div className="text-sm text-gray-700">
-              Modern browsers do not allow websites to change your homepage automatically for security reasons. Here’s how to set this page manually:
-            </div>
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Set as browser homepage</div><button onClick={()=>setShowHomepage(false)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">✕</button></div>
+            <div className="text-sm text-gray-700">Modern browsers do not allow websites to change your homepage automatically. To set this page manually:</div>
             <ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-gray-700">
               <li>Copy this URL: <span className="rounded bg-gray-100 px-1 py-0.5 text-xs">{typeof window!== 'undefined' ? window.location.origin + '/course-mates' : '/course-mates'}</span></li>
               <li>Chrome/Edge: Settings → On startup → Open a specific page → Add this URL.</li>
               <li>Firefox: Settings → Home → Homepage and new windows → Custom URLs.</li>
               <li>Safari: Safari → Settings → General → Homepage.</li>
             </ul>
-            <div className="mt-3 text-right">
-              <button onClick={()=>setShowHomepage(false)} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Got it</button>
-            </div>
+            <div className="mt-3 text-right"><button onClick={()=>setShowHomepage(false)} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Got it</button></div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function CuteCalendar({ events }: { events: any[] }) {
-  const [month, setMonth] = useState<number>(new Date().getMonth());
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [selected, setSelected] = useState<number | null>(null);
-
-  const marks = useMemo(() => {
-    const m = new Map<number, number>();
-    for (const e of events || []) {
-      const d = new Date((e as any).start_at || (e as any).startAt || (e as any).date);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        const day = d.getDate(); m.set(day, (m.get(day) || 0) + 1);
-      }
-    }
-    return m;
-  }, [events, month, year]);
-
-  const first = new Date(year, month, 1);
-  const startDay = first.getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (number | '')[] = [];
-  for (let i = 0; i < startDay; i++) cells.push('' as any);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push('' as any);
-
-  const wk = ['S','M','T','W','T','F','S'];
-
-  function prevMonth() {
-    const d = new Date(year, month, 1); d.setMonth(d.getMonth() - 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null);
-  }
-  function nextMonth() {
-    const d = new Date(year, month, 1); d.setMonth(d.getMonth() + 1); setMonth(d.getMonth()); setYear(d.getFullYear()); setSelected(null);
-  }
-
-  const selectedEvents = useMemo(() => {
-    if (!selected) return [] as any[];
-    return (events || []).filter((e: any) => {
-      const d = new Date(e.start_at || e.startAt || e.date);
-      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selected;
-    });
-  }, [selected, events, month, year]);
-
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-lg font-semibold">Calendar</div>
-        <div className="flex items-center gap-2 text-sm">
-          <button onClick={prevMonth} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200" aria-label="Previous month">
-            <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-          </button>
-          <div className="min-w-[8rem] text-center font-semibold text-gray-800">{new Date(year, month).toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
-          <button onClick={nextMonth} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200" aria-label="Next month">
-            <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-          </button>
-        </div>
-      </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs">
-        {wk.map((d) => <div key={d} className="py-1 font-semibold text-gray-600">{d}</div>)}
-        {cells.map((n, i) => (
-          <button
-            key={i}
-            className={`grid h-9 place-items-center rounded transition ${n ? 'bg-gray-50 text-gray-700 ring-1 ring-gray-200 hover:bg-indigo-50 hover:ring-indigo-200' : ''} ${selected===n ? 'bg-indigo-100 ring-indigo-300' : ''}`}
-            onClick={() => typeof n === 'number' ? setSelected(n) : undefined}
-          >
-            <div className="relative">
-              <span className="text-[11px]">{(n as any) || ''}</span>
-              {typeof n === 'number' && marks.get(n) && <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />}
-            </div>
-          </button>
-        ))}
-      </div>
-      <div className="mt-3 text-xs text-gray-600">{selected ? `Events on ${new Date(year, month, selected).toLocaleDateString()}` : 'Click a date to view events'}</div>
-      {!!selected && (
-        <ul className="mt-2 space-y-2 text-sm">
-          {selectedEvents.map((ev: any) => (
-            <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-              <div className="flex items-center gap-2">
-                {ev.thumb_url && <img src={ev.thumb_url} alt="thumb" className="h-8 w-8 rounded object-cover" />}
-                <div>
-                  <div className="font-semibold">{ev.title}</div>
-                  <div className="text-xs text-gray-600">{new Date(ev.start_at || ev.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {ev.location ? '· '+ev.location : ''}</div>
-                </div>
-              </div>
-              <a href="#" className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Details</a>
-            </li>
-          ))}
-          {!selectedEvents.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No events on this date.</li>}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-// --- Help board skeleton (UI only) ---
-function HelpBoardSkeleton() {
-  type Item = { id: number; title: string; status: 'Open'|'In Progress'|'Done'; by: string };
-  const [filter, setFilter] = useState<'All'|'Open'|'In Progress'|'Done'>('All');
-  const [claimed, setClaimed] = useState<Record<number, boolean>>({});
-  const items: Item[] = [
-    { id: 1, title: 'Need summary of renal physiology', status: 'Open', by: 'Amir' },
-    { id: 2, title: 'Explain limbic system pathways', status: 'In Progress', by: 'Nora' },
-    { id: 3, title: 'Create 20 cardio MCQs', status: 'Open', by: 'Tao' },
-    { id: 4, title: 'Share microbio cheat sheet', status: 'Done', by: 'Maya' },
-  ];
-  const shown = items.filter(i => filter==='All' ? true : i.status===filter);
-  const color = (s: Item['status']) => s==='Done' ? 'bg-emerald-100 text-emerald-800' : s==='In Progress' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800';
-  return (
-    <div>
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        {(['All','Open','In Progress','Done'] as const).map(t => (
-          <button key={t} onClick={()=>setFilter(t)} className={`rounded-full px-2 py-1 font-semibold ring-1 ${filter===t ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-700 ring-gray-200'}`}>{t}</button>
-        ))}
-      </div>
-      <ul className="space-y-2">
-        {shown.map(i => (
-          <li key={i.id} className="flex items-center gap-3 rounded-xl border px-3 py-2">
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${color(i.status)}`}>{i.status}</span>
-            <div className="flex-1">
-              <div className="font-medium text-gray-900">{i.title}</div>
-              <div className="text-[11px] text-gray-600">by {i.by}</div>
-            </div>
-            <button onClick={()=>setClaimed(s=>({ ...s, [i.id]: !s[i.id] }))} className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${claimed[i.id]? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-indigo-50 text-indigo-700 ring-indigo-200'}`}>{claimed[i.id] ? 'Claimed by you' : 'I can help'}</button>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 text-right">
-        <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Post a request</button>
-      </div>
-    </div>
-  );
-}
-
-// --- Quick polls skeleton (UI only) ---
-function PollsSkeleton() {
-  type Poll = { id: number; q: string; options: string[] };
-  const [answers, setAnswers] = useState<Record<number, number | null>>({});
-  const ps: Poll[] = [
-    { id: 1, q: 'Best time for weekly review?', options: ['Mon 18:00','Tue 19:00','Fri 17:00'] },
-    { id: 2, q: 'Which chapter to prioritize next?', options: ['Neuroanatomy','Biochem','Immunology'] },
-  ];
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {ps.map(p => (
-        <div key={p.id} className="rounded-xl border p-3">
-          <div className="font-semibold text-gray-900">{p.q}</div>
-          <div className="mt-2 grid gap-2">
-            {p.options.map((o, i) => (
-              <button key={i} onClick={()=>setAnswers(a=>({ ...a, [p.id]: i }))} className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${answers[p.id]===i ? 'border-indigo-300 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white text-gray-800'} transition`}>
-                {o}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 text-[11px] text-gray-600">Results update in real time. UI only.</div>
-        </div>
-      ))}
-      <div className="rounded-xl border p-3">
-        <div className="font-semibold text-gray-900">Create a new poll</div>
-        <div className="mt-2 text-sm text-gray-600">Coming soon — propose a question and options.</div>
-      </div>
-    </div>
-  );
-}
-
-// --- Resources skeleton (UI only) ---
-function ResourcesSkeleton() {
-  const items = Array.from({ length: 6 }).map((_, i) => ({
-    id: i+1,
-    title: ['Renal Phys Summary','Cardio MCQ Pack','Neuroanatomy Map','Biochem Notes','Immuno Slides','Micro Cheatsheet'][i],
-    by: ['Amir','Nora','Tao','Maya','Leah','Arun'][i % 6],
-    type: ['PDF','Anki','Diagram','Notes','Slides','Sheet'][i % 6],
-    lessons: ['kidney-basics','cardiology-ecg','neuro-brainstem'].slice(0, (i % 3) + 1),
-  }));
-  const initials = (name: string) => name.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase();
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-      {items.map(r => (
-        <div key={r.id} className="rounded-xl border p-3">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(r.by)}</div>
-            <div>
-              <div className="font-semibold text-gray-900">{r.title}</div>
-              <div className="text-[11px] text-gray-600">by {r.by} • {r.type}</div>
-            </div>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
-            {r.lessons.map(l => (
-              <span key={l} className="rounded-full bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700 ring-1 ring-indigo-200">Lesson: {l}</span>
-            ))}
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <button className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800">Preview</button>
-            <button className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Open</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// --- Kudos skeleton (UI only) ---
-function KudosSkeleton() {
-  const rows = Array.from({ length: 5 }).map((_, i) => ({
-    id: i+1,
-    to: ['Nora','Amir','Leah','Tao','Maya'][i],
-    from: ['You','Alex','Una','Rex','Kay'][i],
-    text: ['Organized weekly review','Shared great MCQs','Helped on anatomy','Recorded lecture notes','Moderated discussions'][i],
-  }));
-  const initials = (n: string) => n.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase();
-  return (
-    <div>
-      <ul className="space-y-2">
-        {rows.map(r => (
-          <li key={r.id} className="flex items-center gap-3 rounded-xl border px-3 py-2">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">{initials(r.to)}</div>
-            <div className="flex-1">
-              <div className="text-sm text-gray-900"><span className="font-semibold">{r.from}</span> gave kudos to <span className="font-semibold">{r.to}</span></div>
-              <div className="text-[11px] text-gray-600">“{r.text}”</div>
-            </div>
-            <button className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">Send thanks</button>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 text-right">
-        <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Give kudos</button>
-      </div>
-    </div>
-  );
-}
-
-// --- Rotations skeleton component (UI only) ---
-function RotationsSkeleton() {
-  const years = [1, 2, 3, 4, 5, 6];
-  const [y, setY] = useState<number>(new Date().getFullYear());
-  const [yr, setYr] = useState<number>(4);
-  const depts = ['Internal', 'Surgery', 'Pediatrics', 'OB/GYN', 'Psych', 'ER'];
-  return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="text-xs font-semibold text-gray-600">Year:</div>
-        <div className="flex flex-wrap gap-1 text-xs">
-          {years.map((n) => (
-            <button
-              key={n}
-              onClick={() => setYr(n)}
-              className={`rounded-full px-2 py-1 font-semibold ring-1 ${yr === n ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-700 ring-gray-200'}`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <div className="ml-auto flex items-center gap-2 text-xs">
-          <button onClick={() => setY(y - 1)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100">◀</button>
-          <div className="min-w-[5rem] text-center font-semibold text-gray-800">{y}</div>
-          <button onClick={() => setY(y + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100">▶</button>
-        </div>
-      </div>
-      <div className="overflow-hidden rounded-xl ring-1 ring-gray-200">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-xs text-gray-600">
-            <tr>
-              <th className="px-3 py-2">Month</th>
-              <th className="px-3 py-2">Rotation</th>
-              <th className="px-3 py-2">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <tr key={i} className="odd:bg-white even:bg-gray-50">
-                <td className="px-3 py-2 text-gray-700">{new Date(2000, i, 1).toLocaleString(undefined, { month: 'long' })}</td>
-                <td className="px-3 py-2">
-                  <div className="inline-flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                    <span className="font-medium text-gray-900">—</span>
-                    <span className="text-xs text-gray-500">{depts[i % depts.length]}</span>
-                  </div>
-                </td>
-                <td className="px-3 py-2 text-xs text-gray-600">—</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2 text-[11px] text-gray-600">Switch academic year to preview the plan. “Last updated” will show the most recent edit. UI only.</div>
-    </div>
-  );
-}
-
-// --- Department reviews skeleton (UI only) ---
-function DeptReviewsSkeleton() {
-  const list = ['Internal Medicine', 'General Surgery', 'Pediatrics', 'Obstetrics & Gynecology', 'Psychiatry', 'Emergency'];
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {list.map((name) => (
-        <div key={name} className="rounded-xl border p-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="font-semibold text-gray-900">{name}</div>
-              <div className="mt-1 flex items-center gap-1 text-amber-500" aria-label="rating">
-                {Array.from({ length: 5 }).map((_, i) => <span key={i}>★</span>)}
-                <span className="ml-1 text-xs text-gray-600">— reviews</span>
-              </div>
-            </div>
-            <button className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Write tip</button>
-          </div>
-          <div className="mt-2 text-sm text-gray-700">“— helpful tip placeholder —”</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// --- Course improvement board skeleton (UI only) ---
-function ImprovementBoardSkeleton() {
-  const items = ['Create shared question bank', 'Weekly review session', 'Improve anatomy slides', 'Centralize past papers'];
-  return (
-    <div>
-      <ul className="space-y-2">
-        {items.map((t, i) => (
-          <li key={i} className="flex items-center gap-2 rounded-xl border px-3 py-2">
-            <button className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">▲</button>
-            <div className="flex-1">
-              <div className="font-medium text-gray-900">{t}</div>
-              <div className="text-[11px] text-gray-600">— votes • — comments</div>
-            </div>
-            <button className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Discuss</button>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 text-right">
-        <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Propose change</button>
-      </div>
     </div>
   );
 }
