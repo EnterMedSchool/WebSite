@@ -66,10 +66,12 @@ export async function middleware(req: NextRequest) {
   // Allow only CORS preflight to pass for API (if any)
   if (req.method === 'OPTIONS') return NextResponse.next();
 
-  // Bypass admin auth if an explicit seed key matches for seeding endpoints
+  // Bypass admin auth if an explicit seed key matches for database ops
+  // Extend bypass to cover /api/admin/seed/* and /api/admin/db/* so you can
+  // bootstrap or migrate before auth is configured.
   try {
-    const isSeedPath = pathname.startsWith('/api/admin/seed');
-    if (isSeedPath) {
+    const isSeedOrDbPath = pathname.startsWith('/api/admin/seed') || pathname.startsWith('/api/admin/db');
+    if (isSeedOrDbPath) {
       const url = req.nextUrl;
       const qp = url.searchParams.get('key');
       const headerKey = req.headers.get('x-seed-key');

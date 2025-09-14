@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import VideoPanel from "@/components/lesson/VideoPanel";
-import TranscriptPanel from "@/components/lesson/TranscriptPanel";
 import LessonBody from "@/components/lesson/LessonBody";
 // import AnkiDownload from "@/components/lesson/AnkiDownload";
 import FlashcardsCTA from "@/components/lesson/FlashcardsCTA";
@@ -260,15 +258,14 @@ export default function LessonPage() {
         {/* Left: Chapter progress */}
         {!focusMode && (
           <aside className="order-first space-y-3">
-            {/* Flashcards above question progress */}
-            <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+            {/* Flashcards (Coming soon overlay) */}
+            <div className="relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
               <div className="text-[12px] font-semibold text-indigo-900">Flashcards</div>
-              <div className="mt-2">
-                <FlashcardsCTA
-                  count={10}
-                  tags={["hematology", "coagulation", "DIC"]}
-                  onStart={() => setFlashcardsOpen(true)}
-                />
+              <div className="mt-2 opacity-40 pointer-events-none select-none">
+                <FlashcardsCTA count={10} tags={["hematology", "coagulation", "DIC"]} onStart={() => {}} />
+              </div>
+              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/40">
+                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
               </div>
             </div>
             <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
@@ -322,19 +319,38 @@ export default function LessonPage() {
 
         {/* Middle: Main */}
         <div className="space-y-4">
-          {/* Video panel – static example */}
-          <VideoPanel
-            poster="/graph/v1/course-2.jpg"
-            iframeSrc={player?.iframeSrc || guest?.player?.iframeSrc}
-            locked={!!player?.locked}
-            lockReason={player?.lockReason}
-            overlayTitle={lessonTitle}
-            overlaySubtitle={`${course.title || ''}`}
-            subtitles={[]}
-            prev={null}
-            next={null}
-          />
-          <TranscriptPanel />
+          {/* Video embed */}
+          <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
+            <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+              {(player?.iframeSrc || guest?.player?.iframeSrc) ? (
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={(player?.iframeSrc || guest?.player?.iframeSrc) as string}
+                  title="Lesson video"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                  style={{ border: 0 }}
+                />
+              ) : (
+                <div className="absolute inset-0 grid place-items-center bg-gray-100 text-gray-500">No video</div>
+              )}
+              {player?.locked && (
+                <div className="absolute inset-0 grid place-items-center bg-white/80 backdrop-blur-sm">
+                  <div className="rounded-xl border bg-white p-4 text-center shadow ring-1 ring-black/5">
+                    <div className="text-sm font-semibold text-gray-900">Locked</div>
+                    <div className="text-xs text-gray-600">{player?.lockReason || 'Login and enroll to watch this video.'}</div>
+                  </div>
+                </div>
+              )}
+              {(player?.iframeSrc || guest?.player?.iframeSrc) && (
+                <div className="absolute bottom-3 left-3 right-3 text-white">
+                  <div className="text-xs opacity-90">{course.title}</div>
+                  <div className="text-lg font-semibold">{lessonTitle}</div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Learn tab — render lesson HTML body */}
           {tab === "learn" && (
@@ -397,24 +413,27 @@ export default function LessonPage() {
         {/* Right: Sidebar (collapsible sections) */}
         {!focusMode && (
           <div className="hidden lg:block space-y-3">
-            <details open className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
-              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Glossary</summary>
-              <div className="px-2 pb-2"><Glossary /></div>
-            </details>
-            {/* Flashcards moved to left sidebar above question progress */}
-            <details className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
-              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">Concept check</summary>
-              <div className="px-2 pb-2"> 
-                <div className="rounded-xl border p-3 text-[12px] text-gray-600">Inline checks are embedded in the reading area.</div>
+            <div className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
+              <div className="p-2 text-sm font-semibold text-indigo-900">Glossary</div>
+              <div className="h-28 opacity-30" />
+              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/60">
+                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
               </div>
-            </details>
-            {/* University Resources */}
-            <details id="uni-resources" className="rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5">
-              <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-indigo-900">University Resources</summary>
-              <div className="px-2 pb-2">
-                <UniResources enabled={false} comingSoon />
+            </div>
+            <div className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
+              <div className="p-2 text-sm font-semibold text-indigo-900">Concept check</div>
+              <div className="h-24 opacity-30" />
+              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/60">
+                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
               </div>
-            </details>
+            </div>
+            <div id="uni-resources" className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
+              <div className="p-2 text-sm font-semibold text-indigo-900">University Resources</div>
+              <div className="h-24 opacity-30" />
+              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/60">
+                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
+              </div>
+            </div>
           </div>
         )}
       </div>

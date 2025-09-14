@@ -2,8 +2,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function requireAdminEmail(): Promise<{ email: string } | null> {
-  const session = await getServerSession(authOptions as any);
-  const email = String((session as any)?.user?.email || "").toLowerCase();
+  // Be resilient in production: if NextAuth/env misconfig causes getServerSession
+  // to throw, do not crash the Server Component — just deny access.
+  let email: string | null = null;
+  try {
+    const session = await getServerSession(authOptions as any);
+    email = String((session as any)?.user?.email || "").toLowerCase() || null;
+  } catch {
+    // swallow — we treat as unauthenticated
+    email = null;
+  }
   if (!email) return null;
   const allowList = (process.env.ADMIN_EMAILS || "entermedschool@gmail.com")
     .split(",")
@@ -12,4 +20,3 @@ export async function requireAdminEmail(): Promise<{ email: string } | null> {
   if (!allowList.includes(email)) return null;
   return { email };
 }
-
