@@ -230,7 +230,7 @@ export default function ScrollShow() {
         ))}
       </div>
 
-      {/* Cinematic overlay + countdown during intro and early scene 1 */}
+      {/* Cinematic overlay + countdown + feature reveals during first scene */}
       {(() => {
         const show = preRatio > 0.06 && active === 0;
         if (!show) return null;
@@ -246,6 +246,11 @@ export default function ScrollShow() {
           }
           setPreRatio(0);
         };
+        // Feature reveal phase (kicks in after GO)
+        const f = Math.max(0, (r - 0.72) / 0.28); // map r∈[0.72..1] -> [0..1]
+        const a1 = Math.min(1, Math.max(0, f / 0.34));
+        const a2 = Math.min(1, Math.max(0, (f - 0.33) / 0.34));
+        const a3 = Math.min(1, Math.max(0, (f - 0.66) / 0.34));
         return (
           <motion.div initial={false} animate={{ opacity: op }} className="fixed inset-0 z-[60]">
             {/* film grain */}
@@ -255,20 +260,50 @@ export default function ScrollShow() {
             <div className="absolute left-0 right-0 top-0 bg-black" style={{ height: barH }} />
             <div className="absolute left-0 right-0 bottom-0 bg-black" style={{ height: barH }} />
 
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="text-center">
-                {step !== 0 ? (
-                  <>
-                    <div className="mb-3 text-sm font-semibold tracking-widest text-white/80">Are you ready to be amazed?</div>
-                    <motion.div key={step} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} className="text-[min(20vw,140px)] font-black leading-none text-white">
-                      {step}
+            <div className="absolute inset-0 grid place-items-center px-6">
+              <div className="relative w-full max-w-5xl">
+                <div className="text-center">
+                  {step !== 0 ? (
+                    <>
+                      <div className="mb-3 text-sm font-semibold tracking-widest text-white/80">Are you ready to be amazed?</div>
+                      <motion.div key={step} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} className="text-[min(20vw,140px)] font-black leading-none text-white">
+                        {step}
+                      </motion.div>
+                    </>
+                  ) : (
+                    <motion.div key="go" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16 }} className="mb-6 text-[min(18vw,110px)] font-black leading-none text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-fuchsia-400">
+                      GO!
                     </motion.div>
-                  </>
-                ) : (
-                  <motion.div key="go" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16 }} className="text-[min(18vw,110px)] font-black leading-none text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-fuchsia-400">
-                    GO!
+                  )}
+                </div>
+
+                {/* Feature highlights reveal over the dark screen */}
+                <div className="mx-auto mt-2 grid w-full gap-3 sm:grid-cols-3">
+                  <motion.div
+                    style={{ opacity: a1, y: (1 - a1) * 24 }}
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                  >
+                    <div className="text-xs uppercase tracking-widest text-indigo-200/80">New</div>
+                    <div className="mt-1 font-extrabold leading-tight">Entirely New Course System</div>
+                    <div className="mt-2 text-sm text-white/70">Faster lessons, smarter progress, and richer practice.</div>
                   </motion.div>
-                )}
+                  <motion.div
+                    style={{ opacity: a2, y: (1 - a2) * 24 }}
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                  >
+                    <div className="text-xs uppercase tracking-widest text-emerald-200/80">Social</div>
+                    <div className="mt-1 font-extrabold leading-tight">Join Your Course Hub</div>
+                    <div className="mt-2 text-sm text-white/70">Study together, compare stats, and share wins.</div>
+                  </motion.div>
+                  <motion.div
+                    style={{ opacity: a3, y: (1 - a3) * 24 }}
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                  >
+                    <div className="text-xs uppercase tracking-widest text-amber-200/80">Competitive</div>
+                    <div className="mt-1 font-extrabold leading-tight">Weekly Leaderboards</div>
+                    <div className="mt-2 text-sm text-white/70">Climb ranks, earn XP, and stay motivated.</div>
+                  </motion.div>
+                </div>
               </div>
             </div>
 
