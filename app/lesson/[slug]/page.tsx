@@ -86,18 +86,18 @@ export default function LessonPage() {
     // Try static guest JSON from CDN (free lessons)
     // Avoid 404 noise by checking index first and only fetching when available.
     try {
-      const cached = (typeof window !== 'undefined') ? (window as any).__ems_free_index as Map<string,string> | undefined : undefined;
+      const cached = (typeof window !== 'undefined') ? (window as any).__ems_free_index_lite as Map<string,string> | undefined : undefined;
       const ensureIndex = async (): Promise<Map<string,string>> => {
         if (cached && cached.size) return cached;
         try {
-          const r = await fetch('/free-lessons/v1/index.json', { cache: 'force-cache' });
+          const r = await fetch('/free-lessons/v1/index-lite.json', { cache: 'force-cache' });
           if (!r.ok) return new Map();
           const j = await r.json().catch(() => ({} as any));
           const map = new Map<string,string>();
           if (Array.isArray(j?.lessons)) {
             for (const x of j.lessons) { const s = String(x.slug); const h = String(x.hash||''); map.set(s, h); }
           }
-          if (typeof window !== 'undefined') (window as any).__ems_free_index = map;
+          if (typeof window !== 'undefined') (window as any).__ems_free_index_lite = map;
           return map;
         } catch { return new Map(); }
       };
@@ -107,7 +107,7 @@ export default function LessonPage() {
           const h = idx.get(slug);
           if (h !== undefined) {
             const v = h ? `?v=${encodeURIComponent(h)}` : '';
-            fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' })
+            fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' })
               .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
               .catch(() => {});
           }
@@ -188,6 +188,8 @@ export default function LessonPage() {
   // Skeleton: questions relevant to this lesson only
   const lessonId = useMemo(() => Number((bundle?.lesson?.id ?? guest?.lesson?.id) || 0), [bundle, guest]);
   const relevantQuestions = useMemo(() => {
+    // Guests: do not expose or compute questions; keep the card blurred only
+    if (!authed) return [] as LessonQuestionItem[];
     let arr: any[] = [];
     if (bundle?.questionsByLesson && lessonId) arr = bundle.questionsByLesson[String(lessonId)] || [];
     else if (guest?.questionsByLesson && lessonId) arr = guest.questionsByLesson[String(lessonId)] || [];

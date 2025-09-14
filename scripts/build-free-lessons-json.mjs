@@ -123,8 +123,11 @@ async function fetchLessonPayload(slug) {
 async function main() {
   const dir = outDir();
   fs.mkdirSync(dir, { recursive: true });
+  const liteDir = path.join(dir, 'lite');
+  fs.mkdirSync(liteDir, { recursive: true });
   const slugs = await fetchFreeLessonSlugs();
   const index = [];
+  const liteIndex = [];
   const sha1 = (obj) => crypto.createHash('sha1').update(JSON.stringify(obj)).digest('hex');
   for (const slug of slugs) {
     try {
@@ -155,11 +158,42 @@ async function main() {
         console.log(`[free-lessons] wrote ${p}`);
       }
       index.push({ slug, title: data.lesson.title, courseSlug: data.course.slug, hash });
+
+      // Build lite payload (no questions)
+      const lite = {
+        version: 1,
+        generatedAt: data.generatedAt,
+        lesson: data.lesson,
+        course: data.course,
+        chapter: data.chapter,
+        lessons: data.lessons,
+        player: data.player,
+        html: data.html,
+        questions: [],
+        questionsByLesson: undefined,
+        authors: data.authors,
+      };
+      const hashLite = sha1({ l: lite.lesson, c: lite.course, ch: lite.chapter, ls: lite.lessons, p: lite.player, h: lite.html });
+      lite.hash = hashLite;
+      const pl = path.join(liteDir, `${slug}.json`);
+      let writeLite = true;
+      if (fs.existsSync(pl)) {
+        try {
+          const prev = JSON.parse(fs.readFileSync(pl, 'utf8'));
+          if (prev?.hash && prev.hash === hashLite) writeLite = false;
+        } catch {}
+      }
+      if (writeLite) {
+        fs.writeFileSync(pl, JSON.stringify(lite));
+        console.log(`[free-lessons] wrote lite ${pl}`);
+      }
+      liteIndex.push({ slug, title: lite.lesson.title, courseSlug: lite.course.slug, hash: hashLite });
     } catch (e) {
       console.warn(`[free-lessons] failed for ${slug}:`, e.message);
     }
   }
   fs.writeFileSync(path.join(dir, `index.json`), JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), lessons: index }));
+  fs.writeFileSync(path.join(dir, `index-lite.json`), JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), lessons: liteIndex }));
   try { await pool.end(); } catch {}
 }
 

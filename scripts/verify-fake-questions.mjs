@@ -7,7 +7,18 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const LESSON_QUERY = (process.argv[2] || "calculating angles").toLowerCase();
+function parseArgs(argv) {
+  const out = { query: "calculating angles", list: false };
+  const rest = [];
+  for (const a of argv.slice(2)) {
+    if (a === "--all" || a === "--list") out.list = true;
+    else rest.push(a);
+  }
+  if (rest[0]) out.query = rest[0].toLowerCase();
+  return out;
+}
+
+const ARGS = parseArgs(process.argv);
 
 const client = new Client({
   connectionString: DATABASE_URL,
@@ -18,14 +29,39 @@ const client = new Client({
 async function main() {
   await client.connect();
   try {
+    if (ARGS.list) {
+      const { rows } = await client.query(
+        `select l.id, l.slug, l.title,
+                count(q.id) filter (where (q.meta->>'seedTag')='fake_calculating_angles') as fake_q,
+                coalesce(sum(cc.cnt),0) as fake_choices
+         from lessons l
+         left join questions q on q.lesson_id=l.id and (q.meta->>'seedTag')='fake_calculating_angles'
+         left join (
+           select q.id as qid, count(c.id) as cnt
+           from questions q
+           join choices c on c.question_id=q.id
+           where (q.meta->>'seedTag')='fake_calculating_angles'
+           group by q.id
+         ) cc on cc.qid = q.id
+         where lower(l.title) like $1 or lower(l.slug) like $1
+         group by l.id, l.slug, l.title
+         order by l.id desc`,
+        ["%" + ARGS.query + "%"]
+      );
+      for (const r of rows) {
+        console.log(`Lesson ${r.id} '${r.slug}': fake questions=${r.fake_q||0}, choices=${r.fake_choices||0}`);
+      }
+      return;
+    }
+
     const { rows: lessons } = await client.query(
       `select id, slug, title from lessons
        where lower(title) like $1 or lower(slug) like $1
        order by id desc limit 20`,
-      ["%" + LESSON_QUERY + "%"]
+      ["%" + ARGS.query + "%"]
     );
     if (lessons.length === 0) {
-      console.error(`No lessons found matching '${LESSON_QUERY}'.`);
+      console.error(`No lessons found matching '${ARGS.query}'.`);
       process.exit(2);
     }
     const best = lessons.find(
@@ -50,4 +86,3 @@ async function main() {
 }
 
 main();
-
