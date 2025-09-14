@@ -138,7 +138,7 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
 @layer components {
   /* Soft floating card look */
   .ios-card {
-    @apply rounded-3xl bg-white ring-1 ring-black\/5 shadow-[0_8px_32px_rgba(2,6,23,0.06)];
+    @apply rounded-3xl bg-white ring-1 ring-black/5 shadow-[0_8px_32px_rgba(2,6,23,0.06)];
   }
   /* Video card tweaks */
   .video-card {
