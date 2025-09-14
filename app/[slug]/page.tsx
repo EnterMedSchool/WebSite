@@ -9,55 +9,61 @@ import { notFound } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 async function getPostBySlug(slug: string) {
-  const row = (
-    await db
-      .select({
-        id: posts.id,
-        slug: posts.slug,
-        title: posts.title,
-        excerpt: posts.excerpt,
-        body: posts.body,
-        published: posts.published,
-        noindex: posts.noindex,
+  try {
+    const row = (
+      await db
+        .select({
+          id: posts.id,
+          slug: posts.slug,
+          title: posts.title,
+          excerpt: posts.excerpt,
+          body: posts.body,
+          published: posts.published,
+          noindex: posts.noindex,
 
-        metaTitle: posts.metaTitle,
-        metaDescription: posts.metaDescription,
-        canonicalUrl: posts.canonicalUrl,
+          metaTitle: posts.metaTitle,
+          metaDescription: posts.metaDescription,
+          canonicalUrl: posts.canonicalUrl,
 
-        ogTitle: posts.ogTitle,
-        ogDescription: posts.ogDescription,
-        ogImageUrl: posts.ogImageUrl,
+          ogTitle: posts.ogTitle,
+          ogDescription: posts.ogDescription,
+          ogImageUrl: posts.ogImageUrl,
 
-        twitterCard: posts.twitterCard,
-        twitterTitle: posts.twitterTitle,
-        twitterDescription: posts.twitterDescription,
-        twitterImageUrl: posts.twitterImageUrl,
-        twitterCreator: posts.twitterCreator,
-        twitterImageAlt: posts.twitterImageAlt,
+          twitterCard: posts.twitterCard,
+          twitterTitle: posts.twitterTitle,
+          twitterDescription: posts.twitterDescription,
+          twitterImageUrl: posts.twitterImageUrl,
+          twitterCreator: posts.twitterCreator,
+          twitterImageAlt: posts.twitterImageAlt,
 
-        coverImageUrl: posts.coverImageUrl,
-        coverImageAlt: posts.coverImageAlt,
-        coverImageWidth: posts.coverImageWidth,
-        coverImageHeight: posts.coverImageHeight,
-        coverImageCaption: posts.coverImageCaption,
+          coverImageUrl: posts.coverImageUrl,
+          coverImageAlt: posts.coverImageAlt,
+          coverImageWidth: posts.coverImageWidth,
+          coverImageHeight: posts.coverImageHeight,
+          coverImageCaption: posts.coverImageCaption,
 
-        lang: posts.lang,
-        hreflangAlternates: posts.hreflangAlternates,
-        robotsDirectives: posts.robotsDirectives,
+          lang: posts.lang,
+          hreflangAlternates: posts.hreflangAlternates,
+          robotsDirectives: posts.robotsDirectives,
 
-        authorName: posts.authorName,
-        authorEmail: posts.authorEmail,
-        publishedAt: posts.publishedAt,
-        structuredData: posts.structuredData,
+          authorName: posts.authorName,
+          authorEmail: posts.authorEmail,
+          publishedAt: posts.publishedAt,
+          structuredData: posts.structuredData,
 
-        createdAt: posts.createdAt,
-        updatedAt: posts.updatedAt,
-      })
-      .from(posts)
-      .where(eq(posts.slug as any, slug))
-      .limit(1)
-  )[0];
-  return row as any;
+          createdAt: posts.createdAt,
+          updatedAt: posts.updatedAt,
+        })
+        .from(posts)
+        .where(eq(posts.slug as any, slug))
+        .limit(1)
+    )[0];
+    return row as any;
+  } catch {
+    // If the posts table/columns do not exist in this environment
+    // (e.g., missing migrations), fail gracefully and let caller decide.
+    return null;
+  }
 }
 
 // Disable pre-rendering of all post slugs during build. The DB schema
@@ -66,7 +72,13 @@ async function getPostBySlug(slug: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { slug } = params;
-  const p = await getPostBySlug(slug);
+  let p: any = null;
+  try {
+    p = await getPostBySlug(slug);
+  } catch {
+    // Ignore metadata errors entirely; rendering will handle notFound.
+    p = null;
+  }
   if (!p || !p.published) return {};
   const title = p.metaTitle || p.title;
   const description = p.metaDescription || p.excerpt || undefined;

@@ -50,6 +50,13 @@ export default function CourseMatesClient({ authed, initial }: {
   const [isAdmin] = useState<boolean>(Boolean((initial as any).isAdmin));
   const [refreshing, setRefreshing] = useState(false);
   const now = new Date();
+  const [showHomepage, setShowHomepage] = useState(false);
+  // Cover + Side Photos (UI-only placeholders)
+  const coverUrl = (initial as any)?.coverUrl || 'https://lh3.googleusercontent.com/pw/AP1GczMr5O1wlREX3ue3C4Nn85hh1IIT_-u24Y0xgkrxV_dgAIeYOHzu247rXjfLO7M_p4g0DMEW_ZYun6OvL7xscLqCN2FYTMYxhv32_raakzhjKpkWNEFArYKgTAbDT6046w5Jj3Tdhk_Rcl97t7gjdTbf=w1273-h848-s-no-gm?authuser=0';
+  const sidePhotos: string[] = (initial as any)?.sidePhotos || [
+    'https://lh3.googleusercontent.com/pw/AP1GczNII8GvBGeyCkBjHhiA_w4fP8UtC3hTSWtrct2CcFqIOfgDaEpWCBFIVgo6G49M2O6FFJEIUQ5tYXgoLVcbs2TnHnMwJMeGx6y-sCilOHyAxZ70sNlYa8WND6wYlc4lsn_qiiTkVg_fjdeBxUexKdgZ=w1273-h848-s-no-gm?authuser=0',
+    'https://lh3.googleusercontent.com/pw/AP1GczNM1VEY1T21xH-NYcSbvz0JBn4E5Iafb6v3qoS6hqlUsHK7apCX-BJC2cN4BoZdBzQZFKWLTOH5vwLXQJCSPw7D5A7JZo1xNuCFLpy-l7kj8hUyWTl83bPVXNH--nrSFbVD3t29AP5zrHiDKP8EoX-J=w1273-h848-s-no-gm?authuser=0',
+  ];
 
   // Load privacy flag on mount if authed
   useEffect(() => {
@@ -130,6 +137,16 @@ export default function CourseMatesClient({ authed, initial }: {
     return n.split(/\s+/).slice(0, 2).map((s) => s[0]).join("").toUpperCase();
   }, []);
 
+  // Anki UI skeleton state
+  const [ankiTab, setAnkiTab] = useState<'overview'|'leaderboard'>('overview');
+  const ankiBoard = useMemo(() => (
+    Array.from({ length: 8 }).map((_, i) => ({
+      name: `Student ${i+1}`,
+      reviews: Math.max(10, Math.round(320 - i * 23 + (i%2? 17: -9))),
+      mature: Math.max(4, Math.round(90 - i * 7 + (i%3? 8: -5))),
+    }))
+  ), []);
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
       {/* Mobile placeholder, desktop-only for now */}
@@ -143,6 +160,13 @@ export default function CourseMatesClient({ authed, initial }: {
         <div className="mt-6 space-y-6">
           <div className="overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-md">
             <div className="relative px-6 py-8 sm:px-8">
+              {/* Side photo effect + optional cover (UI only) */}
+              <div className="pointer-events-none absolute inset-0 hidden md:block">
+                <img src={coverUrl} alt="Cover" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+                <img src={sidePhotos[0]} alt="side-left" className="absolute left-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
+                <img src={sidePhotos[1]} alt="side-right" className="absolute right-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-white/60" />
+              </div>
               <div className="absolute inset-0 opacity-20 [background:radial-gradient(ellipse_at_top_left,white_0%,transparent_60%),radial-gradient(ellipse_at_bottom_right,white_0%,transparent_60%)]" />
               <div className="relative">
                 <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -152,12 +176,13 @@ export default function CourseMatesClient({ authed, initial }: {
                     <div className="mt-1 text-sm text-indigo-100">Year {summary?.studyYear ?? '—'}</div>
                   </div>
                   <div className="hidden sm:flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                    <a href="#feed" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30">Post update</a>
-                    {isModerator && <a href="#events" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30">Create event</a>}
+                    <a href="#feed" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Post update</a>
+                    {isModerator && <a href="#events" className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Create event</a>}
+                    <button onClick={()=>setShowHomepage(true)} className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/30 transition">Set as homepage</button>
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-indigo-100/90">
-                  {['Overview','Feed','Leaderboard','Photos','Events','Orgs'].map((t, i) => (
+                  {['Overview','Feed','Leaderboard','Anki','Photos','Events','Orgs','Rotations','Reviews'].map((t, i) => (
                     <a key={i} href={`#${t.toLowerCase()}`} className="rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15">{t}</a>
                   ))}
                 </div>
@@ -351,6 +376,57 @@ export default function CourseMatesClient({ authed, initial }: {
             </ul>
           </div>
 
+          {/* Anki Stats & Leaderboard (UI only) */}
+          <div id="anki" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Anki — Course Insights</div>
+              <div className="flex gap-1 rounded-full bg-gray-100 p-1 text-xs">
+                <button onClick={()=>setAnkiTab('overview')} className={`rounded-full px-2 py-1 font-semibold ${ankiTab==='overview' ? 'bg-white shadow-sm' : ''}`}>Overview</button>
+                <button onClick={()=>setAnkiTab('leaderboard')} className={`rounded-full px-2 py-1 font-semibold ${ankiTab==='leaderboard' ? 'bg-white shadow-sm' : ''}`}>Leaderboard</button>
+              </div>
+            </div>
+            {ankiTab==='overview' && (
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-indigo-200/60 bg-indigo-50/60 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Total reviews (7d)</div>
+                  <div className="mt-1 flex items-end justify-between">
+                    <div className="text-2xl font-extrabold text-indigo-900">—</div>
+                    <Spark values={[3,5,4,6,8,7,9]} />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/60 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Mature cards</div>
+                  <div className="mt-1 text-2xl font-extrabold text-emerald-900">—</div>
+                </div>
+                <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Avg daily</div>
+                  <div className="mt-1 text-2xl font-extrabold text-amber-900">—</div>
+                </div>
+                <div className="rounded-xl border border-fuchsia-200/60 bg-fuchsia-50/60 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-fuchsia-700">Retention</div>
+                  <div className="mt-1 text-2xl font-extrabold text-fuchsia-900">—%</div>
+                </div>
+              </div>
+            )}
+            {ankiTab==='leaderboard' && (
+              <ul className="mt-2 space-y-1">
+                {ankiBoard.map((r, i) => (
+                  <li key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ${i<3 ? 'bg-gradient-to-r from-emerald-50 to-cyan-50 ring-emerald-200' : 'bg-white ring-gray-200'}`}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`grid h-7 w-7 place-items-center rounded-full ${i<3 ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700'} text-[11px] font-bold`}>{`#${i+1}`}</span>
+                      <span className="truncate font-medium text-gray-800">{r.name}</span>
+                    </div>
+                    <div className="ml-3 flex w-56 items-center gap-3">
+                      <div className="flex items-center gap-2 text-xs text-gray-700"><span className="font-semibold">{r.reviews}</span> reviews</div>
+                      <div className="flex items-center gap-2 text-xs text-gray-700"><span className="font-semibold">{r.mature}</span> mature</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-3 text-[11px] text-gray-600">This section will sync with an optional Anki add‑on to aggregate course‑level stats. UI only for now.</div>
+          </div>
+
           {/* Events + Mini Calendar */}
           <div id="events" className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -444,6 +520,27 @@ export default function CourseMatesClient({ authed, initial }: {
               ))}
               {!photos.length && <div className="rounded-xl border p-6 text-center text-sm text-gray-600">No photos yet.</div>}
             </div>
+          </div>
+
+          {/* Rotations calendar (UI only) */}
+          <div id="rotations" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Hospital Rotations</div>
+              <div className="text-[11px] text-gray-500">Last updated —</div>
+            </div>
+            <RotationsSkeleton />
+          </div>
+
+          {/* Department Reviews / Tips (UI only) */}
+          <div id="reviews" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Department Reviews & Tips</div>
+            <DeptReviewsSkeleton />
+          </div>
+
+          {/* Collaboration / Improvement board (UI only) */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Course Improvement Board</div>
+            <ImprovementBoardSkeleton />
           </div>
 
           {/* Organizations */}
@@ -548,6 +645,30 @@ export default function CourseMatesClient({ authed, initial }: {
       {!isAuthed && (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-700">Sign in to view your course hub.</div>
       )}
+
+      {/* Set as homepage modal (instructions, UI only) */}
+      {showHomepage && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Set as browser homepage</div>
+              <button onClick={()=>setShowHomepage(false)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">✕</button>
+            </div>
+            <div className="text-sm text-gray-700">
+              Modern browsers do not allow websites to change your homepage automatically for security reasons. Here’s how to set this page manually:
+            </div>
+            <ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-gray-700">
+              <li>Copy this URL: <span className="rounded bg-gray-100 px-1 py-0.5 text-xs">{typeof window!== 'undefined' ? window.location.origin + '/course-mates' : '/course-mates'}</span></li>
+              <li>Chrome/Edge: Settings → On startup → Open a specific page → Add this URL.</li>
+              <li>Firefox: Settings → Home → Homepage and new windows → Custom URLs.</li>
+              <li>Safari: Safari → Settings → General → Homepage.</li>
+            </ul>
+            <div className="mt-3 text-right">
+              <button onClick={()=>setShowHomepage(false)} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -640,6 +761,112 @@ function CuteCalendar({ events }: { events: any[] }) {
           {!selectedEvents.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No events on this date.</li>}
         </ul>
       )}
+    </div>
+  );
+}
+
+// --- Rotations skeleton component (UI only) ---
+function RotationsSkeleton() {
+  const years = [1, 2, 3, 4, 5, 6];
+  const [y, setY] = useState<number>(new Date().getFullYear());
+  const [yr, setYr] = useState<number>(4);
+  const depts = ['Internal', 'Surgery', 'Pediatrics', 'OB/GYN', 'Psych', 'ER'];
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="text-xs font-semibold text-gray-600">Year:</div>
+        <div className="flex flex-wrap gap-1 text-xs">
+          {years.map((n) => (
+            <button
+              key={n}
+              onClick={() => setYr(n)}
+              className={`rounded-full px-2 py-1 font-semibold ring-1 ${yr === n ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-700 ring-gray-200'}`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex items-center gap-2 text-xs">
+          <button onClick={() => setY(y - 1)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100">◀</button>
+          <div className="min-w-[5rem] text-center font-semibold text-gray-800">{y}</div>
+          <button onClick={() => setY(y + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100">▶</button>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-xl ring-1 ring-gray-200">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-50 text-xs text-gray-600">
+            <tr>
+              <th className="px-3 py-2">Month</th>
+              <th className="px-3 py-2">Rotation</th>
+              <th className="px-3 py-2">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <tr key={i} className="odd:bg-white even:bg-gray-50">
+                <td className="px-3 py-2 text-gray-700">{new Date(2000, i, 1).toLocaleString(undefined, { month: 'long' })}</td>
+                <td className="px-3 py-2">
+                  <div className="inline-flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                    <span className="font-medium text-gray-900">—</span>
+                    <span className="text-xs text-gray-500">{depts[i % depts.length]}</span>
+                  </div>
+                </td>
+                <td className="px-3 py-2 text-xs text-gray-600">—</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-2 text-[11px] text-gray-600">Switch academic year to preview the plan. “Last updated” will show the most recent edit. UI only.</div>
+    </div>
+  );
+}
+
+// --- Department reviews skeleton (UI only) ---
+function DeptReviewsSkeleton() {
+  const list = ['Internal Medicine', 'General Surgery', 'Pediatrics', 'Obstetrics & Gynecology', 'Psychiatry', 'Emergency'];
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {list.map((name) => (
+        <div key={name} className="rounded-xl border p-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="font-semibold text-gray-900">{name}</div>
+              <div className="mt-1 flex items-center gap-1 text-amber-500" aria-label="rating">
+                {Array.from({ length: 5 }).map((_, i) => <span key={i}>★</span>)}
+                <span className="ml-1 text-xs text-gray-600">— reviews</span>
+              </div>
+            </div>
+            <button className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Write tip</button>
+          </div>
+          <div className="mt-2 text-sm text-gray-700">“— helpful tip placeholder —”</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- Course improvement board skeleton (UI only) ---
+function ImprovementBoardSkeleton() {
+  const items = ['Create shared question bank', 'Weekly review session', 'Improve anatomy slides', 'Centralize past papers'];
+  return (
+    <div>
+      <ul className="space-y-2">
+        {items.map((t, i) => (
+          <li key={i} className="flex items-center gap-2 rounded-xl border px-3 py-2">
+            <button className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">▲</button>
+            <div className="flex-1">
+              <div className="font-medium text-gray-900">{t}</div>
+              <div className="text-[11px] text-gray-600">— votes • — comments</div>
+            </div>
+            <button className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Discuss</button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 text-right">
+        <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Propose change</button>
+      </div>
     </div>
   );
 }

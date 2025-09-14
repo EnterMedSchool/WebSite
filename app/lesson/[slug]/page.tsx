@@ -27,7 +27,7 @@ type LessonQuestionItem = {
 type QStatus = 'correct' | 'incorrect' | undefined;
 
 export default function LessonPage() {
-  const { slug: rawSlug } = useParams();
+  const { slug: rawSlug } = useParams() as { slug?: string | string[] };
   const slug = String(rawSlug || "lesson");
 
   const [tab, setTab] = useState<"learn" | "practice" | "background">("learn");
