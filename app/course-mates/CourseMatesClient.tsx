@@ -129,7 +129,7 @@ export default function CourseMatesClient({ authed, initial }: {
     const base = Math.max(3, Number(summary?.matesCount || 5));
     const seed = now.getDate() % 7;
     return new Array(7).fill(0).map((_, i) => Math.round(base * (1 + ((i + seed) % 3) * 0.4)));
-  }, [summary?.matesCount]);
+  }, [summary?.matesCount, now]);
 
   const initials = useMemo(() => (name?: string | null) => {
     const n = (name || "").trim();
@@ -182,9 +182,9 @@ export default function CourseMatesClient({ authed, initial }: {
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-indigo-100/90">
-                  {['Overview','Feed','Leaderboard','Anki','Photos','Events','Orgs','Rotations','Reviews'].map((t, i) => (
-                    <a key={i} href={`#${t.toLowerCase()}`} className="rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15">{t}</a>
-                  ))}
+                {['Overview','Invite','Feed','Leaderboard','Anki','Photos','Events','Orgs','Rotations','Reviews','Help','Polls','Resources','Kudos'].map((t, i) => (
+                  <a key={i} href={`#${t.toLowerCase()}`} className="rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15">{t}</a>
+                ))}
                 </div>
               </div>
             </div>
@@ -229,6 +229,26 @@ export default function CourseMatesClient({ authed, initial }: {
               </div>
             </div>
             {/* Privacy toggle moved to Settings (below) */}
+          </div>
+
+          {/* Invite classmates */}
+          <div id="invite" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Invite Your Classmates</div>
+              <div className="text-[11px] text-gray-600">Private hub — verified students only</div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex-1">
+                <div className="text-sm text-gray-700">Share this link in your class chat to grow your hub.</div>
+                <div className="mt-1 flex items-center gap-2">
+                  <input readOnly value={typeof window !== 'undefined' ? (window.location.origin + '/course-mates') : '/course-mates'} className="w-full rounded-lg border px-3 py-1.5 text-sm" />
+                  <button onClick={()=>{ const v = typeof window !== 'undefined' ? (window.location.origin + '/course-mates') : '/course-mates'; navigator?.clipboard?.writeText?.(v); }} className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Copy</button>
+                </div>
+              </div>
+              <div className="grid h-16 w-full max-w-[12rem] place-items-center rounded-xl bg-gradient-to-r from-indigo-50 to-fuchsia-50 text-indigo-800 ring-1 ring-indigo-200">
+                <div className="text-center text-sm font-semibold">+ Invite classmates</div>
+              </div>
+            </div>
           </div>
 
           {/* Feed */}
@@ -543,6 +563,42 @@ export default function CourseMatesClient({ authed, initial }: {
             <ImprovementBoardSkeleton />
           </div>
 
+          {/* Help Board (UI only) */}
+          <div id="help" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Help Board</div>
+              <div className="text-[11px] text-gray-600">Ask for help, or volunteer</div>
+            </div>
+            <HelpBoardSkeleton />
+          </div>
+
+          {/* Quick Polls (UI only) */}
+          <div id="polls" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Quick Polls & Decisions</div>
+              <div className="text-[11px] text-gray-600">Lightweight consensus for the cohort</div>
+            </div>
+            <PollsSkeleton />
+          </div>
+
+          {/* Resources Exchange (UI only) */}
+          <div id="resources" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Resources Exchange</div>
+              <div className="text-[11px] text-gray-600">Notes, decks, practice; linked to lessons</div>
+            </div>
+            <ResourcesSkeleton />
+          </div>
+
+          {/* Kudos & Recognition (UI only) */}
+          <div id="kudos" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Kudos & Recognition</div>
+              <div className="text-[11px] text-gray-600">Say thanks and highlight contributions</div>
+            </div>
+            <KudosSkeleton />
+          </div>
+
           {/* Organizations */}
           <div id="orgs" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-3 text-lg font-semibold">Student Organizations</div>
@@ -761,6 +817,142 @@ function CuteCalendar({ events }: { events: any[] }) {
           {!selectedEvents.length && <li className="rounded-lg border px-3 py-2 text-gray-600">No events on this date.</li>}
         </ul>
       )}
+    </div>
+  );
+}
+
+// --- Help board skeleton (UI only) ---
+function HelpBoardSkeleton() {
+  type Item = { id: number; title: string; status: 'Open'|'In Progress'|'Done'; by: string };
+  const [filter, setFilter] = useState<'All'|'Open'|'In Progress'|'Done'>('All');
+  const [claimed, setClaimed] = useState<Record<number, boolean>>({});
+  const items: Item[] = [
+    { id: 1, title: 'Need summary of renal physiology', status: 'Open', by: 'Amir' },
+    { id: 2, title: 'Explain limbic system pathways', status: 'In Progress', by: 'Nora' },
+    { id: 3, title: 'Create 20 cardio MCQs', status: 'Open', by: 'Tao' },
+    { id: 4, title: 'Share microbio cheat sheet', status: 'Done', by: 'Maya' },
+  ];
+  const shown = items.filter(i => filter==='All' ? true : i.status===filter);
+  const color = (s: Item['status']) => s==='Done' ? 'bg-emerald-100 text-emerald-800' : s==='In Progress' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800';
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+        {(['All','Open','In Progress','Done'] as const).map(t => (
+          <button key={t} onClick={()=>setFilter(t)} className={`rounded-full px-2 py-1 font-semibold ring-1 ${filter===t ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-700 ring-gray-200'}`}>{t}</button>
+        ))}
+      </div>
+      <ul className="space-y-2">
+        {shown.map(i => (
+          <li key={i.id} className="flex items-center gap-3 rounded-xl border px-3 py-2">
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${color(i.status)}`}>{i.status}</span>
+            <div className="flex-1">
+              <div className="font-medium text-gray-900">{i.title}</div>
+              <div className="text-[11px] text-gray-600">by {i.by}</div>
+            </div>
+            <button onClick={()=>setClaimed(s=>({ ...s, [i.id]: !s[i.id] }))} className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${claimed[i.id]? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-indigo-50 text-indigo-700 ring-indigo-200'}`}>{claimed[i.id] ? 'Claimed by you' : 'I can help'}</button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 text-right">
+        <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Post a request</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Quick polls skeleton (UI only) ---
+function PollsSkeleton() {
+  type Poll = { id: number; q: string; options: string[] };
+  const [answers, setAnswers] = useState<Record<number, number | null>>({});
+  const ps: Poll[] = [
+    { id: 1, q: 'Best time for weekly review?', options: ['Mon 18:00','Tue 19:00','Fri 17:00'] },
+    { id: 2, q: 'Which chapter to prioritize next?', options: ['Neuroanatomy','Biochem','Immunology'] },
+  ];
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {ps.map(p => (
+        <div key={p.id} className="rounded-xl border p-3">
+          <div className="font-semibold text-gray-900">{p.q}</div>
+          <div className="mt-2 grid gap-2">
+            {p.options.map((o, i) => (
+              <button key={i} onClick={()=>setAnswers(a=>({ ...a, [p.id]: i }))} className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${answers[p.id]===i ? 'border-indigo-300 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white text-gray-800'} transition`}>
+                {o}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 text-[11px] text-gray-600">Results update in real time. UI only.</div>
+        </div>
+      ))}
+      <div className="rounded-xl border p-3">
+        <div className="font-semibold text-gray-900">Create a new poll</div>
+        <div className="mt-2 text-sm text-gray-600">Coming soon — propose a question and options.</div>
+      </div>
+    </div>
+  );
+}
+
+// --- Resources skeleton (UI only) ---
+function ResourcesSkeleton() {
+  const items = Array.from({ length: 6 }).map((_, i) => ({
+    id: i+1,
+    title: ['Renal Phys Summary','Cardio MCQ Pack','Neuroanatomy Map','Biochem Notes','Immuno Slides','Micro Cheatsheet'][i],
+    by: ['Amir','Nora','Tao','Maya','Leah','Arun'][i % 6],
+    type: ['PDF','Anki','Diagram','Notes','Slides','Sheet'][i % 6],
+    lessons: ['kidney-basics','cardiology-ecg','neuro-brainstem'].slice(0, (i % 3) + 1),
+  }));
+  const initials = (name: string) => name.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase();
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+      {items.map(r => (
+        <div key={r.id} className="rounded-xl border p-3">
+          <div className="flex items-center gap-2">
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(r.by)}</div>
+            <div>
+              <div className="font-semibold text-gray-900">{r.title}</div>
+              <div className="text-[11px] text-gray-600">by {r.by} • {r.type}</div>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
+            {r.lessons.map(l => (
+              <span key={l} className="rounded-full bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700 ring-1 ring-indigo-200">Lesson: {l}</span>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <button className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800">Preview</button>
+            <button className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Open</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- Kudos skeleton (UI only) ---
+function KudosSkeleton() {
+  const rows = Array.from({ length: 5 }).map((_, i) => ({
+    id: i+1,
+    to: ['Nora','Amir','Leah','Tao','Maya'][i],
+    from: ['You','Alex','Una','Rex','Kay'][i],
+    text: ['Organized weekly review','Shared great MCQs','Helped on anatomy','Recorded lecture notes','Moderated discussions'][i],
+  }));
+  const initials = (n: string) => n.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase();
+  return (
+    <div>
+      <ul className="space-y-2">
+        {rows.map(r => (
+          <li key={r.id} className="flex items-center gap-3 rounded-xl border px-3 py-2">
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">{initials(r.to)}</div>
+            <div className="flex-1">
+              <div className="text-sm text-gray-900"><span className="font-semibold">{r.from}</span> gave kudos to <span className="font-semibold">{r.to}</span></div>
+              <div className="text-[11px] text-gray-600">“{r.text}”</div>
+            </div>
+            <button className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">Send thanks</button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 text-right">
+        <button className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Give kudos</button>
+      </div>
     </div>
   );
 }
