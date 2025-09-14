@@ -15,6 +15,7 @@ import { getBundleCached, setBundleCached, getPlayerCached, setPlayerCached, fet
 import UniResources from "@/components/lesson/UniResources";
 import SaveDock from "@/components/study/SaveDock";
 import { StudyStore } from "@/lib/study/store";
+import MCQPanel from "@/components/lesson/MCQPanel";
 
 type LessonQuestionItem = {
   id: string;
@@ -136,6 +137,10 @@ export default function LessonPage() {
   const [chapterSummaryErr, setChapterSummaryErr] = useState<string | null>(null);
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
 
+  // Practice UI state
+  const [practiceAll, setPracticeAll] = useState(false);
+  const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
+
   // Fetch chapter summary once (authed only), cache in localStorage for a few minutes
   useEffect(() => {
     const chSlug = (bundle?.chapter?.slug || guest?.chapter?.slug) as string | undefined;
@@ -193,6 +198,7 @@ export default function LessonPage() {
   }, [chapterSummary, guest, lessonsList]);
 
   // Compute effective video iframe src once for simpler JSX below
+  // Compute effective iframe src once for simpler JSX below
   const effectiveIframeSrc = useMemo(() => {
     try {
       if (player?.iframeSrc) return String(player.iframeSrc);
@@ -205,6 +211,37 @@ export default function LessonPage() {
     } catch {}
     return "";
   }, [player?.iframeSrc, guest?.player?.iframeSrc, guest?.html]);
+
+  // Build MCQ list for the current lesson (authed bundle only)
+  const courseIdNum = useMemo(() => Number((bundle?.lesson?.courseId ?? guest?.lesson?.courseId) || 0), [bundle, guest]);
+  const mcqs = useMemo(() => {
+    const list: { id: number; prompt: string; choices: { id:number; text:string; correct?: boolean }[] }[] = [];
+    const arr = (bundle?.questionsByLesson && lessonId) ? (bundle.questionsByLesson[String(lessonId)] || []) : [];
+    for (const q of arr) {
+      list.push({ id: Number(q.id), prompt: String(q.prompt||''), choices: (q.choices||[]).map((c:any)=>({ id: Number(c.id), text: String(c.text||c.content||''), correct: typeof c.correct === 'boolean' ? Boolean(c.correct) : undefined })) });
+    }
+    return list;
+  }, [bundle, lessonId]);
+
+  // Initial status comes from bundled compact progress (server)
+  const initialStatus = useMemo(() => {
+    const m: Record<number, 'correct'|'incorrect'|undefined> = {};
+    const p = (bundle as any)?.progress?.questions || {};
+    for (const [qid, v] of Object.entries<any>(p)) {
+      const st = v?.status;
+      if (st === 'correct' || st === 'incorrect') m[Number(qid)] = st;
+    }
+    // Overlay local pending changes for this course
+    try {
+      if (courseIdNum) {
+        const pend = StudyStore.getPending(courseIdNum);
+        for (const [qid, st] of pend.question_status || []) {
+          if (st === 'correct' || st === 'incorrect') m[Number(qid)] = st;
+        }
+      }
+    } catch {}
+    return m;
+  }, [bundle, courseIdNum]);
 
   return (
     <div className="mx-auto max-w-[1400px] p-6">
@@ -440,6 +477,19 @@ export default function LessonPage() {
                   ))}
                 </ul>
               )}
+              {bundle && mcqs.length > 0 && (
+                <div className="mt-3">
+                  <MCQPanel
+                    courseId={courseIdNum}
+                    questions={mcqs}
+                    initialStatus={initialStatus}
+                    openAll={practiceAll}
+                    openOnlyId={openQuestionId}
+                    disabled={!authed}
+                    onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -495,6 +545,9 @@ export default function LessonPage() {
     </div>
   );
 }
+
+
+
 
 
 
