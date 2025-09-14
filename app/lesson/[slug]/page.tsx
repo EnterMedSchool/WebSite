@@ -152,6 +152,7 @@ export default function LessonPage() {
   const course = useMemo(() => ({ slug: String((bundle?.course?.slug ?? guest?.course?.slug) || 'course'), title: String((bundle?.course?.title ?? guest?.course?.title) || 'Course') }), [bundle, guest]);
   const chapter = useMemo(() => ({ slug: String((bundle?.chapter?.slug ?? guest?.chapter?.slug) || 'chapter'), title: String((bundle?.chapter?.title ?? guest?.chapter?.title) || 'Chapter') }), [bundle, guest]);
   const lessonTitle = useMemo(() => String((bundle?.lesson?.title ?? guest?.lesson?.title) || 'Lesson'), [bundle, guest]);
+  const bodyHtml = useMemo(() => String(((bundle as any)?.html ?? guest?.html) || ''), [bundle, guest]);
   const [chapterSummary, setChapterSummary] = useState<any | null>(null);
   const [chapterSummaryErr, setChapterSummaryErr] = useState<string | null>(null);
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
@@ -523,7 +524,28 @@ export default function LessonPage() {
           {/* Learn tab  render lesson HTML body */}
           {tab === "learn" && (
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-              <LessonBody slug={slug} html={(bundle as any)?.html ?? guest?.html} />
+              {!bodyHtml ? (
+                <div aria-busy="true" className="relative">
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-6 w-1/3 rounded bg-indigo-100" />
+                    <div className="h-3 w-5/6 rounded bg-indigo-50" />
+                    <div className="h-3 w-11/12 rounded bg-indigo-50" />
+                    <div className="h-3 w-10/12 rounded bg-indigo-50" />
+                    <div className="h-64 w-full rounded-xl bg-indigo-50" />
+                    <div className="h-3 w-4/5 rounded bg-indigo-50" />
+                    <div className="h-3 w-9/12 rounded bg-indigo-50" />
+                    <div className="h-3 w-7/12 rounded bg-indigo-50" />
+                  </div>
+                  <div className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-2 rounded-full bg-indigo-600/90 px-3 py-1 text-xs font-semibold text-white shadow">
+                    <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white [animation-delay:-200ms]" />
+                    <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white [animation-delay:-100ms]" />
+                    <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white" />
+                    <span>Loading lesson</span>
+                  </div>
+                </div>
+              ) : (
+                <LessonBody slug={slug} html={bodyHtml} noApi={!authed} />
+              )}
             </div>
           )}
 

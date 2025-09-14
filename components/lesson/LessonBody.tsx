@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function LessonBody({ slug, html: htmlProp }: { slug: string; html?: string }) {
+export default function LessonBody({ slug, html: htmlProp, noApi }: { slug: string; html?: string; noApi?: boolean }) {
   const [html, setHtml] = useState<string>(htmlProp || "");
   const [openId, setOpenId] = useState<string | null>(null);
   const [preview, setPreview] = useState<any>(null);
@@ -10,6 +10,8 @@ export default function LessonBody({ slug, html: htmlProp }: { slug: string; htm
   useEffect(() => {
     if (htmlProp != null) { setHtml(htmlProp); return; }
     if (!slug) return;
+    // For guests, avoid serverless requests entirely when instructed
+    if (noApi) { setHtml(""); return; }
     let alive = true;
     (async () => {
       try {
@@ -23,7 +25,7 @@ export default function LessonBody({ slug, html: htmlProp }: { slug: string; htm
       }
     })();
     return () => { alive = false; };
-  }, [slug, htmlProp]);
+  }, [slug, htmlProp, noApi]);
 
   if (!html) return null;
   return (
