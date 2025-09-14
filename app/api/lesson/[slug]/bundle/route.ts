@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   const scope = url.searchParams.get("scope") || "chapter"; // chapter | lesson
 
   // Resolve lesson + course (include body and video_html for optional embeds)
-  const lr = await sql`SELECT id, slug, title, course_id, body, video_html, meta FROM lessons WHERE slug=${params.slug} LIMIT 1`;
+  const lr = await sql`SELECT id, slug, title, course_id, body, video_html, meta, content_rev, content_changed_at FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const cr = await sql`SELECT id, slug, title, visibility, meta FROM courses WHERE id=${lesson.course_id} LIMIT 1`;
@@ -152,7 +152,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   } catch {}
 
   return NextResponse.json({
-    lesson: { id: Number(lesson.id), slug: String(lesson.slug), title: String(lesson.title), courseId: Number(lesson.course_id) },
+    lesson: { id: Number(lesson.id), slug: String(lesson.slug), title: String(lesson.title), courseId: Number(lesson.course_id), contentRev: Number((lesson as any).content_rev || 0), contentChangedAt: (lesson as any).content_changed_at || null },
     course,
     chapter,
     lessons: chapterLessons,

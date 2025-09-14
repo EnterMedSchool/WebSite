@@ -68,12 +68,12 @@ export default function LessonPage() {
       .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
     // Player info (iframeSrc / locked)  short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
-    const cachedP = getPlayerCached<any>(slug, 60 * 1000);
+    const cachedP = getPlayerCached<any>(slug, 0);
     if (cachedP) {
       setPlayer(cachedP);
     } else if (!gotPlayerFromBundle) {
       fetchPlayerDedupe<any>(slug, async () => {
-        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include' });
+        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include', cache: 'no-store' });
         if (r.status === 200) return r.json();
         if (r.status === 401) { setPlayerErr('unauthenticated'); throw new Error('unauthenticated'); }
         if (r.status === 403) { setPlayerErr('forbidden'); throw new Error('forbidden'); }
@@ -140,23 +140,50 @@ export default function LessonPage() {
   const [practiceAll, setPracticeAll] = useState(false);
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
 
-  // Fetch chapter summary once (authed only), cache in localStorage for a few minutes
+  // Prefer bundle.summary to avoid extra requests; compute fallback locally
   useEffect(() => {
-    const chSlug = (bundle?.chapter?.slug || guest?.chapter?.slug) as string | undefined;
-    const hasAuth = typeof document !== 'undefined' && /(?:^|; )(__Secure-next-auth\.session-token|next-auth\.session-token)=/.test(document.cookie);
-    if (!chSlug || !hasAuth) { setChapterSummary(null); return; }
-    const key = `ems:chapter:summary:${chSlug}`;
     try {
-      const cached = localStorage.getItem(key);
-      if (cached) {
-        const j = JSON.parse(cached);
-        if (Date.now() - (j.v || 0) < 3 * 60 * 1000) setChapterSummary(j.data);
+      // If bundle provides summary, use it directly
+      if ((bundle as any)?.summary) { setChapterSummary((bundle as any).summary); return; }
+      // Compute minimal summary from questionsByLesson and progress (local overlay included)
+      const lessonsArr = (bundle?.lessons || guest?.lessons || []) as any[];
+      const byLesson: Record<string, { total: number; correct: number; incorrect: number; attempted: number }> = {};
+      for (const l of lessonsArr) byLesson[String(Number(l.id))] = { total: 0, correct: 0, incorrect: 0, attempted: 0 };
+      const qbl = (bundle?.questionsByLesson || guest?.questionsByLesson) as Record<string, any[]> | undefined;
+      if (qbl) {
+        for (const [lid, arr] of Object.entries<any[]>(qbl)) {
+          if (!byLesson[lid]) byLesson[lid] = { total: 0, correct: 0, incorrect: 0, attempted: 0 };
+          byLesson[lid].total = (arr || []).length;
+        }
       }
-    } catch {}
-    fetch(`/api/chapter/${encodeURIComponent(chSlug)}/summary`, { credentials: 'include' })
-      .then(async (r) => { if (!r.ok) throw new Error(String(r.status)); const j = await r.json(); setChapterSummary(j); try { localStorage.setItem(key, JSON.stringify({ v: Date.now(), data: j })); } catch {} })
-      .catch(() => setChapterSummaryErr('error'));
-  }, [bundle?.chapter?.slug, guest?.chapter?.slug]);
+      // Overlay saved + pending question statuses to compute attempted/correct/incorrect
+      const courseIdOverlay = Number((bundle?.lesson?.courseId ?? guest?.lesson?.courseId) || 0);
+      const saved = ((bundle as any)?.progress?.questions || {}) as Record<number, { status?: 'correct'|'incorrect' }>;
+      const pending = courseIdOverlay ? (StudyStore.getPending(courseIdOverlay)?.question_status || []) as [number,'correct'|'incorrect'][] : [];
+      const latest = new Map<number,'correct'|'incorrect'>();
+      for (const [qidStr, v] of Object.entries(saved)) { const qid = Number(qidStr); if (v?.status) latest.set(qid, v.status); }
+      for (const [qid, st] of pending) latest.set(Number(qid), st);
+      if (latest.size) {
+        // Map qid->lesson id for those we have in this chapter
+        const qids = Array.from(latest.keys());
+        // Build inverse from local data where possible
+        const inv: Record<number, number> = {};
+        if (qbl) {
+          for (const [lid, arr] of Object.entries<any[]>(qbl)) {
+            for (const q of (arr || [])) inv[Number(q.id)] = Number(lid);
+          }
+        }
+        for (const [qid, st] of latest) {
+          const lid = inv[qid]; if (!lid) continue;
+          const s = byLesson[String(lid)] || (byLesson[String(lid)] = { total: 0, correct: 0, incorrect: 0, attempted: 0 });
+          if (st === 'correct') { s.correct++; s.attempted++; }
+          else if (st === 'incorrect') { s.incorrect++; s.attempted++; }
+        }
+      }
+      const lessonsCompleted = Object.keys(((bundle as any)?.progress?.lessons || {})).map((k)=> Number(k)).filter((id)=> lessonsArr.some((l:any)=> Number(l.id)===id));
+      setChapterSummary({ byLesson, lessonsCompleted });
+    } catch { setChapterSummary(null); }
+  }, [bundle, guest, pendingVersion]);
 
   // Skeleton: questions relevant to this lesson only
   const lessonId = useMemo(() => Number((bundle?.lesson?.id ?? guest?.lesson?.id) || 0), [bundle, guest]);
@@ -470,7 +497,7 @@ export default function LessonPage() {
           {/* Learn tab  render lesson HTML body */}
           {tab === "learn" && (
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-              <LessonBody slug={slug} html={guest?.html} />
+              <LessonBody slug={slug} html={(bundle as any)?.html ?? guest?.html} />
             </div>
           )}
 

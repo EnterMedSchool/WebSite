@@ -13,7 +13,7 @@ export default function LessonBody({ slug, html: htmlProp }: { slug: string; htm
     let alive = true;
     (async () => {
       try {
-        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/body`, { cache: 'force-cache' });
+        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/body`, { cache: 'no-store' });
         const j = await r.json();
         if (!alive) return;
         setHtml(String(j?.html || ""));
