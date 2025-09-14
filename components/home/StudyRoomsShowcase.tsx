@@ -29,6 +29,10 @@ export default function StudyRoomsShowcase() {
         </div>
       </div>
       <div className="p-4">
+        {/* Pin callouts */}
+        <div className="pointer-events-none relative">
+          <div className="absolute -top-3 right-6 z-10 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[10px] font-bold text-white shadow">Live</div>
+        </div>
         <div className="grid grid-cols-3 gap-3">
           {["Silent", "Discuss", "Quiz"].map((t) => (
             <div key={t} className="rounded-xl border border-slate-200 bg-white p-3 text-center text-xs font-semibold shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -80,6 +84,8 @@ export default function StudyRoomsShowcase() {
       id="study-rooms"
       title="Study Rooms"
       variant="teal"
+      tint="teal"
+      flip
       bullets={[
         { title: "See who's online", desc: "Live presence dots and quick room modes." },
         { title: "Join with one click", desc: "Jump in, mute by default, and start studying." },

@@ -12,6 +12,8 @@ export default function FeatureSection({
   variant = "indigo",
   bullets = [],
   right,
+  flip = false,
+  tint = "none",
 }: {
   id?: string;
   pretitle?: string;
@@ -19,15 +21,30 @@ export default function FeatureSection({
   variant?: Variant;
   bullets?: Array<{ title: string; desc?: string; color?: string }>;
   right: React.ReactNode;
+  flip?: boolean;
+  tint?: "none" | "indigo" | "teal" | "amber";
 }) {
+  const tintClass =
+    tint === "teal"
+      ? "from-teal-300/15 via-cyan-300/10 to-emerald-300/10"
+      : tint === "amber"
+      ? "from-amber-300/15 via-rose-300/10 to-orange-300/10"
+      : tint === "indigo"
+      ? "from-indigo-300/15 via-violet-300/10 to-fuchsia-300/10"
+      : "from-transparent via-transparent to-transparent";
+
   return (
     <section
       id={id}
-      className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12 sm:py-16 md:py-24"
+      className="group/section relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12 sm:py-16 md:py-24"
     >
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-14">
+      {/* subtle tinted backdrop per section to reduce repetition */}
+      <div className={`pointer-events-none absolute -top-16 right-[-6%] -z-10 h-80 w-80 rounded-full bg-gradient-to-br ${tintClass} blur-3xl`} />
+      <div className={`pointer-events-none absolute -bottom-10 left-[-6%] -z-10 h-72 w-72 rounded-full bg-gradient-to-tr ${tintClass} blur-3xl`} />
+
+      <div className={`mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-14`}>
         {/* Left copy */}
-        <div className="relative">
+        <div className={`relative ${flip ? "order-2 md:order-1" : "order-1"}`}>
           <ShimmerHeading pretitle={pretitle} title={title} variant={variant as any} size="lg" />
 
           <ul className="mt-6 space-y-5">
@@ -64,12 +81,14 @@ export default function FeatureSection({
           whileInView={{ x: 0, opacity: 1 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ type: "spring", stiffness: 90, damping: 18 }}
-          className="relative"
+          className={`relative ${flip ? "order-1 md:order-2" : "order-2"}`}
         >
-          {right}
+          <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[32px] bg-[radial-gradient(480px_140px_at_70%_0%,rgba(0,0,0,0.08),transparent)]" />
+          <div className="transition-transform duration-300 ease-out will-change-transform group-hover/section:[transform:perspective(900px)_rotateX(1.5deg)_rotateY(-1.5deg)]">
+            {right}
+          </div>
         </motion.div>
       </div>
     </section>
   );
 }
-

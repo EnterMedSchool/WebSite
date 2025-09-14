@@ -28,6 +28,10 @@ export default function LeaderboardsShowcase() {
         </div>
       </div>
       <div className="p-4">
+        {/* Pin callout */}
+        <div className="pointer-events-none relative">
+          <div className="absolute -top-3 right-6 z-10 rounded-full bg-amber-600/90 px-2 py-0.5 text-[10px] font-bold text-white shadow">Live XP</div>
+        </div>
         <table className="w-full text-sm">
           <tbody>
             {rows.map((r, i) => (
@@ -66,6 +70,7 @@ export default function LeaderboardsShowcase() {
       pretitle="Competitive spirit"
       title="Weekly Leaderboards"
       variant="amber"
+      tint="amber"
       bullets={[
         { title: "Represent your school", desc: "Earn XP from lessons, quizzes, and events.", color: "bg-gradient-to-tr from-amber-600 to-rose-600" },
         { title: "See weekly ranks", desc: "Track momentum with week-by-week filters.", color: "bg-gradient-to-tr from-amber-600 to-rose-600" },
