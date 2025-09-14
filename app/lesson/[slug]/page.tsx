@@ -349,8 +349,13 @@ export default function LessonPage() {
               <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/40">
                 <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
               </div>
+              {!authed && (
+                <div className="pointer-events-none absolute inset-0 grid place-items-center rounded-2xl bg-white/70 backdrop-blur-sm">
+                  <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Log in to practice questions</span>
+                </div>
+              )}
             </div>
-            <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+            <div className="relative rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
               <div className="text-[12px] font-semibold text-indigo-900">Question progress</div>
 
               {/* Lesson summary */}
@@ -380,11 +385,11 @@ export default function LessonPage() {
                         <span className="absolute left-3 top-8 bottom-0 w-px bg-indigo-100" />
                       )}
                       <span className="absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full bg-gray-200 text-gray-700 text-[12px] font-semibold">{i + 1}</span>
-                      <button type="button" className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${cls}`}>
+                      <button type="button" onClick={() => { setTab('practice'); setPracticeAll(false); setOpenQuestionId(Number(q.id)); }} className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${cls}`}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="truncate text-sm font-medium">{q.title}</div>
                           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
-                        </div>
+                        <div className=" mt-0.5 text-[11px] text-gray-600\>Single best answer • 1 point</div>
                         <div className="mt-0.5 text-[11px] text-gray-600">Single best answer Â· 1 point</div>
                       </button>
                     </li>
@@ -393,7 +398,13 @@ export default function LessonPage() {
               </ul>
               {/* Footer actions */}
               <div className="mt-2 flex justify-end">
-                <button type="button" className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Practice all</button>
+                <button
+                  type="button"
+                  onClick={() => { setTab('practice'); setPracticeAll(true); setOpenQuestionId(null); }}
+                  className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700"
+                >
+                  Practice all
+                </button>
               </div>
             </div>
           </aside>
@@ -466,6 +477,19 @@ export default function LessonPage() {
                             >Correct</button>
                             <button
                               onClick={() => { try { StudyStore.addQuestionStatus(Number(bundle?.lesson?.courseId||0), Number(q.id), 'incorrect'); } catch {}; }}
+              {bundle && mcqs.length > 0 && (
+                <div className="mt-3">
+                  <MCQPanel
+                    courseId={courseIdNum}
+                    questions={mcqs}
+                    initialStatus={initialStatus}
+                    openAll={practiceAll}
+                    openOnlyId={openQuestionId}
+                    disabled={!authed}
+                    onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
+                  />
+                </div>
+              )}
                               className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${q.status==='incorrect' ? 'bg-rose-600 text-white ring-rose-700' : 'bg-rose-50 text-rose-700 ring-rose-200'}`}
                             >Review</button>
                           </div>

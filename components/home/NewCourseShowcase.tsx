@@ -11,9 +11,9 @@ export default function NewCourseShowcase() {
   const progress = useMemo(() => (done ? 68 : 42), [done]);
 
   return (
-    <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10 sm:py-14 md:py-20">
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-8 px-6 md:grid-cols-2 md:gap-12">
-        {/* Left copy with callouts & arrows */}
+    <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12 sm:py-16 md:py-24">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-14">
+        {/* Left copy */}
         <div className="relative">
           <motion.h3
             initial={{ x: -40, opacity: 0 }}
@@ -25,10 +25,10 @@ export default function NewCourseShowcase() {
             Entirely New Course System
           </motion.h3>
 
-          <div className="mt-6 space-y-7 text-slate-700 dark:text-slate-100">
-            <Callout idx={1} text="Track your progress" className="md:pl-6" />
-            <Callout idx={2} text="Make it fun and earn XP" className="md:pl-10" />
-            <Callout idx={3} text="Practice and review flashcards" className="md:pl-16" />
+          <div className="mt-6 space-y-6 text-slate-700 dark:text-slate-100">
+            <Callout idx={1} text="Track your progress" />
+            <Callout idx={2} text="Make it fun and earn XP" />
+            <Callout idx={3} text="Practice and review flashcards" />
           </div>
         </div>
 
@@ -40,10 +40,10 @@ export default function NewCourseShowcase() {
           transition={{ type: "spring", stiffness: 90, damping: 18 }}
           className="relative"
         >
-          <div className="absolute -inset-6 -z-10 rounded-[32px] bg-[radial-gradient(400px_120px_at_70%_0%,rgba(99,102,241,0.10),transparent)]" />
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_22px_60px_rgba(49,46,129,0.10)] ring-1 ring-indigo-900/5 dark:border-white/10 dark:bg-slate-900/60">
+          <div className="absolute -inset-6 -z-10 rounded-[32px] bg-[radial-gradient(480px_140px_at_70%_0%,rgba(99,102,241,0.12),transparent)]" />
+          <div className="overflow-hidden rounded-3xl border border-white/50 bg-white/70 shadow-[0_24px_70px_rgba(49,46,129,0.12)] backdrop-blur-md ring-1 ring-indigo-900/5 dark:border-white/10 dark:bg-slate-900/50">
             {/* Tabs */}
-            <div className="flex items-center gap-1 border-b border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold dark:border-white/10 dark:bg-white/5">
+            <div className="flex items-center gap-1 border-b border-white/60 bg-white/60 px-3 py-2 text-xs font-semibold backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
               {[
                 { id: "overview", label: "Overview" },
                 { id: "lesson", label: "Lesson" },
@@ -54,15 +54,15 @@ export default function NewCourseShowcase() {
                   onClick={() => setTab(t.id as Tab)}
                   className={`rounded-lg px-3 py-1 transition-colors ${
                     tab === t.id
-                      ? "bg-indigo-600 text-white"
-                      : "text-slate-700 hover:bg-white dark:text-slate-200"
+                      ? "bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow"
+                      : "text-slate-700 hover:bg-white/80 dark:text-slate-200"
                   }`}
                 >
                   {t.label}
                 </button>
               ))}
               <div className="ml-auto flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-300">
-                <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-200 dark:ring-indigo-500/20">
+                <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50/80 px-2 py-0.5 text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-200 dark:ring-indigo-500/20">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-80"><path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm1 5v6h5v2h-7V7h2Z"/></svg>
                   2026
                 </span>
@@ -70,7 +70,7 @@ export default function NewCourseShowcase() {
             </div>
 
             {/* Content area with slide-in animation on change */}
-            <div className="relative h-[340px] bg-white/90 p-4 dark:bg-slate-900/50">
+            <div className="relative h-[360px] bg-white/80 p-4 backdrop-blur-sm dark:bg-slate-900/50">
               <AnimatePresence initial={false} mode="wait">
                 {tab === "overview" && (
                   <motion.div
@@ -79,12 +79,12 @@ export default function NewCourseShowcase() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -60, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 120, damping: 16 }}
-                    className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70"
+                    className="h-full rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/70"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-bold text-slate-900 dark:text-white">Cardio Course • Module 2</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-300">8 lessons • 2h 40m</div>
+                        <div className="text-sm font-bold text-slate-900 dark:text-white">Cardio Course · Module 2</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-300">8 lessons · 2h 40m</div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Progress</div>
@@ -95,13 +95,13 @@ export default function NewCourseShowcase() {
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
                       {["ECG Basics", "Heart Sounds", "Acute MI", "Arrhythmias", "DIC", "Pharm"].map((l, i) => (
-                        <div key={i} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
+                        <div key={i} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/5">
                           <div className="font-semibold text-slate-800 dark:text-slate-100">{l}</div>
                           <div className="mt-1 flex items-center justify-between">
                             <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-500/20">Quiz</span>
                             <button
                               onClick={() => setTab("lesson")}
-                              className="rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-indigo-500"
+                              className="rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 px-2 py-1 text-[10px] font-semibold text-white hover:brightness-110"
                             >
                               Open
                             </button>
@@ -119,7 +119,7 @@ export default function NewCourseShowcase() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -60, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 120, damping: 16 }}
-                    className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70"
+                    className="h-full rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/70"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -129,7 +129,7 @@ export default function NewCourseShowcase() {
                       <button
                         onClick={() => setDone((d) => !d)}
                         className={`rounded-lg px-3 py-1 text-xs font-semibold shadow ${
-                          done ? "bg-emerald-600 text-white" : "bg-indigo-600 text-white"
+                          done ? "bg-emerald-600 text-white" : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white"
                         }`}
                         aria-pressed={done}
                       >
@@ -137,7 +137,7 @@ export default function NewCourseShowcase() {
                       </button>
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-3">
-                      <div className="col-span-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                      <div className="col-span-2 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200 backdrop-blur-sm dark:bg-white/5 dark:ring-white/10">
                         <div className="h-36 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 p-3 text-white shadow-inner">
                           <div className="text-[10px] opacity-80">Video Player</div>
                           <div className="mt-2 h-[92px] rounded-md bg-white/20" />
@@ -145,7 +145,7 @@ export default function NewCourseShowcase() {
                         <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">A rare clotting disorder. Explore pathophysiology, labs, and treatment.</div>
                       </div>
                       <div className="space-y-3">
-                        <div className="rounded-xl bg-white p-3 text-xs ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                        <div className="rounded-xl bg-white/90 p-3 text-xs ring-1 ring-slate-200 backdrop-blur-sm dark:bg-white/5 dark:ring-white/10">
                           <div className="font-semibold text-slate-800 dark:text-slate-100">XP Rewards</div>
                           <div className="mt-1 flex items-center justify-between">
                             <span className="text-slate-600 dark:text-slate-300">Complete Lesson</span>
@@ -158,7 +158,7 @@ export default function NewCourseShowcase() {
                         </div>
                         <button
                           onClick={() => setTab("flashcards")}
-                          className="w-full rounded-xl bg-fuchsia-600 px-3 py-2 text-xs font-semibold text-white shadow hover:bg-fuchsia-500"
+                          className="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-3 py-2 text-xs font-semibold text-white shadow hover:brightness-110"
                         >
                           Practice Flashcards
                         </button>
@@ -174,10 +174,10 @@ export default function NewCourseShowcase() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -60, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 120, damping: 16 }}
-                    className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70"
+                    className="h-full rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/70"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-slate-900 dark:text-white">Flashcards • Hematology</div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">Flashcards · Hematology</div>
                       <div className="text-xs text-slate-500 dark:text-slate-300">Spaced Repetition</div>
                     </div>
                     <div className="mt-4 grid h-[220px] grid-cols-2 gap-3">
@@ -190,7 +190,7 @@ export default function NewCourseShowcase() {
                           <button className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-fuchsia-700 hover:bg-fuchsia-50">Hard</button>
                         </div>
                       </div>
-                      <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                      <div className="rounded-xl bg-white/90 p-4 ring-1 ring-slate-200 backdrop-blur-sm dark:bg-white/5 dark:ring-white/10">
                         <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">Today</div>
                         <div className="mt-1 grid grid-cols-3 gap-2 text-center">
                           {[
@@ -216,18 +216,6 @@ export default function NewCourseShowcase() {
           </div>
         </motion.div>
       </div>
-
-      <style jsx>{`
-        .callout-arrow {
-          stroke-dasharray: 6 6;
-          animation: dash-move 3s ease-in-out infinite;
-        }
-        @keyframes dash-move {
-          0% { stroke-dashoffset: 0; }
-          50% { stroke-dashoffset: 24; }
-          100% { stroke-dashoffset: 0; }
-        }
-      `}</style>
     </section>
   );
 }
@@ -248,30 +236,7 @@ function Callout({ idx, text, className = "" }: { idx: number; text: string; cla
         <div className="text-lg font-semibold">{text}</div>
         <div className="text-sm text-slate-600 dark:text-slate-300">Smooth animations, delightful feedback, and crisp visuals.</div>
       </div>
-      {/* Curved arrow (points to the right content) */}
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute -right-10 top-8 hidden h-16 w-28 text-indigo-500 md:block"
-        viewBox="0 0 120 70"
-        fill="none"
-      >
-        <defs>
-          <linearGradient id={`grad-${idx}`} x1="0" y1="0" x2="120" y2="0" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#6366F1" />
-            <stop offset="1" stopColor="#A78BFA" />
-          </linearGradient>
-          <marker id={`arrow-${idx}`} markerWidth="8" markerHeight="8" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
-            <path d="M0 0 L7 3.5 L0 7 Z" fill={`url(#grad-${idx})`} />
-          </marker>
-        </defs>
-        <path
-          d="M2 62 C 30 10, 80 10, 116 40"
-          stroke={`url(#grad-${idx})`}
-          strokeWidth="3"
-          markerEnd={`url(#arrow-${idx})`}
-          className="callout-arrow"
-        />
-      </svg>
     </motion.div>
   );
 }
+
