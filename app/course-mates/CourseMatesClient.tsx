@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { Skeleton, SkeletonAvatar, SkeletonText } from "@/components/ui/Skeleton";
 
 type Option = { id: number; name: string; slug?: string };
 type Org = { id: number; name: string; slug: string; website?: string | null; description?: string | null };
@@ -224,6 +225,25 @@ export default function CourseMatesClient({ authed, initial }: {
               </div>
             </div>
             <ul className="space-y-3">
+              {refreshing && (
+                <>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <li key={`fd-skel-${i}`} className="rounded-xl border border-gray-200 p-3">
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-40 rounded" />
+                            <Skeleton className="h-3 w-24 rounded" />
+                          </div>
+                          <Skeleton className="h-3 w-full rounded" />
+                          <Skeleton className="h-3 w-4/5 rounded" />
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </>
+              )}
               {feedLimited.map((p:any) => (
                 <li key={p.id} className="rounded-xl border border-gray-200 p-3">
                   <div className="flex items-start gap-3">
@@ -253,6 +273,22 @@ export default function CourseMatesClient({ authed, initial }: {
             </div>
             <div className="text-xs font-semibold text-gray-600">This Week</div>
             <ul className="mt-1 space-y-1">
+              {lb === null && (
+                <>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <li key={`w-skel-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Skeleton className="h-7 w-7 rounded-full" />
+                        <Skeleton className="h-3 w-32 rounded" />
+                      </div>
+                      <div className="ml-3 flex w-40 items-center gap-2">
+                        <Skeleton className="h-2 w-full rounded-full" />
+                        <Skeleton className="h-3 w-12 rounded" />
+                      </div>
+                    </li>
+                  ))}
+                </>
+              )}
               {(lb?.weekly || []).map((r:any, i:number) => {
                 const isTop3 = i < 3; const medal = i===0? '🥇' : i===1? '🥈' : i===2? '🥉' : null;
                 const xp = Number(r.weekly_xp || 0);
@@ -276,6 +312,22 @@ export default function CourseMatesClient({ authed, initial }: {
             </ul>
             <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
             <ul className="mt-1 space-y-1">
+              {lb === null && (
+                <>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <li key={`a-skel-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Skeleton className="h-7 w-7 rounded-full" />
+                        <Skeleton className="h-3 w-32 rounded" />
+                      </div>
+                      <div className="ml-3 flex w-40 items-center gap-2">
+                        <Skeleton className="h-2 w-full rounded-full" />
+                        <Skeleton className="h-3 w-12 rounded" />
+                      </div>
+                    </li>
+                  ))}
+                </>
+              )}
               {(lb?.all || []).map((r:any, i:number) => {
                 const isTop3 = i < 3; const medal = i===0? '🏆' : i===1? '🥈' : i===2? '🥉' : null;
                 const xp = Number(r.xp || 0);
@@ -309,6 +361,22 @@ export default function CourseMatesClient({ authed, initial }: {
                 )}
               </div>
               <ul className="space-y-2 text-sm text-gray-700">
+                {refreshing && (
+                  <>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <li key={`ev-skel-${i}`} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-10 w-10 rounded" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-40 rounded" />
+                            <Skeleton className="h-3 w-28 rounded" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </li>
+                    ))}
+                  </>
+                )}
                 {events.map((ev:any)=> (
                   <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
                   <div className="flex items-center gap-2">
@@ -362,6 +430,13 @@ export default function CourseMatesClient({ authed, initial }: {
               )}
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {refreshing && (
+                <>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={`ph-skel-${i}`} className="aspect-[4/3] w-full rounded-xl" />
+                  ))}
+                </>
+              )}
               {photos.map((p:any)=> (
                 <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="group block aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-black/5">
                   <img src={p.thumb_url || p.url} alt={p.caption || 'Event photo'} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
