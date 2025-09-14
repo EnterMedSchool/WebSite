@@ -15,7 +15,7 @@ import { getBundleCached, setBundleCached, getPlayerCached, setPlayerCached, fet
 import UniResources from "@/components/lesson/UniResources";
 import SaveDock from "@/components/study/SaveDock";
 import { StudyStore } from "@/lib/study/store";
-import MCQPanel from "@/components/lesson/MCQPanel";
+import MCQPanel, { type MCQ } from "@/components/lesson/MCQPanel";
 
 type LessonQuestionItem = {
   id: string;
@@ -217,11 +217,11 @@ export default function LessonPage() {
 
   // Build MCQ list for the current lesson (authed bundle only)
   const courseIdNum = useMemo(() => Number((bundle?.lesson?.courseId ?? guest?.lesson?.courseId) || 0), [bundle, guest]);
-  const mcqs = useMemo(() => {
-    const list: { id: number; prompt: string; choices: { id:number; text:string; correct?: boolean }[] }[] = [];
+  const mcqs: MCQ[] = useMemo(() => {
+    const list: MCQ[] = [];
     const arr = (bundle?.questionsByLesson && lessonId) ? (bundle.questionsByLesson[String(lessonId)] || []) : [];
     for (const q of arr) {
-      list.push({ id: Number(q.id), prompt: String(q.prompt||''), choices: (q.choices||[]).map((c:any)=>({ id: Number(c.id), text: String(c.text||c.content||''), correct: typeof c.correct === 'boolean' ? Boolean(c.correct) : undefined })) });
+      list.push({ id: Number(q.id), prompt: String(q.prompt||''), choices: (q.choices||[]).map((c:any)=>({ id: Number(c.id), text: String(c.text||c.content||''), correct: typeof c.correct === 'boolean' ? Boolean(c.correct) : undefined })) } as MCQ);
     }
     return list;
   }, [bundle, lessonId]);
