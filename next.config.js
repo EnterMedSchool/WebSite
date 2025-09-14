@@ -32,6 +32,13 @@ const nextConfig = {
         { key: 'Cache-Control', value: 'public, immutable, max-age=31536000, s-maxage=31536000' },
       ],
     });
+    // Strong caching for free-lessons JSON; client adds ?v=hash to bust
+    headers.push({
+      source: '/free-lessons/:path*',
+      headers: [
+        { key: 'Cache-Control', value: 'public, immutable, max-age=31536000, s-maxage=31536000' },
+      ],
+    });
     if (!allowIndex) {
       headers.push({
         source: '/:path*',

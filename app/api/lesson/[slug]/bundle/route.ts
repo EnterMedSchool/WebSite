@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUserId } from "@/lib/study/auth";
 import { checkCourseAccess } from "@/lib/lesson/access";
+import { extractIframeSrc, detectProviderFromSrc, isPremiumSrc } from "@/lib/video/embed";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,8 +19,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   const url = new URL(req.url);
   const scope = url.searchParams.get("scope") || "chapter"; // chapter | lesson
 
-  // Resolve lesson + course
-  const lr = await sql`SELECT id, slug, title, course_id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
+  // Resolve lesson + course (include body and video_html for optional embeds)
+  const lr = await sql`SELECT id, slug, title, course_id, body, video_html FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const cr = await sql`SELECT id, slug, title, visibility, meta FROM courses WHERE id=${lesson.course_id} LIMIT 1`;
@@ -95,6 +96,28 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     }
   } catch {}
 
+  // Optional includes to reduce client calls: include=player,body
+  const url = new URL(req.url);
+  const include = new Set((url.searchParams.get('include') || '').split(',').map((s)=>s.trim()).filter(Boolean));
+  let player: any = undefined;
+  let html: string | undefined = undefined;
+  if (include.has('player')) {
+    let iframeSrc: string | null = extractIframeSrc(String((lesson as any).video_html || ''));
+    let locked = false; let lockReason: string | undefined;
+    const provider = detectProviderFromSrc(iframeSrc || undefined);
+    if (iframeSrc) {
+      const access = await checkCourseAccess(userId, Number(lesson.course_id));
+      if (access.accessType === 'paid' && !access.allowed) {
+        locked = true; lockReason = 'paid_course';
+        if (isPremiumSrc(iframeSrc)) iframeSrc = null;
+      }
+    }
+    player = { provider, iframeSrc, locked, lockReason, source: 'bundle' };
+  }
+  if (include.has('body')) {
+    html = String((lesson as any).body || '');
+  }
+
   // Build lightweight chapter summary (per-lesson counts + completion) to avoid extra requests on client
   let summary: any = null;
   try {
@@ -136,6 +159,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     lessons: chapterLessons,
     questionsByLesson,
     progress,
+    player,
+    html,
     summary,
     scope,
   });

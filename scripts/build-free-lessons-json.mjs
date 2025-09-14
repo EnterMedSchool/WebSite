@@ -156,7 +156,7 @@ async function main() {
         fs.writeFileSync(p, JSON.stringify(data));
         console.log(`[free-lessons] wrote ${p}`);
       }
-      index.push({ slug, title: data.lesson.title, courseSlug: data.course.slug });
+      index.push({ slug, title: data.lesson.title, courseSlug: data.course.slug, hash });
     } catch (e) {
       console.warn(`[free-lessons] failed for ${slug}:`, e.message);
     }

@@ -13,7 +13,7 @@ import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
-import { getBundleCached, setBundleCached, getPlayerCached, setPlayerCached } from "@/lib/study/cache";
+import { getBundleCached, setBundleCached, getPlayerCached, setPlayerCached, fetchBundleDedupe, fetchPlayerDedupe } from "@/lib/study/cache";
 import UniResources from "@/components/lesson/UniResources";
 import SaveDock from "@/components/study/SaveDock";
 import { StudyStore } from "@/lib/study/store";
@@ -53,56 +53,63 @@ export default function LessonPage() {
     if (hasAuth) {
     // Use local cache first (5 min TTL) to avoid repeated API hits
     const cachedB = getBundleCached<any>(slug, 5 * 60 * 1000);
+    let gotPlayerFromBundle = false;
     if (cachedB) {
       setBundle(cachedB);
+      if ((cachedB as any)?.player) { setPlayer((cachedB as any).player); gotPlayerFromBundle = true; }
     } else {
-      fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter`, { credentials: 'include' })
-        .then(async (r) => {
-          if (!alive) return;
-          if (r.status === 200) { const j = await r.json(); setBundle(j); setBundleCached(slug, j); }
-          else if (r.status === 401) { setBundleErr('unauthenticated'); }
-          else if (r.status === 403) setBundleErr('forbidden');
-          else setBundleErr('error');
-        })
-        .catch(() => alive && setBundleErr('error'));
+      fetchBundleDedupe<any>(slug, async () => {
+        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
+        if (r.status === 200) return r.json();
+        if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
+        if (r.status === 403) { setBundleErr('forbidden'); throw new Error('forbidden'); }
+        setBundleErr('error'); throw new Error('error');
+      })
+        .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
+        .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
     }
     // Player info (iframeSrc / locked) — short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
     const cachedP = getPlayerCached<any>(slug, 60 * 1000);
     if (cachedP) {
       setPlayer(cachedP);
-    } else {
-      fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include' })
-        .then(async (r) => {
-          if (!alive) return;
-          if (r.status === 200) { const j = await r.json(); setPlayer(j); setPlayerCached(slug, j); }
-          else if (r.status === 401) setPlayerErr('unauthenticated');
-          else if (r.status === 403) setPlayerErr('forbidden');
-          else setPlayerErr('error');
-        })
-        .catch(() => alive && setPlayerErr('error'));
+    } else if (!gotPlayerFromBundle) {
+      fetchPlayerDedupe<any>(slug, async () => {
+        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include' });
+        if (r.status === 200) return r.json();
+        if (r.status === 401) { setPlayerErr('unauthenticated'); throw new Error('unauthenticated'); }
+        if (r.status === 403) { setPlayerErr('forbidden'); throw new Error('forbidden'); }
+        setPlayerErr('error'); throw new Error('error');
+      })
+        .then((j) => { if (!alive) return; setPlayer(j); setPlayerCached(slug, j); })
+        .catch(() => {});
     }
     }
     // Try static guest JSON from CDN (free lessons)
     // Avoid 404 noise by checking index first and only fetching when available.
     try {
-      const cached = (typeof window !== 'undefined') ? (window as any).__ems_free_index as Set<string> | undefined : undefined;
-      const ensureIndex = async (): Promise<Set<string>> => {
+      const cached = (typeof window !== 'undefined') ? (window as any).__ems_free_index as Map<string,string> | undefined : undefined;
+      const ensureIndex = async (): Promise<Map<string,string>> => {
         if (cached && cached.size) return cached;
         try {
           const r = await fetch('/free-lessons/v1/index.json', { cache: 'force-cache' });
-          if (!r.ok) return new Set();
+          if (!r.ok) return new Map();
           const j = await r.json().catch(() => ({} as any));
-          const set = new Set<string>(Array.isArray(j?.lessons) ? j.lessons.map((x: any) => String(x.slug)) : []);
-          if (typeof window !== 'undefined') (window as any).__ems_free_index = set;
-          return set;
-        } catch { return new Set(); }
+          const map = new Map<string,string>();
+          if (Array.isArray(j?.lessons)) {
+            for (const x of j.lessons) { const s = String(x.slug); const h = String(x.hash||''); map.set(s, h); }
+          }
+          if (typeof window !== 'undefined') (window as any).__ems_free_index = map;
+          return map;
+        } catch { return new Map(); }
       };
       ensureIndex()
         .then((idx) => {
           if (!alive) return;
-          if (idx.has(slug)) {
-            fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' })
+          const h = idx.get(slug);
+          if (h !== undefined) {
+            const v = h ? `?v=${encodeURIComponent(h)}` : '';
+            fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' })
               .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
               .catch(() => {});
           }

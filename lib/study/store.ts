@@ -38,9 +38,38 @@ function load(courseId: number): Pending {
 }
 
 function save(courseId: number, data: Pending) {
-  data.updatedAt = Date.now();
-  localStorage.setItem(key(courseId), JSON.stringify(data));
-  CH?.postMessage({ type: "pending:update", courseId, count: count(courseId) });
+  // Merge with latest stored to avoid cross-tab lost updates
+  const cur = load(courseId);
+  const mergeSet = (a: number[] | undefined, b: number[] | undefined) => {
+    const s = new Set<number>();
+    (a || []).forEach((n) => s.add(n));
+    (b || []).forEach((n) => s.add(n));
+    return Array.from(s);
+  };
+  const mergedCompleted = mergeSet(cur.lessons_completed, data.lessons_completed);
+  const mergedIncomplete = mergeSet(cur.lessons_incomplete || [], data.lessons_incomplete || []);
+  // Ensure undo wins locally: remove any completed that are also in incomplete
+  const liSet = new Set<number>(mergedIncomplete);
+  const lc = mergedCompleted.filter((id) => !liSet.has(id));
+
+  // Merge question statuses by id, favoring newest payload
+  const map = new Map<number, QuestionStatus>();
+  for (const [id, st] of cur.question_status) map.set(id, st);
+  for (const [id, st] of data.question_status) map.set(id, st);
+  const qarr: [number, QuestionStatus][] = Array.from(map.entries());
+
+  const next: Pending = {
+    lessons_completed: lc,
+    lessons_incomplete: mergedIncomplete,
+    question_status: qarr,
+    lastSavedHash: cur.lastSavedHash,
+    updatedAt: Date.now(),
+    lastSavedAt: cur.lastSavedAt,
+  };
+  localStorage.setItem(key(courseId), JSON.stringify(next));
+  const c = (lc.length + (mergedIncomplete?.length || 0) + qarr.length);
+  for (const l of listeners) try { l(courseId, c); } catch {}
+  CH?.postMessage({ type: "pending:update", courseId, count: c });
 }
 
 function count(courseId: number): number {
@@ -114,6 +143,8 @@ export const StudyStore = {
   },
   clear(courseId: number) {
     localStorage.removeItem(key(courseId));
+    // Notify both local and cross-tab listeners
+    for (const l of listeners) try { l(courseId, 0); } catch {}
     CH?.postMessage({ type: "pending:update", courseId, count: 0 });
   },
   subscribe(fn: Listener) {
