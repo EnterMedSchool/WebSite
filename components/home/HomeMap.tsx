@@ -675,10 +675,10 @@ export default function HomeMap() {
             {selected && (
               <FloatingPanel
                 id="map-universities"
-                initialSize={{ width: 520, height: 600 }}
-                initialPos={{ x: Math.max(24, (typeof window !== 'undefined' ? (window.innerWidth - 520 - 24) : 980)), y: 140 }}
+                initialSize={{ width: 560, height: 720 }}
+                initialPos={{ x: Math.max(24, (typeof window !== 'undefined' ? (window.innerWidth - 560 - 24) : 952)), y: 140 }}
                 minWidth={420}
-                minHeight={360}
+                minHeight={420}
                 className="bg-transparent"
               >
                 <UniversitiesPanelFloating

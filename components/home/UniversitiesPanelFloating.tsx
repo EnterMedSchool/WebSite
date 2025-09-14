@@ -108,7 +108,7 @@ export default function UniversitiesPanelFloating({ selectedName, items, onAddCo
 
             {/* Detail overlay when a university is chosen */}
             {active && (
-              <div className="absolute inset-0 z-10 rounded-2xl bg-white p-3 ring-1 ring-black/10 shadow-2xl">
+              <div className="absolute inset-0 z-10 rounded-2xl bg-white p-3 ring-1 ring-black/10 shadow-2xl overflow-auto pb-20">
                 <div className="flex items-start gap-3">
                   <div className="h-12 w-12 overflow-hidden rounded-full bg-indigo-100 flex items-center justify-center ring-2 ring-white shadow-[0_0_0_3px_rgba(99,102,241,0.25)]">
                     {active.logo ? (
