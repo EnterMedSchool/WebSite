@@ -2,6 +2,7 @@
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { checkCourseAccess } from "@/lib/lesson/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,17 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const lr = await sql`SELECT id, slug, title, course_id FROM lessons WHERE slug=${slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Gate paid courses for this route as well
+  try {
+    const session = await getServerSession(authOptions as any);
+    let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
+    if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) userId = 0;
+    const access = await checkCourseAccess(userId || 0, Number(lesson.course_id));
+    if (access.accessType === 'paid' && !access.allowed) {
+      return NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
+    }
+  } catch {}
 
   const br = await sql`SELECT id, kind, content FROM lesson_blocks WHERE lesson_id=${lesson.id} ORDER BY COALESCE(rank_key,'')`;
   const cr = await sql`SELECT id, slug, title FROM courses WHERE id=${lesson.course_id} LIMIT 1`;

@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { checkCourseAccess } from "@/lib/lesson/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(_req: Request, { params }: { params: { slug: string } }) {
-  const lr = await sql`SELECT id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
+  const lr = await sql`SELECT id, course_id FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -34,7 +35,15 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     }
   } catch {}
 
-  // Access filter: logged-in users can see public/auth/premium; guests see public/guest
+  // Paid course gating: if course is paid and user lacks entitlement, deny.
+  try {
+    const access = await checkCourseAccess(userId || 0, Number(lesson.course_id));
+    if (access.accessType === 'paid' && !access.allowed) {
+      return NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
+    }
+  } catch {}
+
+  // Access filter: logged-in users can see public/auth/premium; guests see public/guest (only after gating above)
   const qr = userId
     ? await sql`SELECT id, prompt, explanation, access FROM questions WHERE lesson_id=${lesson.id} AND (access IS NULL OR access IN ('public','auth','premium')) ORDER BY COALESCE(rank_key,'')`
     : await sql`SELECT id, prompt, explanation, access FROM questions WHERE lesson_id=${lesson.id} AND (access IS NULL OR access IN ('public','guest')) ORDER BY COALESCE(rank_key,'')`;
