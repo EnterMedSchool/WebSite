@@ -22,7 +22,7 @@ export default function ScrollShow() {
   const [preRatio, setPreRatio] = useState(0);
   const [countdownLocked, setCountdownLocked] = useState(false);
   const introRef = useRef<HTMLDivElement>(null);
-  const featRef = useRef<HTMLDivElement | null>(null);
+  const featureBlockRef = useRef<HTMLDivElement>(null);
   const [featRatio, setFeatRatio] = useState(0);
 
   useEffect(() => {
@@ -62,10 +62,10 @@ export default function ScrollShow() {
     if (!countdownLocked && preRatio >= 0.92) setCountdownLocked(true);
   }, [preRatio, countdownLocked]);
 
-  // Feature reveal progress tied to the first step sentinel
+  // Feature reveal progress tied to a dedicated feature block
   const { scrollYProgress: featuresProgress } = useScroll({
-    target: featRef,
-    offset: ["start 85%", "end 10%"],
+    target: featureBlockRef,
+    offset: ["start 90%", "end 10%"],
   });
   useMotionValueEvent(featuresProgress, "change", (v) => setFeatRatio(Math.max(0, Math.min(1, v ?? 0))));
 
@@ -108,9 +108,11 @@ export default function ScrollShow() {
   return (
     <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
       {/* tall scroll area with intro + three sentinels */}
-      <div ref={container} className="relative h-[420vh]">
+      <div ref={container} className="relative h-[640vh]">
         {/* intro sentinel (starts cinematic before the first scene) */}
         <div ref={introRef} className="h-[80vh]" />
+        {/* feature reel track length (drives overlay after GO) */}
+        <div ref={featureBlockRef} className="h-[240vh]" />
         {/* sticky stage */}
         {(() => {
           return (
@@ -248,10 +250,7 @@ export default function ScrollShow() {
           <div
             key={i}
             ref={(el) => {
-              if (el) {
-                steps.current[i] = el;
-                if (i === 0) featRef.current = el;
-              }
+              if (el) steps.current[i] = el;
             }}
             data-index={i}
             className="h-[100vh]"
@@ -294,45 +293,59 @@ export default function ScrollShow() {
                         {step}
                       </motion.div>
                     </>
-                  ) : (
+                  ) : featRatio < 0.06 ? (
                     <motion.div key="go" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16 }} className="mb-6 text-[min(18vw,110px)] font-black leading-none text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-fuchsia-400">
                       GO!
                     </motion.div>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Feature highlights reveal over the dark screen */}
+                {/* Feature highlights, one-by-one slides over the dark screen */}
                 {countdownLocked && (
-                  <div className="mx-auto mt-2 grid w-full gap-3 sm:grid-cols-3">
+                  <div className="relative mx-auto mt-2 h-[52vh] w-full max-w-4xl">
                     {(() => {
-                      const a1 = Math.min(1, Math.max(0, featRatio / 0.34));
-                      const a2 = Math.min(1, Math.max(0, (featRatio - 0.33) / 0.34));
-                      const a3 = Math.min(1, Math.max(0, (featRatio - 0.66) / 0.34));
+                      const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+                      const s1in = clamp01((featRatio - 0.06) / 0.24);
+                      const s1out = clamp01((featRatio - 0.30) / 0.20);
+                      const s2in = clamp01((featRatio - 0.33) / 0.24);
+                      const s2out = clamp01((featRatio - 0.66) / 0.20);
+                      const s3in = clamp01((featRatio - 0.66) / 0.28);
+                      const o1 = Math.max(0, s1in * (1 - s1out));
+                      const o2 = Math.max(0, s2in * (1 - s2out));
+                      const o3 = s3in;
                       return (
                         <>
                           <motion.div
-                            style={{ opacity: a1, y: (1 - a1) * 24 }}
-                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                            style={{ opacity: o1, y: (1 - o1) * 30, scale: 0.98 + o1 * 0.02 }}
+                            className="absolute inset-0 grid place-items-center"
                           >
-                            <div className="text-xs uppercase tracking-widest text-indigo-200/80">New</div>
-                            <div className="mt-1 font-extrabold leading-tight">Entirely New Course System</div>
-                            <div className="mt-2 text-sm text-white/70">Faster lessons, smarter progress, and richer practice.</div>
+                            <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-white shadow-[0_16px_60px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm">
+                              <div className="text-xs uppercase tracking-widest text-indigo-200/80">New</div>
+                              <div className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">Entirely New Course System</div>
+                              <div className="mt-2 text-white/70">Faster lessons, smarter progress, and richer practice.</div>
+                            </div>
                           </motion.div>
+
                           <motion.div
-                            style={{ opacity: a2, y: (1 - a2) * 24 }}
-                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                            style={{ opacity: o2, y: (1 - o2) * 30, scale: 0.98 + o2 * 0.02 }}
+                            className="absolute inset-0 grid place-items-center"
                           >
-                            <div className="text-xs uppercase tracking-widest text-emerald-200/80">Social</div>
-                            <div className="mt-1 font-extrabold leading-tight">Join Your Course Hub</div>
-                            <div className="mt-2 text-sm text-white/70">Study together, compare stats, and share wins.</div>
+                            <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-white shadow-[0_16px_60px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm">
+                              <div className="text-xs uppercase tracking-widest text-emerald-200/80">Social</div>
+                              <div className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">Join Your Course Hub</div>
+                              <div className="mt-2 text-white/70">Study together, compare stats, and share wins.</div>
+                            </div>
                           </motion.div>
+
                           <motion.div
-                            style={{ opacity: a3, y: (1 - a3) * 24 }}
-                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                            style={{ opacity: o3, y: (1 - o3) * 30, scale: 0.98 + o3 * 0.02 }}
+                            className="absolute inset-0 grid place-items-center"
                           >
-                            <div className="text-xs uppercase tracking-widest text-amber-200/80">Competitive</div>
-                            <div className="mt-1 font-extrabold leading-tight">Weekly Leaderboards</div>
-                            <div className="mt-2 text-sm text-white/70">Climb ranks, earn XP, and stay motivated.</div>
+                            <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-white shadow-[0_16px_60px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm">
+                              <div className="text-xs uppercase tracking-widest text-amber-200/80">Competitive</div>
+                              <div className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">Weekly Leaderboards</div>
+                              <div className="mt-2 text-white/70">Climb ranks, earn XP, and stay motivated.</div>
+                            </div>
                           </motion.div>
                         </>
                       );
