@@ -35,6 +35,8 @@ export default function LessonPage() {
   const [completed, setCompleted] = useState(false);
   const [fav, setFav] = useState(false);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  // Trigger recompute when local pending progress changes (per course)
+  const [pendingVersion, setPendingVersion] = useState(0);
   const [authed, setAuthed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return !!(window as any).__ems_authed;
@@ -165,18 +167,41 @@ export default function LessonPage() {
     else if (guest?.questions) arr = guest.questions || [];
     if (!arr.length) return [];
     const qProg: Record<string, any> = (bundle?.progress?.questions || {}) as any;
+    // Overlay local pending statuses for the course (unsaved, local-first)
+    let overlay: Record<number, 'correct'|'incorrect'> = {};
+    try {
+      const courseIdOverlay = Number((bundle?.lesson?.courseId ?? guest?.lesson?.courseId) || 0);
+      if (courseIdOverlay) {
+        const pend = StudyStore.getPending(courseIdOverlay);
+        for (const [qid, st] of (pend?.question_status || [])) {
+          const n = Number(qid);
+          if (Number.isFinite(n) && (st === 'correct' || st === 'incorrect')) overlay[n] = st;
+        }
+      }
+    } catch {}
     return arr.map((q: any, i: number): LessonQuestionItem => {
-      const st = qProg && qProg[q.id]?.status;
+      let st = qProg && qProg[q.id]?.status;
+      // Pending overlay wins
+      const pending = overlay[Number(q.id)];
+      if (pending) st = pending;
       const status = st === 'correct' ? 'correct' : st === 'incorrect' ? 'incorrect' : 'todo';
       return { id: String(q.id), title: String(q.prompt || q.text || `Q${i+1}`), status };
     });
-  }, [bundle, guest, lessonId]) as LessonQuestionItem[];
+  }, [bundle, guest, lessonId, pendingVersion]) as LessonQuestionItem[];
   const qTotal = relevantQuestions.length;
   const qCorrect = relevantQuestions.filter((q) => q.status === 'correct').length;
   const lessonsList = useMemo(() => (bundle?.lessons || guest?.lessons || []) as any[], [bundle, guest]);
   const currentIdxInLessons = useMemo(() => lessonsList.findIndex((l)=> Number(l.id) === lessonId), [lessonsList, lessonId]);
   const chapterDotsCount = 1 + (lessonsList?.length || 0);
   const activeDot = Math.max(0, currentIdxInLessons >= 0 ? currentIdxInLessons + 1 : 0);
+
+  // Subscribe to StudyStore pending updates (per course) to reflect statuses instantly
+  useEffect(() => {
+    const courseIdSub = Number((bundle?.lesson?.courseId ?? guest?.lesson?.courseId) || 0);
+    if (!courseIdSub) return;
+    const unsub = StudyStore.subscribe((cid) => { if (cid === courseIdSub) setPendingVersion((v) => v + 1); });
+    return () => { try { if (typeof unsub === 'function') unsub(); } catch {} };
+  }, [bundle?.lesson?.courseId, guest?.lesson?.courseId]);
 
   const chapterPct = useMemo(() => {
     const byLessonVals = chapterSummary ? (Object.values(chapterSummary.summary?.byLesson || {}) as any[]) : [];
