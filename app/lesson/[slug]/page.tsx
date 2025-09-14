@@ -57,7 +57,7 @@ export default function LessonPage() {
     if (hasAuth) {
     // Always fetch fresh bundle for authed users to reflect latest progress
     let gotPlayerFromBundle = false;
-    fetchBundleDedupe<any>(slug, async () => {
+    fetchBundleDedupe(slug, async () => {
       const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
       if (r.status === 200) return r.json();
       if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
@@ -68,11 +68,11 @@ export default function LessonPage() {
       .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
     // Player info (iframeSrc / locked)  short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
-    const cachedP = getPlayerCached<any>(slug, 0);
+    const cachedP = getPlayerCached(slug, 0) as any;
     if (cachedP) {
       setPlayer(cachedP);
     } else if (!gotPlayerFromBundle) {
-      fetchPlayerDedupe<any>(slug, async () => {
+      fetchPlayerDedupe(slug, async () => {
         const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include', cache: 'no-store' });
         if (r.status === 200) return r.json();
         if (r.status === 401) { setPlayerErr('unauthenticated'); throw new Error('unauthenticated'); }
@@ -151,7 +151,7 @@ export default function LessonPage() {
       for (const l of lessonsArr) byLesson[String(Number(l.id))] = { total: 0, correct: 0, incorrect: 0, attempted: 0 };
       const qbl = (bundle?.questionsByLesson || guest?.questionsByLesson) as Record<string, any[]> | undefined;
       if (qbl) {
-        for (const [lid, arr] of Object.entries<any[]>(qbl)) {
+        for (const [lid, arr] of Object.entries(qbl as Record<string, any[]>)) {
           if (!byLesson[lid]) byLesson[lid] = { total: 0, correct: 0, incorrect: 0, attempted: 0 };
           byLesson[lid].total = (arr || []).length;
         }
@@ -169,7 +169,7 @@ export default function LessonPage() {
         // Build inverse from local data where possible
         const inv: Record<number, number> = {};
         if (qbl) {
-          for (const [lid, arr] of Object.entries<any[]>(qbl)) {
+          for (const [lid, arr] of Object.entries(qbl as Record<string, any[]>)) {
             for (const q of (arr || [])) inv[Number(q.id)] = Number(lid);
           }
         }
@@ -232,7 +232,7 @@ export default function LessonPage() {
 
   // Chapter-level progress and question totals across the chapter (exclude the "chapter" dot itself)
   const { chapterQTotal, chapterQCorrect, chapterLessonsDone, chapterPctUnits } = useMemo(() => {
-    const byLessonVals = (chapterSummary && (chapterSummary.byLesson || chapterSummary.summary?.byLesson)) ? (Object.values<any>(chapterSummary.byLesson || chapterSummary.summary?.byLesson || {}) as any[]) : [];
+    const byLessonVals = (chapterSummary && (chapterSummary.byLesson || chapterSummary.summary?.byLesson)) ? (Object.values(chapterSummary.byLesson || chapterSummary.summary?.byLesson || {}) as any[]) : [];
     const totalQ = byLessonVals.reduce((a, b) => a + Number(b.total || 0), 0);
     const correct = byLessonVals.reduce((a, b) => a + Number(b.correct || 0), 0);
     const lessonsDone = (chapterSummary && (chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted)) ? ((chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted) as number[]).length : 0;
@@ -240,6 +240,12 @@ export default function LessonPage() {
     const unitsDone = lessonsDone + correct;
     const pctUnits = unitsTotal > 0 ? Math.round((unitsDone / unitsTotal) * 100) : 0;
     return { chapterQTotal: totalQ, chapterQCorrect: correct, chapterLessonsDone: lessonsDone, chapterPctUnits: pctUnits };
+  }, [chapterSummary, lessonsList]);
+
+  // Precompute chapterCompleted flags array for the toolbar
+  const chapterCompletedList = useMemo(() => {
+    const ids: number[] = ((chapterSummary && (((chapterSummary as any).lessonsCompleted || (chapterSummary as any).summary?.lessonsCompleted) as number[])) || []) as number[];
+    return [false, ...lessonsList.map((l: any) => ids.includes(Number(l.id)) )];
   }, [chapterSummary, lessonsList]);
 
   // Compute effective video iframe src once for simpler JSX below
@@ -272,7 +278,7 @@ export default function LessonPage() {
   const initialStatus = useMemo(() => {
     const m: Record<number, QStatus> = {};
     const p = (bundle as any)?.progress?.questions || {};
-    for (const [qid, v] of Object.entries<any>(p)) {
+    for (const [qid, v] of Object.entries(p as Record<string, any>)) {
       const st = v?.status;
       if (st === 'correct' || st === 'incorrect') m[Number(qid)] = st;
     }
@@ -378,7 +384,7 @@ export default function LessonPage() {
           chapterCount={chapterDotsCount}
           activeStep={activeDot}
           chapterLabels={[String(chapter.title || 'Chapter'), ...lessonsList.map((l:any)=> String(l.title))]}
-          chapterCompleted={[false, ...lessonsList.map((l:any)=> (chapterSummary && (chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted) ? (chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted).includes(Number(l.id)) : false)]}
+          chapterCompleted={chapterCompletedList}
         />
       </div>
 
