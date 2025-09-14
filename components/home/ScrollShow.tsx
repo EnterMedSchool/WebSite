@@ -95,6 +95,16 @@ export default function ScrollShow() {
     "Heart Failure",
   ], []);
 
+  // Overlay / stage gating
+  const baseR = Math.min(1, Math.max(0, (preRatio - 0.06) / 0.9));
+  const r = countdownLocked ? 1 : baseR;
+  const countdownOpacity = Math.min(1, r * 1.15);
+  const fadeOutStart = 0.94;
+  const fadeOutProgress = Math.min(1, Math.max(0, (featRatio - fadeOutStart) / (1 - fadeOutStart)));
+  const overlayAlpha = countdownLocked ? 1 - fadeOutProgress : countdownOpacity;
+  const overlayVisible = countdownLocked ? overlayAlpha > 0.02 : preRatio > 0.06;
+  const stageAlpha = overlayVisible ? 0 : 1; // stage appears only after overlay is gone
+
   return (
     <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
       {/* tall scroll area with intro + three sentinels */}
@@ -103,11 +113,9 @@ export default function ScrollShow() {
         <div ref={introRef} className="h-[80vh]" />
         {/* sticky stage */}
         {(() => {
-          // Fade in the stage as the intro completes to avoid double-vision
-          const stageA = Math.max(0, Math.min(1, (preRatio - 0.78) / 0.22));
           return (
-            <div className="sticky top-24 mx-auto w-full max-w-6xl px-6" style={{ opacity: stageA }} aria-hidden={stageA < 0.02}>
-              <ShimmerHeading pretitle="Scroll to explore" title={titles[active].t} variant={titles[active].v} size="lg" />
+            <div className="sticky top-24 mx-auto w-full max-w-6xl px-6" style={{ opacity: stageAlpha }} aria-hidden={stageAlpha < 0.02}>
+              <ShimmerHeading title={titles[active].t} variant={titles[active].v} size="lg" />
 
               <div className="relative mt-6 min-h-[72vh]">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -253,14 +261,9 @@ export default function ScrollShow() {
 
       {/* Cinematic overlay: countdown then feature highlights, then fade out */}
       {(() => {
-        const baseR = Math.min(1, Math.max(0, (preRatio - 0.06) / 0.9));
-        const r = countdownLocked ? 1 : baseR; // freeze forward after GO
         const step = r < 0.33 ? 3 : r < 0.66 ? 2 : r < 0.9 ? 1 : 0; // 0 means GO!
-        const countdownOpacity = Math.min(1, r * 1.15);
         const barH = `${Math.round(6 + r * 12)}vh`;
-        const featuresFade = Math.max(0, 1 - Math.max(0, (featRatio - 0.85) / 0.15)); // fade overlay near end of features
-        const overlayAlpha = countdownLocked ? 0.95 * featuresFade : countdownOpacity;
-        const show = active === 0 && (countdownLocked ? featuresFade > 0.02 : preRatio > 0.06);
+        const show = overlayVisible;
         if (!show) return null;
         const skipToScene = () => {
           const target = steps.current[1] || steps.current[0];
