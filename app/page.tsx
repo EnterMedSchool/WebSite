@@ -2,8 +2,7 @@ import dynamic from "next/dynamic";
 import MissionShowcase from "@/components/home/MissionShowcase";
 import WhatsNew2026 from "@/components/home/WhatsNew2026";
 import HomeBackdrop from "@/components/home/HomeBackdrop";
-import ScrollShow from "@/components/home/ScrollShow";
-import StickyCTADock from "@/components/home/StickyCTADock";
+// Scroll-driven showcase and Sticky CTA temporarily removed
 
 const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
 
@@ -34,11 +33,7 @@ export default function HomePage() {
       {/* Full‑bleed: What’s New 2026 */}
       <WhatsNew2026 />
 
-      {/* Scroll-driven showcase (pinned scenes) */}
-      <ScrollShow />
-
-      {/* Sticky CTA at the bottom after scroll */}
-      <StickyCTADock />
+      {/* Sections below temporarily removed */}
     </div>
   );
 }
