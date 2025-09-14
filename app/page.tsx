@@ -3,7 +3,6 @@ import MissionShowcase from "@/components/home/MissionShowcase";
 import WhatsNew2026 from "@/components/home/WhatsNew2026";
 import HomeBackdrop from "@/components/home/HomeBackdrop";
 import ScrollShow from "@/components/home/ScrollShow";
-import CourseHubShowcase from "@/components/home/CourseHubShowcase";
 import StickyCTADock from "@/components/home/StickyCTADock";
 
 const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
@@ -37,9 +36,6 @@ export default function HomePage() {
 
       {/* Scroll-driven showcase (pinned scenes) */}
       <ScrollShow />
-
-      {/* 2nd: Course Hub showcase */}
-      <CourseHubShowcase />
 
       {/* Sticky CTA at the bottom after scroll */}
       <StickyCTADock />
