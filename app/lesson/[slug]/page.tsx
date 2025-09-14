@@ -392,8 +392,8 @@ export default function LessonPage() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="truncate text-sm font-medium">{q.title}</div>
                           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
-                        <div className=" mt-0.5 text-[11px] text-gray-600\>Single best answer * 1 point</div>
-                        <div className="mt-0.5 text-[11px] text-gray-600">Single best answer  1 point</div>
+                          <div className="mt-0.5 text-[11px] text-gray-600">Single best answer  1 point</div>
+                        </div>
                       </button>
                     </li>
                   );
@@ -464,7 +464,7 @@ export default function LessonPage() {
                 <p className="text-gray-700">Log in to see and practice questions.</p>
               )}
               {bundleErr === 'forbidden' && (
-                <p className="text-gray-700">This course is paid. Your account doesn't have access.</p>
+                <p className="text-gray-700">This course is paid. Your account doesn&apos;t have access.</p>
               )}
               {bundle && mcqs.length > 0 && (
                 <div className="mt-2">
