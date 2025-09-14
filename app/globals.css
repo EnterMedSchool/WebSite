@@ -194,8 +194,7 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
   .lesson-bottom-nav button {
     box-shadow: 0 6px 14px rgba(2,6,23,0.06);
   }
-  /* Ensure sticky blocks span the container and don't jiggle */
-  .lesson-root .sticky { left: 0; right: 0; }
+  /* Ensure blocks don’t exceed container */
   .lesson-root .lesson-toolbar,
   .lesson-root .lesson-header,
   .lesson-root .video-card,

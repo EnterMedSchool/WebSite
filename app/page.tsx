@@ -3,6 +3,10 @@ import MissionShowcase from "@/components/home/MissionShowcase";
 import WhatsNew2026 from "@/components/home/WhatsNew2026";
 import HomeBackdrop from "@/components/home/HomeBackdrop";
 import NewCourseShowcase from "@/components/home/NewCourseShowcase";
+import StatsBar from "@/components/home/StatsBar";
+import StudyRoomsShowcase from "@/components/home/StudyRoomsShowcase";
+import LeaderboardsShowcase from "@/components/home/LeaderboardsShowcase";
+import StickyCTADock from "@/components/home/StickyCTADock";
 
 const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false });
 
@@ -35,6 +39,16 @@ export default function HomePage() {
 
       {/* Feature: New Course System (fake interactive) */}
       <NewCourseShowcase />
+
+      {/* Live stats strip */}
+      <StatsBar />
+
+      {/* Additional feature demos */}
+      <StudyRoomsShowcase />
+      <LeaderboardsShowcase />
+
+      {/* Sticky CTA at the bottom after scroll */}
+      <StickyCTADock />
     </div>
   );
 }

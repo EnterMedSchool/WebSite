@@ -1,40 +1,12 @@
-/* Scoped styles and tokens for the NewCourseShowcase section */
-
-.root {
-  /* Section-scoped tokens */
-  --nc-text: #0f172a; /* slate-900 */
-  --nc-muted: #475569; /* slate-600/700 range */
-  --nc-pretitle: #0f766e; /* teal-700 */
-
-  color: var(--nc-text);
-}
-
-/* Dark mode variants scoped to this section only */
-:global(.dark) .root {
-  --nc-text: #e2e8f0;   /* slate-200 */
-  --nc-muted: #cbd5e1;  /* slate-300 */
-  --nc-pretitle: #5eead4; /* teal-300 */
-}
+.root {}
 
 .pretitle {
-  color: var(--nc-pretitle);
+  color: rgba(13, 148, 136, 0.7); /* teal-600/70 */
 }
 
-.muted {
-  color: var(--nc-muted);
-}
-
-/* Gradient shimmer for the big heading */
 .heading {
   color: transparent;
-  background-image: linear-gradient(
-    90deg,
-    #0e7490 0%,
-    #06b6d4 25%,
-    #34d399 50%,
-    #06b6d4 75%,
-    #0e7490 100%
-  );
+  background-image: linear-gradient(90deg, #0e7490 0%, #06b6d4 25%, #34d399 50%, #06b6d4 75%, #0e7490 100%);
   background-size: 180% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -42,8 +14,16 @@
   text-shadow: 0 6px 26px rgba(6, 182, 212, 0.25);
 }
 
+.muted {
+  color: rgba(15, 23, 42, 0.7); /* slate-900/70 */
+}
+
 @keyframes nc-shimmer {
   0% { background-position: 0% 50%; }
   100% { background-position: 180% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heading { animation: none; }
 }
 

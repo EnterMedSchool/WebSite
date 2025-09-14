@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import ShimmerHeading from "@/components/ui/ShimmerHeading";
 
 export default function WhatsNew2026() {
   return (
@@ -27,12 +28,7 @@ export default function WhatsNew2026() {
                 </span> on
               </span>
               <div className="relative mt-4 sm:mt-6">
-                <span
-                  aria-hidden
-                  className="block text-transparent heading-gradient text-[clamp(36px,12vw,110px)]"
-                >
-                  EnterMedSchool 2026
-                </span>
+                <ShimmerHeading title="EnterMedSchool 2026" variant="indigo" size="xl" align="center" />
 
                 {/* Soft glow behind text */}
                 <span
@@ -81,24 +77,8 @@ export default function WhatsNew2026() {
         </div>
       </div>
 
-      {/* Component-scoped styles for animation and gradient */}
+      {/* Component-scoped styles for underline + NEW pill */}
       <style jsx>{`
-        .heading-gradient {
-          background-image: linear-gradient(
-            90deg,
-            #312e81 0%,
-            #6366f1 20%,
-            #a78bfa 40%,
-            #06b6d4 60%,
-            #6366f1 80%,
-            #312e81 100%
-          );
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          animation: wn2026-shimmer 10s linear infinite;
-          text-shadow: 0 6px 30px rgba(99, 102, 241, 0.25);
-        }
         .new-pill {
           display: inline-flex;
           align-items: center;
@@ -133,14 +113,6 @@ export default function WhatsNew2026() {
           background: linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0));
           pointer-events: none;
         }
-        @keyframes wn2026-shimmer {
-          0% {
-            background-position: 0% 50%;
-          }
-          100% {
-            background-position: 200% 50%;
-          }
-        }
         @keyframes wn2026-shine {
           0% { transform: skewX(-20deg) translateX(-120%); }
           100% { transform: skewX(-20deg) translateX(260%); }
@@ -161,6 +133,9 @@ export default function WhatsNew2026() {
           100% {
             stroke-dashoffset: 0;
           }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dash-path { animation: none; }
         }
       `}</style>
     </section>

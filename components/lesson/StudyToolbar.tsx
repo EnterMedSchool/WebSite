@@ -111,7 +111,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
               {/* Practice tab removed as requested */}
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
               {/* Quick link to University Resources section */}
-              <button onClick={goUniResources} className={segBtn(false)}>
+              <button onClick={goUniResources} className={segBtn(false) + ' hidden sm:inline-flex'}>
                 <IconUniversity />
                 <span>University Resources</span>
               </button>
