@@ -53,23 +53,17 @@ export default function LessonPage() {
     setAuthed(hasAuth);
 
     if (hasAuth) {
-    // Use local cache first (5 min TTL) to avoid repeated API hits
-    const cachedB = getBundleCached<any>(slug, 5 * 60 * 1000);
+    // Always fetch fresh bundle for authed users to reflect latest progress
     let gotPlayerFromBundle = false;
-    if (cachedB) {
-      setBundle(cachedB);
-      if ((cachedB as any)?.player) { setPlayer((cachedB as any).player); gotPlayerFromBundle = true; }
-    } else {
-      fetchBundleDedupe<any>(slug, async () => {
-        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
-        if (r.status === 200) return r.json();
-        if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
-        if (r.status === 403) { setBundleErr('forbidden'); throw new Error('forbidden'); }
-        setBundleErr('error'); throw new Error('error');
-      })
-        .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
-        .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
-    }
+    fetchBundleDedupe<any>(slug, async () => {
+      const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
+      if (r.status === 200) return r.json();
+      if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
+      if (r.status === 403) { setBundleErr('forbidden'); throw new Error('forbidden'); }
+      setBundleErr('error'); throw new Error('error');
+    })
+      .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
+      .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
     // Player info (iframeSrc / locked)  short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
     const cachedP = getPlayerCached<any>(slug, 60 * 1000);
