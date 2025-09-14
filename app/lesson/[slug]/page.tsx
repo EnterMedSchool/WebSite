@@ -48,6 +48,20 @@ export default function LessonPage() {
   const [player, setPlayer] = useState<any | null>(null);
   const [playerErr, setPlayerErr] = useState<string | null>(null);
   const [guest, setGuest] = useState<any | null>(null); // static JSON for guests
+  // Viewport detection for mobile-only experience
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try { return window.matchMedia('(max-width: 768px)').matches; } catch { return false; }
+  });
+  useEffect(() => {
+    try {
+      const mql = window.matchMedia('(max-width: 768px)');
+      const on = () => setIsMobile(mql.matches);
+      on();
+      mql.addEventListener?.('change', on);
+      return () => { mql.removeEventListener?.('change', on); };
+    } catch {}
+  }, []);
   useEffect(() => {
     let alive = true;
     setBundle(null); setBundleErr(null); setGuest(null);
@@ -349,6 +363,145 @@ export default function LessonPage() {
     } catch {}
     return m;
   }, [bundle, courseIdNum]);
+
+  // Mobile-specific presentation (separate UI, same underlying state)
+  if (isMobile) {
+    return (
+      <div className="lesson-root mx-auto max-w-[640px] p-4">
+        {/* Hero */}
+        <div className="lesson-header sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
+          <div className="min-w-0">
+            <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
+              <a href={`/${course.slug}`} className="opacity-95 hover:underline">{course.title}</a>
+              <span className="opacity-80" />
+              <a href={`/${course.slug}/${chapter.slug}`} className="opacity-95 hover:underline">{chapter.title}</a>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight leading-tight break-words">{lessonTitle}</h1>
+            <div className="mt-3 w-full text-[11px] font-medium text-white/90">
+              <div className="mb-1">Completed {chapterQCorrect}/{chapterQTotal} questions</div>
+              <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">
+                <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
+              </div>
+              <div className="mt-1 text-[10px] opacity-90">Chapter progress: {chapterPctUnits}%</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Inline path navigator */}
+        <div className="mt-3">
+          <StudyToolbar
+            mode={tab}
+            onMode={(m) => setTab(m)}
+            onFocusToggle={() => setFocusMode((v)=>!v)}
+            focus={false}
+            chapterCount={chapterDotsCount}
+            activeStep={activeDot}
+            chapterLabels={[String(chapter.title || 'Chapter'), ...lessonsList.map((l:any)=> String(l.title))]}
+            chapterCompleted={chapterCompletedList}
+          />
+        </div>
+
+        {/* Lesson sections */}
+        <div className="mt-4 space-y-4">
+          {/* Progress + relevant questions (compact) */}
+          {authed && (
+            <div className="ios-card rounded-3xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
+              <div className="text-[12px] font-semibold text-indigo-900">Question progress</div>
+              <div className="mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
+                <div className="truncate text-xs font-semibold text-indigo-900">Relevant to: {lessonTitle}</div>
+                <div className="text-[11px] text-indigo-800/80">{qCorrect}/{relevantQuestions.length} correct - {relevantQuestions.length - qCorrect} remaining</div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/60">
+                  <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${Math.round((qCorrect / Math.max(1, relevantQuestions.length)) * 100)}%` }} />
+                </div>
+              </div>
+              {relevantQuestions.length > 0 && (
+                <ul className="mt-2">
+                  {relevantQuestions.map((q, i) => {
+                    const cls = q.status === 'correct' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : q.status === 'incorrect' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-transparent hover:bg-gray-50 text-gray-800';
+                    const chip = q.status === 'correct' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : q.status === 'incorrect' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-gray-100 text-gray-700 ring-gray-300';
+                    const label = q.status === 'correct' ? 'Correct' : q.status === 'incorrect' ? 'Review' : 'To do';
+                    return (
+                      <li key={q.id} className="relative">
+                        <button type="button" onClick={() => { setTab('practice'); setPracticeAll(false); setOpenQuestionId(Number(q.id)); }} className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${cls}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="truncate text-sm font-medium">{i + 1}. {q.title}</div>
+                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <div className="mt-2 flex justify-end">
+                <button type="button" onClick={() => { setTab('practice'); setPracticeAll(true); setOpenQuestionId(null); }} className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Practice all</button>
+              </div>
+            </div>
+          )}
+
+          {/* Video */}
+          <div className="video-card ios-card relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
+            <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+              {effectiveIframeSrc ? (
+                <iframe className="absolute inset-0 h-full w-full" src={effectiveIframeSrc} title="Lesson video" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" style={{ border: 0 }} />
+              ) : (
+                <div className="absolute inset-0 grid place-items-center bg-gray-100 text-gray-500">No video</div>
+              )}
+              {player?.locked && (
+                <div className="absolute inset-0 grid place-items-center bg-white/80 backdrop-blur-sm">
+                  <div className="rounded-xl border bg-white p-4 text-center shadow ring-1 ring-black/5">
+                    <div className="text-sm font-semibold text-gray-900">Locked</div>
+                    <div className="text-xs text-gray-600">{player?.lockReason || 'Login and enroll to watch this video.'}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          {tab === 'learn' && (
+            <div className="ios-card rounded-2xl border bg-white p-4 text-sm shadow-sm ring-1 ring-black/5">
+              <LessonBody slug={slug} html={bodyHtml} noApi={!authed} />
+            </div>
+          )}
+          {tab === 'practice' && (
+            <div className="ios-card rounded-2xl border bg-white p-4 text-sm shadow-sm ring-1 ring-black/5">
+              {bundle && mcqs.length > 0 ? (
+                <MCQPanel
+                  courseId={courseIdNum}
+                  questions={mcqs}
+                  initialStatus={initialStatus}
+                  openAll={practiceAll}
+                  openOnlyId={openQuestionId}
+                  disabled={!authed}
+                  onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
+                />
+              ) : (
+                <p className="text-gray-700">{bundleErr==='unauthenticated' ? 'Log in to practice' : 'Loading questions'}...</p>
+              )}
+            </div>
+          )}
+          {tab === 'background' && (
+            <div className="ios-card rounded-2xl border bg-white p-4 text-sm shadow-sm ring-1 ring-black/5">
+              <div className="mb-2 text-sm font-semibold text-indigo-900">Background knowledge</div>
+              <p className="text-gray-700">Relevant foundations and reference material will appear here.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom mobile tabs */}
+        <div className="lesson-bottom-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t bg-white/90 p-3 shadow supports-[backdrop-filter]:backdrop-blur-lg">
+          {(['learn','practice','background'] as const).map((m) => (
+            <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-2xl text-sm font-semibold transition active:scale-[.98] ${tab===m ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 text-gray-800'}`}>{m}</button>
+          ))}
+        </div>
+
+        {/* Save dock */}
+        <SaveDock courseId={Number(bundle?.lesson?.courseId || 0)} />
+      </div>
+    );
+  }
+
 
   return (
     <div className="lesson-root mx-auto max-w-[1400px] p-6">

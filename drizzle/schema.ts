@@ -1118,3 +1118,25 @@ export const termComments = pgTable(
 );
 
 
+// ---------------- Auth helper: verification/password reset tokens ----------------
+
+export const verificationTokens = pgTable(
+  "verification_tokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id"),
+    email: varchar("email", { length: 255 }),
+    purpose: varchar("purpose", { length: 32 }).notNull(), // verify_email | reset_password
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(), // hex-encoded sha256
+    expiresAt: timestamp("expires_at").notNull(),
+    consumedAt: timestamp("consumed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    ip: varchar("ip", { length: 64 }),
+    userAgent: varchar("user_agent", { length: 255 }),
+  },
+  (t) => ({
+    tokenUnique: uniqueIndex("verification_tokens_token_uniq").on(t.tokenHash),
+    emailPurposeIdx: index("verification_tokens_email_purpose_idx").on(t.email, t.purpose),
+    userPurposeIdx: index("verification_tokens_user_purpose_idx").on(t.userId, t.purpose),
+  })
+);

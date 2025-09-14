@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users, studySessions } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { clientIpFrom, rateAllow } from "@/lib/rate-limit";
 
 async function ensurePersonalStudyRoom(userId: number) {
   try {
@@ -53,10 +54,25 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(creds) {
+      async authorize(creds, req) {
         const email = (creds?.email || "").toLowerCase().trim();
         const password = creds?.password || "";
         if (!email || !password) return null;
+        // Honeypot + time-on-form bot checks (best-effort)
+        try {
+          const hp = (creds as any)?.hp ? String((creds as any).hp) : "";
+          const spentMsRaw = (creds as any)?.spentMs;
+          const spentMs = Number(spentMsRaw);
+          if (hp.trim().length > 0) return null;
+          if (!Number.isFinite(spentMs) || spentMs < 800) return null;
+        } catch {}
+
+        // Rate limiting to mitigate brute force
+        try {
+          const ip = clientIpFrom((req as any)?.request || (req as any));
+          if (!rateAllow(`auth:login:ip:${ip}`, 20, 10 * 60_000)) return null;
+          if (!rateAllow(`auth:login:email:${email}`, 10, 10 * 60_000)) return null;
+        } catch {}
         const rows = await db.select().from(users).where(eq(users.email as any, email));
         const user = rows[0];
         if (!user?.passwordHash) return null;
@@ -95,11 +111,6 @@ export const authOptions: NextAuthOptions = {
       if (user && (user as any).id) {
         token.userId = (user as any).id;
       }
-      // Ensure personal room exists for this user (idempotent)
-      const uid = Number((token as any)?.userId);
-      if (Number.isFinite(uid) && uid > 0) {
-        await ensurePersonalStudyRoom(uid);
-      }
       return token;
     },
     async session({ session, token }) {
@@ -107,17 +118,33 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  events: {
+    // Run background tasks after successful sign in (any provider)
+    async signIn({ user, account, profile }) {
+      try {
+        const uidRaw = (user as any)?.id;
+        const uid = Number(uidRaw);
+        if (Number.isFinite(uid) && uid > 0) {
+          await ensurePersonalStudyRoom(uid);
+        } else if (account?.provider === "google" && (profile as any)?.email) {
+          const email = String((profile as any).email).toLowerCase();
+          const existing = (await db.select({ id: users.id }).from(users).where(eq(users.email as any, email)).limit(1))[0];
+          const id = Number(existing?.id || 0);
+          if (Number.isFinite(id) && id > 0) await ensurePersonalStudyRoom(id);
+        }
+      } catch {}
+    }
+  },
   pages: {
     signIn: "/signin",
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-// In NextAuth v4, prefer getServerSession(authOptions) inside Route Handlers and Server Components.
-// Export a thin wrapper with a stable name used across this codebase.
+// Wrapper with a stable name used across this codebase.
 export async function authGetServerSession() {
   return await getServerSession(authOptions);
 }
 
-// Keep route handler export (used by app/api/auth/[...nextauth]/route.ts)
+// Keep route handler export if needed elsewhere
 export const authHandlers = NextAuth(authOptions);

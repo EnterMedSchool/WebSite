@@ -1,7 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { apiGuardStart } from "@/lib/api/guard";
 
 export const runtime = "nodejs";

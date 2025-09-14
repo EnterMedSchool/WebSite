@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getToken } from "next-auth/jwt";
 import jwt from "jsonwebtoken";
 import type { NextRequest } from "next/server";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
@@ -37,6 +37,11 @@ export async function requireUserId(req: Request): Promise<number | null> {
       const token = auth.slice(7).trim();
       if (token) {
         const decoded: any = jwt.verify(token, process.env.NEXTAUTH_SECRET as string);
+        // Optionally enforce token audience/issuer if present
+        const iss = String(decoded?.iss || "");
+        const aud = String(decoded?.aud || "");
+        if (iss && iss !== "ems-anki") return null;
+        if (aud && aud !== "ems-client") return null;
         const uid = Number(decoded?.userId || decoded?.sub);
         if (Number.isFinite(uid) && uid > 0) return uid;
       }

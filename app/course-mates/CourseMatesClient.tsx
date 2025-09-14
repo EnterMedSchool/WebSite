@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 type Option = { id: number; name: string; slug?: string };
@@ -56,6 +57,33 @@ export default function CourseMatesClient({ authed, initial }: {
     'https://lh3.googleusercontent.com/pw/AP1GczNII8GvBGeyCkBjHhiA_w4fP8UtC3hTSWtrct2CcFqIOfgDaEpWCBFIVgo6G49M2O6FFJEIUQ5tYXgoLVcbs2TnHnMwJMeGx6y-sCilOHyAxZ70sNlYa8WND6wYlc4lsn_qiiTkVg_fjdeBxUexKdgZ=w1273-h848-s-no-gm?authuser=0',
     'https://lh3.googleusercontent.com/pw/AP1GczNM1VEY1T21xH-NYcSbvz0JBn4E5Iafb6v3qoS6hqlUsHK7apCX-BJC2cN4BoZdBzQZFKWLTOH5vwLXQJCSPw7D5A7JZo1xNuCFLpy-l7kj8hUyWTl83bPVXNH--nrSFbVD3t29AP5zrHiDKP8EoX-J=w1273-h848-s-no-gm?authuser=0',
   ];
+
+  // Parallax hero
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const yBg = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+  const opacityBg = useTransform(scrollYProgress, [0, 1], [1, 0.8]);
+  // Page progress bar
+  const { scrollYProgress: pageProgress } = useScroll();
+
+  // Scroll spy
+  const sectionIds = ['overview','announcements','invite','feed','leaderboard','anki','events','photos','rotations','reviews','help','polls','resources','improvements','orgs','reps','kudos','settings'] as const;
+  const [activeId, setActiveId] = useState<string>('overview');
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (visible[0]) {
+        setActiveId(visible[0].target.id);
+      }
+    }, { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] });
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, [sectionIds]);
 
   // Load privacy + leaderboard on mount
   useEffect(() => {
@@ -121,13 +149,15 @@ export default function CourseMatesClient({ authed, initial }: {
   }
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+      {/* Top page progress */}
+      <motion.div style={{ scaleX: pageProgress }} className="fixed left-0 top-0 z-50 h-1 w-full origin-left bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500" />
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl border border-indigo-200/60 shadow-md">
-        <div className="absolute inset-0">
+      <div ref={heroRef} className="relative overflow-hidden rounded-3xl border border-indigo-200/60 shadow-md">
+        <motion.div style={{ y: yBg, opacity: opacityBg }} className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-violet-700 to-fuchsia-700 opacity-80" />
           <img src={coverUrl} alt="Cover" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/30" />
-        </div>
+        </motion.div>
         <div className="pointer-events-none absolute inset-0 hidden md:block">
           <img src={sidePhotos[0]} alt="left" className="absolute left-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
           <img src={sidePhotos[1]} alt="right" className="absolute right-0 top-0 h-full w-64 object-cover opacity-80" style={{ filter: 'blur(1.5px)', WebkitMaskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))', maskImage: 'linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0.1))' }} />
@@ -156,9 +186,20 @@ export default function CourseMatesClient({ authed, initial }: {
           <div className="sticky top-6 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-600">Sections</div>
             <nav className="grid gap-1 text-sm">
-              {['overview','invite','feed','leaderboard','anki','events','photos','rotations','reviews','help','polls','resources','improvements','orgs','reps','kudos','settings'].map((id) => (
-                <a key={id} href={`#${id}`} className="rounded-lg px-2 py-1.5 text-gray-700 hover:bg-gray-50">{id[0].toUpperCase()+id.slice(1)}</a>
-              ))}
+              {sectionIds.map((id) => {
+                const label = id[0].toUpperCase()+id.slice(1);
+                const active = activeId === id;
+                return (
+                  <a
+                    key={id}
+                    href={`#${id}`}
+                    onClick={(e)=>{ e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                    className={`rounded-lg px-2 py-1.5 transition ${active ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    {label}
+                  </a>
+                );
+              })}
             </nav>
           </div>
         </aside>
@@ -246,6 +287,16 @@ export default function CourseMatesClient({ authed, initial }: {
                 ))}
               </ul>
             </div>
+          </section>
+
+          {/* Announcements banner (UI-only) */}
+          <section id="announcements" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold text-amber-900">Announcements</div><span className="text-[11px] font-semibold text-amber-700">UI only</span></div>
+            <ul className="space-y-2 text-sm text-amber-900/90">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="flex items-start gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-amber-500" /><span>Important update placeholder #{i+1} — short informative text so students quickly understand what’s new.</span></li>
+              ))}
+            </ul>
           </section>
 
           {/* Invite block */}
@@ -383,7 +434,7 @@ export default function CourseMatesClient({ authed, initial }: {
       {showHomepage && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl">
-            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Set as browser homepage</div><button onClick={()=>setShowHomepage(false)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">✕</button></div>
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Set as browser homepage</div><button onClick={()=>setShowHomepage(false)} className="grid h-7 w-7 place-items-center rounded-full bg-gray-100 text-gray-700">×</button></div>
             <div className="text-sm text-gray-700">Modern browsers do not allow websites to change your homepage automatically. To set this page manually:</div>
             <ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-gray-700">
               <li>Copy this URL: <span className="rounded bg-gray-100 px-1 py-0.5 text-xs">{typeof window!== 'undefined' ? window.location.origin + '/course-mates' : '/course-mates'}</span></li>
