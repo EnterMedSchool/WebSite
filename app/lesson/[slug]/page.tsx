@@ -206,7 +206,7 @@ export default function LessonPage() {
               <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">
                 <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, lessonProgress.lessonPct))}%` }} />
               </div>
-              <div className="mt-1 text-[10px] opacity-90">Chapter progress: ${(function(){})()}</div>
+              <div className="mt-1 text-[10px] opacity-90">Chapter progress: {chapterPct}%</div>
             </div>
 
             {/* Credits row */}
@@ -479,4 +479,4 @@ export default function LessonPage() {
 
 
 
-              <div className="mt-1 text-[10px] opacity-90">Chapter progress: ${chapterPct}%</div>
+
