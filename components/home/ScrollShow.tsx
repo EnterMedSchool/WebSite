@@ -17,11 +17,6 @@ export default function ScrollShow() {
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
 
-  // Scene ranges
-  const s1 = [0.0, 0.33];
-  const s2 = [0.33, 0.66];
-  const s3 = [0.66, 1.0];
-
   // Background gradient morph
   const bg = useTransform(scrollYProgress, [0, 0.5, 1], [
     "radial-gradient(60% 60% at 50% 40%, rgba(99,102,241,0.10), transparent 60%)",
@@ -45,15 +40,15 @@ export default function ScrollShow() {
   // Path stroke progress
   const dash = useTransform(scrollYProgress, [0, 1], [600, 0]);
 
-  // Parallax transforms per scene
-  const y1 = useTransform(scrollYProgress, s1, [40, 0]);
-  const o1 = useTransform(scrollYProgress, s1, [0, 1]);
+  // Visibility and parallax ranges tuned so scene 1 is visible immediately
+  const y1 = useTransform(scrollYProgress, [0, 0.2], [0, -20]);
+  const o1 = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
-  const y2 = useTransform(scrollYProgress, s2, [40, 0]);
-  const o2 = useTransform(scrollYProgress, s2, [0, 1]);
+  const y2 = useTransform(scrollYProgress, [0.2, 0.5], [20, 0]);
+  const o2 = useTransform(scrollYProgress, [0.28, 0.48, 0.6], [0, 1, 0.6]);
 
-  const y3 = useTransform(scrollYProgress, s3, [40, 0]);
-  const o3 = useTransform(scrollYProgress, s3, [0, 1]);
+  const y3 = useTransform(scrollYProgress, [0.5, 1], [30, 0]);
+  const o3 = useTransform(scrollYProgress, [0.58, 0.78, 1], [0, 1, 1]);
 
   return (
     <section ref={ref} className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen" style={{ height: "420vh" }}>
@@ -61,7 +56,7 @@ export default function ScrollShow() {
       <motion.div aria-hidden className="pointer-events-none absolute inset-0 -z-10" style={{ background: bg }} />
 
       {/* sticky viewport */}
-      <div className="sticky top-16 mx-auto w-full max-w-6xl px-6">
+      <div className="sticky top-24 mx-auto w-full max-w-6xl px-6">
         {/* Header morph */}
         <div className="text-left">
           <ShimmerHeading
@@ -73,7 +68,7 @@ export default function ScrollShow() {
         </div>
 
         {/* Stage */}
-        <div className="relative mt-6 h-[62vh]">
+        <div className="relative mt-6 min-h-[64vh]">
           {/* Scene 1 */}
           <motion.div style={{ y: y1, opacity: o1 }} className="absolute inset-0">
             <Panel>
@@ -169,4 +164,3 @@ export default function ScrollShow() {
     </section>
   );
 }
-
