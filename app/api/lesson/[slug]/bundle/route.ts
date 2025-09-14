@@ -97,7 +97,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   } catch {}
 
   // Optional includes to reduce client calls: include=player,body
-  const url = new URL(req.url);
   const include = new Set((url.searchParams.get('include') || '').split(',').map((s)=>s.trim()).filter(Boolean));
   let player: any = undefined;
   let html: string | undefined = undefined;
