@@ -369,14 +369,14 @@ export default function LessonPage() {
     return (
       <div className="lesson-root mx-auto max-w-[640px] p-4">
         {/* Hero */}
-        <div className="lesson-header sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
+        <div className="lesson-header relative z-10 overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
           <div className="min-w-0">
             <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
               <a href={`/${course.slug}`} className="opacity-95 hover:underline">{course.title}</a>
               <span className="opacity-80" />
               <a href={`/${course.slug}/${chapter.slug}`} className="opacity-95 hover:underline">{chapter.title}</a>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight leading-tight break-words">{lessonTitle}</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight leading-tight break-words whitespace-normal">{lessonTitle}</h1>
             <div className="mt-3 w-full text-[11px] font-medium text-white/90">
               <div className="mb-1">Completed {chapterQCorrect}/{chapterQTotal} questions</div>
               <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">

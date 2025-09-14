@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { db } from "@/lib/db";
+import { users } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
@@ -84,7 +87,19 @@ export async function middleware(req: NextRequest) {
   } catch {}
 
   // Require NextAuth token (JWT strategy) and admin email allowlist
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token: any = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  // Session invalidation check via sessionVersion for admin paths
+  try {
+    const uidRaw = token?.userId || token?.sub;
+    const uid = uidRaw && /^\d+$/.test(String(uidRaw)) ? Number(uidRaw) : 0;
+    const sv = Number(token?.sv || 1);
+    if (uid > 0) {
+      const row = (await db.select({ sv: users.sessionVersion }).from(users).where(eq(users.id as any, uid)).limit(1))[0] as any;
+      if (!row?.sv || Number(row.sv) !== sv) {
+        return new NextResponse(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      }
+    }
+  } catch {}
   const email = (token as any)?.email as string | undefined;
   if (!isAdminEmail(email)) {
     if (pathname.startsWith('/api/')) {

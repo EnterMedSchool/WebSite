@@ -42,7 +42,7 @@ async function ensurePersonalStudyRoom(userId: number) {
 }
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -74,8 +74,14 @@ export const authOptions: NextAuthOptions = {
           if (!rateAllow(`auth:login:email:${email}`, 10, 10 * 60_000)) return null;
         } catch {}
         const rows = await db.select().from(users).where(eq(users.email as any, email));
-        const user = rows[0];
+        const user = rows[0] as any;
         if (!user?.passwordHash) return null;
+        // Optional: require verified email for credentials login
+        const requireVerified = /^(1|true|yes)$/i.test(String(process.env.AUTH_REQUIRE_EMAIL_VERIFIED || ""));
+        if (requireVerified) {
+          const verified = !!user?.emailVerified;
+          if (!verified) return null;
+        }
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
         return { id: String(user.id), name: user.name ?? user.username, email: user.email ?? undefined, image: user.image ?? undefined } as any;
@@ -88,7 +94,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google" && profile) {
         const email = (profile.email as string | undefined)?.toLowerCase();
         if (email) {
-          const existing = (await db.select().from(users).where(eq(users.email as any, email)))[0];
+          const existing = (await db.select().from(users).where(eq(users.email as any, email)))[0] as any;
           if (!existing) {
               const username = (email.split("@")[0] || "user").slice(0, 80);
               try {
@@ -97,19 +103,31 @@ export const authOptions: NextAuthOptions = {
                   name: (profile as any)?.name || (profile as any)?.given_name || username,
                   email,
                   image: ((profile as any)?.picture as string) || ((profile as any)?.image as string) || null,
+                  emailVerified: new Date() as any,
                 }).returning({ id: users.id });
                 token.userId = String(inserted[0].id);
               } catch {
-                const fallback = (await db.select().from(users).where(eq(users.email as any, email)))[0];
+                const fallback = (await db.select().from(users).where(eq(users.email as any, email)))[0] as any;
                 if (fallback) token.userId = String(fallback.id);
             }
           } else {
             token.userId = String(existing.id);
+            if (!existing.emailVerified) {
+              try { await db.update(users).set({ emailVerified: new Date() as any }).where(eq(users.id as any, existing.id)); } catch {}
+            }
           }
         }
       }
       if (user && (user as any).id) {
         token.userId = (user as any).id;
+      }
+      // Attach session version on first issuance
+      const uid = Number((token as any)?.userId || 0);
+      if (uid > 0 && (token as any).sv == null) {
+        try {
+          const row = (await db.select({ sv: users.sessionVersion }).from(users).where(eq(users.id as any, uid)).limit(1))[0] as any;
+          if (row?.sv != null) (token as any).sv = Number(row.sv);
+        } catch {}
       }
       return token;
     },

@@ -40,8 +40,9 @@ export async function POST(req: Request) {
 
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) return NextResponse.json({ error: "server_not_configured" }, { status: 500 });
+    const sv = Number(row.sessionVersion || 1);
     const token = jwt.sign(
-      { userId: row.id, email: row.email || emailNorm, iss: "ems-anki", aud: "ems-client" },
+      { userId: row.id, email: row.email || emailNorm, iss: "ems-anki", aud: "ems-client", sv },
       secret,
       { expiresIn: "2d" }
     );

@@ -20,6 +20,10 @@ export async function POST(request: Request) {
     }
     const emailNorm = String(email).toLowerCase().trim();
     const uname = String(username).trim();
+    // Username policy: 3-30 chars, a-z 0-9 _ . -
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(uname)) {
+      return NextResponse.json({ error: "Invalid username. Use 3-30 letters, numbers, _ . -" }, { status: 400 });
+    }
 
     // Basic password policy (tunable): 8+ chars
     if (String(password).length < 8) {
@@ -48,7 +52,8 @@ export async function POST(request: Request) {
     if (existing.length) {
       return NextResponse.json({ error: "Email or username already in use" }, { status: 409 });
     }
-    const hash = await bcrypt.hash(password, 10);
+    const rounds = Math.max(10, Math.min(14, Number(process.env.BCRYPT_ROUNDS || 12)));
+    const hash = await bcrypt.hash(password, rounds);
     try {
       await db.insert(users).values({
         email: emailNorm,
