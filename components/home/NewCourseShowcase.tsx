@@ -15,15 +15,41 @@ export default function NewCourseShowcase() {
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-14">
         {/* Left copy */}
         <div className="relative">
-          <motion.h3
+          {/* Small pretitle to mirror What's New structure */}
+          <motion.div
             initial={{ x: -40, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ type: "spring", stiffness: 90, damping: 16 }}
-            className="text-3xl font-black leading-tight text-slate-900 dark:text-white sm:text-4xl"
+            className="select-none text-[clamp(16px,3.5vw,22px)] font-extrabold tracking-tight text-teal-900/70"
+          >
+            Feature spotlight
+          </motion.div>
+
+          <motion.h3
+            initial={{ x: -40, opacity: 0 }}
+            whileInView={{ x: 0, opacity: 1 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.05 }}
+            className="mt-1 select-none text-[clamp(28px,8vw,68px)] font-extrabold leading-[0.95] tracking-tight text-transparent bg-clip-text nc-heading"
           >
             Entirely New Course System
           </motion.h3>
+
+          {/* soft glow under heading */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -z-10 hidden sm:block"
+            style={{
+              top: "14px",
+              left: "-12px",
+              right: 0,
+              height: "90px",
+              background:
+                "radial-gradient(55% 55% at 35% 50%, rgba(13,148,136,0.25), transparent 60%)",
+              filter: "blur(18px)",
+            }}
+          />
 
           <div className="mt-6 space-y-6 text-slate-700 dark:text-slate-100">
             <Callout idx={1} text="Track your progress" />
@@ -216,6 +242,28 @@ export default function NewCourseShowcase() {
           </div>
         </motion.div>
       </div>
+      {/* Component-scoped shimmer like What's New, but cyan/teal */}
+      <style jsx>{`
+        .nc-heading {
+          background-image: linear-gradient(
+            90deg,
+            #0e7490 0%,
+            #06b6d4 25%,
+            #34d399 50%,
+            #06b6d4 75%,
+            #0e7490 100%
+          );
+          background-size: 180% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          animation: nc-shimmer 9s linear infinite;
+          text-shadow: 0 6px 26px rgba(6, 182, 212, 0.25);
+        }
+        @keyframes nc-shimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 180% 50%; }
+        }
+      `}</style>
     </section>
   );
 }
@@ -239,4 +287,3 @@ function Callout({ idx, text, className = "" }: { idx: number; text: string; cla
     </motion.div>
   );
 }
-

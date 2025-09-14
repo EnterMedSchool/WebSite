@@ -53,6 +53,9 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
         setCount(0);
         setLastHash(hash);
         setLastSavedAt(Date.now());
+      } else {
+        // Surface a light error hint; keep pending items intact
+        console.warn('Save failed', await res.text());
       }
     } catch {}
     setSaving(false);
