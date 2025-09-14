@@ -4,7 +4,7 @@ import { todos, users } from "@/drizzle/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { requireUserId } from "@/lib/study/auth";
 import { rateAllow, clientIpFrom } from "@/lib/rate-limit";
-import { levelFromXp, xpToNext, GOAL_XP, MAX_LEVEL } from "@/lib/xp";
+// XP awarding disabled: remove xp utilities
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,73 +27,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof body?.done === 'boolean') updates.done = !!body.done;
     if (typeof body?.position === 'number') updates.position = Number(body.position);
 
-    let xpDelta = 0;
-    const BASE_TODO_XP = 2;
-    const DAILY_TODO_XP_CAP = Math.max(0, Number(process.env.XP_DAILY_CAP_TODO || 200));
-    const DAILY_TOTAL_XP_CAP = Math.max(0, Number(process.env.XP_DAILY_CAP_TOTAL || 600));
-    if (updates.done === true && row.done === false && !row.xpAwarded) {
-      // We will set xpAwarded only if some XP is actually granted (see cap below)
-      xpDelta = BASE_TODO_XP;
-    }
+    // XP awarding removed — no XP will be granted for todos
     if (Object.keys(updates).length > 0) {
       await db.update(todos).set(updates).where(eq(todos.id as any, id));
     }
 
-    let progress: any = null;
-    if (xpDelta > 0) {
-      // Check today's awarded XP for todos and apply cap
-      let todayAwarded = 0;
-      let todayTotalAwarded = 0;
-      try {
-        const sr = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS sum
-                             FROM lms_events
-                             WHERE user_id=${userId}
-                               AND action='xp_awarded'
-                               AND subject_type='todo'
-                               AND created_at >= date_trunc('day', now())`;
-        todayAwarded = Number(sr.rows?.[0]?.sum || 0);
-      } catch {}
-      try {
-        const sr2 = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS sum
-                              FROM lms_events
-                              WHERE user_id=${userId}
-                                AND action='xp_awarded'
-                                AND created_at >= date_trunc('day', now())`;
-        todayTotalAwarded = Number(sr2.rows?.[0]?.sum || 0);
-      } catch {}
-      const remTodo = DAILY_TODO_XP_CAP > 0 ? Math.max(0, DAILY_TODO_XP_CAP - todayAwarded) : xpDelta;
-      const remTotal = DAILY_TOTAL_XP_CAP > 0 ? Math.max(0, DAILY_TOTAL_XP_CAP - todayTotalAwarded) : xpDelta;
-      const grant = Math.max(0, Math.min(xpDelta, remTodo, remTotal));
-
-      if (grant > 0) {
-        // Persist completion + XP awarded flag only when actually granting XP
-        updates.xpAwarded = true;
-        updates.completedAt = new Date() as any;
-
-        const ur = await sql`SELECT xp, level FROM users WHERE id=${userId} LIMIT 1`;
-        const currXp = Number(ur.rows?.[0]?.xp || 0);
-        const nextXp = currXp + grant;
-        const newLevel = levelFromXp(nextXp);
-        await sql`UPDATE users SET xp=${nextXp}, level=${newLevel} WHERE id=${userId}`;
-        await sql`INSERT INTO lms_events (user_id, subject_type, subject_id, action, payload)
-                  VALUES (${userId}, 'todo', ${id}, 'xp_awarded', ${JSON.stringify({ amount: grant, totalXp: nextXp })}::jsonb)`;
-
-        if (newLevel >= MAX_LEVEL) {
-          progress = { level: MAX_LEVEL, pct: 100, inLevel: 0, span: 1 };
-        } else {
-          const start = GOAL_XP[newLevel - 1];
-          const { toNext, nextLevelGoal } = xpToNext(nextXp);
-          const span = Math.max(1, nextLevelGoal - start);
-          const inLevel = Math.max(0, Math.min(span, span - toNext));
-          const pct = Math.round((inLevel / span) * 100);
-          progress = { level: newLevel, pct, inLevel, span };
-        }
-        xpDelta = grant; // report actual granted amount
-      } else {
-        // Cap reached: do not mark xpAwarded; allow future days to grant XP if unchecked/checked again
-        xpDelta = 0;
-      }
-    }
+    // Keep a stable response shape but no XP/progress
+    const xpDelta = 0;
+    const progress = null;
 
     const fresh = (await db.select().from(todos).where(eq(todos.id as any, id)).limit(1))[0];
     return NextResponse.json({ data: fresh, xpAwarded: xpDelta, progress });

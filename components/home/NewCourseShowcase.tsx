@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState } from "react";
+import styles from "./NewCourseShowcase.module.css";
 
 type Tab = "overview" | "lesson" | "flashcards";
 
@@ -11,7 +12,7 @@ export default function NewCourseShowcase() {
   const progress = useMemo(() => (done ? 68 : 42), [done]);
 
   return (
-    <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12 sm:py-16 md:py-24">
+    <section className={`relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12 sm:py-16 md:py-24 ${styles.root}`}>
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-14">
         {/* Left copy */}
         <div className="relative">
@@ -21,7 +22,7 @@ export default function NewCourseShowcase() {
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ type: "spring", stiffness: 90, damping: 16 }}
-            className="select-none text-[clamp(16px,3.5vw,22px)] font-extrabold tracking-tight text-teal-900/70"
+            className={`select-none text-[clamp(16px,3.5vw,22px)] font-extrabold tracking-tight ${styles.pretitle}`}
           >
             Feature spotlight
           </motion.div>
@@ -31,7 +32,7 @@ export default function NewCourseShowcase() {
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.05 }}
-            className="mt-1 select-none text-[clamp(28px,8vw,68px)] font-extrabold leading-[0.95] tracking-tight text-transparent bg-clip-text nc-heading"
+            className={`mt-1 select-none text-[clamp(28px,8vw,68px)] font-extrabold leading-[0.95] tracking-tight bg-clip-text ${styles.heading}`}
           >
             Entirely New Course System
           </motion.h3>
@@ -51,7 +52,7 @@ export default function NewCourseShowcase() {
             }}
           />
 
-          <div className="mt-6 space-y-6 text-slate-700 dark:text-slate-100">
+          <div className="mt-6 space-y-6">
             <Callout idx={1} text="Track your progress" />
             <Callout idx={2} text="Make it fun and earn XP" />
             <Callout idx={3} text="Practice and review flashcards" />
@@ -242,28 +243,7 @@ export default function NewCourseShowcase() {
           </div>
         </motion.div>
       </div>
-      {/* Component-scoped shimmer like What's New, but cyan/teal */}
-      <style jsx>{`
-        .nc-heading {
-          background-image: linear-gradient(
-            90deg,
-            #0e7490 0%,
-            #06b6d4 25%,
-            #34d399 50%,
-            #06b6d4 75%,
-            #0e7490 100%
-          );
-          background-size: 180% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          animation: nc-shimmer 9s linear infinite;
-          text-shadow: 0 6px 26px rgba(6, 182, 212, 0.25);
-        }
-        @keyframes nc-shimmer {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 180% 50%; }
-        }
-      `}</style>
+      {/* All styles for this section are isolated in NewCourseShowcase.module.css */}
     </section>
   );
 }
@@ -282,7 +262,7 @@ function Callout({ idx, text, className = "" }: { idx: number; text: string; cla
       </div>
       <div className="pt-0.5">
         <div className="text-lg font-semibold">{text}</div>
-        <div className="text-sm text-slate-600 dark:text-slate-300">Smooth animations, delightful feedback, and crisp visuals.</div>
+        <div className={`text-sm ${styles.muted}`}>Smooth animations, delightful feedback, and crisp visuals.</div>
       </div>
     </motion.div>
   );

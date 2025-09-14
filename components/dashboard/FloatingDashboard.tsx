@@ -1,62 +1,16 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import ClassPanel from "./ClassPanel";
-import ProfileEducationForm from "@/components/profile/ProfileEducationForm";
-import type { ReactNode } from 'react';
-
-// Types for dashboard payload
-type Series = { labels: string[]; xp7: number[]; min7: number[]; corr7: number[]; tasks7?: number[] };
-type ChapterCard = {
-  id: number;
-  slug: string;
-  title: string;
-  course_slug: string;
-  course_title: string;
-  total_min?: number | null;
-  progress_pct?: number | null;
-  continue_slug?: string | null;
-  continue_completed?: boolean | null;
-};
-type DashData = {
-  user: { id: number; name?: string | null; image?: string | null; xp: number; level: number; streakDays?: number };
-  learning: { minutesToday: number; minutesTotal: number; correctToday: number; tasksToday?: number };
-  chapters: ChapterCard[];
-  courses: { id: number; slug: string; title: string; description?: string | null; progress_pct?: number | null }[];
-  series?: Series;
-};
+import { useEffect, useMemo, useState } from "react";
 
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [data, setData] = useState<DashData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [mates, setMates] = useState<{ count: number; course?: string | null; school?: string | null; year?: number | null; activeNow?: number | null; isVerified?: boolean } | null>(null);
-  const [tab, setTab] = useState<'dashboard'|'class'|'profile'|'privacy'|'settings'>('dashboard');
+  const [tab, setTab] = useState<'overview'|'learning'|'tasks'|'goals'|'insights'|'settings'>('overview');
+  const [name] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<{ id: number; label: string; done: boolean }[]>([
+    { id: 1, label: 'Watch a lesson', done: false },
+    { id: 2, label: 'Answer 10 questions', done: false },
+    { id: 3, label: 'Review flashcards', done: false },
+  ]);
 
-  // Load dashboard when opened
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    (async () => {
-      try {
-        const r = await fetch("/api/me/dashboard", { credentials: "include" });
-        setData(r.ok ? await r.json() : null);
-      } finally { setLoading(false); }
-    })();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    (async () => {
-      try {
-        const r = await fetch('/api/course-mates/summary', { credentials: 'include' });
-        if (!r.ok) return;
-        const j = await r.json();
-        setMates({ count: Number(j?.matesCount || 0), course: j?.courseName || null, school: j?.schoolName || null, year: j?.studyYear || null, activeNow: Number(j?.activeNow || 0), isVerified: !!j?.isVerified });
-      } catch {}
-    })();
-  }, [open]);
-
-  // Close on ESC
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     if (open) document.addEventListener("keydown", onKey);
@@ -64,352 +18,248 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
   }, [open, onClose]);
 
   const firstName = useMemo(() => {
-    const n = data?.user?.name || "there"; return (n.split(" ")[0] || "there").trim();
-  }, [data]);
+    const n = name || "there"; return (n.split(" ")[0] || "there").trim();
+  }, [name]);
 
   if (!open) return null;
-
-  async function completeLesson(lessonSlug: string) {
-    try {
-      const r = await fetch(`/api/lesson/${encodeURIComponent(lessonSlug)}/progress`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ completed: true })
-      });
-      if (!r.ok) return; const j = await r.json();
-      const amount = Number(j?.awardedXp || 0);
-      if (amount > 0) {
-        window.dispatchEvent(new CustomEvent('xp:awarded' as any, { detail: { amount, newLevel: j?.newLevel, newPct: j?.pct, newInLevel: j?.inLevel, newSpan: j?.span } }));
-      }
-      const res = await fetch('/api/me/dashboard', { credentials: 'include' }); if (res.ok) setData(await res.json());
-    } catch {}
-  }
 
   return (
     <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/40 via-indigo-900/10 to-fuchsia-900/10 backdrop-blur-[2px] p-4" onClick={onClose}>
       <div className="relative w-full max-w-7xl my-4 rounded-[28px] border border-violet-200/60 bg-white/90 shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
-        {/* Left rail: dashboard menu with labels */}
+        {/* Left rail */}
         <div className="absolute left-0 top-0 h-full w-56 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
           <div className="flex h-full flex-col justify-between py-5">
             <div className="px-3">
               <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-white/80">Menu</div>
               {([
-                { key: 'dashboard', label: 'Dashboard', icon: (
+                { key: 'overview', label: 'Overview', icon: (
                   <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
                 )},
-                { key: 'class', label: 'Class', icon: (
+                { key: 'learning', label: 'Learning', icon: (
                   <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 3l9 4.5-9 4.5L3 7.5 12 3zm0 6.75L20.25 6V18l-8.25 3.75V9.75zM3.75 18V6L12 9.75V21L3.75 18z"/></svg>
                 )},
-                { key: 'profile', label: 'Profile', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-5 0-9 2.5-9 5.5V22h18v-2.5C21 16.5 17 14 12 14z"/></svg>
+                { key: 'tasks', label: 'Tasks', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
                 )},
-                { key: 'privacy', label: 'Privacy', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-2V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 0 1 6 0v3H9z"/></svg>
+                { key: 'goals', label: 'Goals', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2 20 7l-8 5-8-5 8-5Zm0 7 8 5-8 5-8-5 8-5Z"/></svg>
+                )},
+                { key: 'insights', label: 'Insights', icon: (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h6v8H3v-8m12-4h6v12h-6V9M9 3h6v18H9V3Z"/></svg>
                 )},
                 { key: 'settings', label: 'Settings', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 8a4 4 0 1 0 4 4 4.005 4.005 0 0 0-4-4zm9.4 4a7.43 7.43 0 0 0-.09-1l2.11-1.65-2-3.46-2.49 1a7.56 7.56 0 0 0-1.73-1L14.5 1h-5L8.6 4.89a7.56 7.56 0 0 0-1.73 1l-2.49-1-2 3.46L4 11a7.43 7.43 0 0 0-.09 1l-2.11 1.65 2 3.46 2.49-1a7.56 7.56 0 0 0 1.73 1L9.5 23h5l.9-3.89a7.56 7.56 0 0 0 1.73-1l2.49 1 2-3.46z"/></svg>
+                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 8a4 4 0 1 1-4 4 4 4 0 0 1 4-4m0-6 2.1 3.5 4-.5-.9 3.9 3.3 2.3-3.3 2.3.9 3.9-4-.5L12 22l-2.1-3.5-4 .5.9-3.9L3.5 13l3.3-2.3-.9-3.9 4 .5L12 2Z"/></svg>
                 )},
-              ] as const).map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => setTab(item.key as any)}
-                  className={`mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${tab === item.key ? 'bg-white text-indigo-700 shadow ring-1 ring-white/70' : 'text-white/90 hover:bg-white/10'}`}
-                  aria-pressed={tab===item.key}
-                >
-                  <span className={`grid h-8 w-8 place-items-center rounded-lg ${tab===item.key?'bg-indigo-50 text-indigo-700':'bg-white/20 text-white'}`}>{item.icon}</span>
-                  <span className={`text-[13px] font-semibold ${tab===item.key?'text-indigo-700':'text-white'}`}>{item.label}</span>
+              ] as const).map((m) => (
+                <button key={m.key as string} onClick={() => setTab(m.key as any)} className={`group mb-1 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold ${tab===m.key ? 'bg-white/15 text-white shadow-inner' : 'text-white/85 hover:bg-white/10 hover:text-white'}`}>
+                  <span className={`grid h-7 w-7 place-items-center rounded-lg bg-white/15 text-white shadow-sm ring-1 ring-white/20`}>{m.icon}</span>
+                  <span>{m.label}</span>
                 </button>
               ))}
             </div>
             <div className="px-3">
-              <button onClick={onClose} aria-label="Close" className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/20 px-3 py-2 text-sm font-semibold text-white hover:bg-white/30">Close</button>
+              <div className="rounded-2xl bg-white/10 p-3 text-[11px]">
+                <div className="font-semibold">Hi, {firstName}!</div>
+                <div className="mt-1 text-white/80">Track your learning here. Explore your tasks, goals and insights. UI preview only.</div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Main content */}
-        <div className="pl-56">
-          <div className="grid grid-cols-12 gap-6 p-6">
-            {tab === 'dashboard' && (<>
-            {/* Greeting + Today */}
-            <div className="col-span-8">
-              <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.12)]">
-                <div className="flex items-center gap-3">
-                  <div className="text-[26px] font-extrabold tracking-tight text-gray-900">Hello, {firstName}</div>
-                  <img
-                    src="https://entermedschool.com/wp-content/uploads/2025/09/LeoHi.png"
-                    alt="Leo waving hello"
-                    className="h-10 w-auto select-none"
-                    loading="eager"
-                    decoding="async"
-                  />
-                </div>
-                <div className="mt-1 text-[13px] text-gray-600">Nice to have you back, let&apos;s continue preparing for your exam.</div>
-                {/* Today KPI pills */}
-                <div className="mt-4 grid grid-cols-4 gap-2 text-xs">
-                  <DashPill color="indigo" label="XP (24h)" value={`+${data?.series?.xp7?.[(data?.series?.xp7?.length||1)-1] ?? 0}`}>
-                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2 15 8l6 .9-4.5 4 1 6.1L12 16l-5.5 3 1-6.1L3 8.9 9 8z"/></svg>
-                  </DashPill>
-                  <DashPill color="emerald" label="Minutes" value={`${data?.learning?.minutesToday ?? 0}m`}>
-                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 10V7h-2v7h6v-2Z"/></svg>
-                  </DashPill>
-                  <DashPill color="amber" label="Correct" value={`${data?.learning?.correctToday ?? 0}`}>
-                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>
-                  </DashPill>
-                  <DashPill color="sky" label="Tasks" value={`${data?.learning?.tasksToday ?? 0}`}>
-                    <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M3 5h18v2H3V5m0 6h18v2H3v-2m0 6h18v2H3v-2z"/></svg>
-                  </DashPill>
-                </div>
-                <div className="mt-5 text-base font-bold text-gray-800">Latest chapters</div>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  {loading ? (
-                    [0,1].map((i) => (
-                      <div key={i} className="relative rounded-2xl p-[2px] min-h-[148px]" style={{ background: 'conic-gradient(#e5e7eb 0, #e5e7eb 0)' }}>
-                        <div className="flex h-full flex-col justify-between rounded-[14px] border border-gray-100 bg-white p-4 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
-                          <div className="h-4 w-40 animate-pulse rounded bg-gray-100" />
-                          <div className="mt-2 h-5 w-64 animate-pulse rounded bg-gray-100" />
-                          <div className="mt-3 h-3 w-32 animate-pulse rounded bg-gray-100" />
-                        </div>
-                      </div>
-                    ))
-                  ) : (data?.chapters ?? []).slice(0, 2).map((ch) => (
-                    <div key={ch.id} className="relative rounded-2xl p-[2px]" style={{ background: `conic-gradient(${(ch.progress_pct ?? 0) >= 100 ? '#10b981' : '#6366f1'} ${Math.max(0, Math.min(100, Math.round(ch.progress_pct ?? 0)))}%, #e5e7eb 0)` }}>
-                      <div className="flex h-full flex-col justify-between rounded-[14px] border border-gray-100 bg-white p-4 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
-                        <div className="text-sm font-semibold text-indigo-700">{ch.course_title}</div>
-                        <div className="mt-1 line-clamp-2 text-base font-bold text-gray-900">{ch.title}</div>
-                        <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 shadow-sm">{typeof ch.progress_pct === 'number' ? `${Math.round(ch.progress_pct)}% done` : 'In progress'}</span>
-                          <span className="opacity-60">-</span>
-                          <span>{(ch.total_min ?? 0) > 0 ? `${ch.total_min} min` : '-'}</span>
-                        </div>
-                        <div className="mt-3 flex items-center gap-2">
-                          <a href={ch.continue_slug ? `/lesson/${encodeURIComponent(ch.continue_slug)}` : `/course/${encodeURIComponent(ch.course_slug)}`} className="rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:opacity-95">Learn</a>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {!loading && ((data?.chapters?.length ?? 0) === 0) && (
-                    <div className="col-span-2 rounded-2xl border border-dashed border-indigo-200/70 bg-indigo-50/30 p-6 text-sm text-gray-600">No recent chapters yet. Start a lesson to see suggestions here.</div>
-                  )}
-                </div>
+        <div className="ml-56 grid min-h-[70vh] grid-cols-1 gap-4 rounded-r-[28px] p-5 sm:grid-cols-3">
+          {/* Header row */}
+          <div className="col-span-full flex items-center justify-between rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 via-indigo-100 to-fuchsia-50 p-4 ring-1 ring-white/60">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white shadow"><svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2 15 8l6 1-5 4 2 7-6-3-6 3 2-7-5-4 6-1 3-6Z"/></svg></span>
+              <div>
+                <div className="text-sm font-semibold text-indigo-800">Welcome back{firstName ? `, ${firstName}` : ''}</div>
+                <div className="text-[12px] text-indigo-700/80">Daily overview of your learning journey (UI preview).</div>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a href="/course-mates" className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-50">Course Hub</a>
+              <button onClick={onClose} className="rounded-full bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-indigo-700" aria-label="Close">Close</button>
+            </div>
+          </div>
 
-              {/* Course Mates summary / CTA */}
-              <div className="mt-6 rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-fuchsia-50 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)] min-h-[140px]">
-                {mates && (mates.isVerified || mates.year || mates.course) ? (
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-semibold text-indigo-800">Your Course Mates</div>
-                        <div className="text-xs text-gray-700">{mates.course || 'Course'} {mates.year ? `- Year ${mates.year}` : ''}{mates.school ? ` - ${mates.school}` : ''}</div>
-                      </div>
-                      <a href="/course-mates" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">Open</a>
-                    </div>
-                    <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                      <div className="rounded-2xl border border-indigo-100 bg-white/70 p-4 shadow-sm"><div className="text-xl font-extrabold text-indigo-700">{mates.count}</div><div className="text-[11px] text-gray-600">Mates verified</div></div>
-                      <div className="rounded-2xl border border-indigo-100 bg-white/70 p-4 shadow-sm"><div className="text-xl font-extrabold text-emerald-700">{mates.activeNow ?? 0}</div><div className="text-[11px] text-gray-600">Active last 24h</div></div>
-                      <div className="rounded-2xl border border-indigo-100 bg-white/70 p-4 shadow-sm"><div className="text-xl font-extrabold text-amber-700">{data?.user?.streakDays ?? 0}</div><div className="text-[11px] text-gray-600">Your streak</div></div>
-                    </div>
+          {tab === 'overview' && (
+            <>
+              {/* Stats pills */}
+              <div className="space-y-2 md:col-span-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <StatPill color="indigo" label="Minutes today" value={`—`} />
+                  <StatPill color="emerald" label="Correct today" value={`—`} />
+                  <StatPill color="amber" label="Tasks today" value={`—`} />
+                  <StatPill color="sky" label="Streak" value={`—`} />
+                </div>
+                <div className="rounded-2xl border bg-white p-3 ring-1 ring-gray-100">
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="text-sm font-semibold text-gray-900">Last 7 days</div>
+                    <div className="text-[11px] text-gray-500">XP • Minutes • Correct • Tasks</div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-base font-bold text-gray-900">Find your course mates</div>
-                      <div className="mt-1 text-xs text-gray-700">Sync your profile with your university and year to join your class.</div>
-                    </div>
-                    <a href="/course-mates" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700">Sync profile</a>
+                  <MiniChartSkeleton />
+                </div>
+              </div>
+
+              {/* Right column: Profile + counts */}
+              <div className="space-y-3">
+                <ProfileCardSkeleton />
+                <div className="grid grid-cols-2 gap-2">
+                  <SmallStatCard title="Classmates" value="—" note="Your Course — Year —" />
+                  <SmallStatCard title="Active now" value="—" note="Course Hub" />
+                </div>
+              </div>
+
+              {/* Continue learning */}
+              <div className="md:col-span-2">
+                <div className="rounded-2xl border bg-white p-4 ring-1 ring-gray-100">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-sm font-semibold text-gray-900">Continue learning</div>
+                    <a className="text-[11px] font-semibold text-indigo-700 hover:underline" href="#">See all</a>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right column */}
-            <div className="col-span-4 space-y-4">
-              {/* Profile */}
-              <ProfileCard name={data?.user?.name ?? null} imageUrl={data?.user?.image ?? null} level={data?.user?.level ?? 1} xp={data?.user?.xp ?? 0} streakDays={data?.user?.streakDays ?? 0} />
-
-              {/* XP / Activity */}
-              <div className="rounded-3xl border border-gray-100 bg-white/90 p-5 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="mb-2 flex items-baseline justify-between"><div><div className="text-sm text-gray-700">Total XP</div><div className="text-2xl font-extrabold text-indigo-700">{data?.user?.xp ?? 0} <span className="text-indigo-800">XP</span></div></div><div className="text-xs text-gray-600">Last 7 days</div></div>
-                <MiniChart series={data?.series} />
-              </div>
-            </div>
-
-            {/* Courses */}
-            <div className="col-span-12">
-              <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                <div className="text-base font-bold text-gray-800">Your Relevant Courses</div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {(data?.courses || []).map((c) => {
-                    const pct = Math.max(0, Math.min(100, Math.round(Number(c.progress_pct ?? 0))));
-                    const col = pct >= 100 ? '#10b981' : '#6366f1';
-                    return (
-                      <div key={c.id} className="relative rounded-2xl p-[2px] min-h-[76px]" style={{ background: `conic-gradient(${col} ${pct}%, #e5e7eb 0)` }}>
-                        <a href={`/course/${encodeURIComponent(c.slug)}`} className="flex min-h-[72px] items-center gap-3 rounded-[14px] border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:bg-indigo-50/40">
-                          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-200 to-fuchsia-200 shadow-inner" />
-                          <div>
-                            <div className="font-semibold text-gray-900">{c.title}</div>
-                            <div className="text-xs text-gray-600 line-clamp-1">{c.description || '-'}</div>
-                          </div>
-                        </a>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[0,1].map((i) => (
+                      <div key={i} className="flex items-center justify-between rounded-xl border bg-indigo-50/40 p-3 ring-1 ring-indigo-200/60">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-indigo-900">Chapter title</div>
+                          <div className="text-[11px] text-indigo-800/80">Course</div>
+                        </div>
+                        <button className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">Continue</button>
                       </div>
-                    );
-                  })}
-                </div>
-                <div className="hidden">
-                  <a href="/course-mates" className="flex items-center justify-between rounded-2xl border border-indigo-200/70 bg-indigo-50/60 px-4 py-3 text-indigo-800 transition hover:bg-indigo-50">
-                    <div>
-                      <div className="text-sm font-semibold">Your Course Mates</div>
-                      <div className="text-xs opacity-80">{mates ? (mates.year && mates.course ? `${mates.count} mates â€¢ ${mates.course} â€¢ Year ${mates.year}` : `${mates.count} mates â€¢ set course & year`) : 'Discover classmates by course'}</div>
-                    </div>
-                    <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 15-5-5 1.41-1.41L13 13.17l4.59-4.58L19 10Z"/></svg>
-                  </a>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            </>)}
 
-            {tab === 'class' && (
-              <div className="col-span-12">
-                <ClassPanel />
-              </div>
-            )}
-
-            {tab === 'profile' && (
-              <div className="col-span-12 space-y-4">
-                <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                  <div className="mb-3 text-lg font-semibold text-gray-900">Profile</div>
-                  <ProfileCard name={data?.user?.name ?? null} imageUrl={data?.user?.image ?? null} level={data?.user?.level ?? 1} xp={data?.user?.xp ?? 0} streakDays={data?.user?.streakDays ?? 0} />
-                </div>
-                <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                  <div className="mb-3 text-lg font-semibold text-gray-900">Education</div>
-                  <ProfileEducationForm />
-                </div>
-              </div>
-            )}
-
-            {tab === 'privacy' && (
-              <div className="col-span-12">
-                <PrivacyInline />
-              </div>
-            )}
-
-            {tab === 'settings' && (
-              <div className="col-span-12">
-                <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-                  <div className="mb-3 text-lg font-semibold text-gray-900">Settings</div>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center justify-between rounded-xl border bg-white p-3"><span>Profile & Education</span><a href="/me/profile" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">Open</a></li>
-                    <li className="flex items-center justify-between rounded-xl border bg-white p-3"><span>Course Mates</span><button onClick={()=>setTab('class')} className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Open Class</button></li>
+              {/* Recommended + Quick actions */}
+              <div className="space-y-3">
+                <div className="rounded-2xl border bg-white p-4 ring-1 ring-gray-100">
+                  <div className="mb-1 text-sm font-semibold text-gray-900">Recommended for you</div>
+                  <ul className="space-y-1">
+                    {[1,2,3,4].map((i)=>(
+                      <li key={i} className="flex items-center justify-between rounded-lg px-2 py-1">
+                        <div className="min-w-0 truncate text-[13px] text-gray-800">Course {i}</div>
+                        <button className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">Open</button>
+                      </li>
+                    ))}
                   </ul>
                 </div>
+                <div className="rounded-2xl border bg-white p-4 ring-1 ring-gray-100">
+                  <div className="mb-1 text-sm font-semibold text-gray-900">Quick actions</div>
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    <button className="rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-700 ring-1 ring-indigo-200">Start lesson</button>
+                    <button className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 ring-1 ring-emerald-200">Practice quiz</button>
+                    <button className="rounded-full bg-amber-50 px-3 py-1 font-semibold text-amber-700 ring-1 ring-amber-200">Review cards</button>
+                    <button className="rounded-full bg-fuchsia-50 px-3 py-1 font-semibold text-fuchsia-700 ring-1 ring-fuchsia-200">Plan study</button>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function PrivacyInline() {
-  const [isPublic, setIsPublic] = useState<boolean | null>(null);
-  useEffect(() => {
-    (async () => { try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(!!j?.public); } else setIsPublic(false); } catch { setIsPublic(false); } })();
-  }, []);
-  return (
-    <div className="rounded-3xl border border-gray-100 bg-white/90 p-6 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-      <div className="mb-3 text-lg font-semibold text-gray-900">Privacy</div>
-      <div className="rounded-xl border bg-gray-50 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-semibold text-gray-900">Make my profile public</div>
-            <div className="text-[11px] text-gray-600">Public profiles appear across the website (e.g., university counts and Course Mates).</div>
-          </div>
-          <button
-            type="button"
-            onClick={async()=>{
-              if (isPublic == null) return; const next = !isPublic;
-              if (next) { const ok = window.confirm('Make your profile public? You can change this anytime.'); if (!ok) return; }
-              setIsPublic(next);
-              try { await fetch('/api/course-mates/privacy', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ public: next }) }); } catch {}
-            }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${isPublic ? 'bg-emerald-500' : 'bg-gray-300'}`}
-            aria-pressed={!!isPublic}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProfileCard({ name, imageUrl, level, xp, streakDays }: { name: string | null; imageUrl: string | null; level: number; xp: number; streakDays: number }) {
-  const [recent, setRecent] = useState<{ when: string; what: string; amount: number }[] | null>(null);
-  const [rewards, setRewards] = useState<{ key: string; type: string; label: string; earnedAt: string }[] | null>(null);
-  useEffect(() => {
-    (async () => {
-      try { const r = await fetch('/api/me/xp', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setRecent((j?.recent || []).slice(0,6)); setRewards((j?.rewards || []).slice(0,6)); } else { setRecent([]); setRewards([]);} } catch { setRecent([]); setRewards([]);} })();
-  }, []);
-  return (
-    <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/90 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
-      <div className="relative h-28 w-full bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200" />
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">{imageUrl ? (<img src={imageUrl} alt="User" className="h-12 w-12 object-cover" />) : (<span className="text-base font-semibold text-indigo-700">{(name||'U').slice(0,1).toUpperCase()}</span>)}</span>
-          <div>
-            <div className="font-semibold text-gray-900">{name ?? 'Your Name'}</div>
-            <a href="/me/profile" className="text-xs font-semibold text-indigo-700 underline">Edit profile</a>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
-          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{level}</div><div className="text-gray-600">Level</div></div>
-          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{xp}</div><div className="text-gray-600">XP</div></div>
-          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{streakDays || '-'}</div><div className="text-gray-600">Streak</div></div>
-          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">{Array.isArray(rewards)?rewards.length:'-'}</div><div className="text-gray-600">Items</div></div>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div>
-            <div className="mb-1 text-xs font-semibold text-gray-700">Recent XP</div>
-            {recent === null ? (
-              <div className="h-10 animate-pulse rounded bg-gray-100" />
-            ) : recent.length === 0 ? (
-              <div className="text-xs text-gray-600">No XP yet. Complete a lesson to earn some!</div>
-            ) : (
-              <ul className="space-y-1">
-                {recent.map((r,i)=> (
-                  <li key={i} className="flex items-center justify-between text-xs text-gray-800"><span className="truncate pr-2">{r.what}</span><span className="text-gray-500">{r.when}</span><span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">+{r.amount}</span></li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div>
-            <div className="mb-1 text-xs font-semibold text-gray-700">Inventory</div>
-            {rewards === null ? (
-              <div className="h-10 animate-pulse rounded bg-gray-100" />
-            ) : rewards.length === 0 ? (
-              <div className="text-xs text-gray-600">You don&#39;t have items yet.</div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {rewards.map((rw,i)=> (
-                  <span key={rw.key} className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-50 to-fuchsia-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200/70">{rw.label}</span>
-                ))}
+              {/* Privacy & Settings preview */}
+              <div className="col-span-full rounded-2xl border bg-white p-4 ring-1 ring-gray-100">
+                <div className="text-sm font-semibold text-gray-900">Privacy & Settings</div>
+                <div className="mt-2 grid gap-3 md:grid-cols-3">
+                  <ToggleCard title="Public Profile" desc="Control how your profile appears on Course Mates." />
+                  <ToggleCard title="Notifications" desc="Stay up to date with learning reminders." />
+                  <ThemeCard />
+                </div>
               </div>
-            )}
-          </div>
+            </>
+          )}
+
+          {tab === 'learning' && (
+            <div className="col-span-full grid gap-4 sm:grid-cols-2">
+              <SectionCard title="Upcoming lessons">
+                <ul className="space-y-2 text-sm">
+                  {[1,2,3].map(i => (
+                    <li key={i} className="flex items-center justify-between rounded-xl border px-3 py-2">
+                      <div>
+                        <div className="font-semibold text-gray-900">Lesson {i}</div>
+                        <div className="text-[11px] text-gray-600">Chapter · 30 min</div>
+                      </div>
+                      <button className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">Preview</button>
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+              <SectionCard title="Achievements preview">
+                <div className="grid grid-cols-3 gap-2">
+                  {[1,2,3,4,5,6].map(i => (
+                    <div key={i} className="grid h-16 place-items-center rounded-xl border bg-white text-[11px] text-gray-600">Badge</div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+          )}
+
+          {tab === 'tasks' && (
+            <div className="col-span-full grid gap-4 sm:grid-cols-2">
+              <SectionCard title="Today’s tasks">
+                <ul className="space-y-2 text-sm">
+                  {tasks.map(t => (
+                    <li key={t.id} className="flex items-center justify-between rounded-xl border px-3 py-2">
+                      <label className="flex items-center gap-2 text-gray-800">
+                        <input type="checkbox" checked={t.done} onChange={()=> setTasks(ts => ts.map(x => x.id===t.id ? { ...x, done: !x.done } : x))} />
+                        <span className={t.done ? 'line-through text-gray-500' : ''}>{t.label}</span>
+                      </label>
+                      <span className="text-[11px] text-gray-500">+10m</span>
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+              <SectionCard title="Focus timer">
+                <div className="grid place-items-center rounded-2xl bg-gray-50 p-6">
+                  <div className="text-4xl font-extrabold text-gray-800">25:00</div>
+                  <div className="mt-2 flex gap-2">
+                    <button className="rounded-full bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white">Start</button>
+                    <button className="rounded-full bg-gray-200 px-4 py-1.5 text-sm font-semibold text-gray-700">Reset</button>
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+          )}
+
+          {tab === 'goals' && (
+            <div className="col-span-full grid gap-4 sm:grid-cols-2">
+              <SectionCard title="Study goals">
+                <div className="space-y-2 text-sm">
+                  {[['Daily minutes','30'], ['Weekly lessons','4'], ['Correct answers','100']].map(([k,v],i)=>(
+                    <div key={i} className="flex items-center justify-between rounded-xl border bg-white px-3 py-2">
+                      <div className="font-semibold text-gray-900">{k}</div>
+                      <div className="text-[11px] text-gray-600">Target: {v}</div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+              <SectionCard title="Motivation">
+                <div className="rounded-xl bg-gradient-to-br from-amber-100 via-rose-50 to-fuchsia-100 p-4 text-sm text-amber-900 ring-1 ring-amber-200/60">Small steps build strong habits. Keep going!</div>
+              </SectionCard>
+            </div>
+          )}
+
+          {tab === 'insights' && (
+            <div className="col-span-full grid gap-4 sm:grid-cols-3">
+              <InsightCard title="Strongest topics" items={["Hematology", "Biochemistry", "Physiology"]} />
+              <InsightCard title="Needs attention" items={["Anatomy", "Pathology"]} accent="rose" />
+              <InsightCard title="Best study time" items={["Evenings", "Weekends"]} accent="emerald" />
+            </div>
+          )}
+
+          {tab === 'settings' && (
+            <div className="col-span-full grid gap-4 sm:grid-cols-2">
+              <ToggleCard title="Public Profile" desc="Control how your profile appears across the site." />
+              <ToggleCard title="Email Notifications" desc="Learning summaries and reminders." />
+              <ThemeCard />
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function DashPill({ color, label, value, children }: { color: 'indigo'|'emerald'|'amber'|'sky'; label: string; value: string; children: ReactNode }) {
-  const [popKey, setPopKey] = useState(0);
-  const prev = useRef<string | null>(null);
-  useEffect(() => {
-    if (prev.current !== null && prev.current !== value) setPopKey((k) => k + 1);
-    prev.current = value;
-  }, [value]);
+function StatPill({ color, label, value }: { color: 'indigo'|'emerald'|'amber'|'sky'; label: string; value: string }) {
   const theme = color === 'indigo'
     ? { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200' }
     : color === 'emerald'
@@ -419,69 +269,95 @@ function DashPill({ color, label, value, children }: { color: 'indigo'|'emerald'
     : { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200' };
   return (
     <div className={`min-w-0 flex items-center justify-between overflow-hidden rounded-2xl border ${theme.ring} ${theme.bg} px-3 py-2`}>
-      <div className={`min-w-0 flex items-center gap-2 ${theme.text}`}>
-        <span className="shrink-0">{children}</span>
-        <div className="min-w-0 truncate font-semibold">{label}</div>
-      </div>
-      <div key={popKey} className={`shrink-0 whitespace-nowrap text-[11px] font-extrabold tabular-nums ${theme.text}`} style={{ animation: 'pop 260ms cubic-bezier(.22,1,.36,1)' }}>{value}</div>
-      <style>{`@keyframes pop { 0% { transform: scale(1) } 30% { transform: scale(1.08) } 100% { transform: scale(1) } }`}</style>
+      <div className={`min-w-0 truncate text-[12px] font-semibold ${theme.text}`}>{label}</div>
+      <div className={`shrink-0 text-[11px] font-extrabold tabular-nums ${theme.text}`}>{value}</div>
     </div>
   );
 }
 
-function MiniChart({ series }: { series?: Series | null }) {
-  const [showXp, setShowXp] = useState(true);
-  const [showMin, setShowMin] = useState(true);
-  const [showCorr, setShowCorr] = useState(true);
-  const [showTasks, setShowTasks] = useState(false);
-  const [idx, setIdx] = useState<number | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-  if (!series || !series.labels) return <div className="h-28 w-full animate-pulse rounded-xl bg-gray-100" />;
+function MiniChartSkeleton() {
+  return <div className="h-28 w-full animate-pulse rounded-xl bg-gray-100" />;
+}
 
-  const labels = series.labels, xp = series.xp7, mn = series.min7, cr = series.corr7, tk = series.tasks7 || new Array(series.labels.length).fill(0);
-  const maxY = Math.max(10, ...(showXp ? xp : [0]), ...(showMin ? mn : [0]), ...(showCorr ? cr : [0]), ...(showTasks ? tk : [0]));
-  const W = 360, H = 120, P = 18; const n = labels.length;
-  const xi = (i: number) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
-  const yi = (v: number) => H - P - (v / maxY) * (H - 2 * P);
-  const path = (arr: number[]) => arr.map((v, i) => `${i ? 'L' : 'M'}${xi(i)},${yi(v)}`).join(' ');
-
-  function onMove(e: React.MouseEvent) {
-    const r = ref.current?.getBoundingClientRect(); if (!r) return;
-    const rel = Math.max(P, Math.min(W - P, e.clientX - r.left));
-    const t = (rel - P) / (W - 2 * P); const j = Math.round(t * (n - 1)); setIdx(Math.max(0, Math.min(n - 1, j)));
-  }
-  const ax = idx != null ? xi(idx) : null;
-  const tip = idx != null ? { day: labels[idx], xp: xp[idx], min: mn[idx], corr: cr[idx], tasks: tk[idx] } : null;
-
+function ProfileCardSkeleton() {
   return (
-    <div ref={ref} className="relative select-none" onMouseMove={onMove} onMouseLeave={() => setIdx(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-28 w-full">
-        <defs>
-          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity="0.8" /><stop offset="100%" stopColor="#a78bfa" stopOpacity="0.2" /></linearGradient>
-          <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.8" /><stop offset="100%" stopColor="#34d399" stopOpacity="0.2" /></linearGradient>
-          <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity="0.8" /><stop offset="100%" stopColor="#fcd34d" stopOpacity="0.2" /></linearGradient>
-        </defs>
-        <defs>
-          <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.8" /><stop offset="100%" stopColor="#38bdf8" stopOpacity="0.2" /></linearGradient>
-        </defs>
-        {showMin && <path d={path(mn)} fill="none" stroke="url(#g2)" strokeWidth="3" />}
-        {showXp && <path d={path(xp)} fill="none" stroke="url(#g1)" strokeWidth="3" />}
-        {showCorr && <path d={path(cr)} fill="none" stroke="url(#g3)" strokeWidth="3" />}
-        {showTasks && <path d={path(tk)} fill="none" stroke="url(#g4)" strokeWidth="3" />}
-        {ax != null && <line x1={ax} y1={P} x2={ax} y2={H - P} stroke="#94a3b8" strokeDasharray="3,3" />}
-      </svg>
-      {tip && (
-        <div className="pointer-events-none absolute -translate-x-1/2 rounded-xl border bg-white/95 px-2 py-1 text-[10px] shadow" style={{ left: `${ax! / 3.6}%`, top: 0 }}>
-          <div className="font-semibold text-gray-800">{tip.day}</div>
-          <div className="mt-0.5 grid grid-cols-4 gap-2"><span className="text-indigo-600">{tip.xp} XP</span><span className="text-emerald-600">{tip.min}m</span><span className="text-amber-600">{tip.corr}</span><span className="text-sky-600">{tip.tasks}</span></div>
+    <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/90 shadow-[0_10px_30px_rgba(99,102,241,0.10)]">
+      <div className="relative h-28 w-full bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200" />
+      <div className="p-4">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100"><span className="text-base font-semibold text-indigo-700">U</span></span>
+          <div>
+            <div className="font-semibold text-gray-900">Your Name</div>
+            <a href="#" className="text-xs font-semibold text-indigo-700 underline">Edit profile</a>
+          </div>
         </div>
-      )}
-      <div className="mt-2 flex items-center justify-center gap-2 text-[10px]">
-        <button onClick={() => setShowXp(v=>!v)} className={`rounded-full px-2 py-0.5 ${showXp ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>XP</button>
-        <button onClick={() => setShowMin(v=>!v)} className={`rounded-full px-2 py-0.5 ${showMin ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>Minutes</button>
-        <button onClick={() => setShowCorr(v=>!v)} className={`rounded-full px-2 py-0.5 ${showCorr ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>Correct</button>
-        <button onClick={() => setShowTasks(v=>!v)} className={`rounded-full px-2 py-0.5 ${showTasks ? 'bg-sky-100 text-sky-700' : 'bg-gray-100 text-gray-600'}`}>Tasks</button>
+        <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">—</div><div className="text-gray-600">Level</div></div>
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">—</div><div className="text-gray-600">XP</div></div>
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">—</div><div className="text-gray-600">Streak</div></div>
+          <div className="rounded-xl border p-2"><div className="text-lg font-extrabold text-gray-900">—</div><div className="text-gray-600">Items</div></div>
+        </div>
       </div>
     </div>
   );
 }
+
+function SmallStatCard({ title, value, note }: { title: string; value: string; note: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white/90 p-3 shadow-[0_10px_30px_rgba(79,70,229,0.10)]">
+      <div className="text-xs font-semibold text-gray-600">{title}</div>
+      <div className="mt-1 text-2xl font-extrabold text-indigo-700">{value}</div>
+      <div className="text-[11px] text-gray-600">{note}</div>
+    </div>
+  );
+}
+
+function ToggleCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="rounded-xl border bg-gray-50 p-3">
+      <div className="text-[12px] font-semibold text-gray-800">{title}</div>
+      <div className="mt-1 text-[11px] text-gray-600">{desc}</div>
+      <div className="mt-2 flex items-center justify-between">
+        <div className="text-[11px] text-gray-700">Off</div>
+        <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300"><span className="inline-block h-4 w-4 translate-x-1 transform rounded-full bg-white" /></button>
+      </div>
+    </div>
+  );
+}
+
+function ThemeCard() {
+  return (
+    <div className="rounded-xl border bg-gray-50 p-3">
+      <div className="text-[12px] font-semibold text-gray-800">Theme</div>
+      <div className="mt-1 text-[11px] text-gray-600">Customize your dashboard appearance.</div>
+      <div className="mt-2 flex items-center gap-2 text-[11px]">
+        <button className="rounded-md bg-white px-2 py-1 ring-1 ring-gray-200">Light</button>
+        <button className="rounded-md bg-gray-900 px-2 py-1 text-white ring-1 ring-gray-800">Dark</button>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border bg-white p-4 ring-1 ring-gray-100">
+      <div className="mb-2 text-sm font-semibold text-gray-900">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function InsightCard({ title, items, accent }: { title: string; items: string[]; accent?: 'rose'|'emerald' }) {
+  const text = accent === 'rose' ? 'text-rose-700' : accent === 'emerald' ? 'text-emerald-700' : 'text-indigo-700';
+  const ring = accent === 'rose' ? 'ring-rose-200' : accent === 'emerald' ? 'ring-emerald-200' : 'ring-indigo-200';
+  const bg = accent === 'rose' ? 'bg-rose-50' : accent === 'emerald' ? 'bg-emerald-50' : 'bg-indigo-50';
+  return (
+    <div className={`rounded-2xl border ${ring} ${bg} p-4`}>
+      <div className={`text-sm font-semibold ${text}`}>{title}</div>
+      <ul className="mt-2 space-y-1 text-[13px] text-gray-800">
+        {items.map((it, i)=>(<li key={i} className="rounded-lg bg-white/60 px-2 py-1">{it}</li>))}
+      </ul>
+    </div>
+  );
+}
+

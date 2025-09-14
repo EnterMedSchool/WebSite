@@ -84,35 +84,55 @@ export default function LessonPage() {
     }
     }
     // Try static guest JSON from CDN (free lessons)
-    // Avoid 404 noise by checking index first and only fetching when available.
+    // Prefer the lightweight payloads when available, but gracefully fall back
+    // to the non-lite structure currently committed in public/.
     try {
       const cached = (typeof window !== 'undefined') ? (window as any).__ems_free_index_lite as Map<string,string> | undefined : undefined;
       const ensureIndex = async (): Promise<Map<string,string>> => {
         if (cached && cached.size) return cached;
-        try {
-          const r = await fetch('/free-lessons/v1/index-lite.json', { cache: 'force-cache' });
-          if (!r.ok) return new Map();
-          const j = await r.json().catch(() => ({} as any));
+        const buildMap = (j: any) => {
           const map = new Map<string,string>();
           if (Array.isArray(j?.lessons)) {
             for (const x of j.lessons) { const s = String(x.slug); const h = String(x.hash||''); map.set(s, h); }
           }
+          return map;
+        };
+        // Try lite index first
+        try {
+          const rl = await fetch('/free-lessons/v1/index-lite.json', { cache: 'force-cache' });
+          if (rl.ok) {
+            const jl = await rl.json().catch(() => ({} as any));
+            const map = buildMap(jl);
+            if (typeof window !== 'undefined') (window as any).__ems_free_index_lite = map;
+            return map;
+          }
+        } catch {}
+        // Fallback to full index
+        try {
+          const rf = await fetch('/free-lessons/v1/index.json', { cache: 'force-cache' });
+          if (!rf.ok) return new Map();
+          const jf = await rf.json().catch(() => ({} as any));
+          const map = buildMap(jf);
           if (typeof window !== 'undefined') (window as any).__ems_free_index_lite = map;
           return map;
         } catch { return new Map(); }
       };
-      ensureIndex()
-        .then((idx) => {
-          if (!alive) return;
-          const h = idx.get(slug);
-          if (h !== undefined) {
-            const v = h ? `?v=${encodeURIComponent(h)}` : '';
-            fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' })
-              .then(async (r) => { if (!alive) return; if (r.ok) setGuest(await r.json()); })
-              .catch(() => {});
-          }
-        })
-        .catch(() => {});
+      const loadGuest = async (idx: Map<string,string>) => {
+        const h = idx.get(slug);
+        if (h === undefined) return; // slug not found
+        const v = h ? `?v=${encodeURIComponent(h)}` : '';
+        // Try lite payload first
+        try {
+          const rl = await fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
+          if (rl.ok) { setGuest(await rl.json()); return; }
+        } catch {}
+        // Fallback to non-lite payload
+        try {
+          const rf = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
+          if (rf.ok) { setGuest(await rf.json()); return; }
+        } catch {}
+      };
+      ensureIndex().then((idx) => { if (!alive) return; loadGuest(idx); }).catch(() => {});
     } catch {}
     return () => { alive = false; };
   }, [slug]);

@@ -186,14 +186,8 @@ export async function GET(req: Request) {
       cr = { rows: [] } as any;
     }
 
-    // Streak days (simple): consecutive days with any xp_awarded event
+    // Streak days disabled while XP system is rebuilt
     let streakDays = 0;
-    try {
-      const sr = await sql`SELECT created_at FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at > now() - interval '40 days' ORDER BY created_at DESC`;
-      const days = Array.from(new Set(sr.rows.map((r:any) => new Date(r.created_at).toDateString())));
-      let d = new Date(); d.setHours(0,0,0,0);
-      while (days.includes(d.toDateString())) { streakDays++; d = new Date(d.getTime() - 86400000); }
-    } catch {}
 
     // Past 7-day series
     const labels: string[] = [];
@@ -206,10 +200,10 @@ export async function GET(req: Request) {
       const next = new Date(day.getTime() + 86400000);
       const fromIso = day.toISOString(); const toIso = next.toISOString();
       labels.push(day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-      const xr = await sql`SELECT COALESCE(SUM((payload->>'amount')::int),0) AS xp FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' AND created_at >= ${fromIso} AND created_at < ${toIso}`;
+      // XP series disabled while XP system is rebuilt
       const mr = await sql`SELECT COALESCE(SUM(time_spent_sec),0) AS sec FROM user_lesson_progress WHERE user_id=${userId} AND last_viewed_at >= ${fromIso} AND last_viewed_at < ${toIso}`;
       const qr = await sql`SELECT COUNT(1) AS cnt FROM user_question_progress WHERE user_id=${userId} AND correct=true AND answered_at >= ${fromIso} AND answered_at < ${toIso}`;
-      xp7.push(Number(xr.rows?.[0]?.xp || 0));
+      xp7.push(0);
       min7.push(Math.round(Number(mr.rows?.[0]?.sec || 0) / 60));
       corr7.push(Number(qr.rows?.[0]?.cnt || 0));
       const tsr = await sql`SELECT 
