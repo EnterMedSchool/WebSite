@@ -20,7 +20,10 @@ export default function ScrollShow() {
   const [dir, setDir] = useState<1 | -1>(1);
   const [tick, setTick] = useState(0);
   const [preRatio, setPreRatio] = useState(0);
+  const [countdownLocked, setCountdownLocked] = useState(false);
   const introRef = useRef<HTMLDivElement>(null);
+  const featRef = useRef<HTMLDivElement | null>(null);
+  const [featRatio, setFeatRatio] = useState(0);
 
   useEffect(() => {
     const els = steps.current.filter(Boolean);
@@ -53,6 +56,18 @@ export default function ScrollShow() {
     offset: ["start 90%", "end 10%"],
   });
   useMotionValueEvent(introProgress, "change", (v) => setPreRatio(Math.max(0, Math.min(1, v ?? 0))));
+
+  // Latch the countdown once we've effectively reached GO
+  useEffect(() => {
+    if (!countdownLocked && preRatio >= 0.92) setCountdownLocked(true);
+  }, [preRatio, countdownLocked]);
+
+  // Feature reveal progress tied to the first step sentinel
+  const { scrollYProgress: featuresProgress } = useScroll({
+    target: featRef,
+    offset: ["start 85%", "end 10%"],
+  });
+  useMotionValueEvent(featuresProgress, "change", (v) => setFeatRatio(Math.max(0, Math.min(1, v ?? 0))));
 
   // Small ticker for stat counters & subtle motion
   useEffect(() => {
@@ -225,7 +240,10 @@ export default function ScrollShow() {
           <div
             key={i}
             ref={(el) => {
-              if (el) steps.current[i] = el;
+              if (el) {
+                steps.current[i] = el;
+                if (i === 0) featRef.current = el;
+              }
             }}
             data-index={i}
             className="h-[100vh]"
@@ -233,14 +251,17 @@ export default function ScrollShow() {
         ))}
       </div>
 
-      {/* Cinematic overlay + countdown during first scene */}
+      {/* Cinematic overlay: countdown then feature highlights, then fade out */}
       {(() => {
-        const show = preRatio > 0.06 && active === 0;
-        if (!show) return null;
-        const r = Math.min(1, Math.max(0, (preRatio - 0.06) / 0.9));
-        const op = Math.min(1, r * 1.15); // fully dark once underway
+        const baseR = Math.min(1, Math.max(0, (preRatio - 0.06) / 0.9));
+        const r = countdownLocked ? 1 : baseR; // freeze forward after GO
         const step = r < 0.33 ? 3 : r < 0.66 ? 2 : r < 0.9 ? 1 : 0; // 0 means GO!
+        const countdownOpacity = Math.min(1, r * 1.15);
         const barH = `${Math.round(6 + r * 12)}vh`;
+        const featuresFade = Math.max(0, 1 - Math.max(0, (featRatio - 0.85) / 0.15)); // fade overlay near end of features
+        const overlayAlpha = countdownLocked ? 0.95 * featuresFade : countdownOpacity;
+        const show = active === 0 && (countdownLocked ? featuresFade > 0.02 : preRatio > 0.06);
+        if (!show) return null;
         const skipToScene = () => {
           const target = steps.current[1] || steps.current[0];
           if (target) {
@@ -248,9 +269,11 @@ export default function ScrollShow() {
             window.scrollTo({ top, behavior: "smooth" });
           }
           setPreRatio(0);
+          setFeatRatio(1);
+          setCountdownLocked(true);
         };
         return (
-          <motion.div initial={false} animate={{ opacity: op }} className="fixed inset-0 z-[60] pointer-events-none">
+          <motion.div initial={false} animate={{ opacity: overlayAlpha }} className="fixed inset-0 z-[60] pointer-events-none">
             {/* film grain */}
             <div className="absolute inset-0 bg-black" />
             <div className="pointer-events-none absolute inset-0 opacity-20 mix-blend-screen" style={{ backgroundImage: "repeating-radial-gradient(circle at 10% 10%, rgba(255,255,255,0.12) 0, rgba(255,255,255,0.12) 1px, transparent 1px, transparent 3px)" }} />
@@ -261,7 +284,7 @@ export default function ScrollShow() {
             <div className="absolute inset-0 grid place-items-center px-6">
               <div className="relative w-full max-w-5xl">
                 <div className="text-center">
-                  {step !== 0 ? (
+                  {!countdownLocked ? (
                     <>
                       <div className="mb-3 text-sm font-semibold tracking-widest text-white/80">Are you ready to be amazed?</div>
                       <motion.div key={step} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} className="text-[min(20vw,140px)] font-black leading-none text-white">
@@ -274,6 +297,45 @@ export default function ScrollShow() {
                     </motion.div>
                   )}
                 </div>
+
+                {/* Feature highlights reveal over the dark screen */}
+                {countdownLocked && (
+                  <div className="mx-auto mt-2 grid w-full gap-3 sm:grid-cols-3">
+                    {(() => {
+                      const a1 = Math.min(1, Math.max(0, featRatio / 0.34));
+                      const a2 = Math.min(1, Math.max(0, (featRatio - 0.33) / 0.34));
+                      const a3 = Math.min(1, Math.max(0, (featRatio - 0.66) / 0.34));
+                      return (
+                        <>
+                          <motion.div
+                            style={{ opacity: a1, y: (1 - a1) * 24 }}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                          >
+                            <div className="text-xs uppercase tracking-widest text-indigo-200/80">New</div>
+                            <div className="mt-1 font-extrabold leading-tight">Entirely New Course System</div>
+                            <div className="mt-2 text-sm text-white/70">Faster lessons, smarter progress, and richer practice.</div>
+                          </motion.div>
+                          <motion.div
+                            style={{ opacity: a2, y: (1 - a2) * 24 }}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                          >
+                            <div className="text-xs uppercase tracking-widest text-emerald-200/80">Social</div>
+                            <div className="mt-1 font-extrabold leading-tight">Join Your Course Hub</div>
+                            <div className="mt-2 text-sm text-white/70">Study together, compare stats, and share wins.</div>
+                          </motion.div>
+                          <motion.div
+                            style={{ opacity: a3, y: (1 - a3) * 24 }}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-sm"
+                          >
+                            <div className="text-xs uppercase tracking-widest text-amber-200/80">Competitive</div>
+                            <div className="mt-1 font-extrabold leading-tight">Weekly Leaderboards</div>
+                            <div className="mt-2 text-sm text-white/70">Climb ranks, earn XP, and stay motivated.</div>
+                          </motion.div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
 
