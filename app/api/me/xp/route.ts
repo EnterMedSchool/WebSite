@@ -29,7 +29,12 @@ export async function GET() {
         if (ur.rows[0]?.id) userId = Number(ur.rows[0].id);
       }
     }
-    if (!userId) return NextResponse.json({ recent: [], rewards: [], streakDays: 0 });
+    if (!userId) {
+      const res = NextResponse.json({ recent: [], rewards: [], streakDays: 0 });
+      res.headers.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=86400');
+      res.headers.set('Vary', 'Cookie');
+      return res;
+    }
 
     // Recent XP events
     const xr = await sql`SELECT payload, created_at FROM lms_events WHERE user_id=${userId} AND action='xp_awarded' ORDER BY created_at DESC LIMIT 12`;
@@ -68,9 +73,15 @@ export async function GET() {
       }
     } catch {}
 
-    return NextResponse.json({ recent, rewards, streakDays });
+    const res = NextResponse.json({ recent, rewards, streakDays });
+    // Browser-only caching to avoid repeated server hits across navigations
+    res.headers.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=86400');
+    res.headers.set('Vary', 'Cookie');
+    return res;
   } catch (e: any) {
-    return NextResponse.json({ recent: [], rewards: [], streakDays: 0 }, { status: 200 });
+    const res = NextResponse.json({ recent: [], rewards: [], streakDays: 0 }, { status: 200 });
+    res.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=86400');
+    res.headers.set('Vary', 'Cookie');
+    return res;
   }
 }
-
