@@ -156,7 +156,7 @@ export default function LessonPage() {
 
   // Skeleton: questions relevant to this lesson only
   const lessonId = useMemo(() => Number((bundle?.lesson?.id ?? guest?.lesson?.id) || 0), [bundle, guest]);
-  const relevantQuestions = useMemo<LessonQuestionItem[]>(() => {
+  const relevantQuestions = useMemo(() => {
     let arr: any[] = [];
     if (bundle?.questionsByLesson && lessonId) arr = bundle.questionsByLesson[String(lessonId)] || [];
     else if (guest?.questionsByLesson && lessonId) arr = guest.questionsByLesson[String(lessonId)] || [];
@@ -168,7 +168,7 @@ export default function LessonPage() {
       const status = st === 'correct' ? 'correct' : st === 'incorrect' ? 'incorrect' : 'todo';
       return { id: String(q.id), title: String(q.prompt || q.text || `Q${i+1}`), status };
     });
-  }, [bundle, guest, lessonId]);
+  }, [bundle, guest, lessonId]) as LessonQuestionItem[];
   const qTotal = relevantQuestions.length;
   const qCorrect = relevantQuestions.filter((q) => q.status === 'correct').length;
   const lessonsList = useMemo(() => (bundle?.lessons || guest?.lessons || []) as any[], [bundle, guest]);
@@ -177,11 +177,18 @@ export default function LessonPage() {
   const activeDot = Math.max(0, currentIdxInLessons >= 0 ? currentIdxInLessons + 1 : 0);
 
   const chapterPct = useMemo(() => {
-    const totalQ = chapterSummary ? Object.values<any>(chapterSummary.summary?.byLesson || {}).reduce((a:any,b:any)=>a+Number(b.total||0),0) : (guest?.questionsByLesson ? Object.values<any>(guest.questionsByLesson).reduce((a:any,b:any)=>a+((b as any[]).length||0), 0) : 0);
-    const correct = chapterSummary ? Object.values<any>(chapterSummary.summary?.byLesson || {}).reduce((a:any,b:any)=>a+Number(b.correct||0),0) : 0;
+    const byLessonVals = chapterSummary ? (Object.values(chapterSummary.summary?.byLesson || {}) as any[]) : [];
+    const totalQ = chapterSummary
+      ? byLessonVals.reduce((a: any, b: any) => a + Number(b.total || 0), 0)
+      : guest?.questionsByLesson
+        ? (Object.values(guest.questionsByLesson) as any[]).reduce((a: any, b: any) => a + ((b as any[]).length || 0), 0)
+        : 0;
+    const correct = chapterSummary
+      ? byLessonVals.reduce((a: any, b: any) => a + Number(b.correct || 0), 0)
+      : 0;
     const lessonsDone = chapterSummary ? (chapterSummary.summary?.lessonsCompleted?.length || 0) : 0;
-    const p1 = totalQ>0 ? (correct/totalQ) : 0;
-    const p2 = lessonsList.length>0 ? (lessonsDone/lessonsList.length) : 0;
+    const p1 = totalQ > 0 ? (correct / totalQ) : 0;
+    const p2 = lessonsList.length > 0 ? (lessonsDone / lessonsList.length) : 0;
     return Math.round((p1 + p2) * 50);
   }, [chapterSummary, guest, lessonsList]);
 
