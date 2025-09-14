@@ -230,21 +230,17 @@ export default function LessonPage() {
     return () => { try { if (typeof unsub === 'function') unsub(); } catch {} };
   }, [bundle?.lesson?.courseId, guest?.lesson?.courseId]);
 
-  const chapterPct = useMemo(() => {
-    const byLessonVals = chapterSummary ? (Object.values(chapterSummary.summary?.byLesson || {}) as any[]) : [];
-    const totalQ = chapterSummary
-      ? byLessonVals.reduce((a: any, b: any) => a + Number(b.total || 0), 0)
-      : guest?.questionsByLesson
-        ? (Object.values(guest.questionsByLesson) as any[]).reduce((a: any, b: any) => a + ((b as any[]).length || 0), 0)
-        : 0;
-    const correct = chapterSummary
-      ? byLessonVals.reduce((a: any, b: any) => a + Number(b.correct || 0), 0)
-      : 0;
-    const lessonsDone = chapterSummary ? (chapterSummary.summary?.lessonsCompleted?.length || 0) : 0;
-    const p1 = totalQ > 0 ? (correct / totalQ) : 0;
-    const p2 = lessonsList.length > 0 ? (lessonsDone / lessonsList.length) : 0;
-    return Math.round((p1 + p2) * 50);
-  }, [chapterSummary, guest, lessonsList]);
+  // Chapter-level progress and question totals across the chapter (exclude the "chapter" dot itself)
+  const { chapterQTotal, chapterQCorrect, chapterLessonsDone, chapterPctUnits } = useMemo(() => {
+    const byLessonVals = (chapterSummary && (chapterSummary.byLesson || chapterSummary.summary?.byLesson)) ? (Object.values<any>(chapterSummary.byLesson || chapterSummary.summary?.byLesson || {}) as any[]) : [];
+    const totalQ = byLessonVals.reduce((a, b) => a + Number(b.total || 0), 0);
+    const correct = byLessonVals.reduce((a, b) => a + Number(b.correct || 0), 0);
+    const lessonsDone = (chapterSummary && (chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted)) ? ((chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted) as number[]).length : 0;
+    const unitsTotal = (lessonsList.length) + totalQ; // exclude the synthetic chapter dot
+    const unitsDone = lessonsDone + correct;
+    const pctUnits = unitsTotal > 0 ? Math.round((unitsDone / unitsTotal) * 100) : 0;
+    return { chapterQTotal: totalQ, chapterQCorrect: correct, chapterLessonsDone: lessonsDone, chapterPctUnits: pctUnits };
+  }, [chapterSummary, lessonsList]);
 
   // Compute effective video iframe src once for simpler JSX below
   // Compute effective iframe src once for simpler JSX below
@@ -307,13 +303,13 @@ export default function LessonPage() {
             </div>
             <h1 className="truncate text-3xl font-extrabold tracking-tight sm:text-4xl">{lessonTitle}</h1>
 
-            {/* Compact status + visual bar */}
+            {/* Compact status + visual bar (chapter-wide) */}
             <div className="mt-3 w-full max-w-md text-[11px] font-medium text-white/90">
-              <div className="mb-1">{completed ? "Completed" : "Incomplete"}  {lessonProgress.qCorrect}/{lessonProgress.qTotal} questions</div>
+              <div className="mb-1">Completed {chapterQCorrect}/{chapterQTotal} questions</div>
               <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, lessonProgress.lessonPct))}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
               </div>
-              <div className="mt-1 text-[10px] opacity-90">Chapter progress: {chapterPct}%</div>
+              <div className="mt-1 text-[10px] opacity-90">Chapter progress: {chapterPctUnits}%</div>
             </div>
 
             {/* Credits row */}
@@ -381,6 +377,8 @@ export default function LessonPage() {
           softLockPractice={false}
           chapterCount={chapterDotsCount}
           activeStep={activeDot}
+          chapterLabels={[String(chapter.title || 'Chapter'), ...lessonsList.map((l:any)=> String(l.title))]}
+          chapterCompleted={[false, ...lessonsList.map((l:any)=> (chapterSummary && (chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted) ? (chapterSummary.lessonsCompleted || chapterSummary.summary?.lessonsCompleted).includes(Number(l.id)) : false)]}
         />
       </div>
 

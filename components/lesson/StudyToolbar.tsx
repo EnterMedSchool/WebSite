@@ -15,6 +15,8 @@ type Props = {
   practiceHint?: string;
   chapterCount?: number;
   activeStep?: number;
+  chapterLabels?: string[];
+  chapterCompleted?: boolean[];
 };
 
 function IconBook() {
@@ -62,7 +64,7 @@ function IconGPT() {
   );
 }
 
-export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint, chapterCount, activeStep }: Props) {
+export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, focus, onFocusToggle, softLockPractice, practiceHint, chapterCount, activeStep, chapterLabels, chapterCompleted }: Props) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   async function share() {
@@ -103,11 +105,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
             {/* Mode switch */}
             <div className="inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
               <button onClick={() => onMode('learn')} className={segBtn(mode==='learn')}><IconBook /><span>Learn</span></button>
-              <button onClick={() => onMode('practice')} className={segBtn(mode==='practice')}>
-                <IconQuiz />
-                <span>Practice</span>
-                {softLockPractice && <span className="ml-1 text-gray-400" title={practiceHint || 'Intro not viewed'}><IconLock /></span>}
-              </button>
+              {/* Practice tab removed as requested */}
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
               {/* Quick link to University Resources section */}
               <button onClick={goUniResources} className={segBtn(false)}>
@@ -119,7 +117,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
             {/* Inline chapter path between tabs and primary CTA */}
             {typeof chapterCount === 'number' && typeof activeStep === 'number' && (
               <div className="hidden min-w-[120px] flex-1 md:ml-1 md:block">
-                <ChapterPathMini count={chapterCount} currentIndex={activeStep} />
+                <ChapterPathMini count={chapterCount} currentIndex={activeStep} labels={chapterLabels} completed={chapterCompleted} />
               </div>
             )}
 

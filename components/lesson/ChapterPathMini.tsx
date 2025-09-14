@@ -7,9 +7,11 @@ type Props = {
   currentIndex: number; // 0-based
   className?: string;
   animate?: boolean;
+  labels?: string[]; // optional hover labels for dots; length=count
+  completed?: boolean[]; // optional per-step completion flags; length=count
 };
 
-export default function ChapterPathMini({ count, currentIndex, className = "", animate = true }: Props) {
+export default function ChapterPathMini({ count, currentIndex, className = "", animate = true, labels, completed }: Props) {
   const N = Math.max(1, count);
   const idx = Math.min(Math.max(0, currentIndex), N - 1);
 
@@ -80,15 +82,18 @@ export default function ChapterPathMini({ count, currentIndex, className = "", a
         <path ref={pathRef} d={d} fill="none" stroke="#E5E7EB" strokeWidth={6} strokeLinecap="round" />
         <path ref={progRef} d={d} fill="none" stroke="#10B981" strokeWidth={7} strokeLinecap="round" style={{ strokeDasharray: len, strokeDashoffset: len }} />
         {points.map((p, i) => {
-          const done = i < idx;
+          const comp = Array.isArray(completed) ? !!completed[i] : (i < idx);
           const current = i === idx;
-          const fill = done ? "#10B981" : current ? "#4F46E5" : "#FFFFFF";
-          const stroke = done ? "#047857" : current ? "#4338CA" : "#D1D5DB";
+          const fill = comp ? "#10B981" : current ? "#4F46E5" : "#FFFFFF";
+          const stroke = comp ? "#047857" : current ? "#4338CA" : "#D1D5DB";
           const r = current ? 6 : 5;
           return (
             <g key={i}>
               <circle cx={p.x} cy={p.y} r={r + 1.8} fill="#FFFFFF" stroke={stroke} strokeWidth={1.5} />
               <circle cx={p.x} cy={p.y} r={r} fill={fill} stroke={stroke} strokeWidth={1} />
+              {labels && labels[i] && (
+                <title>{labels[i]}</title>
+              )}
             </g>
           );
         })}
@@ -96,4 +101,3 @@ export default function ChapterPathMini({ count, currentIndex, className = "", a
     </div>
   );
 }
-
