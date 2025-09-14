@@ -79,7 +79,7 @@ export default function LessonPage() {
       setBundleErr('error'); throw new Error('error');
     })
       .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
-      .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
+      .catch(() => { if (alive) { setBundleErr((e)=> e||'error'); setAuthed(false); } });
     // Player info (iframeSrc / locked)  short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
     const cachedP = getPlayerCached(slug, 0) as any;
@@ -132,10 +132,14 @@ export default function LessonPage() {
         } catch { return new Map(); }
       };
       const loadGuest = async (idx: Map<string,string>) => {
+        // Always attempt direct fetch first in case the index fails in dev
+        try {
+          const rfDirect = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' });
+          if (rfDirect.ok) { setGuest(await rfDirect.json()); return; }
+        } catch {}
         const h = idx.get(slug);
-        if (h === undefined) return; // slug not found
         const v = h ? `?v=${encodeURIComponent(h)}` : '';
-        // Try lite payload first
+        // Try lite payload next
         try {
           const rl = await fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
           if (rl.ok) { setGuest(await rl.json()); return; }
@@ -146,7 +150,10 @@ export default function LessonPage() {
           if (rf.ok) { setGuest(await rf.json()); return; }
         } catch {}
       };
-      ensureIndex().then((idx) => { if (!alive) return; loadGuest(idx); }).catch(() => {});
+      ensureIndex().then((idx) => { if (!alive) return; loadGuest(idx); }).catch(() => { 
+        // As a final fallback, try direct without index
+        fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' }).then(async (r) => { if (r.ok) setGuest(await r.json()); }).catch(()=>{});
+      });
     } catch {}
     return () => { alive = false; };
   }, [slug]);
