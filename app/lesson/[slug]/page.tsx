@@ -37,7 +37,7 @@ export default function LessonPage() {
     return !!(window as any).__ems_authed;
   });
 
-  // Lesson bundle (questions + chapter lessons + progress) â€” requires login
+  // Lesson bundle (questions + chapter lessons + progress)  requires login
   const [bundle, setBundle] = useState<any | null>(null);
   const [bundleErr, setBundleErr] = useState<string | null>(null);
   const [player, setPlayer] = useState<any | null>(null);
@@ -67,7 +67,7 @@ export default function LessonPage() {
         .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
         .catch(() => { if (alive) setBundleErr((e)=> e||'error'); });
     }
-    // Player info (iframeSrc / locked) â€” short TTL cache (60s) due to signed URLs
+    // Player info (iframeSrc / locked)  short TTL cache (60s) due to signed URLs
     setPlayer(null); setPlayerErr(null);
     const cachedP = getPlayerCached<any>(slug, 60 * 1000);
     if (cachedP) {
@@ -246,21 +246,21 @@ export default function LessonPage() {
   return (
     <div className="mx-auto max-w-[1400px] p-6">
       <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
-      {/* Header â€“ UI only */}
+      {/* Header  UI only */}
       <div className="sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             {/* Breadcrumb-like pill with course > chapter (UI only) */}
             <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
               <a href={`/${course.slug}`} className="opacity-95 hover:underline">{course.title}</a>
-              <span className="opacity-80">â€º</span>
+              <span className="opacity-80"></span>
               <a href={`/${course.slug}/${chapter.slug}`} className="opacity-95 hover:underline">{chapter.title}</a>
             </div>
             <h1 className="truncate text-3xl font-extrabold tracking-tight sm:text-4xl">{lessonTitle}</h1>
 
             {/* Compact status + visual bar */}
             <div className="mt-3 w-full max-w-md text-[11px] font-medium text-white/90">
-              <div className="mb-1">{completed ? "Completed" : "Incomplete"} Â· {lessonProgress.qCorrect}/{lessonProgress.qTotal} questions</div>
+              <div className="mb-1">{completed ? "Completed" : "Incomplete"}  {lessonProgress.qCorrect}/{lessonProgress.qTotal} questions</div>
               <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">
                 <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, lessonProgress.lessonPct))}%` }} />
               </div>
@@ -269,10 +269,10 @@ export default function LessonPage() {
 
             {/* Credits row */}
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-white/90">
-              <span>Author â€“ <span className="font-semibold">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || 'â€”'}</span></span>
-              <span className="opacity-80">Â·</span>
-              <span>Reviewed by â€“ <span className="font-semibold">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || 'â€”'}</span></span>
-              <span className="opacity-80">Â·</span>
+              <span>Author  <span className="font-semibold">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || ''}</span></span>
+              <span className="opacity-80"></span>
+              <span>Reviewed by  <span className="font-semibold">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || ''}</span></span>
+              <span className="opacity-80"></span>
               <span className="hidden inline-flex items-center gap-1">Recently completed <span className="inline-flex -space-x-2 overflow-hidden pl-1">
                 <span className="h-5 w-5 rounded-full bg-white/70 ring-1 ring-white/80" />
                 <span className="h-5 w-5 rounded-full bg-white/60 ring-1 ring-white/80" />
@@ -296,7 +296,7 @@ export default function LessonPage() {
               title={fav ? 'Unfavorite' : 'Favorite'}
               aria-pressed={fav}
             >
-              {fav ? 'â™¥' : 'â™¡'}
+              {fav ? '' : ''}
             </button>
             <button
               disabled={!authed || !bundle?.lesson?.courseId || !bundle?.lesson?.id}
@@ -361,7 +361,7 @@ export default function LessonPage() {
               {/* Lesson summary */}
               <div className="hidden mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
                 <div className="text-xs font-semibold text-indigo-900 truncate">Chapter: {chapter.title}</div>
-                <div className="text-[11px] text-indigo-800/70">Intro Â· 3â€“5 min read</div>
+                <div className="text-[11px] text-indigo-800/70">Intro  35 min read</div>
               </div>
 
               {/* Lesson summary */}
@@ -389,8 +389,8 @@ export default function LessonPage() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="truncate text-sm font-medium">{q.title}</div>
                           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
-                        <div className=" mt-0.5 text-[11px] text-gray-600\>Single best answer • 1 point</div>
-                        <div className="mt-0.5 text-[11px] text-gray-600">Single best answer Â· 1 point</div>
+                        <div className=" mt-0.5 text-[11px] text-gray-600\>Single best answer * 1 point</div>
+                        <div className="mt-0.5 text-[11px] text-gray-600">Single best answer  1 point</div>
                       </button>
                     </li>
                   );
@@ -445,18 +445,18 @@ export default function LessonPage() {
             </div>
           </div>
 
-          {/* Learn tab â€” render lesson HTML body */}
+          {/* Learn tab  render lesson HTML body */}
           {tab === "learn" && (
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
               <LessonBody slug={slug} html={guest?.html} />
             </div>
           )}
 
-          {/* Practice tab — shows bundled questions when available */}
+          {/* Practice tab - shows bundled questions when available */}
           {tab === "practice" && (
             <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
               <div className="mb-2 text-sm font-semibold text-indigo-900">Practice</div>
-              {!bundle && !bundleErr && <p className="text-gray-700">Loading questions…</p>}
+              {!bundle && !bundleErr && <p className="text-gray-700">Loading questions</p>}
               {bundleErr === 'unauthenticated' && !guest && (
                 <p className="text-gray-700">Log in to see and practice questions.</p>
               )}
@@ -479,7 +479,7 @@ export default function LessonPage() {
             </div>
           )}
 
-          {/* Background tab â€“ placeholder only */}
+          {/* Background tab  placeholder only */}
           {tab === "background" && (
             <>
               <div className="rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
