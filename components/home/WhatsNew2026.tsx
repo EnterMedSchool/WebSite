@@ -18,14 +18,14 @@ export default function WhatsNew2026() {
 
           {/* Animated headline */}
           <div className="select-none font-extrabold tracking-tight leading-[0.9]">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto">
               <span className="block text-[clamp(28px,5vw,42px)] text-indigo-900/70">
                 What is new on
               </span>
               <div className="relative mt-1">
                 <span
                   aria-hidden
-                  className="block text-transparent heading-gradient text-[clamp(36px,10vw,92px)]"
+                  className="block text-transparent heading-gradient text-[clamp(36px,12vw,110px)]"
                 >
                   EnterMedSchool 2026
                 </span>
@@ -44,7 +44,7 @@ export default function WhatsNew2026() {
           </div>
 
           {/* Animated underline */}
-          <div className="mx-auto mt-6 w-full max-w-3xl">
+          <div className="mx-auto mt-6 w-full">
             <svg
               viewBox="0 0 1200 120"
               className="h-[28px] w-full"
@@ -70,7 +70,7 @@ export default function WhatsNew2026() {
           </div>
 
           {/* Subtext / placeholder for important updates that will sit under this title */}
-          <p className="mx-auto mt-4 max-w-3xl text-sm sm:text-base text-indigo-900/70">
+          <p className="mx-auto mt-4 text-sm sm:text-base text-indigo-900/70">
             Big updates are here. Explore the improvements and new features we
             built for the 2026 season.
           </p>

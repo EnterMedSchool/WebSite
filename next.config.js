@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       // Existing
       { protocol: 'https', hostname: 'lh1.googleusercontent.com' },

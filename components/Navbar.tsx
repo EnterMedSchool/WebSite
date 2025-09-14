@@ -73,7 +73,7 @@ export default async function Navbar() {
         <div className="absolute inset-y-0 left-0 -z-10 w-24 bg-gradient-to-r from-indigo-900/30 to-transparent" />
         <div className="relative mx-auto grid max-w-screen-2xl grid-cols-[auto,1fr,auto] items-center gap-4 px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Image src={LeoLogo} alt="EnterMedSchool" width={28} height={28} className="rounded" />
+            <Image src={LeoLogo.src} alt="EnterMedSchool" width={28} height={28} className="rounded" priority fetchPriority="high" />
             <span className="font-brand text-xl tracking-wide">EnterMedSchool</span>
           </Link>
 

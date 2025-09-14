@@ -132,8 +132,27 @@ export default function LessonPage() {
   const course = useMemo(() => ({ slug: String((bundle?.course?.slug ?? guest?.course?.slug) || 'course'), title: String((bundle?.course?.title ?? guest?.course?.title) || 'Course') }), [bundle, guest]);
   const chapter = useMemo(() => ({ slug: String((bundle?.chapter?.slug ?? guest?.chapter?.slug) || 'chapter'), title: String((bundle?.chapter?.title ?? guest?.chapter?.title) || 'Chapter') }), [bundle, guest]);
   const lessonTitle = useMemo(() => String((bundle?.lesson?.title ?? guest?.lesson?.title) || 'Lesson'), [bundle, guest]);
-  const courseProgress = { total: 42, completed: 19, pct: 45 };
+  const [chapterSummary, setChapterSummary] = useState<any | null>(null);
+  const [chapterSummaryErr, setChapterSummaryErr] = useState<string | null>(null);
   const lessonProgress = { completed: false, qCorrect: 3, qTotal: 10, lessonPct: 30 };
+
+  // Fetch chapter summary once (authed only), cache in localStorage for a few minutes
+  useEffect(() => {
+    const chSlug = (bundle?.chapter?.slug || guest?.chapter?.slug) as string | undefined;
+    const hasAuth = typeof document !== 'undefined' && /(?:^|; )(__Secure-next-auth\.session-token|next-auth\.session-token)=/.test(document.cookie);
+    if (!chSlug || !hasAuth) { setChapterSummary(null); return; }
+    const key = `ems:chapter:summary:${chSlug}`;
+    try {
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        const j = JSON.parse(cached);
+        if (Date.now() - (j.v || 0) < 3 * 60 * 1000) setChapterSummary(j.data);
+      }
+    } catch {}
+    fetch(`/api/chapter/${encodeURIComponent(chSlug)}/summary`, { credentials: 'include' })
+      .then(async (r) => { if (!r.ok) throw new Error(String(r.status)); const j = await r.json(); setChapterSummary(j); try { localStorage.setItem(key, JSON.stringify({ v: Date.now(), data: j })); } catch {} })
+      .catch(() => setChapterSummaryErr('error'));
+  }, [bundle?.chapter?.slug, guest?.chapter?.slug]);
 
   // Skeleton: questions relevant to this lesson only
   const lessonId = useMemo(() => Number((bundle?.lesson?.id ?? guest?.lesson?.id) || 0), [bundle, guest]);
@@ -152,14 +171,19 @@ export default function LessonPage() {
   }, [bundle, guest, lessonId]);
   const qTotal = relevantQuestions.length;
   const qCorrect = relevantQuestions.filter((q) => q.status === 'correct').length;
-  const chapterTimeline = useMemo(() => {
-    const ls = (bundle?.lessons || guest?.lessons) as any[] | undefined;
-    if (!ls?.length) return [
-      { key: "intro", title: "Intro: Coagulation…", q: 0, active: false },
-      { key: "dic", title: "Disseminated Intravascular…", q: 0, active: true },
-    ];
-    return ls.map((l) => ({ key: String(l.id), title: String(l.title), q: 0, active: Number(l.id) === lessonId }));
-  }, [bundle, guest, lessonId]);
+  const lessonsList = useMemo(() => (bundle?.lessons || guest?.lessons || []) as any[], [bundle, guest]);
+  const currentIdxInLessons = useMemo(() => lessonsList.findIndex((l)=> Number(l.id) === lessonId), [lessonsList, lessonId]);
+  const chapterDotsCount = 1 + (lessonsList?.length || 0);
+  const activeDot = Math.max(0, currentIdxInLessons >= 0 ? currentIdxInLessons + 1 : 0);
+
+  const chapterPct = useMemo(() => {
+    const totalQ = chapterSummary ? Object.values<any>(chapterSummary.summary?.byLesson || {}).reduce((a:any,b:any)=>a+Number(b.total||0),0) : (guest?.questionsByLesson ? Object.values<any>(guest.questionsByLesson).reduce((a:any,b:any)=>a+((b as any[]).length||0), 0) : 0);
+    const correct = chapterSummary ? Object.values<any>(chapterSummary.summary?.byLesson || {}).reduce((a:any,b:any)=>a+Number(b.correct||0),0) : 0;
+    const lessonsDone = chapterSummary ? (chapterSummary.summary?.lessonsCompleted?.length || 0) : 0;
+    const p1 = totalQ>0 ? (correct/totalQ) : 0;
+    const p2 = lessonsList.length>0 ? (lessonsDone/lessonsList.length) : 0;
+    return Math.round((p1 + p2) * 50);
+  }, [chapterSummary, guest, lessonsList]);
 
   return (
     <div className="mx-auto max-w-[1400px] p-6">
@@ -182,7 +206,7 @@ export default function LessonPage() {
               <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">
                 <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, lessonProgress.lessonPct))}%` }} />
               </div>
-              <div className="mt-1 text-[10px] opacity-90">Course progress: {courseProgress.completed}/{courseProgress.total} · {courseProgress.pct}%</div>
+              <div className="mt-1 text-[10px] opacity-90">Chapter progress: ${(function(){})()}</div>
             </div>
 
             {/* Credits row */}
@@ -248,8 +272,8 @@ export default function LessonPage() {
           onFocusToggle={() => setFocusMode((v) => !v)}
           focus={focusMode}
           softLockPractice={false}
-          chapterCount={chapterTimeline.length}
-          activeStep={Math.max(0, chapterTimeline.findIndex((s) => s.active))}
+          chapterCount={chapterDotsCount}
+          activeStep={activeDot}
         />
       </div>
 
@@ -322,10 +346,10 @@ export default function LessonPage() {
           {/* Video embed */}
           <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
             <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-              {(player?.iframeSrc || guest?.player?.iframeSrc) ? (
+              {((() => { const p = player?.iframeSrc; if (p) return p; const g = guest?.player?.iframeSrc; if (g) return g; const h = guest?.html || ""; const m = h.match(/<iframe[^>]*src=\"([^\"]+)\"/i); if (m?.[1]) return m[1]; const y = h.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/)([A-Za-z0-9_-]+)/i); if (y?.[1]) return `https://www.youtube-nocookie.com/embed/${y[1]}`; return ""; })()) ? (
                 <iframe
                   className="absolute inset-0 h-full w-full"
-                  src={(player?.iframeSrc || guest?.player?.iframeSrc) as string}
+                  src={((() => { const p = player?.iframeSrc; if (p) return p; const g = guest?.player?.iframeSrc; if (g) return g; const h = guest?.html || ""; const m = h.match(/<iframe[^>]*src=\"([^\"]+)\"/i); if (m?.[1]) return m[1]; const y = h.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/)([A-Za-z0-9_-]+)/i); if (y?.[1]) return `https://www.youtube-nocookie.com/embed/${y[1]}`; return ""; })()) as string}
                   title="Lesson video"
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
@@ -343,7 +367,7 @@ export default function LessonPage() {
                   </div>
                 </div>
               )}
-              {(player?.iframeSrc || guest?.player?.iframeSrc) && (
+              {((() => { const p = player?.iframeSrc; if (p) return p; const g = guest?.player?.iframeSrc; if (g) return g; const h = guest?.html || ""; const m = h.match(/<iframe[^>]*src=\"([^\"]+)\"/i); if (m?.[1]) return m[1]; const y = h.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/)([A-Za-z0-9_-]+)/i); if (y?.[1]) return `https://www.youtube-nocookie.com/embed/${y[1]}`; return ""; })()) && (
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <div className="text-xs opacity-90">{course.title}</div>
                   <div className="text-lg font-semibold">{lessonTitle}</div>
@@ -454,3 +478,5 @@ export default function LessonPage() {
 
 
 
+
+              <div className="mt-1 text-[10px] opacity-90">Chapter progress: ${chapterPct}%</div>

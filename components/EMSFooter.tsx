@@ -68,7 +68,7 @@ export default function EMSFooter() {
             {/* Left: Headline + newsletter + socials */}
             <div>
               <div className="flex items-center gap-3">
-                <Image src={LeoLogo} alt="EnterMedSchool" width={36} height={36} className="rounded" />
+                <Image src={LeoLogo.src} alt="EnterMedSchool" width={36} height={36} className="rounded" fetchPriority="low" />
                 <span className="font-brand text-2xl tracking-wide">EnterMedSchool</span>
               </div>
               <h2 className="mt-6 text-3xl font-semibold leading-tight sm:text-4xl md:text-[40px]">

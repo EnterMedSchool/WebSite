@@ -41,20 +41,33 @@ export default function UserMenu({ isAuthed, name, imageUrl, level, xpPct, xpInL
     return () => window.removeEventListener("dashboard:open" as any, onOpen as any);
   }, []);
 
-  // Achievements count (inventory size) + live updates on reward events
+  // Achievements count: lazy-load when menu opens + cache in sessionStorage.
   useEffect(() => {
-    let mounted = true;
+    function onReward() { setAchCount((n) => n + 1); }
+    window.addEventListener('reward:earned' as any, onReward as any);
+    return () => window.removeEventListener('reward:earned' as any, onReward as any);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    // Populate from session cache first, then (once) fetch in background.
+    try {
+      const cached = sessionStorage.getItem('ach:count');
+      if (cached != null) setAchCount(Number(cached) || 0);
+    } catch {}
+    let done = false;
     (async () => {
       try {
         const r = await fetch('/api/me/xp', { credentials: 'include' });
+        if (!r.ok) return;
         const j = await r.json();
-        if (mounted) setAchCount(Array.isArray(j?.rewards) ? j.rewards.length : 0);
+        const cnt = Array.isArray(j?.rewards) ? j.rewards.length : 0;
+        if (!done) setAchCount(cnt);
+        try { sessionStorage.setItem('ach:count', String(cnt)); } catch {}
       } catch { /* ignore */ }
     })();
-    function onReward() { setAchCount((n) => n + 1); }
-    window.addEventListener('reward:earned' as any, onReward as any);
-    return () => { mounted = false; window.removeEventListener('reward:earned' as any, onReward as any); };
-  }, []);
+    return () => { done = true; };
+  }, [open]);
 
   if (!isAuthed) {
     return (

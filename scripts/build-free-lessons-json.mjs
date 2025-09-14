@@ -35,8 +35,7 @@ async function fetchFreeLessonSlugs() {
 
 async function fetchLessonPayload(slug) {
   const lr = await q(
-    `SELECT l.id, l.slug, l.title, l.course_id, l.video_html, l.body,
-            c.id AS course_id2, c.slug AS course_slug, c.title AS course_title
+    `SELECT l.id, l.slug, l.title, l.course_id, l.video_html, l.body, l.meta,\n            c.id AS course_id2, c.slug AS course_slug, c.title AS course_title
        FROM lessons l JOIN courses c ON c.id=l.course_id
       WHERE l.slug=$1
       LIMIT 1`,
@@ -118,8 +117,7 @@ async function fetchLessonPayload(slug) {
     player: { iframeSrc, src },
     html: String(l.body || ''),
     questions,
-    questionsByLesson,
-  };
+    questionsByLesson,\n    authors: (l.meta && (l.meta.author || l.meta.reviewer)) ? { author: l.meta.author || null, reviewer: l.meta.reviewer || null } : { author: null, reviewer: null },\n  };
 }
 
 async function main() {
@@ -166,3 +164,4 @@ async function main() {
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
+
