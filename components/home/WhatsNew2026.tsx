@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 
 export default function WhatsNew2026() {
@@ -122,4 +123,3 @@ export default function WhatsNew2026() {
     </section>
   );
 }
-
