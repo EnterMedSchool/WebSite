@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import ShimmerHeading from "@/components/ui/ShimmerHeading";
 
 function Panel({ children }: { children: React.ReactNode }) {
@@ -25,10 +26,10 @@ export default function ScrollShow() {
   ]);
 
   // Title morph
-  const titleIndex = useTransform(scrollYProgress, [0, 0.33, 0.66, 1], [0, 0, 1, 2]);
+  const titleIndex = useTransform(scrollYProgress, [0, 0.28, 0.58, 1], [0, 0, 1, 2]);
   const titles = [
     { t: "Entirely New Course System", v: "indigo" as const },
-    { t: "Study Rooms", v: "teal" as const },
+    { t: "Join Your Course Hub", v: "teal" as const },
     { t: "Weekly Leaderboards", v: "amber" as const },
   ];
   const [ti, setTi] = useState(0);
@@ -43,12 +44,18 @@ export default function ScrollShow() {
   // Visibility and parallax ranges tuned so scene 1 is visible immediately
   const y1 = useTransform(scrollYProgress, [0, 0.2], [0, -20]);
   const o1 = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const x1 = useTransform(scrollYProgress, [0, 0.18], [-40, 0]);
 
   const y2 = useTransform(scrollYProgress, [0.2, 0.5], [20, 0]);
-  const o2 = useTransform(scrollYProgress, [0.28, 0.48, 0.6], [0, 1, 0.6]);
+  const o2 = useTransform(scrollYProgress, [0.28, 0.48, 0.6], [0, 1, 0.7]);
+  const x2 = useTransform(scrollYProgress, [0.25, 0.5], [60, 0]);
 
   const y3 = useTransform(scrollYProgress, [0.5, 1], [30, 0]);
   const o3 = useTransform(scrollYProgress, [0.58, 0.78, 1], [0, 1, 1]);
+  const x3 = useTransform(scrollYProgress, [0.55, 1], [-60, 0]);
+
+  // CTA visibility (appears mainly during scene 2)
+  const ctaO = useTransform(scrollYProgress, [0.22, 0.35, 0.6], [0, 1, 0.2]);
 
   return (
     <section ref={ref} className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen" style={{ height: "420vh" }}>
@@ -70,7 +77,7 @@ export default function ScrollShow() {
         {/* Stage */}
         <div className="relative mt-6 min-h-[64vh]">
           {/* Scene 1 */}
-          <motion.div style={{ y: y1, opacity: o1 }} className="absolute inset-0">
+          <motion.div style={{ y: y1, x: x1, opacity: o1 }} className="absolute inset-0">
             <Panel>
               <div className="flex items-center justify-between border-b border-white/60 bg-white/60 px-3 py-2 text-xs font-semibold backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
                 <div>Course · Cardio</div>
@@ -90,28 +97,52 @@ export default function ScrollShow() {
             </Panel>
           </motion.div>
 
-          {/* Scene 2 */}
-          <motion.div style={{ y: y2, opacity: o2 }} className="absolute inset-0">
+          {/* Scene 2: Course Hub quick view */}
+          <motion.div style={{ y: y2, x: x2, opacity: o2 }} className="absolute inset-0">
             <Panel>
               <div className="flex items-center justify-between border-b border-white/60 bg-white/60 px-3 py-2 text-xs font-semibold backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-                <div>Study Room · Silent Mode</div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-600 dark:text-slate-300">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" /> 18 online
-                </div>
+                <div>Course Hub · Rotations · Polls · Materials</div>
+                <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-200 dark:ring-indigo-500/20">Live</span>
               </div>
-              <div className="grid grid-cols-5 gap-2 p-4">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-lg border border-white/60 bg-white/80 p-2 text-xs backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-                    <span className="inline-grid h-6 w-6 place-items-center rounded-full bg-gradient-to-tr from-indigo-600 to-fuchsia-600 text-[10px] text-white">{i + 1}</span>
-                    <div className="truncate">User {i + 1}</div>
+              <div className="grid grid-cols-3 gap-3 p-4">
+                {/* Rotations mini calendar */}
+                <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Rotations</div>
+                  <div className="mt-2 grid grid-cols-4 gap-1">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <div key={i} className="h-6 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600/70" />
+                    ))}
                   </div>
-                ))}
+                </div>
+                {/* Poll */}
+                <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Poll</div>
+                  {(["Morning", "Afternoon", "Evening"] as const).map((o, i) => (
+                    <div key={o} className="mt-2 h-6 w-full overflow-hidden rounded-md bg-slate-100 dark:bg-white/10">
+                      <div className="h-6 bg-gradient-to-r from-cyan-600 to-emerald-600 text-[10px] font-semibold text-white" style={{ width: `${35 + i * 18}%` }} />
+                    </div>
+                  ))}
+                </div>
+                {/* Materials */}
+                <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Materials</div>
+                  {[
+                    "Prof. Rossi – Cardio Slides",
+                    "Ward Protocol – Anticoagulation",
+                    "OSCE Checklist – Neuro",
+                  ].map((m) => (
+                    <div key={m} className="mt-2 flex items-center justify-between rounded-md bg-slate-50 p-2 text-[11px] ring-1 ring-slate-200 dark:bg-white/10 dark:ring-white/10">
+                      <span className="truncate">{m}</span>
+                      <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-white">Open</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </Panel>
           </motion.div>
 
           {/* Scene 3 */}
-          <motion.div style={{ y: y3, opacity: o3 }} className="absolute inset-0">
+          <motion.div style={{ y: y3, x: x3, opacity: o3 }} className="absolute inset-0">
             <Panel>
               <div className="flex items-center justify-between border-b border-white/60 bg-white/60 px-3 py-2 text-xs font-semibold backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
                 <div>Weekly Leaderboard</div>
@@ -154,6 +185,13 @@ export default function ScrollShow() {
             />
           </svg>
         </div>
+
+        {/* CTA: Join your Course Hub */}
+        <motion.div style={{ opacity: ctaO }} className="mt-4 flex items-center justify-end">
+          <Link href="/course-mates" className="rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 px-4 py-2 text-sm font-bold text-white shadow hover:brightness-110">
+            Join your Course Hub
+          </Link>
+        </motion.div>
       </div>
 
       <style jsx>{`
