@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ShimmerHeading from "@/components/ui/ShimmerHeading";
@@ -44,18 +44,15 @@ export default function ScrollShow() {
       { threshold: [0.35, 0.55, 0.7, 0.85, 0.98] }
     );
     els.forEach((el) => io.observe(el));
-    // observe a dedicated intro sentinel if present
-    const intro = introRef.current;
-    let ioIntro: IntersectionObserver | null = null;
-    if (intro) {
-      ioIntro = new IntersectionObserver((entries) => {
-        const e = entries[0];
-        if (e) setPreRatio(e.intersectionRatio);
-      }, { threshold: [0, 0.15, 0.3, 0.5, 0.75, 1] });
-      ioIntro.observe(intro);
-    }
     return () => io.disconnect();
   }, []);
+
+  // Smooth, continuous progress for the intro using Framer's useScroll
+  const { scrollYProgress: introProgress } = useScroll({
+    target: introRef,
+    offset: ["start 90%", "end 10%"],
+  });
+  useMotionValueEvent(introProgress, "change", (v) => setPreRatio(Math.max(0, Math.min(1, v ?? 0))));
 
   // Small ticker for stat counters & subtle motion
   useEffect(() => {
@@ -252,7 +249,7 @@ export default function ScrollShow() {
         const a2 = Math.min(1, Math.max(0, (f - 0.33) / 0.34));
         const a3 = Math.min(1, Math.max(0, (f - 0.66) / 0.34));
         return (
-          <motion.div initial={false} animate={{ opacity: op }} className="fixed inset-0 z-[60]">
+          <motion.div initial={false} animate={{ opacity: op }} className="fixed inset-0 z-[60] pointer-events-none">
             {/* film grain */}
             <div className="absolute inset-0 bg-black" />
             <div className="pointer-events-none absolute inset-0 opacity-20 mix-blend-screen" style={{ backgroundImage: "repeating-radial-gradient(circle at 10% 10%, rgba(255,255,255,0.12) 0, rgba(255,255,255,0.12) 1px, transparent 1px, transparent 3px)" }} />
