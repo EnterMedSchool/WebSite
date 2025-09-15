@@ -1,4 +1,5 @@
 import CourseMatesClient from './CourseMatesClient';
+import { redirect } from 'next/navigation';
 import { resolveUserIdFromSession } from '@/lib/user';
 import { sql } from '@/lib/db';
 import { getUniversities, getSchoolsByUniversity, getCourses } from '@/lib/course-mates/cache';
@@ -8,16 +9,8 @@ import { requireAdminEmail } from '@/lib/admin';
 export default async function CourseMatesPage() {
   const userId = await resolveUserIdFromSession();
   if (!userId) {
-    return (
-      <CourseMatesClient
-        authed={false}
-        initial={{
-          universities: [], schools: [], courses: [], organizations: [], mates: [], me: {},
-          access: 'unset', summary: null, studyVibe: null, isModerator: false,
-          feed: [], events: [], photos: [], moderators: []
-        }}
-      />
-    );
+    // Not authenticated: send to sign-in without hitting any APIs
+    redirect(`/signin?callbackUrl=/course-mates`);
   }
 
   const ur = await sql`SELECT id, university_id, school_id, medical_course_id, study_year, mates_verified, name, username, image FROM users WHERE id=${userId} LIMIT 1`;

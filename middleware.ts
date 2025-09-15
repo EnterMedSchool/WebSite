@@ -17,6 +17,21 @@ function isAdminEmail(email: string | null | undefined): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Restrict Course Mates APIs to only work when called from the Course Mates page
+  // This avoids accidental/background requests from other pages and saves DB work
+  if (pathname.startsWith('/api/course-mates')) {
+    try {
+      const referer = String(req.headers.get('referer') || '').trim();
+      const refPath = referer ? new URL(referer).pathname : '';
+      if (!refPath || !refPath.startsWith('/course-mates')) {
+        return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      }
+    } catch {
+      // If referer is missing or invalid, deny to prevent off-page usage
+      return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    }
+  }
+
   // Temporary block: courses and chapters pages (focus on lessons only)
   // - Block top-level /course and /courses (but not /course-mates)
   // - Also block any /chapters or /chapter paths if present
@@ -129,6 +144,8 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/api/admin/:path*',
+    // Restrict Course Mates APIs to their page only
+    '/api/course-mates/:path*',
     // Lesson APIs guarded with early checks
     '/api/lesson/:path*',
     // Blocked sections

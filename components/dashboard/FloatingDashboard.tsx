@@ -56,6 +56,9 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
     return () => mql.removeEventListener?.('change', handler as any);
   }, []);
 
+  // If parent says closed, render nothing (both mobile and desktop)
+  if (!open) return null;
+
   if (isMobile) {
     return (
       <MobileDashboardDrawer open={open} onClose={onClose} tab={tab} setTab={setTab} MENU={MENU} firstName={firstName} />

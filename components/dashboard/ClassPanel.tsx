@@ -11,8 +11,17 @@ export default function ClassPanel() {
   const [authed, setAuthed] = useState<boolean>(false);
   const [initial, setInitial] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [onCourseMatesPage, setOnCourseMatesPage] = useState(false);
+
+  // Detect if we are on the Course Mates page; skip fetching elsewhere
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOnCourseMatesPage(window.location.pathname.startsWith('/course-mates'));
+    }
+  }, []);
 
   useEffect(() => {
+    if (!onCourseMatesPage) return;
     let cancelled = false;
     (async () => {
       try {
@@ -29,8 +38,10 @@ export default function ClassPanel() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [onCourseMatesPage]);
 
+  // If not on the page, render nothing and avoid API calls
+  if (!onCourseMatesPage) return null;
   if (loading) return <div className="p-6 text-sm text-gray-600">Loading class hub…</div>;
   if (error) return <div className="p-6 text-sm text-red-600">{error}</div>;
   if (!authed) return <div className="p-6 text-sm text-gray-700">Please sign in to view your class.</div>;
