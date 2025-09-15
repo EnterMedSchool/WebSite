@@ -246,55 +246,81 @@ export default function CourseMatesClient({ authed, initial }: {
             </div>
           </section>
 
-          {/* Feed & Leaderboard (skeleton) */}
+          {/* Feed & Leaderboard */}
           <section id="feed" className="grid gap-6 md:grid-cols-2">
             {/* Feed */}
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-lg font-semibold">Latest Updates</div>
                 <div className="flex items-center gap-2">
-                  <button onClick={()=>{}} disabled className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 disabled:opacity-60">
+                  <button
+                    onClick={reloadAll}
+                    disabled={refreshing}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ring-1 transition ${refreshing ? 'bg-gray-100 text-gray-500 ring-gray-200' : 'bg-indigo-50 text-indigo-700 ring-indigo-200 hover:bg-indigo-100'}`}
+                  >
                     <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="currentColor" d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
-                    Refresh
+                    {refreshing ? 'Refreshing' : 'Refresh'}
                   </button>
                 </div>
               </div>
-              <ul className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <li key={`fd-${i}`} className="rounded-xl border border-gray-200 p-3">
-                    <div className="flex items-start gap-3">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between"><Skeleton className="h-3 w-40 rounded" /><Skeleton className="h-3 w-24 rounded" /></div>
-                        <Skeleton className="h-3 w-full rounded" />
-                        <Skeleton className="h-3 w-4/5 rounded" />
+              {(!feed || feed.length === 0) ? (
+                <div className="rounded-xl border border-dashed p-4 text-sm text-gray-700">No updates yet. Be the first to share something with your course.</div>
+              ) : (
+                <ul className="space-y-3">
+                  {feedLimited.map((it: any) => (
+                    <li key={it.id} className="rounded-xl border border-gray-200 p-3">
+                      <div className="flex items-start gap-3">
+                        {it.image ? (
+                          <img src={it.image} alt="" className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="grid h-10 w-10 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(it.name)}</div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="min-w-0 truncate font-semibold text-gray-900">{it.name || it.username || 'Student'}</div>
+                            <div className="text-xs text-gray-500">{new Date(it.created_at).toLocaleString()}</div>
+                          </div>
+                          <div className="mt-1 whitespace-pre-wrap text-[15px] leading-6 text-gray-800">{it.content}</div>
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             {/* Leaderboard */}
             <div id="leaderboard" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Leaderboard</div><div className="text-[11px] text-gray-500">Top performers</div></div>
-              <div className="text-xs font-semibold text-gray-600">This Week</div>
-              <ul className="mt-1 space-y-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <li key={`lbw-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
-                    <div className="flex min-w-0 items-center gap-2"><Skeleton className="h-7 w-7 rounded-full" /><Skeleton className="h-3 w-32 rounded" /></div>
-                    <div className="ml-3 flex w-40 items-center gap-2"><Skeleton className="h-2 w-full rounded-full" /><Skeleton className="h-3 w-12 rounded" /></div>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
-              <ul className="mt-1 space-y-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <li key={`lba-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
-                    <div className="flex min-w-0 items-center gap-2"><Skeleton className="h-7 w-7 rounded-full" /><Skeleton className="h-3 w-32 rounded" /></div>
-                    <div className="ml-3 flex w-40 items-center gap-2"><Skeleton className="h-2 w-full rounded-full" /><Skeleton className="h-3 w-12 rounded" /></div>
-                  </li>
-                ))}
-              </ul>
+              {!lb ? (
+                <div className="text-sm text-gray-600">Leaderboard coming soon.</div>
+              ) : (
+                <>
+                  <div className="text-xs font-semibold text-gray-600">This Week</div>
+                  <ul className="mt-1 space-y-1">
+                    {(lb.weekly || []).map((row: any, i: number) => (
+                      <li key={`lbw-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-50 text-[11px] font-bold text-indigo-700">#{i+1}</div>
+                          <div className="truncate">{row.name || row.username || 'Student'}</div>
+                        </div>
+                        <div className="ml-3 flex items-center gap-2 text-xs text-gray-600"><span className="rounded-full bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700 ring-1 ring-indigo-200">{row.points} XP</span></div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 text-xs font-semibold text-gray-600">All Time</div>
+                  <ul className="mt-1 space-y-1">
+                    {(lb.all || []).map((row: any, i: number) => (
+                      <li key={`lba-${i}`} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-gray-200">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="grid h-7 w-7 place-items-center rounded-full bg-amber-50 text-[11px] font-bold text-amber-700">#{i+1}</div>
+                          <div className="truncate">{row.name || row.username || 'Student'}</div>
+                        </div>
+                        <div className="ml-3 flex items-center gap-2 text-xs text-gray-600"><span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700 ring-1 ring-amber-200">{row.points} XP</span></div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           </section>
 
@@ -408,22 +434,47 @@ export default function CourseMatesClient({ authed, initial }: {
             </div>
           </section>
 
-          {/* Events (skeleton list) */}
+          {/* Events */}
           <section id="events" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Upcoming Events</div><div className="text-[11px] text-gray-600">UI only</div></div>
-            <ul className="space-y-2 text-sm text-gray-700">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <li key={i} className="flex items-center justify-between rounded-lg border px-3 py-2"><div className="flex items-center gap-2"><Skeleton className="h-10 w-10 rounded" /><div><div className="h-3 w-40 rounded bg-gray-100" /><div className="mt-1 h-3 w-32 rounded bg-gray-100" /></div></div><span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">Remind me</span></li>
-              ))}
-            </ul>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-lg font-semibold">Upcoming Events</div>
+              {isModerator && <button onClick={()=>document.getElementById('feed')?.scrollIntoView({ behavior:'smooth' })} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Create</button>}
+            </div>
+            {(!events || events.length === 0) ? (
+              <div className="rounded-xl border border-dashed p-4 text-sm text-gray-700">No upcoming events.</div>
+            ) : (
+              <ul className="space-y-2 text-sm text-gray-700">
+                {events.map((ev: any) => {
+                  const at = ev.start_at ? new Date(ev.start_at) : null;
+                  return (
+                    <li key={ev.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="grid h-10 w-10 place-items-center rounded-lg bg-indigo-50 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">{at ? at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Soon'}</span>
+                        <div>
+                          <div className="font-medium text-gray-900">{ev.title}</div>
+                          <div className="text-[11px] text-gray-600">{at ? at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : ''} {ev.location ? `· ${ev.location}` : ''}</div>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">Remind me</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
 
-          {/* Photos (skeleton) */}
+          {/* Photos */}
           <section id="photos" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-2 text-lg font-semibold">Photos from Events</div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (<Skeleton key={i} className="aspect-[4/3] w-full rounded-xl" />))}
-            </div>
+            {(!photos || photos.length === 0) ? (
+              <div className="rounded-xl border border-dashed p-4 text-sm text-gray-700">No photos yet.</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {photos.slice(0, 9).map((ph: any) => (
+                  <img key={ph.id} src={ph.thumb_url || ph.url} alt={ph.caption || ''} className="aspect-[4/3] w-full rounded-xl object-cover" />
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Resources exchange (skeleton) */}
@@ -579,16 +630,57 @@ export default function CourseMatesClient({ authed, initial }: {
             </ul>
           </section>
 
-          {/* Orgs (skeleton) */}
+          {/* Orgs */}
           <section id="orgs" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-2 text-lg font-semibold">Student Organizations</div>
-            <div className="grid gap-2 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => (<div key={i} className="rounded-xl border p-3"><Skeleton className="h-3 w-40 rounded" /><Skeleton className="mt-2 h-3 w-24 rounded" /><Skeleton className="mt-2 h-10 w-full rounded" /></div>))}</div>
+            {(!organizations || organizations.length === 0) ? (
+              <div className="rounded-xl border border-dashed p-4 text-sm text-gray-700">No organizations yet.</div>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {organizations.map((o) => (
+                  <div key={o.id} className="rounded-xl border p-3">
+                    <div className="font-semibold text-gray-900">{o.name}</div>
+                    {o.description && <div className="mt-1 text-sm text-gray-700 line-clamp-2">{o.description}</div>}
+                    <div className="mt-2">
+                      {o.website && <a href={o.website} target="_blank" rel="noreferrer" className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">Website</a>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* Reps (skeleton) */}
+          {/* Reps */}
           <section id="reps" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-2 text-lg font-semibold">Representatives</div>
-            <ul className="space-y-2">{Array.from({ length: 4 }).map((_, i) => (<li key={i} className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-3 w-40 rounded" /></li>))}</ul>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <div className="mb-1 text-xs font-semibold text-gray-600">Course Reps</div>
+                <ul className="space-y-2">
+                  {moderators.length === 0 ? (
+                    <li className="text-sm text-gray-700">None yet.</li>
+                  ) : moderators.map((m, i) => (
+                    <li key={m.id || i} className="flex items-center gap-3">
+                      <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name)}</div>
+                      <div className="text-sm text-gray-900">{m.name || m.username || 'Moderator'}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold text-gray-600">University Reps</div>
+                <ul className="space-y-2">
+                  {uniModerators.length === 0 ? (
+                    <li className="text-sm text-gray-700">None yet.</li>
+                  ) : uniModerators.map((m, i) => (
+                    <li key={m.id || i} className="flex items-center gap-3">
+                      <div className="grid h-8 w-8 place-items-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-700">{initials(m.name)}</div>
+                      <div className="text-sm text-gray-900">{m.name || m.username || 'Rep'}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </section>
 
           {/* Kudos (skeleton) */}
@@ -610,7 +702,10 @@ export default function CourseMatesClient({ authed, initial }: {
             <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
               <div className="mb-2 text-sm font-semibold">From recent events</div>
               <div className="grid grid-cols-3 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square w-full rounded-lg" />)}
+                {(photos || []).slice(0,6).map((ph:any) => (
+                  <img key={ph.id} src={ph.thumb_url || ph.url} alt={ph.caption || ''} className="aspect-square w-full rounded-lg object-cover" />
+                ))}
+                {(!photos || photos.length===0) && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-square w-full rounded-lg" />)}
               </div>
             </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">

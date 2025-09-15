@@ -6,7 +6,17 @@ import ShimmerHeading from "@/components/ui/ShimmerHeading";
 export default function CourseHub2026() {
   const [tab, setTab] = useState<"feed" | "calendar" | "rotations" | "messages">("feed");
   const [rotSel, setRotSel] = useState(0);
+  const [unread, setUnread] = useState(3);
   const pct = useMemo(() => (tab === "feed" ? 72 : tab === "calendar" ? 48 : tab === "rotations" ? 36 : 58), [tab]);
+  const cal = useMemo(() => ([
+    { name: 'Mon', items: [ { type: 'Lecture', title: 'Anatomy: Upper Limb', time: '09:00', span: 60 }, { type: 'Lab', title: 'Biochem Lab', time: '13:00', span: 50 } ] },
+    { name: 'Tue', items: [ { type: 'Rotation', title: 'Internal Medicine', time: '08:00', span: 70 }, { type: 'Lecture', title: 'Physiology: Cardiac Output', time: '14:00', span: 45 } ] },
+    { name: 'Wed', items: [ { type: 'Lecture', title: 'Histology: Epithelium', time: '10:00', span: 55 }, { type: 'Exam', title: 'MCQ quiz — Biochem', time: '16:00', span: 35 } ] },
+    { name: 'Thu', items: [ { type: 'Workshop', title: 'Suturing Skills', time: '12:00', span: 40 }, { type: 'Rotation', title: 'Pediatrics Ward', time: '14:00', span: 60 } ] },
+    { name: 'Fri', items: [ { type: 'Lecture', title: 'Neuro: Synapses', time: '09:00', span: 50 }, { type: 'Seminar', title: 'IMAT Strategy Clinic', time: '15:00', span: 45 } ] },
+    { name: 'Sat', items: [ { type: 'Event', title: 'Student Meetup', time: '11:00', span: 40 } ] },
+    { name: 'Sun', items: [ { type: 'Revision', title: 'Study Group — Library', time: '13:00', span: 60 } ] },
+  ]), []);
 
   return (
     <section className="wch-root" aria-labelledby="wch-heading">
@@ -17,8 +27,19 @@ export default function CourseHub2026() {
             <div className="hub-header">
               <div className="tabs" role="tablist" aria-label="Hub views">
                 {(["feed","calendar","rotations","messages"] as const).map((m) => (
-                  <button key={m} className={`tab ${m===tab? 'active':''}`} onClick={() => setTab(m)}>
-                    {m[0].toUpperCase()+m.slice(1)}
+                  <button
+                    key={m}
+                    className={`tab ${m===tab? 'active':''}`}
+                    onClick={() => {
+                      setTab(m);
+                      if (m === 'messages' && unread > 0) setTimeout(() => setUnread(0), 700);
+                    }}
+                  >
+                    {m === 'messages' && unread > 0 ? (
+                      <span className="tab-with-badge">
+                        Messages <span className="unread">{unread}</span>
+                      </span>
+                    ) : m[0].toUpperCase()+m.slice(1)}
                   </button>
                 ))}
               </div>
@@ -55,14 +76,21 @@ export default function CourseHub2026() {
               <div className="view calendar">
                 <div className="cal-head">Week 6</div>
                 <div className="cal">
-                  {Array.from({ length: 7 }).map((_, i) => (
-                    <div key={i} className="day">
-                      <div className="dotline">
+                  {cal.map((d, i) => (
+                    <div key={d.name} className="day" title={d.name}>
+                      <div className="day-head">
                         <span className="dot a" />
-                        <span className="dot b" />
+                        <span className="label">{d.name}</span>
                       </div>
-                      <span className="pill" style={{width: `${20 + i*8}%`}} />
-                      <span className="pill b" style={{width: `${28 + (6-i)*6}%`}} />
+                      <div className="ev-list">
+                        {d.items.map((ev, k) => (
+                          <div key={k} className={`ev ${ev.type.toLowerCase()}`} style={{ width: `${Math.min(92, 24 + ev.span)}%` }}>
+                            <span className="ev-time">{ev.time}</span>
+                            <span className="ev-title">{ev.title}</span>
+                            <span className="ev-type">{ev.type}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -131,10 +159,10 @@ export default function CourseHub2026() {
 
               {/* MESSAGES */}
               <div className="view messages">
-                <div className="msg-bubble left">Team meeting moved to 14:00</div>
-                <div className="msg-bubble right">Got it, thanks!</div>
-                <div className="msg-bubble left">New tips in the rotations guide</div>
-                <div className="msg-bubble right">I\'ll share notes after class</div>
+                <div className="msg-bubble left">Hey team, anyone up for a quick IMAT practice after anatomy?</div>
+                <div className="msg-bubble right">Yes! I can bring flashcards. Library at 17:30?</div>
+                <div className="msg-bubble left">Perfect. Also rep said rotations sign‑ups open Thursday.</div>
+                <div className="msg-bubble right">Nice—let’s target Internal Med first. I’ll add tips in the hub.</div>
                 <div className="msg-input" aria-disabled>Type a message…</div>
               </div>
             </div>
@@ -202,6 +230,8 @@ export default function CourseHub2026() {
         .tab.active { background:white; color:#0f766e; box-shadow:0 8px 18px rgba(255,255,255,.35); }
         .progress { height:6px; border-radius:9999px; background:rgba(255,255,255,.28); margin-top:10px; overflow:hidden; }
         .bar { height:100%; background: linear-gradient(90deg,#34d399,#60a5fa); border-radius:9999px; transition: width .6s cubic-bezier(.22,1,.36,1); }
+        .tab-with-badge { position: relative; display:inline-flex; align-items:center; gap:8px; }
+        .unread { display:inline-block; min-width:18px; height:18px; padding:0 6px; border-radius:9999px; background:#ef4444; color:white; font-size:11px; font-weight:900; line-height:18px; box-shadow:0 6px 14px rgba(239,68,68,.35); }
         .hub-body { background:#fff; padding: 16px; border-radius:0 0 22px 22px; position:relative; }
         .hub-body .view { display:none; }
         .hub-body.show-feed .view.feed,
@@ -209,7 +239,8 @@ export default function CourseHub2026() {
         .hub-body.show-rotations .view.rotations,
         .hub-body.show-messages .view.messages { display:block; }
 
-        .feed-row { display:grid; grid-template-columns: 28px 1fr; gap:10px; align-items:start; padding:10px 12px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; margin-bottom:8px; box-shadow:0 6px 16px rgba(2,6,23,.06); }
+        .feed-row { display:grid; grid-template-columns: 28px 1fr; gap:10px; align-items:start; padding:10px 12px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; margin-bottom:8px; box-shadow:0 6px 16px rgba(2,6,23,.06); transition: transform .15s ease, box-shadow .15s ease; }
+        .feed-row:hover { transform: translateY(-1px); box-shadow:0 10px 22px rgba(2,6,23,.08); }
         .feed-row .badge { display:block; width:12px; height:12px; border-radius:9999px; margin-top:6px; }
         .feed-row.event .badge { background: #34d399; box-shadow:0 0 0 4px #ecfdf5 inset; }
         .feed-row.announcement .badge { background: #60a5fa; box-shadow:0 0 0 4px #eff6ff inset; }
@@ -226,11 +257,27 @@ export default function CourseHub2026() {
         .cal-head { font-size:12px; font-weight:900; color:#0f766e; margin-bottom:6px; }
         .cal { display:grid; gap:10px; }
         .day { background: #f0fdf4; padding:10px; border-radius:14px; border:1px solid #bbf7d0; box-shadow:0 6px 16px rgba(16,185,129,.15); }
-        .dotline { display:flex; gap:6px; margin-bottom:6px; }
-        .dotline .dot { width:6px; height:6px; border-radius:9999px; background:#34d399; opacity:.7; }
-        .dotline .dot.b { background:#60a5fa; }
-        .pill { display:block; height:8px; border-radius:9999px; background: linear-gradient(90deg,#34d399,#22d3ee); margin-bottom:6px; }
-        .pill.b { background: linear-gradient(90deg,#60a5fa,#14b8a6); }
+        .day-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+        .day .label { font-size:12px; font-weight:900; color:#0f766e; }
+        .day .dot { width:6px; height:6px; border-radius:9999px; background:#34d399; opacity:.8; }
+        .ev-list { display:grid; gap:8px; }
+        .ev { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; border:1px solid #e2e8f0; background:white; box-shadow:0 6px 16px rgba(2,6,23,.06); transition: transform .15s ease, box-shadow .15s ease; }
+        .ev:hover { transform: translateY(-1px); box-shadow:0 10px 22px rgba(2,6,23,.08); }
+        .ev-time { font-size:12px; color:#0f172a; font-weight:900; }
+        .ev-title { font-size:12px; color:#334155; }
+        .ev-type { font-size:11px; font-weight:900; border-radius:9999px; padding:4px 8px; }
+        .ev.lecture { border-color:#bfdbfe; }
+        .ev.lecture .ev-type { background:#dbeafe; color:#1e3a8a; }
+        .ev.lab { border-color:#99f6e4; }
+        .ev.lab .ev-type { background:#ccfbf1; color:#0f766e; }
+        .ev.exam { border-color:#fecdd3; }
+        .ev.exam .ev-type { background:#ffe4e6; color:#9f1239; }
+        .ev.rotation { border-color:#a7f3d0; }
+        .ev.rotation .ev-type { background:#d1fae5; color:#065f46; }
+        .ev.workshop .ev-type { background:#fef3c7; color:#92400e; }
+        .ev.seminar .ev-type { background:#ede9fe; color:#5b21b6; }
+        .ev.event .ev-type { background:#e0e7ff; color:#3730a3; }
+        .ev.revision .ev-type { background:#f1f5f9; color:#334155; }
 
         .rot-list { display:grid; gap:8px; }
         .rot-item { display:grid; grid-template-columns: 12px 1fr auto; align-items:center; gap:10px; font-weight:800; padding:10px 12px; border-radius:14px; border:1px solid #e5e7eb; background:#fff; transition: box-shadow .15s ease, transform .15s ease; }
