@@ -5,6 +5,7 @@ import ShimmerHeading from "@/components/ui/ShimmerHeading";
 
 export default function CourseHub2026() {
   const [tab, setTab] = useState<"feed" | "calendar" | "rotations" | "messages">("feed");
+  const [rotSel, setRotSel] = useState(0);
   const pct = useMemo(() => (tab === "feed" ? 72 : tab === "calendar" ? 48 : tab === "rotations" ? 36 : 58), [tab]);
 
   return (
@@ -73,18 +74,58 @@ export default function CourseHub2026() {
                   {[
                     { name: 'Internal Medicine', site: 'San Carlo', pct: 62 },
                     { name: 'Surgery', site: 'Ospedale Maggiore', pct: 40 },
-                    { name: 'Pediatrics', site: 'Children\'s Hosp.', pct: 15 },
+                    { name: 'Pediatrics', site: "Children's Hosp.", pct: 15 },
                     { name: 'OB/GYN', site: 'Regina Margherita', pct: 0 },
                   ].map((r,i) => (
-                    <div key={r.name} className="rot-item">
+                    <button type="button" key={r.name} className={`rot-item ${rotSel===i? 'active':''}`} onClick={() => setRotSel(i)}>
                       <span className={`dot c${(i%3)+1}`} />
                       <div className="rot-main">
                         <div className="rot-title">{r.name} · <span className="muted">{r.site}</span></div>
                         <div className="rot-bar"><span style={{ width: `${r.pct}%` }} /></div>
                       </div>
-                      <button className="rot-guide">Guide</button>
-                    </div>
+                      <span className="rot-guide">Guide</span>
+                    </button>
                   ))}
+                </div>
+                {/* Selected rotation details */}
+                <div className="rot-details">
+                  <div className="rd-left">
+                    <div className="rd-title">{['Internal Medicine','Surgery','Pediatrics','OB/GYN'][rotSel]} reviews</div>
+                    <div className="rd-reviews">
+                      {[
+                        { u: 'AM', t: 'Great teaching rounds. Try to present early.', s: 5 },
+                        { u: 'LK', t: 'Busy ward—bring a small notebook.', s: 4 },
+                      ].map((r, idx) => (
+                        <div key={idx} className="rev">
+                          <span className="avatar">{r.u}</span>
+                          <div className="text">
+                            <div className="stars">{'★'.repeat(r.s)}{'☆'.repeat(5-r.s)}</div>
+                            <div>{r.t}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rd-tips">
+                      {['Arrive 10 min early','Ask to suture','Learn meds chart'].map((t) => (
+                        <span key={t} className="tip">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rd-map">
+                    <svg viewBox="0 0 220 140" className="map" aria-hidden>
+                      <defs>
+                        <linearGradient id="route" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#22d3ee" />
+                          <stop offset="100%" stopColor="#60a5fa" />
+                        </linearGradient>
+                      </defs>
+                      <rect x="0" y="0" width="220" height="140" rx="12" fill="#e5f2ff" />
+                      <path d="M14 120 C 40 90, 80 110, 100 80 S 160 60, 206 30" stroke="url(#route)" strokeWidth="6" fill="none" strokeLinecap="round" />
+                      <circle cx="16" cy="120" r="6" fill="#10b981" />
+                      <rect x="200" y="16" width="12" height="12" rx="3" fill="#ef4444" />
+                    </svg>
+                    <div className="map-legend"><span className="leg start" />Dorms <span className="leg dest" />Hospital</div>
+                  </div>
                 </div>
               </div>
 
@@ -192,7 +233,9 @@ export default function CourseHub2026() {
         .pill.b { background: linear-gradient(90deg,#60a5fa,#14b8a6); }
 
         .rot-list { display:grid; gap:8px; }
-        .rot-item { display:grid; grid-template-columns: 12px 1fr auto; align-items:center; gap:10px; font-weight:800; padding:10px 12px; border-radius:14px; border:1px solid #e5e7eb; }
+        .rot-item { display:grid; grid-template-columns: 12px 1fr auto; align-items:center; gap:10px; font-weight:800; padding:10px 12px; border-radius:14px; border:1px solid #e5e7eb; background:#fff; transition: box-shadow .15s ease, transform .15s ease; }
+        .rot-item:hover { transform: translateY(-1px); box-shadow:0 8px 20px rgba(2,6,23,.06); }
+        .rot-item.active { box-shadow:0 10px 24px rgba(20,184,166,.18); border-color:#a7f3d0; }
         .rot-item .dot { width:10px; height:10px; }
         .rot-item .dot.c1 { background:#34d399; }
         .rot-item .dot.c2 { background:#06b6d4; }
@@ -203,6 +246,22 @@ export default function CourseHub2026() {
         .rot-bar { height:8px; background:#f1f5f9; border-radius:9999px; overflow:hidden; }
         .rot-bar span { display:block; height:100%; background: linear-gradient(90deg,#14b8a6,#60a5fa); border-radius:9999px; }
         .rot-guide { border:1px solid #0ea5e9; color:#0369a1; font-size:12px; font-weight:900; border-radius:9999px; padding:6px 10px; background:#e0f2fe; }
+        .rot-details { display:grid; grid-template-columns: 1fr 220px; gap:12px; margin-top:12px; align-items:start; }
+        @media (max-width: 640px) { .rot-details { grid-template-columns: 1fr; } }
+        .rd-left { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:10px; }
+        .rd-title { font-size:12px; font-weight:900; color:#0f766e; margin-bottom:6px; }
+        .rd-reviews { display:grid; gap:8px; }
+        .rev { display:grid; grid-template-columns: 26px 1fr; gap:8px; align-items:start; }
+        .rev .avatar { width:26px; height:26px; border-radius:9999px; background: linear-gradient(135deg,#60a5fa,#22d3ee); color:white; font-size:11px; display:grid; place-items:center; font-weight:900; box-shadow:0 4px 12px rgba(96,165,250,.35); }
+        .rev .stars { color:#f59e0b; font-size:12px; line-height:1; margin-bottom:2px; }
+        .rd-tips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+        .tip { font-size:11px; border-radius:9999px; padding:4px 8px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; }
+        .rd-map { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:6px; display:grid; gap:4px; justify-items:center; }
+        .map { width:100%; height:auto; border-radius:10px; display:block; }
+        .map-legend { font-size:11px; color:#475569; display:flex; align-items:center; gap:8px; }
+        .leg { width:10px; height:10px; border-radius:2px; display:inline-block; }
+        .leg.start { background:#10b981; }
+        .leg.dest { background:#ef4444; }
 
         .messages { }
         .msg-bubble { display:inline-block; padding:10px 12px; border-radius:12px; border:1px solid #e2e8f0; margin:6px 0; box-shadow:0 6px 16px rgba(2,6,23,.06); }
