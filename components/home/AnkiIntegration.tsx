@@ -130,6 +130,7 @@ export default function AnkiIntegration() {
             </div>
             <div className="card-body">
               <div ref={imgRef} className={`img ${answered ? "solved" : ""}`}>
+                <div className="catch-hint">Active Recall? Try to catch one!</div>
                 {!answered && (
                   <>
                     <button className="fly-card a" onClick={(e) => handleCatch(e, "ACTH")}>
@@ -262,6 +263,7 @@ export default function AnkiIntegration() {
         .confetti { position: absolute; inset: 0; pointer-events: none; }
         .conf-dot { position: absolute; width: 8px; height: 8px; border-radius: 9999px; animation: conf 900ms ease-out forwards; }
         @keyframes conf { from { opacity: 1; transform: translate(0,0) scale(1) } to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.6) } }
+        .catch-hint { position:absolute; top:6px; left:10px; z-index:2; font-size:12px; font-weight:900; color:#0f172a; background: rgba(255,255,255,.85); border:1px solid #e2e8f0; border-radius:9999px; padding:4px 10px; box-shadow:0 6px 14px rgba(2,6,23,.08); }
 
         .text { line-height: 1.6; color: #0f172a; }
         .hl { position: relative; display: inline-block; padding: 0 4px; border-radius: 6px; background: linear-gradient(90deg, rgba(167,139,250,.25), rgba(34,211,238,.25)); cursor: default; box-shadow: inset 0 -2px 0 rgba(99,102,241,.35); }
@@ -279,4 +281,3 @@ export default function AnkiIntegration() {
     </section>
   );
 }
-
