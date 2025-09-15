@@ -105,8 +105,8 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
       <div className="flex flex-wrap items-center justify-between gap-3">
         {!focus ? (
           <>
-            {/* Mode switch */}
-            <div className="ios-segmented inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+            {/* Mode switch (hidden on mobile; duplicated by bottom nav) */}
+            <div className="ios-segmented hidden sm:inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
               <button onClick={() => onMode('learn')} className={segBtn(mode==='learn')}><IconBook /><span>Learn</span></button>
               {/* Practice tab removed as requested */}
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
@@ -120,7 +120,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
             {/* Inline chapter path between tabs and primary CTA */}
             {typeof chapterCount === 'number' && typeof activeStep === 'number' && (
               <div
-                className="relative w-full min-w-[120px] flex-1 md:ml-1"
+                className="relative w-full min-w-0 flex-1 md:ml-1"
                 onMouseEnter={() => setPathOpen(true)}
                 onMouseLeave={() => setPathOpen(false)}
               >
@@ -166,8 +166,8 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
               </div>
             )}
 
-            {/* Primary CTA + overflow menu */}
-            <div className="inline-flex items-center gap-2">
+            {/* Primary CTA + overflow menu (hide on mobile to save space) */}
+            <div className="hidden sm:inline-flex items-center gap-2">
               <button className={primaryBtn} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <span>Start · Resume</span>
               </button>

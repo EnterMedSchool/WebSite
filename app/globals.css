@@ -214,10 +214,25 @@ body { color: rgb(var(--text)); background: rgb(var(--bg)); }
 }
 
 /* Content safety: make embedded media responsive within lessons */
+.lesson-root .prose {
+  max-width: 100%;
+  overflow-wrap: anywhere; /* prevent long words/URLs from blowing layout */
+  word-break: break-word;
+}
 .lesson-root .prose img,
 .lesson-root .prose video,
 .lesson-root .prose iframe,
 .lesson-root .prose table {
   max-width: 100%;
   width: 100%;
+}
+.lesson-root .prose pre,
+.lesson-root .prose code {
+  white-space: pre-wrap; /* wrap code blocks on small screens */
+  word-break: break-word;
+}
+.lesson-root .prose table {
+  display: block; /* allow horizontal scroll if needed without affecting page width */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
