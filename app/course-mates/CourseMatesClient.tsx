@@ -67,7 +67,15 @@ export default function CourseMatesClient({ authed, initial }: {
   const { scrollYProgress: pageProgress } = useScroll();
 
   // Scroll spy
-  const sectionIds = ['overview','announcements','invite','feed','leaderboard','anki','events','photos','rotations','reviews','help','polls','resources','improvements','orgs','reps','kudos','settings'] as const;
+  const sectionIds = [
+    'overview','announcements','invite',
+    'goals','exams','syllabus','tutors','buddies',
+    'feed','leaderboard','anki','events','photos',
+    'rotations','reviews','help','polls','resources',
+    'market','opportunities','scholarships','wiki','essentials',
+    'contributors','shoutouts','digest','decks','practice','trending',
+    'improvements','orgs','reps','kudos','settings'
+  ] as const;
   const [activeId, setActiveId] = useState<string>('overview');
   useEffect(() => {
     const obs = new IntersectionObserver((entries) => {
@@ -315,6 +323,78 @@ export default function CourseMatesClient({ authed, initial }: {
             </div>
           </section>
 
+          {/* Cohort Goals (UI-only) */}
+          <section id="goals" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Cohort Goals</div><div className="text-[11px] text-gray-600">Shared milestones</div></div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3">
+                  <div className="flex items-center justify-between"><div className="h-3 w-40 rounded bg-gray-100" /><span className="h-5 w-10 rounded bg-gray-100" /></div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-2 w-1/2 rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-400" />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-gray-600"><span>Owner —</span><span>Due —</span></div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Exam Timeline (UI-only) */}
+          <section id="exams" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Exam Timeline</div><div className="text-[11px] text-gray-600">Key dates & prep focus</div></div>
+            <ul className="space-y-3">
+              {['Midterm','OSCE','Final'].map((t, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">{new Date(Date.now()+i*21*86400000).toLocaleDateString()}</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900">{t}</div>
+                    <div className="mt-1 h-3 w-3/4 rounded bg-gray-100" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Syllabus Map (UI-only) */}
+          <section id="syllabus" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Syllabus Map</div><div className="text-[11px] text-gray-600">You are here</div></div>
+            <div className="grid gap-2 md:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3">
+                  <div className="flex items-center justify-between"><div className="h-3 w-40 rounded bg-gray-100" />{i===1 && <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200">Now</span>}</div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100"><div className="h-2 w-1/3 rounded-full bg-indigo-400" /></div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Tutor Hours (UI-only) */}
+          <section id="tutors" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Tutor Hours</div><div className="text-[11px] text-gray-600">Peer support times</div></div>
+            <ul className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="flex items-center justify-between rounded-xl border px-3 py-2">
+                  <div className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-gray-100" /><div><div className="h-3 w-40 rounded bg-gray-100" /><div className="mt-1 h-3 w-24 rounded bg-gray-100" /></div></div>
+                  <div className="h-7 w-24 rounded-full bg-indigo-50 ring-1 ring-indigo-200" />
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Buddy Matching (UI-only) */}
+          <section id="buddies" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Find a Buddy</div><div className="text-[11px] text-gray-600">Interests & availability</div></div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3">
+                  <div className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-gray-100" /><div className="h-3 w-32 rounded bg-gray-100" /></div>
+                  <div className="mt-2 flex flex-wrap gap-1 text-[11px]"><span className="rounded-full bg-gray-100 px-2 py-0.5">Evenings</span><span className="rounded-full bg-gray-100 px-2 py-0.5">Neuro</span><span className="rounded-full bg-gray-100 px-2 py-0.5">Pomodoro</span></div>
+                  <div className="mt-2 h-7 w-full rounded-full bg-indigo-50 ring-1 ring-indigo-200" />
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* Anki (UI-only skeleton) */}
           <section id="anki" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Anki — Course Insights</div><div className="flex gap-1 rounded-full bg-gray-100 p-1 text-xs"><button className="rounded-full bg-white px-2 py-1 font-semibold shadow-sm">Overview</button><button className="rounded-full px-2 py-1 font-semibold">Leaderboard</button></div></div>
@@ -352,6 +432,119 @@ export default function CourseMatesClient({ authed, initial }: {
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="rounded-xl border p-3"><div className="flex items-center gap-2"><Skeleton className="h-8 w-8 rounded-full" /><div className="space-y-2"><Skeleton className="h-3 w-40 rounded" /><Skeleton className="h-3 w-28 rounded" /></div></div><div className="mt-2 flex flex-wrap gap-1"><Skeleton className="h-5 w-24 rounded-full" /><Skeleton className="h-5 w-28 rounded-full" /></div><div className="mt-2 flex items-center gap-2"><Skeleton className="h-7 w-16 rounded-full" /><Skeleton className="h-7 w-16 rounded-full" /></div></div>
+              ))}
+            </div>
+          </section>
+
+          {/* Marketplace (UI-only) */}
+          <section id="market" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Marketplace</div><div className="text-[11px] text-gray-600">Sell / swap</div></div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-xl border">
+                  <div className="aspect-[4/3] w-full bg-gray-100" />
+                  <div className="p-3"><div className="h-3 w-40 rounded bg-gray-100" /><div className="mt-1 h-3 w-24 rounded bg-gray-100" /></div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Opportunities (UI-only) */}
+          <section id="opportunities" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between"><div className="text-lg font-semibold">Opportunities</div><div className="text-[11px] text-gray-600">Research • Volunteering • Internships</div></div>
+            <ul className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="rounded-xl border p-3"><div className="h-3 w-60 rounded bg-gray-100" /><div className="mt-1 flex items-center gap-2"><div className="h-5 w-16 rounded-full bg-gray-100" /><div className="h-5 w-20 rounded-full bg-gray-100" /></div></li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Scholarships (UI-only) */}
+          <section id="scholarships" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Scholarships</div>
+            <ul className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="flex items-center justify-between rounded-xl border px-3 py-2"><div className="space-y-1"><div className="h-3 w-60 rounded bg-gray-100" /><div className="h-3 w-32 rounded bg-gray-100" /></div><div className="h-7 w-20 rounded-full bg-emerald-50 ring-1 ring-emerald-200" /></li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Course Wiki / FAQ (UI-only) */}
+          <section id="wiki" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Course Wiki / FAQ</div>
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3"><div className="h-3 w-72 rounded bg-gray-100" /><div className="mt-1 h-3 w-96 rounded bg-gray-100" /></div>
+              ))}
+            </div>
+          </section>
+
+          {/* University Essentials (UI-only) */}
+          <section id="essentials" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">University Essentials</div>
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+              {['Portal','Calendar','Library','Printing','IT Help','Email','Housing','Transport'].map((t, i) => (
+                <a key={i} href="#" className="grid place-items-center rounded-xl border bg-gray-50 p-4 text-sm text-gray-800 ring-1 ring-gray-200">{t}</a>
+              ))}
+            </div>
+          </section>
+
+          {/* Contributors Leaderboard (UI-only) */}
+          <section id="contributors" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Top Contributors</div>
+            <ul className="space-y-1">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <li key={i} className="flex items-center justify-between rounded-xl px-3 py-2 text-sm ring-1 ring-gray-200"><div className="flex items-center gap-2"><div className="h-7 w-7 rounded-full bg-gray-100" /><div className="h-3 w-32 rounded bg-gray-100" /></div><div className="h-3 w-20 rounded bg-gray-100" /></li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Shoutouts Wall (UI-only) */}
+          <section id="shoutouts" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Shoutouts</div>
+            <div className="grid gap-2 md:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3"><div className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-amber-100" /><div className="h-3 w-48 rounded bg-gray-100" /></div><div className="mt-2 h-3 w-64 rounded bg-gray-100" /></div>
+              ))}
+            </div>
+          </section>
+
+          {/* Weekly Digest Preview (UI-only) */}
+          <section id="digest" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Weekly Digest</div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-xl border p-3"><div className="text-xs font-semibold text-gray-600">Last Week</div><div className="mt-2 h-3 w-56 rounded bg-gray-100" /><div className="mt-1 h-3 w-40 rounded bg-gray-100" /></div>
+              <div className="rounded-xl border p-3"><div className="text-xs font-semibold text-gray-600">Coming Up</div><div className="mt-2 h-3 w-56 rounded bg-gray-100" /><div className="mt-1 h-3 w-40 rounded bg-gray-100" /></div>
+              <div className="rounded-xl border p-3"><div className="text-xs font-semibold text-gray-600">Top Helpers</div><div className="mt-2 h-3 w-56 rounded bg-gray-100" /><div className="mt-1 h-3 w-40 rounded bg-gray-100" /></div>
+            </div>
+          </section>
+
+          {/* Deck Catalog (UI-only) */}
+          <section id="decks" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Deck Catalog</div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-xl border p-3"><div className="h-3 w-52 rounded bg-gray-100" /><div className="mt-1 flex items-center gap-2 text-[11px]"><div className="h-5 w-16 rounded-full bg-gray-100" /><div className="h-5 w-16 rounded-full bg-gray-100" /></div><div className="mt-2 h-2 w-full rounded bg-gray-100" /></div>
+              ))}
+            </div>
+          </section>
+
+          {/* Practice Sets (UI-only) */}
+          <section id="practice" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Practice Sets</div>
+            <ul className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <li key={i} className="flex items-center justify-between rounded-xl border px-3 py-2"><div className="space-y-1"><div className="h-3 w-60 rounded bg-gray-100" /><div className="flex gap-1"><div className="h-5 w-20 rounded-full bg-gray-100" /><div className="h-5 w-16 rounded-full bg-gray-100" /></div></div><div className="h-7 w-20 rounded-full bg-indigo-50 ring-1 ring-indigo-200" /></li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Trending Topics (UI-only) */}
+          <section id="trending" className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-lg font-semibold">Trending Topics</div>
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              {['Nephron','ECG basics','Embryology','Pharmacokinetics','Brainstem','Immuno','Respiratory','Endocrine'].map((t, i) => (
+                <span key={i} className="rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-700 ring-1 ring-indigo-200">{t}</span>
               ))}
             </div>
           </section>
