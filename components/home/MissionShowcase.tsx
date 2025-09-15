@@ -128,7 +128,7 @@ export default function MissionShowcase({
           </AnimatePresence>
 
           <div className="ms-cta">
-            <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent("auth:open"))}>Create account</button>
+            <a href="/signup" className="btn-primary">Create account</a>
             <a href="#universities" className="btn-ghost">Explore map</a>
           </div>
 

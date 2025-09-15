@@ -32,7 +32,7 @@ export default function SignInPage() {
         </button>
         <div className="border-t" />
         <label className="text-sm font-medium">Email</label>
-        <input className="rounded border px-3 py-2" value={email} onChange={(e)=>setEmail(e.target.value)} />
+        <input className="rounded border px-3 py-2" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} />
         <label className="text-sm font-medium">Password</label>
         <input className="rounded border px-3 py-2" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} />
         {error && <div className="text-sm text-red-600">{error}</div>}

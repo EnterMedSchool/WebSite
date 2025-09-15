@@ -220,8 +220,8 @@ export default function CourseMatesPage() {
               <div className="text-lg font-extrabold text-gray-900">Sign in to access your Course Hub</div>
               <div className="mt-1 text-sm text-gray-700">See classmates, events, photos, leaderboards and more — tailored to your course.</div>
               <div className="mt-4 flex items-center justify-center gap-3">
-                <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signin' } }))} className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">Sign in</button>
-                <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))} className="rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Create free account</button>
+                <a href="/signin" className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">Sign in</a>
+                <a href="/signup" className="rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Create free account</a>
               </div>
               <div className="mt-2 text-xs text-gray-500">It takes under a minute — then choose your university and course.</div>
             </div>

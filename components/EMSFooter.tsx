@@ -79,13 +79,12 @@ export default function EMSFooter() {
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('auth:open'))}
+                <Link
+                  href="/signup"
                   className="btn-primary-shine h-10 px-5 text-sm"
                 >
                   Create Free Account
-                </button>
+                </Link>
                 <Link
                   href="/imat-course"
                   className="inline-flex items-center justify-center rounded-full bg-indigo-400/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-indigo-300/20 transition hover:bg-indigo-400/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"

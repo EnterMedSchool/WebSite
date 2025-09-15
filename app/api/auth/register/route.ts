@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, username, password, captchaToken, hp, spentMs } = await request.json();
+    const { name, email, username, password, captchaToken, hp, spentMs, acceptTerms } = await request.json();
     // Lightweight bot heuristics (honeypot + minimal time on form)
     if (!basicBotChecks({ hp, spentMs })) {
       return NextResponse.json({ error: "bot_detected" }, { status: 400 });
@@ -20,14 +20,28 @@ export async function POST(request: Request) {
     }
     const emailNorm = String(email).toLowerCase().trim();
     const uname = String(username).trim();
+    const nameStr = String(name || '').trim();
+    // Email format check (basic but effective)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailNorm)) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+    // Optional name policy
+    if (nameStr && nameStr.length < 2) {
+      return NextResponse.json({ error: "Name is too short" }, { status: 400 });
+    }
     // Username policy: 3-30 chars, a-z 0-9 _ . -
     if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(uname)) {
       return NextResponse.json({ error: "Invalid username. Use 3-30 letters, numbers, _ . -" }, { status: 400 });
     }
 
-    // Basic password policy (tunable): 8+ chars
-    if (String(password).length < 8) {
-      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    // Strong password policy: min 8, upper, lower, digit, special
+    const pw = String(password);
+    if (pw.length < 8 || !/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/\d/.test(pw) || !/[\W_]/.test(pw)) {
+      return NextResponse.json({ error: "Password must be 8+ chars with upper, lower, number and symbol" }, { status: 400 });
+    }
+    // Terms acceptance (optional, off by default if missing)
+    if (acceptTerms === false) {
+      return NextResponse.json({ error: "Please accept the terms of service" }, { status: 400 });
     }
 
     // Rate limit by IP and email to reduce abuse
@@ -58,7 +72,7 @@ export async function POST(request: Request) {
       await db.insert(users).values({
         email: emailNorm,
         username: uname,
-        name: name ?? uname,
+        name: nameStr || uname,
         passwordHash: hash,
       });
     } catch (e: any) {

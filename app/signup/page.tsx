@@ -8,6 +8,8 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -37,10 +39,20 @@ export default function SignUpPage() {
 
   async function submit() {
     setLoading(true); setMsg(null);
+    // Client-side validation to improve UX
+    if (password !== confirm) {
+      setMsg("Passwords do not match"); setLoading(false); return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email).toLowerCase())) {
+      setMsg("Please enter a valid email"); setLoading(false); return;
+    }
+    if (!acceptTerms) {
+      setMsg("Please accept the terms"); setLoading(false); return;
+    }
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, username, password, captchaToken, hp, spentMs: Date.now() - startedAtRef.current })
+      body: JSON.stringify({ name, email, username, password, captchaToken, hp, spentMs: Date.now() - startedAtRef.current, acceptTerms })
     });
     const json = await res.json();
     if (!res.ok) setMsg(json?.error ?? "Failed");
@@ -60,11 +72,17 @@ export default function SignUpPage() {
         <label className="text-sm font-medium">Full name</label>
         <input className="rounded border px-3 py-2" value={name} onChange={(e)=>setName(e.target.value)} />
         <label className="text-sm font-medium">Email</label>
-        <input className="rounded border px-3 py-2" value={email} onChange={(e)=>setEmail(e.target.value)} />
+        <input className="rounded border px-3 py-2" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} />
         <label className="text-sm font-medium">Username</label>
         <input className="rounded border px-3 py-2" value={username} onChange={(e)=>setUsername(e.target.value)} />
         <label className="text-sm font-medium">Password</label>
-        <input className="rounded border px-3 py-2" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} />
+        <input className="rounded border px-3 py-2" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="8+ chars, upper/lower/number/symbol" />
+        <label className="text-sm font-medium">Confirm password</label>
+        <input className="rounded border px-3 py-2" type="password" value={confirm} onChange={(e)=>setConfirm(e.target.value)} />
+        <label className="inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={acceptTerms} onChange={(e)=>setAcceptTerms(e.target.checked)} />
+          <span>I agree to the <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy</a></span>
+        </label>
         {!!siteKey && (
           <div id="ts-signup" className="cf-turnstile" data-sitekey={siteKey}></div>
         )}
