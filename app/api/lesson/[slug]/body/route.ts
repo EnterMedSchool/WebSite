@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { db, sql } from "@/lib/db";
+import { db } from "@/lib/db";
 import { lessons } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { highlightHTML } from "@/lib/glossary/ssr";
-import { etagForBody } from "@/lib/glossary/ssr";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { requireUserId } from "@/lib/study/auth";
 import { checkCourseAccess } from "@/lib/lesson/access";
+import crypto from "node:crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,17 +35,21 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
         }
       }
     } catch {}
-    // Pre-check ETag to serve 304 quickly
-    const manifestPath = path.join(process.cwd(), 'public', 'glossary', 'index.v1.meta.json');
-    let manifest: any = null;
-    try { manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')); } catch {}
-    const etag = etagForBody(body, manifest);
+    // Compute a weak ETag based solely on the lesson body
+    const etag = (() => {
+      try {
+        const h = crypto.createHash('sha1');
+        h.update(String(body || ""));
+        return 'W/"' + h.digest('hex') + '"';
+      } catch { return null; }
+    })();
     const ifNone = _req.headers.get('if-none-match');
     if (etag && ifNone && ifNone === etag) {
       return new Response(null, { status: 304, headers: { ETag: etag } });
     }
 
-    const html = await highlightHTML(body);
+    // Return the raw HTML body without glossary highlighting
+    const html = String(body || "");
     const res = NextResponse.json({ html });
     res.headers.set("Cache-Control", "public, max-age=60, s-maxage=86400, stale-while-revalidate=604800");
     if (etag) res.headers.set("ETag", etag);

@@ -7,7 +7,6 @@ import LessonBody from "@/components/lesson/LessonBody";
 import FlashcardsCTA from "@/components/lesson/FlashcardsCTA";
 import ConceptChecklist from "@/components/lesson/ConceptChecklist";
 import BackgroundMap from "@/components/lesson/BackgroundMap";
-import Glossary from "@/components/lesson/Glossary";
 import StudyToolbar from "@/components/lesson/StudyToolbar";
 import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
 import { dicDeck } from "@/data/flashcards/dic";
@@ -842,13 +841,6 @@ export default function LessonPage() {
         {/* Right: Sidebar (collapsible sections) */}
         {!focusMode && (
           <div className="hidden lg:block space-y-3">
-            <div className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
-              <div className="p-2 text-sm font-semibold text-indigo-900">Glossary</div>
-              <div className="h-28 opacity-30" />
-              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/60">
-                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
-              </div>
-            </div>
             <div className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
               <div className="p-2 text-sm font-semibold text-indigo-900">Concept check</div>
               <div className="h-24 opacity-30" />
