@@ -24,6 +24,7 @@ function WowFullGraph({ src }: { src: string }) {
   const [data, setData] = useState<GraphJSON | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const ref = useRef<any>(null);
+  const [size, setSize] = useState<{ w: number; h: number }>({ w: 1, h: 1 });
   const [focus, setFocus] = useState<string | null>(null);
   const [hover, setHover] = useState<any | null>(null);
   const [, setFrame] = useState(0);
@@ -437,7 +438,17 @@ function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Man
         linkDirectionalParticleSpeed={(l:any)=> l.__on ? 0.01 : 0}
         nodeRelSize={5}
         nodeLabel={(n:any)=> n.course ? n.name : ""}
-        onNodeClick={(n:any)=>{ if(n.course) expandCourse(n.courseId); else setFocus(String(n.id)); }}
+        // Ensure clicks always register by painting a reliable pointer area
+        nodePointerAreaPaint={(n: any, color: string, ctx: CanvasRenderingContext2D) => {
+          // Mirror the visual radius from nodeCanvasObject and add a small margin
+          const r = (n.course ? 8 : (4 + 2)) + 4;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }}
+        // Click to focus prerequisites chain (no course expansion in full graph mode)
+        onNodeClick={(n:any)=>{ setFocus(String(n.id)); }}
         onNodeHover={(n:any)=> setHover(n || null)}
         linkCanvasObjectMode={()=>"replace"}
         linkCanvasObject={(l:any, ctx:CanvasRenderingContext2D, scale:number)=>{ const s=(l.source as any); const t=(l.target as any); if(!s||!t) return; const x1=s.x,y1=s.y,x2=t.x,y2=t.y; const dx=x2-x1,dy=y2-y1; const len=Math.max(1,Math.hypot(dx,dy)); const nx=-dy/len, ny=dx/len; const baseAmp=Math.min(20,len*0.08)/Math.sqrt(scale); const amp=l.__on?baseAmp:baseAmp*0.5; const phase=tRef.current*(l.__on?1.2:0.6)+(l.__tier||0)*0.5; const cx=(x1+x2)/2 + nx*amp*Math.sin(phase); const cy=(y1+y2)/2 + ny*amp*Math.sin(phase); ctx.lineWidth=(l.__on?2.5:1)/Math.sqrt(scale); ctx.strokeStyle=l.__on?"rgba(245,158,11,0.9)":"rgba(99,102,241,0.15)"; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(cx,cy,x2,y2); ctx.stroke(); }}

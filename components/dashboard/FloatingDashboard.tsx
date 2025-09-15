@@ -1,14 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<'overview'|'learning'|'class'|'settings'>('overview');
   const [name] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    if (open) document.addEventListener("keydown", onKey);
+    if (open) {
+      document.addEventListener("keydown", onKey);
+      // Prevent background scroll when overlay is open (mobile friendly)
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener("keydown", onKey);
+        document.body.style.overflow = prev;
+      };
+    }
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
@@ -16,30 +27,49 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
     const n = name || "there"; return (n.split(" ")[0] || "there").trim();
   }, [name]);
 
-  if (!open) return null;
+  // Determine viewport first; defer early return until after hooks
+
+  // Shared menu items used by both the side rail (desktop) and mobile nav
+  const MENU = [
+    { key: 'overview' as const, label: 'Overview', icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+    )},
+    { key: 'learning' as const, label: 'Learning', icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 3l9 4.5-9 4.5L3 7.5 12 3zm0 6.75L20.25 6V18l-8.25 3.75V9.75zM3.75 18V6L12 9.75V21L3.75 18z"/></svg>
+    )},
+    { key: 'class' as const, label: 'Class', icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z"/></svg>
+    )},
+    { key: 'settings' as const, label: 'Settings', icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 8a4 4 0 1 1-4 4 4 4 0 0 1 4-4m0-6 2.1 3.5 4-.5-.9 3.9 3.3 2.3-3.3 2.3.9 3.9-4-.5L12 22l-2.1-3.5-4 .5.9-3.9L3.5 13l3.3-2.3-.9-3.9 4 .5L12 2Z"/></svg>
+    )},
+  ];
+
+  // Detect mobile viewport to render a dedicated iOS-style drawer
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mql = window.matchMedia('(max-width: 639px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsMobile('matches' in e ? e.matches : (e as MediaQueryList).matches);
+    handler(mql);
+    mql.addEventListener?.('change', handler as any);
+    return () => mql.removeEventListener?.('change', handler as any);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <MobileDashboardDrawer open={open} onClose={onClose} tab={tab} setTab={setTab} MENU={MENU} firstName={firstName} />
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/60 via-indigo-900/20 to-fuchsia-900/20 backdrop-blur-[2px] p-4" onClick={onClose}>
-      <div className="relative w-full max-w-7xl my-4 rounded-[28px] border border-violet-200/60 bg-white shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/60 via-indigo-900/20 to-fuchsia-900/20 backdrop-blur-[2px] p-3 sm:p-4" onClick={onClose}>
+      <div className="relative w-full max-w-7xl my-2 sm:my-4 rounded-2xl sm:rounded-[28px] border border-violet-200/60 bg-white shadow-[0_30px_90px_rgba(99,102,241,0.35)] ring-1 ring-white/40 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
         {/* Left rail */}
-        <div className="absolute left-0 top-0 h-full w-56 rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
+        <div className="absolute left-0 top-0 hidden h-full sm:block sm:w-56 rounded-l-2xl sm:rounded-l-[28px] bg-gradient-to-b from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-[inset_-1px_0_0_rgba(255,255,255,0.3)]">
           <div className="flex h-full flex-col justify-between py-5">
             <div className="px-3">
               <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-white/80">Menu</div>
-              {([
-                { key: 'overview', label: 'Overview', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                )},
-                { key: 'learning', label: 'Learning', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 3l9 4.5-9 4.5L3 7.5 12 3zm0 6.75L20.25 6V18l-8.25 3.75V9.75zM3.75 18V6L12 9.75V21L3.75 18z"/></svg>
-                )},
-                { key: 'class', label: 'Class', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z"/></svg>
-                )},
-                { key: 'settings', label: 'Settings', icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 8a4 4 0 1 1-4 4 4 4 0 0 1 4-4m0-6 2.1 3.5 4-.5-.9 3.9 3.3 2.3-3.3 2.3.9 3.9-4-.5L12 22l-2.1-3.5-4 .5.9-3.9L3.5 13l3.3-2.3-.9-3.9 4 .5L12 2Z"/></svg>
-                )},
-              ] as const).map((m) => (
+              {MENU.map((m) => (
                 <button key={m.key as string} onClick={() => setTab(m.key as any)} className={`group mb-1 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-semibold ${tab===m.key ? 'bg-white/15 text-white shadow-inner' : 'text-white/85 hover:bg-white/10 hover:text-white'}`}>
                   <span className={`grid h-7 w-7 place-items-center rounded-lg bg-white/15 text-white shadow-sm ring-1 ring-white/20`}>{m.icon}</span>
                   <span>{m.label}</span>
@@ -55,11 +85,43 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
           </div>
         </div>
 
+        {/* Mobile bottom nav (floating) */}
+        <div className="pointer-events-auto fixed inset-x-0 bottom-3 z-[9999] mx-auto w-[min(100%-1.5rem,36rem)] sm:hidden">
+          <div className="rounded-2xl border border-gray-200 bg-white/90 p-1 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/70">
+            <div className="grid grid-cols-4 gap-1">
+              {MENU.map(m => (
+                <button key={m.key}
+                        onClick={() => setTab(m.key)}
+                        className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-[12px] font-semibold ${tab===m.key ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <span className={`grid h-5 w-5 place-items-center ${tab===m.key ? 'text-white' : 'text-indigo-700'}`}>{m.icon}</span>
+                  <span className="truncate">{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Main content */}
-        <div className="ml-56 grid min-h-[70vh] grid-cols-1 gap-4 rounded-r-[28px] p-5 sm:grid-cols-3">
+        <div className="ml-0 sm:ml-56 grid min-h-[70vh] grid-cols-1 gap-3 sm:gap-4 rounded-2xl sm:rounded-r-[28px] p-4 sm:p-5 pb-24 sm:pb-6">
+          {/* Mobile top nav */}
+          <div className="col-span-full sm:hidden">
+            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-indigo-100/70 to-fuchsia-50 p-1 ring-1 ring-white/60">
+              <div className="grid grid-cols-4 gap-1">
+                {MENU.map(m => (
+                  <button key={m.key}
+                          onClick={() => setTab(m.key)}
+                          className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-[12px] font-semibold ${tab===m.key ? 'bg-white text-indigo-700 ring-1 ring-indigo-200' : 'text-indigo-800/80 hover:bg-white/60'}`}>
+                    <span className="grid h-5 w-5 place-items-center text-indigo-700">{m.icon}</span>
+                    <span className="truncate">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Header row */}
-          <div className="col-span-full flex items-center justify-between rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 via-indigo-100 to-fuchsia-50 p-4 ring-1 ring-white/60">
-            <div className="flex items-center gap-3">
+          <div className="col-span-full flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 via-indigo-100 to-fuchsia-50 p-3 sm:p-4 ring-1 ring-white/60">
+            <div className="flex items-center gap-3 min-w-0">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white shadow"><svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M12 2 15 8l6 1-5 4 2 7-6-3-6 3 2-7-5-4 6-1 3-6Z"/></svg></span>
               <div>
                 <div className="text-sm font-semibold text-indigo-800">Welcome back{firstName ? `, ${firstName}` : ''}</div>
@@ -381,6 +443,200 @@ function InsightCard({ title, items, accent }: { title: string; items: string[];
       <ul className="mt-2 space-y-1 text-[13px] text-gray-800">
         {items.map((it, i)=>(<li key={i} className="rounded-lg bg-white/60 px-2 py-1">{it}</li>))}
       </ul>
+    </div>
+  );
+}
+
+// --- Mobile-only bottom drawer layout ---
+function MobileDashboardDrawer({
+  open,
+  onClose,
+  tab,
+  setTab,
+  MENU,
+  firstName,
+}: {
+  open: boolean;
+  onClose: () => void;
+  tab: 'overview'|'learning'|'class'|'settings';
+  setTab: (t: 'overview'|'learning'|'class'|'settings') => void;
+  MENU: readonly { key: 'overview'|'learning'|'class'|'settings'; label: string; icon: JSX.Element }[];
+  firstName: string;
+}) {
+  const [vh, setVh] = useState(0);
+  const [snap, setSnap] = useState<'peek'|'half'|'full'>('half');
+  const y = useMotionValue(0);
+
+  useEffect(() => {
+    const set = () => setVh(window.innerHeight);
+    set();
+    window.addEventListener('resize', set);
+    return () => window.removeEventListener('resize', set);
+  }, []);
+
+  const snapTop = (s: 'peek'|'half'|'full') => {
+    // Values are the top offset in px (how far from the top the sheet's top is)
+    const ratios: Record<typeof s, number> = { full: 0.08, half: 0.45, peek: 0.72 } as any;
+    return Math.round(vh * ratios[s]);
+  };
+
+  useEffect(() => {
+    y.set(snapTop(snap));
+  }, [vh, snap]);
+
+  const currentLabel = MENU.find(m => m.key === tab)?.label ?? 'Overview';
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9998] sm:hidden">
+      {/* Blue app background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-700 to-blue-600" />
+
+      {/* Header over blue background */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-end justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
+        <div className="pointer-events-auto inline-flex items-center gap-2">
+          <button aria-label="Close" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
+            <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M18.3 5.71 12 12l6.3 6.29-1.42 1.42L10.59 13.4 4.3 19.71 2.89 18.3 9.17 12 2.89 5.71 4.3 4.29 10.59 10.6l6.29-6.3z"/></svg>
+          </button>
+          <div className="text-xl font-extrabold tracking-tight">{currentLabel}</div>
+        </div>
+        <div className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
+          <span className="text-[11px] font-bold uppercase">{firstName?.[0] ?? 'U'}</span>
+        </div>
+      </div>
+
+      {/* Section name big watermark */}
+      <div className="absolute left-4 right-4 top-16 select-none text-4xl font-black leading-none tracking-tight text-white/15">
+        {currentLabel}
+      </div>
+
+      {/* Bottom Sheet */}
+      <AnimatePresence>
+        <motion.div
+          className="fixed inset-x-0 bottom-0 z-[9999] rounded-t-[28px] bg-white shadow-[0_-20px_80px_rgba(0,0,0,0.25)] ring-1 ring-black/5"
+          style={{ y }}
+          drag="y"
+          dragElastic={0.05}
+          dragConstraints={{ top: Math.max(-vh, -1000), bottom: vh }}
+          onDragEnd={(_, info) => {
+            const endY = y.get() + info.offset.y;
+            const points = [
+              { k: 'full' as const, y: snapTop('full') },
+              { k: 'half' as const, y: snapTop('half') },
+              { k: 'peek' as const, y: snapTop('peek') },
+            ];
+            const target = points.reduce((a, b) => Math.abs(b.y - endY) < Math.abs(a.y - endY) ? b : a, points[0]);
+            setSnap(target.k);
+          }}
+          initial={false}
+        >
+          {/* Grabber */}
+          <div className="sticky top-0 z-10 grid place-items-center rounded-t-[28px] bg-white/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+            <div className="h-1.5 w-10 rounded-full bg-gray-300" />
+          </div>
+
+          {/* Sheet Content */}
+          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+64px)]">
+            {/* Quick header inside sheet */}
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-semibold text-gray-900">Welcome{firstName?`, ${firstName}`:''}</div>
+              <a href="/course-mates" className="rounded-full bg-gray-100 px-3 py-1 text-[12px] font-semibold text-gray-800">Hub</a>
+            </div>
+
+            {/* Tabs content skeletons */}
+            {tab === 'overview' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <StatPill color="emerald" label="Correct today" value={`—`} />
+                  <StatPill color="sky" label="Streak" value={`—`} />
+                </div>
+                <ProfileCardSkeleton />
+                <SectionCard title="Continue learning">
+                  <div className="space-y-2">
+                    {[0,1].map(i => (
+                      <div key={i} className="flex items-center justify-between rounded-xl border bg-indigo-50/40 p-3 ring-1 ring-indigo-200/60">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-indigo-900">Chapter title</div>
+                          <div className="text-[11px] text-indigo-800/80">Course</div>
+                        </div>
+                        <button className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">Continue</button>
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === 'learning' && (
+              <div className="space-y-3">
+                <SectionCard title="Upcoming lessons">
+                  <ul className="space-y-2 text-sm">
+                    {[1,2,3].map(i => (
+                      <li key={i} className="flex items-center justify-between rounded-xl border px-3 py-2">
+                        <div>
+                          <div className="font-semibold text-gray-900">Lesson {i}</div>
+                          <div className="text-[11px] text-gray-600">Chapter · 30 min</div>
+                        </div>
+                        <button className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">Preview</button>
+                      </li>
+                    ))}
+                  </ul>
+                </SectionCard>
+                <SectionCard title="Achievements preview">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[1,2,3,4,5,6].map(i => (
+                      <div key={i} className="grid h-16 place-items-center rounded-xl border bg-white text-[11px] text-gray-600">Badge</div>
+                    ))}
+                  </div>
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === 'class' && (
+              <div className="space-y-3">
+                <SectionCard title="Highlights">
+                  <div className="grid grid-cols-3 gap-2">
+                    <SmallStatCard title="Active now" value="—" note="online" />
+                    <SmallStatCard title="Members" value="—" note="verified" />
+                    <SmallStatCard title="Vibe" value="—" note="course mood" />
+                  </div>
+                </SectionCard>
+                <SectionCard title="Events">
+                  <div className="space-y-2">
+                    {[1,2].map(i => (<div key={i} className="h-12 rounded-xl border bg-gray-50" />))}
+                  </div>
+                </SectionCard>
+              </div>
+            )}
+
+            {tab === 'settings' && (
+              <div className="grid gap-3">
+                <ToggleCard title="Public Profile" desc="Control profile visibility" />
+                <ToggleCard title="Notifications" desc="Reminders and summaries" />
+                <ThemeCard />
+              </div>
+            )}
+          </div>
+
+          {/* Bottom nav inside the sheet */}
+          <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[10000] mx-auto w-full px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <div className="grid grid-cols-5 gap-2 rounded-2xl bg-gray-100 p-1 ring-1 ring-gray-200">
+              {MENU.map(m => (
+                <button key={m.key}
+                        onClick={() => setTab(m.key)}
+                        className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-[12px] font-semibold transition ${tab===m.key ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-700 hover:bg-white'}`}>
+                  <span className={`grid h-5 w-5 place-items-center ${tab===m.key ? 'text-indigo-700' : 'text-gray-700'}`}>{m.icon}</span>
+                  <span className="truncate">{m.label}</span>
+                </button>
+              ))}
+              <button className="ml-auto grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 text-white shadow-md">
+                <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2z"/></svg>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

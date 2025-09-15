@@ -67,15 +67,52 @@ export default function LessonPage() {
     setBundle(null); setBundleErr(null); setGuest(null);
     const hasAuth = typeof window !== 'undefined' ? !!(window as any).__ems_authed : false;
     setAuthed(hasAuth);
+    // If we recently got denied for this slug, avoid hammering the API for ~10 minutes
+    const deniedPaid = (() => {
+      try {
+        if (typeof document === 'undefined') return false;
+        const name = `ems_paid_denied_l_${slug}`;
+        return new RegExp(`(?:^|;\\s*)${name}=`).test(document.cookie);
+      } catch { return false; }
+    })();
 
-    if (hasAuth) {
+    const precheckAndRun = async () => {
+      // Optional pre-check: if user lacks any paid entitlements, skip authed lesson APIs entirely
+      // This prevents repeated 403s when visiting paid content without membership.
+      let notEntitled = false;
+      if (hasAuth) {
+        try {
+          const w: any = typeof window !== 'undefined' ? (window as any) : {};
+          let ms: any = w.__ems_membership;
+          if (!ms) {
+            const r = await fetch('/api/me/membership', { cache: 'no-store', credentials: 'include' }).catch(()=>null as any);
+            if (r) {
+              const j = await r.json().catch(()=> ({}));
+              if (r.ok) { ms = j; w.__ems_membership = j; }
+            }
+          }
+          if (ms && (ms.isPremium || ms.hasImat)) {
+            notEntitled = false;
+          } else if (ms) {
+            notEntitled = true;
+          }
+        } catch {}
+      }
+
+      // Only let denial cookie block when user is not entitled
+      const cookieBlocks = deniedPaid && notEntitled;
+      if (hasAuth && !cookieBlocks && !notEntitled) {
     // Always fetch fresh bundle for authed users to reflect latest progress
     let gotPlayerFromBundle = false;
     fetchBundleDedupe(slug, async () => {
       const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
       if (r.status === 200) return r.json();
       if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
-      if (r.status === 403) { setBundleErr('forbidden'); throw new Error('forbidden'); }
+      if (r.status === 403) {
+        setBundleErr('forbidden');
+        try { document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`; } catch {}
+        throw new Error('forbidden');
+      }
       setBundleErr('error'); throw new Error('error');
     })
       .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
@@ -85,18 +122,37 @@ export default function LessonPage() {
     const cachedP = getPlayerCached(slug, 0) as any;
     if (cachedP) {
       setPlayer(cachedP);
-    } else if (!gotPlayerFromBundle) {
+    } else if (!gotPlayerFromBundle && !deniedPaid) {
       fetchPlayerDedupe(slug, async () => {
         const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include', cache: 'no-store' });
         if (r.status === 200) return r.json();
         if (r.status === 401) { setPlayerErr('unauthenticated'); throw new Error('unauthenticated'); }
-        if (r.status === 403) { setPlayerErr('forbidden'); throw new Error('forbidden'); }
+        if (r.status === 403) {
+          setPlayerErr('forbidden');
+          try { document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`; } catch {}
+          throw new Error('forbidden');
+        }
         setPlayerErr('error'); throw new Error('error');
       })
         .then((j) => { if (!alive) return; setPlayer(j); setPlayerCached(slug, j); })
         .catch(() => {});
     }
+    } else if (hasAuth && (deniedPaid && notEntitled) ) {
+      // Reflect denial immediately in UI without making API calls
+      setBundleErr('forbidden');
+      setPlayerErr('forbidden');
+      try { if (notEntitled) setPlayer({ provider: null, iframeSrc: null, locked: true, lockReason: 'paid_course', source: 'client' } as any); } catch {}
+    } else if (hasAuth && notEntitled) {
+      // No cookie yet but clearly not entitled – avoid hitting APIs and set a soft lock
+      setBundleErr('forbidden');
+      setPlayerErr('forbidden');
+      try {
+        setPlayer({ provider: null, iframeSrc: null, locked: true, lockReason: 'paid_course', source: 'client' } as any);
+        document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`;
+      } catch {}
     }
+    };
+    precheckAndRun();
     // Try static guest JSON from CDN (free lessons)
     // Prefer the lightweight payloads when available, but gracefully fall back
     // to the non-lite structure currently committed in public/.
@@ -132,23 +188,29 @@ export default function LessonPage() {
         } catch { return new Map(); }
       };
       const loadGuest = async (idx: Map<string,string>) => {
-        // Always attempt direct fetch first in case the index fails in dev
-        try {
-          const rfDirect = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' });
-          if (rfDirect.ok) { setGuest(await rfDirect.json()); return; }
-        } catch {}
         const h = idx.get(slug);
         const v = h ? `?v=${encodeURIComponent(h)}` : '';
-        // Try lite payload next
+        // Try lite payload first when indexed
         try {
-          const rl = await fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
-          if (rl.ok) { setGuest(await rl.json()); return; }
+          if (h) {
+            const rl = await fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
+            if (rl.ok) { setGuest(await rl.json()); return; }
+          }
         } catch {}
-        // Fallback to non-lite payload
+        // Fallback to non-lite payload if indexed
         try {
-          const rf = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
-          if (rf.ok) { setGuest(await rf.json()); return; }
+          if (h) {
+            const rf = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
+            if (rf.ok) { setGuest(await rf.json()); return; }
+          }
         } catch {}
+        // As a last resort (index failure during dev), try direct fetch
+        if (!h && idx.size === 0) {
+          try {
+            const rfDirect = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' });
+            if (rfDirect.ok) { setGuest(await rfDirect.json()); return; }
+          } catch {}
+        }
       };
       ensureIndex().then((idx) => { if (!alive) return; loadGuest(idx); }).catch(() => { 
         // As a final fallback, try direct without index

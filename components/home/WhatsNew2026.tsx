@@ -1,12 +1,13 @@
 "use client";
 import React from "react";
 import ShimmerHeading from "@/components/ui/ShimmerHeading";
+import NewCourseSystem from "@/components/home/NewCourseSystem";
 
 export default function WhatsNew2026() {
   return (
     <section
       id="whats-new-2026"
-      className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10 sm:py-14 md:py-16"
+      className="wn-bg wn-purple relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10 sm:py-14 md:py-16"
       aria-labelledby="whats-new-2026-heading"
     >
       {/* Clear background: just text + animation, full width with inner buffer */}
@@ -77,8 +78,27 @@ export default function WhatsNew2026() {
         </div>
       </div>
 
-      {/* Component-scoped styles for underline + NEW pill */}
+      {/* New Course System feature */}
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 mt-10">
+        <NewCourseSystem />
+      </div>
+
+      {/* Component-scoped styles for underline + NEW pill + background */}
       <style jsx>{`
+        .wn-bg { position: relative; isolation: isolate; }
+        .wn-bg::before { content: ""; position: absolute; inset: -10% -10% -10% -10%; z-index: -1;
+          background:
+            radial-gradient(900px 360px at 12% 24%, var(--c1), transparent 60%),
+            radial-gradient(1000px 420px at 88% 72%, var(--c2), transparent 64%);
+          animation: wn-float 20s ease-in-out infinite alternate; filter: saturate(115%); }
+        .wn-bg::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .12;
+          background-image:
+            linear-gradient(to right, rgba(255,255,255,.35) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,.24) 1px, transparent 1px);
+          background-size: 54px 54px; animation: wn-grid 24s linear infinite; }
+        .wn-purple { --c1: rgba(167,139,250,.26); --c2: rgba(6,182,212,.22); background: linear-gradient(180deg, rgba(167,139,250,.12), rgba(6,182,212,.08)); }
+        @keyframes wn-float { from { transform: translateY(0) } to { transform: translateY(14px) } }
+        @keyframes wn-grid { 0% { background-position: 0 0, 0 0 } 100% { background-position: 54px 0, 0 54px } }
         .new-pill {
           display: inline-flex;
           align-items: center;

@@ -7,9 +7,54 @@ import dynamic from "next/dynamic";
 import Providers from "./providers";
 import { currentUserIdServer } from "@/lib/study/auth";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "WebSite",
-  description: "Learning platform skeleton",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "EnterMedSchool",
+    template: "%s — EnterMedSchool",
+  },
+  description:
+    "We help aspiring medical students find the right fit for their career goals. Browse medical schools, compare programs, and study for admission exams.",
+  applicationName: "EnterMedSchool",
+  category: "education",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+  },
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "EnterMedSchool",
+    title: "EnterMedSchool | Find The Right Medical School for You!",
+    description:
+      "We help aspiring medical students find the right fit for their career goals. Browse medical schools, compare programs, and study for admission exams.",
+    images: [
+      {
+        url: "https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/ems_thumbnail_2-1024x512.png",
+        width: 1024,
+        height: 512,
+        alt: "EnterMedSchool",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EnterMedSchool | Find The Right Medical School for You!",
+    description:
+      "We help aspiring medical students find the right fit for their career goals.",
+    images: [
+      "https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/ems_thumbnail_2-1024x512.png",
+    ],
+  },
+  themeColor: "#4F46E5", // indigo-600 (prominent brand blue)
+  robots: process.env.NEXT_PUBLIC_ALLOW_INDEX === "true"
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
 };
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700" ] });

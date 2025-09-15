@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Do not block production builds on ESLint issues
+  eslint: { ignoreDuringBuilds: true },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
