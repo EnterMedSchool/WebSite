@@ -84,9 +84,29 @@ export default function MissionShowcase({
     return () => clearTimeout(t);
   }, [cueIndex]);
 
+  // Theme palette by cue
+  const theme = useMemo(() => {
+    switch (cue.color) {
+      case "emerald":
+        return { a: "#10b981", b: "#14b8a6" };
+      case "violet":
+        return { a: "#a78bfa", b: "#f472b6" };
+      case "sky":
+        return { a: "#60a5fa", b: "#22d3ee" };
+      default:
+        return { a: "#6366f1", b: "#22d3ee" };
+    }
+  }, [cue.color]);
+
+  function jumpTo(index: number) {
+    const v = videoRef.current; if (!v) return; const c = CUES[index];
+    v.currentTime = c.start + 0.02; v.play().catch(() => {}); setPlaying(true);
+  }
+
   return (
-    <div ref={containerRef} className="ms-root">
+    <div ref={containerRef} className="ms-root" style={{ ["--a" as any]: theme.a, ["--b" as any]: theme.b } as any}>
       <div className="ms-topbar" />
+      <div className="ms-tint" aria-hidden />
       <div className="ms-grid">
         {/* Copy */}
         <div className="ms-copy">
@@ -111,6 +131,15 @@ export default function MissionShowcase({
             <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent("auth:open"))}>Create account</button>
             <a href="#universities" className="btn-ghost">Explore map</a>
           </div>
+
+          {/* Stepper */}
+          <div className="ms-steps" role="tablist" aria-label="Mission steps">
+            {CUES.map((c, i) => (
+              <button key={i} role="tab" aria-selected={cueIndex===i} className={`step ${cueIndex===i? 'active':''}`} onClick={() => jumpTo(i)}>
+                {i===0?'Explore':i===1?'Reviews':i===2?'Prepare':'Decide'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Video */}
@@ -130,6 +159,7 @@ export default function MissionShowcase({
             loop={false}
             controls={false}
           />
+          <div className="ms-caption"><span>{cue.title}</span></div>
           {/* Controls */}
           <div className="ms-controls">
             <button
@@ -170,9 +200,15 @@ export default function MissionShowcase({
 
       {/* Scoped styles */}
       <style jsx>{`
-        .ms-root { position: relative; overflow: hidden; border-radius: 24px; padding: 18px; color: white; background: linear-gradient(135deg,#4f46e5 0%,#7c3aed 45%,#06b6d4 100%); box-shadow: 0 20px 54px rgba(49,46,129,.36); }
+        .ms-root { position: relative; overflow: hidden; border-radius: 24px; padding: 18px; color: white; background: linear-gradient(135deg, var(--a, #4f46e5) 0%, #7c3aed 45%, var(--b, #06b6d4) 100%); box-shadow: 0 20px 54px rgba(49,46,129,.36); }
         .ms-topbar { height: 10px; border-radius: 9999px; background: linear-gradient(90deg, rgba(255,255,255,.65), rgba(255,255,255,.0), rgba(255,255,255,.65)); opacity: .35; animation: sweep 12s linear infinite; background-size: 200% 100%; }
         @keyframes sweep { 0% { background-position: 0% 50% } 100% { background-position: 200% 50% } }
+        .ms-tint { position:absolute; inset:-10% -10% -10% -10%; z-index:0; pointer-events:none; background:
+          radial-gradient(900px 280px at 16% 28%, color-mix(in oklab, var(--a, #6366f1) 45%, white 0%), transparent 60%),
+          radial-gradient(1000px 360px at 88% 72%, color-mix(in oklab, var(--b, #22d3ee) 45%, white 0%), transparent 66%);
+          animation: tintFloat 18s ease-in-out infinite alternate; filter:saturate(120%);
+        }
+        @keyframes tintFloat { from { transform: translateY(0) } to { transform: translateY(12px) } }
         .ms-grid { display: grid; gap: 20px; align-items: center; grid-template-columns: 1fr; }
         @media (min-width: 1024px) { .ms-grid { grid-template-columns: 6fr 6fr; } }
         .ms-copy { padding: 8px 8px 12px; }
@@ -188,12 +224,16 @@ export default function MissionShowcase({
         .ms-cta { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
         .btn-primary { background: white; color: #3730a3; font-weight: 800; border-radius: 9999px; padding: 8px 14px; box-shadow: 0 10px 24px rgba(255,255,255,.25); }
         .btn-ghost { border: 1px solid rgba(255,255,255,.55); color: white; font-weight: 800; border-radius: 9999px; padding: 8px 14px; }
+        .ms-steps { margin-top: 10px; display: inline-flex; gap: 6px; padding: 4px; border-radius: 9999px; background: rgba(255,255,255,.18); backdrop-filter: blur(3px); }
+        .step { appearance:none; border:0; cursor:pointer; padding:6px 12px; border-radius:9999px; font-weight:900; color:white; opacity:.85; }
+        .step.active { background:white; color:#1f2937; box-shadow:0 8px 18px rgba(255,255,255,.35); }
 
         .ms-video-wrap { position: relative; padding: 12px; }
         .ms-progress { height: 6px; border-radius: 9999px; background: rgba(255,255,255,.28); margin-bottom: 8px; overflow: hidden; }
         .ms-progress .bar { height: 100%; border-radius: 9999px; background: linear-gradient(90deg,#22d3ee,#60a5fa); transition: width .6s cubic-bezier(.22,1,.36,1); }
         .ms-video-glow { position: absolute; inset: -12px -20px -20px -12px; z-index: -1; filter: blur(30px); opacity: .7; background: radial-gradient(260px 80px at 30% 10%, rgba(255,255,255,.45), transparent), radial-gradient(360px 100px at 70% 90%, rgba(255,255,255,.25), transparent); }
         .ms-video { width: min(520px, 100%); aspect-ratio: 9/16; border-radius: 28px; background: #000; object-fit: cover; box-shadow: 0 18px 44px rgba(2,6,23,.25), 0 0 0 1px rgba(255,255,255,.22) inset; }
+        .ms-caption { position:absolute; left: 24px; bottom: 26px; background: linear-gradient(90deg, var(--a,#6366f1), var(--b,#22d3ee)); color:white; font-weight:900; border-radius:9999px; padding:8px 12px; box-shadow:0 10px 26px rgba(2,6,23,.24); }
         .ms-controls { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
         .ctrl { background: rgba(0,0,0,.45); color: white; border: 0; border-radius: 9999px; width: 34px; height: 34px; display: grid; place-items: center; backdrop-filter: blur(4px); }
         .ms-bursts { position: absolute; inset: 0; pointer-events: none; }
@@ -203,4 +243,3 @@ export default function MissionShowcase({
     </div>
   );
 }
-
