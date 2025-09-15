@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import ShimmerHeading from "@/components/ui/ShimmerHeading";
 
 type Cue = {
   start: number;
@@ -13,49 +14,10 @@ type Cue = {
 };
 
 const CUES: Cue[] = [
-  {
-    start: 0,
-    end: 3,
-    title:
-      "EnterMedSchool's mission is to help you find the right medical school for you.",
-    body:
-      "A fast, data-driven way to navigate options with clarity and confidence.",
-    color: "indigo",
-  },
-  {
-    start: 4,
-    end: 8,
-    title: "We do this in three simple steps.",
-    bullets: ["Explore", "Read reviews", "Prepare & connect"],
-    color: "violet",
-  },
-  {
-    start: 8,
-    end: 16,
-    title: "First - explore our interactive map.",
-    body:
-      "Discover schools you can apply to, compare seats and historical scores.",
-    bullets: ["Live seat counts", "Cutoff trends", "Side-by-side compare"],
-    color: "sky",
-  },
-  {
-    start: 17,
-    end: 30,
-    title: "Second - read honest, uncensored testimonials.",
-    body:
-      "Real students. Real experiences. Get the vibe before you apply.",
-    bullets: ["Campus life", "Teaching quality", "Hidden trade-offs"],
-    color: "emerald",
-  },
-  {
-    start: 30,
-    end: 45,
-    title: "Finally - connect, learn, and prepare.",
-    body:
-      "Join communities, follow the enrollment steps, and study with mini-lessons & practice questions.",
-    bullets: ["Communities & forums", "Enrollment checklist", "Mini-lessons + practice"],
-    color: "fuchsia",
-  },
+  { start: 0, end: 4, title: "Explore with clarity", body: "Map-first discovery with live data.", bullets: ["Live seats", "Score trends"], color: "indigo" },
+  { start: 4, end: 10, title: "Hear real voices", body: "Unfiltered student reviews.", bullets: ["Campus life", "Teaching quality"], color: "emerald" },
+  { start: 10, end: 18, title: "Prepare together", body: "Mini-lessons, flashcards and practice.", bullets: ["Learn", "Practice", "Review"], color: "violet" },
+  { start: 18, end: 28, title: "Make confident decisions", body: "Compare schools side-by-side.", bullets: ["Pros/cons", "All in one"], color: "sky" },
 ];
 
 function timeToCueIndex(t: number) {
@@ -75,333 +37,170 @@ export default function MissionShowcase({
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
-  const [finished, setFinished] = useState(false);
 
   const cueIndex = useMemo(() => timeToCueIndex(time), [time]);
   const cue = CUES[cueIndex];
   const progress = useMemo(() => {
-    const c = cue;
-    const span = Math.max(0.001, c.end - c.start);
-    return Math.min(100, Math.max(0, ((time - c.start) / span) * 100));
+    const span = Math.max(0.001, cue.end - cue.start);
+    return Math.min(100, Math.max(0, ((time - cue.start) / span) * 100));
   }, [time, cue]);
 
+  // Play / pause on intersection
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     const onTime = () => setTime(v.currentTime);
-    const onEnded = () => setFinished(true);
     v.addEventListener("timeupdate", onTime);
-    v.addEventListener("ended", onEnded);
-    return () => {
-      v.removeEventListener("timeupdate", onTime);
-      v.removeEventListener("ended", onEnded);
-    };
-  }, []);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) {
-            v.play().catch(() => {});
-            setPlaying(true);
-          } else {
-            v.pause();
-            setPlaying(false);
-          }
+          if (e.isIntersecting) v.play().catch(() => {});
+          else v.pause();
         });
       },
-      { threshold: 0.3 }
+      { threshold: 0.35 }
     );
     if (containerRef.current) io.observe(containerRef.current);
-    return () => io.disconnect();
+    return () => {
+      v.removeEventListener("timeupdate", onTime);
+      io.disconnect();
+    };
   }, []);
 
-  function jump(i: number) {
-    const v = videoRef.current;
-    if (!v) return;
-    const c = CUES[i];
-    v.currentTime = c.start + 0.01;
-    setFinished(false);
-  }
-
-  const colorFrom = (c?: Cue["color"]) => {
-    if (c === "violet")
-      return {
-        ring: "ring-violet-300/30",
-        dot: "bg-violet-300",
-        bar: "from-violet-400 to-fuchsia-400",
-        glow: "from-violet-400",
-      };
-    if (c === "sky")
-      return {
-        ring: "ring-sky-300/30",
-        dot: "bg-sky-300",
-        bar: "from-sky-400 to-cyan-400",
-        glow: "from-sky-400",
-      };
-    if (c === "emerald")
-      return {
-        ring: "ring-emerald-300/30",
-        dot: "bg-emerald-300",
-        bar: "from-emerald-400 to-lime-400",
-        glow: "from-emerald-400",
-      };
-    if (c === "fuchsia")
-      return {
-        ring: "ring-fuchsia-300/30",
-        dot: "bg-fuchsia-300",
-        bar: "from-fuchsia-400 to-violet-400",
-        glow: "from-fuchsia-400",
-      };
-    return {
-      ring: "ring-indigo-300/30",
-      dot: "bg-indigo-300",
-      bar: "from-indigo-400 to-violet-400",
-      glow: "from-indigo-400",
-    };
-  };
-  const cx = colorFrom(cue.color);
+  // Tiny celebratory bursts when cue changes
+  const [burstKey, setBurstKey] = useState(0);
+  const [bursts, setBursts] = useState<Array<{ id: number; left: number; top: number; color: string }>>([]);
+  useEffect(() => {
+    const palette = ["#22d3ee", "#60a5fa", "#a78bfa", "#34d399", "#fb7185", "#f59e0b"];
+    const items = Array.from({ length: 8 }).map((_, i) => ({
+      id: burstKey + i,
+      left: 55 + Math.random() * 40, // right half near video
+      top: 10 + Math.random() * 70,
+      color: palette[i % palette.length],
+    }));
+    setBursts(items);
+    const t = setTimeout(() => setBursts([]), 1100);
+    setBurstKey((k) => k + 8);
+    return () => clearTimeout(t);
+  }, [cueIndex]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20"
-    >
-      {/* Decorative minis to match the new style */}
-      <div className="mini-card flash" aria-hidden />
-      <div className="mini-card bars" aria-hidden />
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Left: dynamic text */}
-        <div className="flex flex-col justify-center">
-          <div className="text-3xl font-extrabold leading-tight sm:text-4xl">
-            What is EnterMedSchool?
-          </div>
-          <div className="mt-2 text-white/85">
-            A live, map-first way to discover medical schools in Europe — with
-            real seat numbers, historical admission scores, and trends you can
-            compare at a glance.
-          </div>
+    <div ref={containerRef} className="ms-root">
+      <div className="ms-topbar" />
+      <div className="ms-grid">
+        {/* Copy */}
+        <div className="ms-copy">
+          <ShimmerHeading pretitle="Our Mission" title={"EnterMedSchool"} variant="indigo" size="md" />
+          <p className="ms-lead">A vibrant home for choosing, preparing and thriving in medical school.</p>
 
-          {/* Cue content */}
-          <div
-            className={`mt-5 rounded-2xl border ${cx.ring} bg-white/10 p-4 backdrop-blur min-h-[200px]`}
-          >
-            <AnimatePresence mode="wait">
-              {!finished ? (
-                <motion.div
-                  key={`cue-${cueIndex}`}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                >
-                  <div className="flex items-center gap-2 text-lg font-semibold">
-                    <StepIcon index={cueIndex} />
-                    <span>{cue.title}</span>
-                  </div>
-                  {cue.body && (
-                    <div className="mt-1 text-sm text-white/85">{cue.body}</div>
-                  )}
-                  {cue.bullets && (
-                    <ul className="mt-3 grid gap-1 text-sm text-white/90">
-                      {cue.bullets.map((b, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span
-                            className={`inline-block h-2 w-2 rounded-full ${cx.dot}`}
-                          />
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="finished"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <div className="text-2xl font-extrabold">
-                    Congrats! Now you know how to EnterMedSchool.
-                  </div>
-                  <div className="mt-2 text-sm text-white/85">
-                    How about we create your account?
-                  </div>
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() =>
-                        window.dispatchEvent(new CustomEvent("auth:open"))
-                      }
-                      className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow hover:bg-white/90"
-                    >
-                      Create your account
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFinished(false);
-                        const v = videoRef.current;
-                        if (v) {
-                          v.currentTime = 0;
-                          v.play().catch(() => {});
-                          setPlaying(true);
-                        }
-                      }}
-                      className="rounded-xl border border-white/50 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                    >
-                      Back to video
-                    </button>
-                  </div>
-                </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div key={`cue-${cueIndex}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}>
+              <div className="ms-cue-title">{cue.title}</div>
+              {cue.body && <div className="ms-cue-body">{cue.body}</div>}
+              {cue.bullets && (
+                <ul className="ms-bullets" role="list">
+                  {cue.bullets.map((b, i) => (
+                    <li key={i}><span className={`dot d${(i % 3) + 1}`} />{b}</li>
+                  ))}
+                </ul>
               )}
-            </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
 
-            {/* Progress bar per cue */}
-            <div className="mt-3 h-1.5 w-full rounded-full bg-white/15">
-              <div
-                className={`h-1.5 rounded-full bg-gradient-to-r ${cx.bar}`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Step dots + scrubber */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {CUES.map((c, i) => (
-              <button
-                key={i}
-                onClick={() => jump(i)}
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
-                  i === cueIndex
-                    ? "bg-white text-indigo-700"
-                    : "bg-white/15 text-white hover:bg-white/25"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 h-1.5 w-full max-w-sm rounded-full bg-white/15">
-            <div className="relative h-1.5 rounded-full bg-white/20">
-              <div
-                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-white to-white/80"
-                style={{ width: `${Math.min(100, (time / 45) * 100)}%` }}
-              />
-              <div className="absolute inset-0 flex justify-between text-white/70">
-                {CUES.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => jump(i)}
-                    className="-mt-[3px] h-2 w-2 rounded-full bg-white/60 hover:bg-white"
-                    style={{ transform: `translateX(-1px)` }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <button
-              onClick={() =>
-                window.dispatchEvent(new CustomEvent("auth:open"))
-              }
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow hover:bg-white/90"
-            >
-              Create an account
-            </button>
+          <div className="ms-cta">
+            <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent("auth:open"))}>Create account</button>
+            <a href="#universities" className="btn-ghost">Explore map</a>
           </div>
         </div>
 
-        {/* Right: video */}
-        <div className="relative">
-          <div className="relative mx-auto w-full max-w-xs overflow-hidden rounded-3xl bg-black/40 ring-1 ring-white/20 sm:max-w-sm md:max-w-md">
-            <video
-              ref={videoRef}
-              src={videoSrc}
-              poster={poster}
-              className="aspect-[9/16] w-full object-cover"
-              playsInline
-              muted={muted}
-              preload="none"
-              loop={false}
-              controls={false}
-            />
-            {/* play/pause */}
+        {/* Video */}
+        <div className="ms-video-wrap">
+          <div className="ms-progress">
+            <div className="bar" style={{ width: `${progress}%` }} />
+          </div>
+          <div className="ms-video-glow" aria-hidden />
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            poster={poster}
+            className="ms-video"
+            playsInline
+            muted={muted}
+            preload="none"
+            loop={false}
+            controls={false}
+          />
+          {/* Controls */}
+          <div className="ms-controls">
             <button
+              className="ctrl"
+              aria-label="Toggle play"
               onClick={() => {
-                const v = videoRef.current;
-                if (!v) return;
-                if (v.paused) {
-                  v.play().catch(() => {});
-                  setPlaying(true);
-                } else {
-                  v.pause();
-                  setPlaying(false);
-                }
+                const v = videoRef.current; if (!v) return; if (v.paused) v.play().catch(() => {}); else v.pause();
+                setPlaying(!playing);
               }}
-              className="absolute right-3 top-3 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/50"
-              aria-label={playing ? "Pause" : "Play"}
             >
               {playing ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
-                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
               )}
             </button>
-            {/* mute/unmute (enables audio on tap) */}
             <button
-              onClick={() => {
-                setMuted((m) => !m);
-                const v = videoRef.current;
-                if (v) {
-                  v.muted = !muted;
-                  if (v.paused) v.play().catch(() => {});
-                }
-              }}
-              className="absolute left-3 top-3 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/50"
-              aria-label={muted ? "Unmute" : "Mute"}
+              className="ctrl"
+              aria-label="Toggle mute"
+              onClick={() => { setMuted((m) => !m); const v = videoRef.current; if (v) { v.muted = !muted; if (v.paused) v.play().catch(() => {}); } }}
             >
               {muted ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 5l-5 4H4v6h3l5 4zM16.5 12a4.5 4.5 0 0 0-2.2-3.9v7.8a4.5 4.5 0 0 0 2.2-3.9z" />
-                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l-5 4H4v6h3l5 4zM16.5 12a4.5 4.5 0 0 0-2.2-3.9v7.8a4.5 4.5 0 0 0 2.2-3.9z" /></svg>
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 5l-5 4H4v6h3l5 4zM19 5l-2 2 2 2 2-2-2-2zm0 10l-2 2 2 2 2-2-2-2z" />
-                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l-5 4H4v6h3l5 4zM19 5l-2 2 2 2 2-2-2-2zm0 10l-2 2 2 2 2-2-2-2z" /></svg>
               )}
             </button>
           </div>
-          {/* gentle glow */}
-          <div
-            className={`pointer-events-none absolute -inset-6 -z-10 bg-gradient-to-r ${cx.glow} to-transparent blur-2xl`}
-          />
+
+          {/* Cue bursts */}
+          <div className="ms-bursts" aria-hidden>
+            {bursts.map((b) => (
+              <span key={b.id} className="p" style={{ left: `${b.left}%`, top: `${b.top}%`, background: b.color }} />
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Scoped styles */}
       <style jsx>{`
-        .mini-card { position:absolute; inset:auto; background:white; border:1px solid rgba(255,255,255,.5); border-radius:16px; box-shadow:0 16px 40px rgba(2,6,23,.18); opacity:.95; }
-        .mini-card.flash { right: 14px; top: 10px; width: 120px; height: 68px; transform: rotate(8deg); background: linear-gradient(135deg,#a78bfa,#22d3ee); }
-        .mini-card.bars { left: 12px; bottom: 12px; width: 140px; height: 60px; transform: rotate(-6deg); padding: 10px; background: linear-gradient(180deg,rgba(255,255,255,1),rgba(96,165,250,.12)); }
-        .mini-card.bars::before, .mini-card.bars::after { content:""; display:block; height:8px; border-radius:9999px; background: linear-gradient(90deg,#22d3ee,#60a5fa); box-shadow:0 6px 14px rgba(96,165,250,.35); }
-        .mini-card.bars::after { width: 60%; margin-top: 6px; }
-        @media (max-width: 1024px) { .mini-card.flash, .mini-card.bars { transform:none; } }
+        .ms-root { position: relative; overflow: hidden; border-radius: 24px; padding: 18px; color: white; background: linear-gradient(135deg,#4f46e5 0%,#7c3aed 45%,#06b6d4 100%); box-shadow: 0 20px 54px rgba(49,46,129,.36); }
+        .ms-topbar { height: 10px; border-radius: 9999px; background: linear-gradient(90deg, rgba(255,255,255,.65), rgba(255,255,255,.0), rgba(255,255,255,.65)); opacity: .35; animation: sweep 12s linear infinite; background-size: 200% 100%; }
+        @keyframes sweep { 0% { background-position: 0% 50% } 100% { background-position: 200% 50% } }
+        .ms-grid { display: grid; gap: 20px; align-items: center; grid-template-columns: 1fr; }
+        @media (min-width: 1024px) { .ms-grid { grid-template-columns: 6fr 6fr; } }
+        .ms-copy { padding: 8px 8px 12px; }
+        .ms-lead { margin-top: 6px; opacity: .9; }
+        .ms-cue-title { margin-top: 12px; font-size: 20px; font-weight: 900; letter-spacing: .01em; }
+        .ms-cue-body { margin-top: 4px; opacity: .9; }
+        .ms-bullets { margin-top: 8px; display: grid; gap: 6px; }
+        .ms-bullets li { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .dot { width: 10px; height: 10px; border-radius: 9999px; display: inline-block; }
+        .dot.d1 { background: linear-gradient(135deg,#60a5fa,#22d3ee); box-shadow: 0 6px 16px rgba(96,165,250,.35); }
+        .dot.d2 { background: linear-gradient(135deg,#a78bfa,#f472b6); box-shadow: 0 6px 16px rgba(167,139,250,.35); }
+        .dot.d3 { background: linear-gradient(135deg,#34d399,#10b981); box-shadow: 0 6px 16px rgba(16,185,129,.35); }
+        .ms-cta { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-primary { background: white; color: #3730a3; font-weight: 800; border-radius: 9999px; padding: 8px 14px; box-shadow: 0 10px 24px rgba(255,255,255,.25); }
+        .btn-ghost { border: 1px solid rgba(255,255,255,.55); color: white; font-weight: 800; border-radius: 9999px; padding: 8px 14px; }
+
+        .ms-video-wrap { position: relative; padding: 12px; }
+        .ms-progress { height: 6px; border-radius: 9999px; background: rgba(255,255,255,.28); margin-bottom: 8px; overflow: hidden; }
+        .ms-progress .bar { height: 100%; border-radius: 9999px; background: linear-gradient(90deg,#22d3ee,#60a5fa); transition: width .6s cubic-bezier(.22,1,.36,1); }
+        .ms-video-glow { position: absolute; inset: -12px -20px -20px -12px; z-index: -1; filter: blur(30px); opacity: .7; background: radial-gradient(260px 80px at 30% 10%, rgba(255,255,255,.45), transparent), radial-gradient(360px 100px at 70% 90%, rgba(255,255,255,.25), transparent); }
+        .ms-video { width: min(520px, 100%); aspect-ratio: 9/16; border-radius: 28px; background: #000; object-fit: cover; box-shadow: 0 18px 44px rgba(2,6,23,.25), 0 0 0 1px rgba(255,255,255,.22) inset; }
+        .ms-controls { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
+        .ctrl { background: rgba(0,0,0,.45); color: white; border: 0; border-radius: 9999px; width: 34px; height: 34px; display: grid; place-items: center; backdrop-filter: blur(4px); }
+        .ms-bursts { position: absolute; inset: 0; pointer-events: none; }
+        .p { position: absolute; width: 10px; height: 10px; border-radius: 9999px; opacity: .0; transform: scale(.4); animation: pop 1.1s ease forwards; box-shadow: 0 8px 18px rgba(0,0,0,.15); }
+        @keyframes pop { 10% { opacity: .95; transform: scale(1) } 100% { opacity: 0; transform: translateY(-18px) scale(.75) } }
       `}</style>
     </div>
   );
 }
 
-function StepIcon({ index }: { index: number }) {
-  return (
-    <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-[12px] font-extrabold text-indigo-700 shadow">
-      {index + 1}
-    </span>
-  );
-}

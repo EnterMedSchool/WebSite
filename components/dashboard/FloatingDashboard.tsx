@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, useMotionValue, useMotionTemplate, animate } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import BottomSheet from "@/components/ui/BottomSheet";
 
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<'overview'|'learning'|'class'|'settings'>('overview');
   const [name] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -23,6 +26,13 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
     }
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // Auto-close on route change to avoid lingering overlay across pages
+  useEffect(() => {
+    if (!open) return;
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const firstName = useMemo(() => {
     const n = name || "there"; return (n.split(" ")[0] || "there").trim();
@@ -471,44 +481,6 @@ function MobileDashboardDrawer({
   const img = (session as any)?.user?.image as string | undefined;
   const displayName = (session as any)?.user?.name || firstName || 'there';
 
-  const [vh, setVh] = useState(0);
-  const [snap, setSnap] = useState<'peek'|'half'|'full'>('half');
-  // y represents the distance from the top of the viewport to the sheet's top (in px)
-  const y = useMotionValue(0);
-  const startY = useRef(0);
-  const sheetHeight = useMotionTemplate`calc(100vh - ${y}px)`;
-
-  useEffect(() => {
-    const set = () => setVh(window.innerHeight);
-    set();
-    window.addEventListener('resize', set);
-    return () => window.removeEventListener('resize', set);
-  }, []);
-
-  // On first mount, start from 'peek' and slide up to 'half'
-  const didInit = useRef(false);
-  useEffect(() => {
-    if (!vh || didInit.current) return;
-    didInit.current = true;
-    y.set(snapTop('peek'));
-    // small delay to ensure layout applied
-    requestAnimationFrame(() => {
-      animate(y, snapTop('half'), { type: 'spring', stiffness: 240, damping: 28 });
-    });
-  }, [vh]);
-
-  const snapTop = (s: 'peek'|'half'|'full') => {
-    // Values are the top offset in px (how far from the top the sheet's top is)
-    const ratios: Record<typeof s, number> = { full: 0.08, half: 0.45, peek: 0.72 } as any;
-    return Math.round(vh * ratios[s]);
-  };
-
-  useEffect(() => {
-    // On viewport change or snap change, animate to the target position
-    const target = snapTop(snap);
-    animate(y, target, { type: 'spring', stiffness: 260, damping: 30 });
-  }, [vh, snap]);
-
   const currentLabel = MENU.find(m => m.key === tab)?.label ?? 'Dashboard';
 
   if (!open) return null;
@@ -554,39 +526,10 @@ function MobileDashboardDrawer({
         </div>
       </div>
 
-      {/* Bottom Sheet */}
-      <AnimatePresence>
-        <motion.div
-          className="fixed inset-x-0 bottom-0 z-[9999] rounded-t-[28px] bg-white shadow-[0_-20px_80px_rgba(0,0,0,0.25)] ring-1 ring-black/5"
-          style={{ height: sheetHeight }}
-          drag="y"
-          dragElastic={0}
-          onDragStart={() => { startY.current = y.get(); }}
-          onDrag={(e, info) => {
-            const next = Math.min(snapTop('peek'), Math.max(snapTop('full'), startY.current + info.offset.y));
-            y.set(next);
-          }}
-          onDragEnd={() => {
-            const endTop = y.get();
-            const points = [
-              { k: 'full' as const, y: snapTop('full') },
-              { k: 'half' as const, y: snapTop('half') },
-              { k: 'peek' as const, y: snapTop('peek') },
-            ];
-            const target = points.reduce((a, b) => Math.abs(b.y - endTop) < Math.abs(a.y - endTop) ? b : a, points[0]);
-            // If dragged very close to bottom, close
-            if (endTop > snapTop('peek') - 24) { onClose(); return; }
-            setSnap(target.k);
-          }}
-          initial={false}
-        >
-          {/* Grabber */}
-          <div className="sticky top-0 z-10 grid place-items-center rounded-t-[28px] bg-white/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-white/75">
-            <div className="h-1.5 w-10 rounded-full bg-gray-300" />
-          </div>
-
-          {/* Sheet Content */}
-          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+64px)]">
+      {/* Bottom Sheet using shared component */}
+      <BottomSheet open={open} onClose={onClose} title={undefined} height="76vh" showBackdrop={false}>
+        {/* Sheet Content */}
+        <div className="px-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {/* Quick header inside sheet */}
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-semibold text-gray-900">Welcome{displayName?`, ${displayName.split(' ')[0]}`:''}</div>
@@ -666,11 +609,9 @@ function MobileDashboardDrawer({
                 <ThemeCard />
               </div>
             )}
-          </div>
-
-          {/* No bottom nav; navigation moved to top in blue area */}
-        </motion.div>
-      </AnimatePresence>
+        </div>
+        {/* No bottom nav; navigation moved to top in blue area */}
+      </BottomSheet>
     </div>
   );
 }

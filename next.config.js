@@ -53,6 +53,21 @@ const nextConfig = {
         { key: 'Cache-Control', value: 'public, immutable, max-age=31536000, s-maxage=31536000' },
       ],
     });
+    // Aggressive caching for icons and manifest-like assets
+    headers.push({
+      // Matches /favicon.ico, /icon.png, /apple-touch-icon.png, /safari-pinned-tab.svg
+      source: '/:file(favicon.ico|icon.png|apple-touch-icon.png|safari-pinned-tab.svg)',
+      headers: [
+        { key: 'Cache-Control', value: 'public, immutable, max-age=31536000, s-maxage=31536000' },
+      ],
+    });
+    // Reasonable caching for the web manifest (can change sometimes)
+    headers.push({
+      source: '/site.webmanifest',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=86400, s-maxage=86400' }, // 1 day
+      ],
+    });
     if (!allowIndex) {
       headers.push({
         source: '/:path*',

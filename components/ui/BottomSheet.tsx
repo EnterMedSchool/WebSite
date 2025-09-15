@@ -9,9 +9,11 @@ type Props = {
   title?: string;
   children: React.ReactNode;
   height?: number | string; // e.g. "70vh"
+  showBackdrop?: boolean;
+  backdropClassName?: string;
 };
 
-export default function BottomSheet({ open, onClose, title, children, height = "70vh" }: Props) {
+export default function BottomSheet({ open, onClose, title, children, height = "70vh", showBackdrop = true, backdropClassName = "bg-black/30" }: Props) {
   // Prevent background scroll when open
   useEffect(() => {
     if (!open) return;
@@ -25,13 +27,15 @@ export default function BottomSheet({ open, onClose, title, children, height = "
       {open && (
         <>
           {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 z-40 bg-black/30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
+          {showBackdrop && (
+            <motion.div
+              className={`fixed inset-0 z-40 ${backdropClassName}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+            />
+          )}
           {/* Sheet */}
           <motion.div
             className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl bg-white shadow-2xl"
@@ -52,4 +56,3 @@ export default function BottomSheet({ open, onClose, title, children, height = "
     </AnimatePresence>
   );
 }
-
