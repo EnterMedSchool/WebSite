@@ -6,6 +6,8 @@ import CourseHub2026 from "@/components/home/CourseHub2026";
 import HomeVibrantBackdrop from "@/components/home/HomeVibrantBackdrop";
 import AnkiIntegration from "@/components/home/AnkiIntegration";
 import TeamFamily from "@/components/home/TeamFamily";
+import ReviewsSection from "@/components/home/ReviewsSection";
+import SectionDivider from "@/components/home/SectionDivider";
 // Home backdrop temporarily removed per design refresh
 // Scroll-driven showcase and Sticky CTA temporarily removed
 
@@ -31,6 +33,7 @@ export default function HomePage() {
 
       {/* Under-map framework (lifted slightly with a restrained glow) */}
       <section className="vbg vbg-emerald relative -mt-8 z-10 mx-auto w-full max-w-6xl rounded-3xl px-4 py-6">
+        <div className="vbg-seam-top" />
         <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
         <MissionShowcase videoSrc="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Vidinsta_Instagram-Post_6634e8cf0c8eb.mp4" poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Untitled-design.png" />
         <div className="vbg-seam-bottom" />
@@ -55,10 +58,22 @@ export default function HomePage() {
         <div className="vbg-seam-bottom" />
       </section>
 
+      {/* Divider between What’s New and Team */}
+      <SectionDivider />
+
       {/* Family Team */}
       <section className="vbg vbg-rose relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="vbg-seam-top" />
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
           <TeamFamily />
+        </div>
+        <div className="vbg-seam-bottom" />
+      </section>
+
+      {/* Reviews */}
+      <section className="vbg vbg-teal relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
+          <ReviewsSection />
         </div>
         <div className="vbg-seam-bottom" />
       </section>

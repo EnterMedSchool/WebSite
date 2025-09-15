@@ -19,12 +19,21 @@ export default function VibrantSectionStyles() {
       .vbg-amber { --c1: rgba(245,158,11,.24); --c2: rgba(251,113,133,.24); background: linear-gradient(180deg, rgba(251,191,36,.10), rgba(251,113,133,.08)); }
       .vbg-violet { --c1: rgba(167,139,250,.26); --c2: rgba(99,102,241,.26); background: linear-gradient(180deg, rgba(167,139,250,.12), rgba(99,102,241,.08)); }
       .vbg-rose { --c1: rgba(244,114,182,.24); --c2: rgba(251,113,133,.24); background: linear-gradient(180deg, rgba(244,114,182,.12), rgba(251,113,133,.08)); }
+      .vbg-teal { --c1: rgba(13,148,136,.24); --c2: rgba(14,165,233,.24); background: linear-gradient(180deg, rgba(13,148,136,.10), rgba(14,165,233,.08)); }
       /* Curvy seam between sections */
       .vbg-seam-bottom { position: absolute; left: 0; right: 0; bottom: -2px; height: 72px; pointer-events: none; }
       .vbg-seam-bottom::before { content: ""; position: absolute; inset: 0; background:
         radial-gradient(160% 74px at 50% -16px, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
         filter: blur(.2px); }
       .vbg-seam-bottom::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; opacity: .5;
+        background: linear-gradient(90deg, rgba(255,255,255,.5), rgba(255,255,255,.2), rgba(255,255,255,.5)); }
+
+      /* Soft top fade to previous section to avoid abrupt color cuts */
+      .vbg-seam-top { position: absolute; left: 0; right: 0; top: -2px; height: 72px; pointer-events: none; }
+      .vbg-seam-top::before { content: ""; position: absolute; inset: 0; background:
+        radial-gradient(160% 74px at 50% 88px, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+        filter: blur(.2px); }
+      .vbg-seam-top::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; opacity: .5;
         background: linear-gradient(90deg, rgba(255,255,255,.5), rgba(255,255,255,.2), rgba(255,255,255,.5)); }
       @keyframes vbg-float { from { transform: translateY(0) } to { transform: translateY(12px) } }
       @keyframes vbg-grid { 0% { background-position: 0 0, 0 0 } 100% { background-position: 56px 0, 0 56px } }

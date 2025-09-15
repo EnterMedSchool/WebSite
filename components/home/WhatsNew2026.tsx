@@ -10,6 +10,7 @@ export default function WhatsNew2026() {
       className="wn-bg wn-purple relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10 sm:py-14 md:py-16"
       aria-labelledby="whats-new-2026-heading"
     >
+      <div className="wn-seam-top" aria-hidden />
       {/* Clear background: just text + animation, full width with inner buffer */}
       <div className="mx-auto w-full px-6 sm:px-10">
         <div className="relative text-center">
@@ -156,6 +157,16 @@ export default function WhatsNew2026() {
         }
         @media (prefers-reduced-motion: reduce) {
           .dash-path { animation: none; }
+        }
+      `}</style>
+      <style jsx>{`
+        .wn-seam-top { position:absolute; left:0; right:0; top:-2px; height:72px; pointer-events:none; }
+        .wn-seam-top::before { content:""; position:absolute; inset:0; background:
+          radial-gradient(160% 74px at 50% 88px, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+        }
+        .wn-seam-bottom { position:absolute; left:0; right:0; bottom:-2px; height:72px; pointer-events:none; }
+        .wn-seam-bottom::before { content:""; position:absolute; inset:0; background:
+          radial-gradient(160% 74px at 50% -16px, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
         }
       `}</style>
     </section>
