@@ -1,6 +1,8 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import HomeBackdrop from "@/components/home/HomeBackdrop";
+import HomeVibrantBackdrop from "@/components/home/HomeVibrantBackdrop";
+import VibrantSectionStyles from "@/components/home/VibrantSectionStyles";
+import ShimmerHeading from "@/components/ui/ShimmerHeading";
 import Reveal from "@/components/imat/Reveal";
 import StickyCTA from "@/components/imat/StickyCTA";
 
@@ -138,11 +140,11 @@ function CTAButtons() {
 export default function IMATCoursePage() {
   return (
     <div className="space-y-20">
-      <HomeBackdrop />
+      <HomeVibrantBackdrop />
       <StickyCTA />
 
-      {/* Hero: full-bleed video with gradient overlay */}
-      <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.12)]">
+      {/* Hero: full-bleed with vibrant gradients, video background, and seam */}
+      <section className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.12)]">
         <div className="relative h-[64vh] min-h-[460px] w-full">
           <video
             className="absolute inset-0 h-full w-full object-cover"
@@ -153,7 +155,7 @@ export default function IMATCoursePage() {
             poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-22.png"
             src="https://entermedschool.com/wp-content/uploads/2024/06/ezgif.com-gif-to-mp4-converter.mp4"
           />
-          <div className="absolute inset-0 aurora-bg" />
+          <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 via-sky-900/10 to-transparent" />
           {/* Floating orbs */}
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute left-8 top-10 h-24 w-24 rounded-full bg-sky-400/25 blur-2xl animate-float-slow" />
@@ -161,9 +163,7 @@ export default function IMATCoursePage() {
           </div>
           <div className="relative z-10 mx-auto flex h-full max-w-6xl items-center px-6">
             <div className="max-w-2xl text-white">
-              <h1 className="font-[var(--font-baloo,_inherit)] text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl">
-                IMAT 2025 Full Online Course
-              </h1>
+              <ShimmerHeading pretitle="IMAT Course" title={"Ace IMAT 2025 with Confidence"} variant="electric" size="md" />
               <p className="mt-4 text-white/90">
                 Pass the IMAT and secure your spot in Italian medical schools with EnterMedSchool’s most comprehensive, cost‑effective online course — from start to finish.
               </p>
@@ -174,10 +174,12 @@ export default function IMATCoursePage() {
             </div>
           </div>
         </div>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Stats strip */}
-      <section className="mx-auto -mt-10 w-full max-w-6xl px-4">
+      <section className="vbg vbg-emerald relative -mt-8 z-10 mx-auto w-full max-w-6xl rounded-3xl px-4 py-6">
+        <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
         <Reveal className="grid grid-cols-2 gap-3 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50 p-4 text-slate-800 shadow-md md:grid-cols-4">
           {[
             ["200+", "Hours of Content"],
@@ -191,6 +193,7 @@ export default function IMATCoursePage() {
             </div>
           ))}
         </Reveal>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Features */}
@@ -228,8 +231,9 @@ export default function IMATCoursePage() {
       </section>
 
       {/* Small features grid */}
-      <section className="mx-auto max-w-6xl px-4">
-        <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="vbg vbg-amber relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10">
+        <div className="mx-auto w-full max-w-6xl px-4">
+          <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {SMALL_FEATURES.map((it, idx) => (
             <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-transform duration-200 hover:-translate-y-[2px] hover:shadow-md">
               <div className="overflow-hidden rounded-lg">
@@ -238,11 +242,14 @@ export default function IMATCoursePage() {
               <div className="px-1 pb-2 pt-3 text-center text-sm font-semibold text-slate-800">{it.title}</div>
             </div>
           ))}
-        </Reveal>
+          </Reveal>
+        </div>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Student videos */}
-      <section className="mx-auto max-w-6xl px-4">
+      <section className="vbg vbg-violet relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-4">
         <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Here Is What My Students Have To Say
         </h2>
@@ -268,13 +275,16 @@ export default function IMATCoursePage() {
             </div>
           ))}
         </Reveal>
+        </div>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Pricing (concise) */}
-      <section id="pricing" className="mx-auto max-w-6xl px-4">
-        <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
+      <section id="pricing" className="vbg vbg-emerald relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-4">
+          <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Course Enrollment — Join The Club!
-        </h2>
+          </h2>
 
         {/* Main plans */}
         <Reveal className="grid gap-6 md:grid-cols-3">
@@ -432,6 +442,8 @@ export default function IMATCoursePage() {
             </div>
           ))}
         </Reveal>
+        </div>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Reviews grid (images) */}
@@ -493,6 +505,8 @@ export default function IMATCoursePage() {
           </div>
         </div>
       </section>
+
+      <VibrantSectionStyles />
     </div>
   );
 }

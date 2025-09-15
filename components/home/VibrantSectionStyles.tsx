@@ -18,6 +18,7 @@ export default function VibrantSectionStyles() {
       .vbg-emerald { --c1: rgba(16,185,129,.25); --c2: rgba(20,184,166,.22); background: linear-gradient(180deg, rgba(16,185,129,.10), rgba(59,130,246,.06)); }
       .vbg-amber { --c1: rgba(245,158,11,.24); --c2: rgba(251,113,133,.24); background: linear-gradient(180deg, rgba(251,191,36,.10), rgba(251,113,133,.08)); }
       .vbg-violet { --c1: rgba(167,139,250,.26); --c2: rgba(99,102,241,.26); background: linear-gradient(180deg, rgba(167,139,250,.12), rgba(99,102,241,.08)); }
+      .vbg-rose { --c1: rgba(244,114,182,.24); --c2: rgba(251,113,133,.24); background: linear-gradient(180deg, rgba(244,114,182,.12), rgba(251,113,133,.08)); }
       /* Curvy seam between sections */
       .vbg-seam-bottom { position: absolute; left: 0; right: 0; bottom: -2px; height: 72px; pointer-events: none; }
       .vbg-seam-bottom::before { content: ""; position: absolute; inset: 0; background:
