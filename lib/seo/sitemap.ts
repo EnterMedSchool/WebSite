@@ -52,7 +52,8 @@ export function buildUrlSet(entries: SitemapEntry[]): string {
       return `<url><loc>${escapeXml(e.loc)}</loc>${lastmod}${cf}${pr}</url>`;
     })
     .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?>` +
+  const stylesheet = `<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>` + stylesheet +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${xmlItems}</urlset>`;
 }
 
@@ -60,7 +61,8 @@ export function buildSitemapIndex(urls: string[]): string {
   const xmlItems = urls
     .map((u) => `<sitemap><loc>${escapeXml(u)}</loc></sitemap>`)
     .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?>` +
+  const stylesheet = `<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>` + stylesheet +
     `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${xmlItems}</sitemapindex>`;
 }
 
@@ -72,4 +74,3 @@ function escapeXml(s: string) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
-

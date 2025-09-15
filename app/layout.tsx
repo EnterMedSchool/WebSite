@@ -6,6 +6,7 @@ import EMSFooter from "@/components/EMSFooter";
 import dynamic from "next/dynamic";
 import Providers from "./providers";
 import { currentUserIdServer } from "@/lib/study/auth";
+import JsonLd from "@/components/seo/JsonLd";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
@@ -78,6 +79,36 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body data-authed={isAuthed ? '1' : '0'} className={`${montserrat.className} ${baloo.variable} min-h-screen bg-gray-50 text-gray-900 flex flex-col`}>
+        {/* Sitewide structured data: Organization and WebSite */}
+        <JsonLd
+          id="org-jsonld"
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'EnterMedSchool',
+            url: SITE_URL,
+            description:
+              'We help aspiring medical students find the right fit for their career goals. Browse medical schools, compare programs, and study for admission exams.',
+            logo: {
+              '@type': 'ImageObject',
+              url: new URL('/android-chrome-512x512.png', SITE_URL).toString(),
+              width: 512,
+              height: 512,
+            },
+            areaServed: 'Worldwide',
+          }}
+        />
+        <JsonLd
+          id="website-jsonld"
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'EnterMedSchool',
+            url: SITE_URL,
+            inLanguage: 'en',
+            isFamilyFriendly: true,
+          }}
+        />
         <Providers>
           <Navbar />
           <main className="mx-auto max-w-[1400px] px-0 sm:px-6 py-6 flex-1">{children}</main>
