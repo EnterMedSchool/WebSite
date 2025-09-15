@@ -22,6 +22,28 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/api/course-mates')) {
     try {
       const referer = String(req.headers.get('referer') || '').trim();
+      const origin = String(req.headers.get('origin') || '').trim();
+      const host = String(req.headers.get('host') || '').trim();
+      const sfs = String(req.headers.get('sec-fetch-site') || '').trim().toLowerCase();
+
+      // If Origin header is present, require same host (defends against CSRF/x-site)
+      if (origin) {
+        try {
+          const o = new URL(origin);
+          if (!host || o.host.toLowerCase() !== host.toLowerCase()) {
+            return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+          }
+        } catch {
+          return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+        }
+      }
+
+      // If Sec-Fetch-Site is present, require same-origin/same-site/none
+      if (sfs && !(sfs === 'same-origin' || sfs === 'same-site' || sfs === 'none')) {
+        return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      }
+
+      // Require that the request originates from the Course Mates page (referer path)
       const refPath = referer ? new URL(referer).pathname : '';
       if (!refPath || !refPath.startsWith('/course-mates')) {
         return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });

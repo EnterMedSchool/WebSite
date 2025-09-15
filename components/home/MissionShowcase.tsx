@@ -170,6 +170,9 @@ export default function MissionShowcase({
       ref={containerRef}
       className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-[0_18px_50px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20"
     >
+      {/* Decorative minis to match the new style */}
+      <div className="mini-card flash" aria-hidden />
+      <div className="mini-card bars" aria-hidden />
       <div className="grid gap-6 md:grid-cols-2">
         {/* Left: dynamic text */}
         <div className="flex flex-col justify-center">
@@ -383,6 +386,14 @@ export default function MissionShowcase({
           />
         </div>
       </div>
+      <style jsx>{`
+        .mini-card { position:absolute; inset:auto; background:white; border:1px solid rgba(255,255,255,.5); border-radius:16px; box-shadow:0 16px 40px rgba(2,6,23,.18); opacity:.95; }
+        .mini-card.flash { right: 14px; top: 10px; width: 120px; height: 68px; transform: rotate(8deg); background: linear-gradient(135deg,#a78bfa,#22d3ee); }
+        .mini-card.bars { left: 12px; bottom: 12px; width: 140px; height: 60px; transform: rotate(-6deg); padding: 10px; background: linear-gradient(180deg,rgba(255,255,255,1),rgba(96,165,250,.12)); }
+        .mini-card.bars::before, .mini-card.bars::after { content:""; display:block; height:8px; border-radius:9999px; background: linear-gradient(90deg,#22d3ee,#60a5fa); box-shadow:0 6px 14px rgba(96,165,250,.35); }
+        .mini-card.bars::after { width: 60%; margin-top: 6px; }
+        @media (max-width: 1024px) { .mini-card.flash, .mini-card.bars { transform:none; } }
+      `}</style>
     </div>
   );
 }
@@ -394,4 +405,3 @@ function StepIcon({ index }: { index: number }) {
     </span>
   );
 }
-

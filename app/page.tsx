@@ -21,7 +21,7 @@ export default function HomePage() {
       >
         <HomeMap />
         {/* Soft fade into page background */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-transparent" />
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Seam: full-bleed gradient to avoid narrow highlights and side gaps */}
@@ -31,6 +31,7 @@ export default function HomePage() {
       <section className="vbg vbg-emerald relative -mt-8 z-10 mx-auto w-full max-w-6xl rounded-3xl px-4 py-6">
         <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
         <MissionShowcase videoSrc="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Vidinsta_Instagram-Post_6634e8cf0c8eb.mp4" poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/05/Untitled-design.png" />
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Full‑bleed: What’s New 2026 */}
@@ -41,6 +42,7 @@ export default function HomePage() {
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
           <CourseHub2026 />
         </div>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* Sections below temporarily removed */}

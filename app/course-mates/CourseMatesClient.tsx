@@ -87,16 +87,17 @@ export default function CourseMatesClient({ authed, initial }: {
 
   // Load privacy + leaderboard on mount
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!isAuthed || access !== 'verified') return;
     (async () => { try { const r = await fetch('/api/course-mates/privacy', { credentials: 'include' }); if (r.ok) { const j = await r.json(); setIsPublic(Boolean(j?.public)); } } catch {} })();
-  }, [isAuthed]);
+  }, [isAuthed, access]);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!isAuthed || access !== 'verified') return;
     (async () => { try { const r = await fetch('/api/course-mates/leaderboard', { credentials: 'include' }); if (r.ok) setLb(await r.json()); } catch {} })();
-  }, [isAuthed]);
+  }, [isAuthed, access]);
 
   async function reloadAll() {
+    if (!isAuthed || access !== 'verified') return;
     setRefreshing(true);
     try {
       const [f, e, p, s] = await Promise.all([

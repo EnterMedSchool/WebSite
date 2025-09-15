@@ -1,4 +1,6 @@
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
@@ -26,4 +28,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
   }
 }
-
