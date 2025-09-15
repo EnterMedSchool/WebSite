@@ -4,6 +4,7 @@ import WhatsNew2026 from "@/components/home/WhatsNew2026";
 import VibrantSectionStyles from "@/components/home/VibrantSectionStyles";
 import CourseHub2026 from "@/components/home/CourseHub2026";
 import HomeVibrantBackdrop from "@/components/home/HomeVibrantBackdrop";
+import AnkiIntegration from "@/components/home/AnkiIntegration";
 // Home backdrop temporarily removed per design refresh
 // Scroll-driven showcase and Sticky CTA temporarily removed
 
@@ -45,7 +46,13 @@ export default function HomePage() {
         <div className="vbg-seam-bottom" />
       </section>
 
-      {/* Anki Integration removed */}
+      {/* Anki Integration */}
+      <section className="vbg vbg-violet relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
+          <AnkiIntegration />
+        </div>
+        <div className="vbg-seam-bottom" />
+      </section>
 
       {/* Sections below temporarily removed */}
       <VibrantSectionStyles />
