@@ -8,100 +8,77 @@ import StickyCTA from "@/components/imat/StickyCTA";
 
 export const metadata: Metadata = {
   title: "IMAT Course | EnterMedSchool",
-  description: "Ace the IMAT with 200+ hours of lessons, past paper analysis, question marathons, math & physics from the basics, and more.",
-  // Extra safety: page-level noindex (sitewide is also disabled via headers/robots)
+  description:
+    "Ace the IMAT with a guided plan, 200+ hours of focused lessons, past-paper strategy, and 2,600+ math & physics videos.",
   robots: { index: false, follow: false, googleBot: { index: false, follow: false, noimageindex: true } },
 };
 
-type Feature = {
-  eyebrow?: string;
+// --------- Content (reusing your existing photos) ---------
+const HERO_STATS = [
+  { k: "200+", v: "Hours of Content" },
+  { k: "300+", v: "Past-Paper Analyses" },
+  { k: "2,600+", v: "Math & Physics Videos" },
+  { k: "30+", v: "Hours of Marathons" },
+] as const;
+
+type Tile = {
   title: string;
-  bullets: string[];
+  body: string;
   image: string;
-  imageAlt: string;
-  reverse?: boolean;
+  alt: string;
+  accent: "indigo" | "emerald" | "violet" | "amber" | "sky" | "fuchsia";
 };
 
-const FEATURES: Feature[] = [
+const BENTO: Tile[] = [
   {
-    eyebrow: "Everything you need from start to finish",
-    title: "Ace the IMAT with 200+ Hours of Videos and Practice Questions",
-    bullets: [
-      "Short, focused videos that teach exam strategy and core concepts.",
-      "500+ pages of notes and summaries to review efficiently.",
-      "Continuously updated based on student feedback since 2021.",
-    ],
+    title: "Start-to-finish clarity",
+    body: "Short, focused videos + a clear plan to follow.",
     image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-22.png",
-    imageAlt: "IMAT course preview on laptop and tablet",
+    alt: "IMAT course devices",
+    accent: "indigo",
   },
   {
-    eyebrow: "Focus on exam strategy and time management",
-    title: "Detailed Analysis of Actual Printed Past Papers",
-    bullets: [
-      "300+ hands‑on analysis videos under realistic exam conditions.",
-      "200+ bonus questions similar to the new IMAT format.",
-      "Question‑solving marathons for the final weeks before the exam.",
-    ],
+    title: "Real exam strategy",
+    body: "Printed past papers, timed, explained under pressure.",
     image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-23.png",
-    imageAlt: "Past paper analysis on desk",
-    reverse: true,
+    alt: "Past paper analysis",
+    accent: "emerald",
   },
   {
-    eyebrow: "Get your questions answered",
-    title: "Student‑only Platform To Guide You Every Step of the Way",
-    bullets: [
-      "Archive of previously asked questions to learn from real cases.",
-      "Direct support to identify weak spots and fix them fast.",
-      "Clear takeaways so you always know what to focus on next.",
-    ],
-    image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/06/Untitled-design-10.png",
-    imageAlt: "EnterMedSchool student platform screenshot",
-  },
-  {
-    eyebrow: "New: Math and Physics from the very basics",
-    title: "Learn Math and Physics Even Without Any Background",
-    bullets: [
-      "2,600+ bite‑size videos arranged in a logical sequence.",
-      "Exam‑oriented summaries based on past papers.",
-      "Turn weaknesses into strengths with targeted drills.",
-    ],
+    title: "Math & Physics, from zero",
+    body: "2,600+ bite-size videos build foundations quickly.",
     image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-27.png",
-    imageAlt: "Math and physics lesson on tablet",
-    reverse: true,
+    alt: "Math physics lesson",
+    accent: "violet",
   },
   {
-    eyebrow: "For those who aim high and appreciate structure",
-    title: "Live Advanced Zoom Classes Right Before the Exam",
-    bullets: [
-      "Challenging summer class for high‑yield concepts.",
-      "4 sessions per week solving IMAT‑like questions together.",
-      "Small group with personal guidance and Q&A.",
-    ],
+    title: "Advanced live blocks",
+    body: "Intense summer sessions sharpen timing and intuition.",
     image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-26.png",
-    imageAlt: "Live zoom class setup",
+    alt: "Live class setup",
+    accent: "amber",
   },
   {
-    eyebrow: "Personalized guidance",
-    title: "1‑on‑1 Live Coaching Together With Ari Horesh",
-    bullets: [
-      "Identify your weak spots and build a plan.",
-      "Fast feedback and accountability.",
-      "Flexible sessions — as many as you need.",
-    ],
+    title: "Ask, get unstuck",
+    body: "Student-only platform with direct guidance and archives.",
+    image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/06/Untitled-design-10.png",
+    alt: "Student platform",
+    accent: "sky",
+  },
+  {
+    title: "1-on-1 coaching",
+    body: "Plan, diagnose weak spots, and move fast with Ari.",
     image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-28.png",
-    imageAlt: "1 on 1 coaching session",
-    reverse: true,
+    alt: "Coaching session",
+    accent: "fuchsia",
   },
 ];
 
-const SMALL_FEATURES = [
-  { title: "8‑Week IMAT Study Planner", image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/06/Untitled-design-14.png" },
-  { title: "Critical Thinking Crash Course", image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-32.png" },
-  { title: "Bite‑sized IMAT Video Tricks", image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-30.png" },
-  { title: "20+ PDFs for Key Calculations", image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/06/Untitled-design-18.png" },
-  { title: "120+ Hours Biology & Chemistry", image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-31.png" },
-  { title: "30+ Hours of IMAT‑like Questions", image: "https://entermedschool.b-cdn.net/wp-content/uploads/2024/06/Untitled-design-20.png" },
-];
+const VIDEO_TESTIMONIALS = [
+  { url: "https://www.youtube.com/embed/cM4qJmzAGzA", label: "Top 0.7%" },
+  { url: "https://www.youtube.com/embed/vCHf00ACxjE", label: "Top 1.5%" },
+  { url: "https://www.youtube.com/embed/2kD5e_JUCck", label: "Top 0.4%" },
+] as const;
 
 const REVIEW_IMAGES = [
   "https://entermedschool.com/wp-content/uploads/2024/06/review1-298x300.png",
@@ -119,129 +96,246 @@ const REVIEW_IMAGES = [
   "https://entermedschool.com/wp-content/uploads/2024/06/review9-300x191.png",
 ];
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-sky-600">
-      <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-500" />
-      {children}
-    </div>
-  );
-}
+type Plan = {
+  tag: string;
+  name: string;
+  price: string;
+  oldPrice?: string;
+  note?: string;
+  cta: string;
+  highlight?: boolean;
+  waitlist?: boolean;
+  soldOut?: boolean;
+  features: string[];
+};
 
+const PLANS: Plan[] = [
+  {
+    tag: "Incredible Value",
+    name:
+      "IMAT 2025 Last Minute Online Course + BONUS: 2 WEEKS of Live Question-Solving Sessions During September",
+    price: "€699",
+    oldPrice: "€999",
+    note: "Use 'LASTPUSH30' for 30% OFF",
+    cta: "Join Last Minute Crash Course",
+    features: [
+      "200+ Hours of Content",
+      "30+ Hours of Practice Marathons",
+      "200+ IMAT‑Styled Questions",
+      "300+ Hands-on Analysis Videos",
+      "Student-only Platform",
+      "Archive of All Past Student Questions",
+      "NEW: 2,600+ Math and Physics Videos",
+      "Critical Thinking Crash Course",
+      "Analyzing Past IMAT Tricks Playlist",
+      "Complete 8‑Week Study Planner",
+      "Free Retake Pass Guarantee!",
+      "Lowest Price Guarantee",
+      "2‑Weeks Intensive Marathon: 10 Live Classes starting 2 Weeks Before IMAT 2025",
+      "Recordings of both 2023 and 2024 Live Zoom Summer Classes",
+    ],
+  },
+  {
+    tag: "0 to 100 Solution",
+    name: "Full IMAT 2026 Online Course + 4 WEEKS of Live Question-Solving Sessions",
+    price: "€699",
+    oldPrice: "€899",
+    note: "Use 'IAMEARLY200' To Get 200 EUR Discount",
+    cta: "Start Studying Today",
+    highlight: true,
+    features: [
+      "200+ Hours of Content",
+      "4 Weeks of Live Practice Sessions",
+      "300+ Hands-on Analysis Videos",
+      "5000+ IMAT‑Styled Questions (Yes, not a typo)",
+      "Student-only Platform",
+      "Archive of All Past Student Questions",
+      "NEW: 2,600+ Math and Physics Videos",
+      "Analyzing Past IMAT Tricks Playlist",
+      "New 2026 60 Days Planner",
+      "Lowest Price Guarantee",
+      "Recordings of the 2023‑2025 Live Zoom Summer Classes (2099 EUR)",
+      "Free Retake Pass Guarantee!",
+    ],
+  },
+  {
+    tag: "Next Year Summer Intake",
+    name: "Live Zoom Summer 2026 Bootcamp — 3 Months of Intensive Classes",
+    price: "€2099",
+    oldPrice: "€3999",
+    note: "Half the Price of Other Prep Courses",
+    cta: "Enroll Today — Waiting List",
+    waitlist: true,
+    features: [
+      "Everything in 'Full Online Course Access', and also:",
+      "Everything in '1‑on‑1 Coaching with Ari'",
+      "4 Sessions Per Week During the Entire Summer",
+      "Classes and Questions Based on Students' Requests",
+      "New IMAT‑Style Question Marathons — Based on IMAT 2024",
+      "Ideal for deepening understanding and timing",
+      "Dissect advanced content and challenge yourself",
+      "Lowest Price Guarantee",
+      "The most demanding and comprehensive live course on the market",
+    ],
+  },
+];
+
+const FAQ = [
+  {
+    q: "Will the course fully prepare me for the exam?",
+    a: "Yes. It covers strategy, content, and timed practice with exam‑style questions and past paper analysis.",
+  },
+  { q: "What makes this course different?", a: "A clear plan, constantly updated lessons, and personal guidance." },
+  { q: "Does it work for other exams?", a: "Many concepts transfer, but the course is optimized for IMAT." },
+  {
+    q: "What’s the refund policy?",
+    a: "We aim for satisfaction; reach out and we’ll do our best to help. Pass‑guarantee offers extended access under set conditions.",
+  },
+  {
+    q: "Can I retake the online course for free if I don’t pass?",
+    a: "Yes — students who used the course but didn’t pass get another year of access for free.",
+  },
+  { q: "Do you offer a payment plan?", a: "Contact us to discuss installment options." },
+  { q: "How long is access?", a: "Full access for the exam cycle, with extensions for returning students." },
+];
+
+// --------- Small UI helpers ---------
 function CTAButtons() {
   return (
     <div className="mt-6 flex flex-wrap gap-3">
       <a href="#pricing" className="btn-primary-shine">Start Studying Today</a>
-      <a href="#features" className="rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur hover:bg-white/15">Learn More</a>
+      <a
+        href="#highlights"
+        className="rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur hover:bg-white/15"
+      >
+        Explore Highlights
+      </a>
     </div>
   );
 }
 
+function StatChip({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-white/90 px-3 py-2 text-slate-800 shadow-sm ring-1 ring-slate-200">
+      <div className="rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-1 text-lg font-extrabold text-white shadow-sm">
+        {k}
+      </div>
+      <div className="text-xs font-semibold text-slate-700">{v}</div>
+    </div>
+  );
+}
+
+function BentoCard({ t }: { t: Tile }) {
+  const ring =
+    t.accent === "indigo"
+      ? "from-indigo-400 to-sky-300"
+      : t.accent === "emerald"
+      ? "from-emerald-400 to-teal-300"
+      : t.accent === "violet"
+      ? "from-violet-400 to-fuchsia-300"
+      : t.accent === "amber"
+      ? "from-amber-400 to-rose-300"
+      : t.accent === "sky"
+      ? "from-sky-400 to-cyan-300"
+      : "from-fuchsia-400 to-pink-300";
+  return (
+    <div className="group relative">
+      <div className={`absolute -inset-[1.5px] rounded-2xl bg-gradient-to-r ${ring} opacity-60 blur-[6px] transition-opacity group-hover:opacity-90`} />
+      <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="relative h-44 w-full sm:h-48">
+          <Image
+            src={t.image}
+            alt={t.alt}
+            fill
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] group-hover:rotate-[0.4deg]"
+          />
+        </div>
+        <div className="p-4">
+          <div className="text-sm font-extrabold tracking-tight text-slate-900">{t.title}</div>
+          <div className="mt-1 text-sm text-slate-600">{t.body}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PriceCard({ p }: { p: Plan }) {
+  return (
+    <div
+      className={`relative flex flex-col rounded-2xl border p-6 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md ${
+        p.highlight ? "border-transparent bg-gradient-to-b from-sky-50 to-white p-[1.5px]" : "border-slate-200"
+      }`}
+    >
+      {p.highlight && (
+        <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-sky-200 to-indigo-200" />
+      )}
+      <div className={`absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-semibold ${p.highlight ? "bg-indigo-600 text-white" : "bg-sky-600 text-white"}`}>
+        {p.tag}
+      </div>
+      <h3 className="mt-1 pr-10 text-lg font-bold text-slate-900">{p.name}</h3>
+      <div className="mt-3 flex items-baseline gap-3">
+        {p.oldPrice ? (
+          <div className="text-lg font-semibold text-slate-400 line-through">{p.oldPrice}</div>
+        ) : null}
+        <div className="text-3xl font-extrabold text-slate-900">{p.price}</div>
+      </div>
+      {p.note ? <p className="mt-1 text-xs font-semibold text-emerald-700">{p.note}</p> : null}
+      <ul className="mt-4 space-y-2 text-sm text-slate-700">
+        {p.features.map((f, j) => (
+          <li key={j} className="flex items-start gap-2">
+            <span className="mt-1 inline-block h-2 w-2 rounded-full bg-indigo-500" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <a href="#" className="mt-5 btn-primary-shine">{p.cta}</a>
+    </div>
+  );
+}
+
+// --------- Page ---------
 export default function IMATCoursePage() {
   return (
     <div className="space-y-20">
       <HomeVibrantBackdrop />
       <StickyCTA />
 
-      {/* Hero: full-bleed with vibrant gradients, video background, and seam */}
+      {/* Hero: full-bleed, vibrant, shimmering */}
       <section className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.12)]">
-        <div className="relative h-[64vh] min-h-[460px] w-full">
-          <video
-            className="absolute inset-0 h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster="https://entermedschool.b-cdn.net/wp-content/uploads/2024/07/Untitled-design-22.png"
-            src="https://entermedschool.com/wp-content/uploads/2024/06/ezgif.com-gif-to-mp4-converter.mp4"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 via-sky-900/10 to-transparent" />
-          {/* Floating orbs */}
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute left-8 top-10 h-24 w-24 rounded-full bg-sky-400/25 blur-2xl animate-float-slow" />
-            <div className="absolute right-16 bottom-12 h-28 w-28 rounded-full bg-indigo-400/25 blur-2xl animate-float-slow" style={{ animationDelay: '1s' }} />
-          </div>
-          <div className="relative z-10 mx-auto flex h-full max-w-6xl items-center px-6">
-            <div className="max-w-2xl text-white">
-              <ShimmerHeading pretitle="IMAT Course" title={"Ace IMAT 2025 with Confidence"} variant="electric" size="md" />
-              <p className="mt-4 text-white/90">
-                Pass the IMAT and secure your spot in Italian medical schools with EnterMedSchool’s most comprehensive, cost‑effective online course — from start to finish.
-              </p>
-              <CTAButtons />
-              <div className="mt-6 rounded-xl bg-white/10 p-4 text-sm text-white/90 ring-1 ring-inset ring-white/20 backdrop-blur">
-                “I wholeheartedly recommend EnterMedSchool to future aspirants. It truly makes a difference.” — Past Student
-              </div>
+        <div className="relative mx-auto flex min-h-[60vh] w-full max-w-6xl flex-col items-start justify-center gap-6 px-6 py-16">
+          <ShimmerHeading pretitle="IMAT Course 2025" title={"Choose. Prepare. Pass."} variant="electric" size="lg" />
+          <Reveal>
+            <p className="max-w-2xl text-white/90">
+              A map-first plan to ace the IMAT. 200+ focused hours, real past-paper strategy, and 2,600+ math & physics
+              videos — all guided, so you always know what to do next.
+            </p>
+          </Reveal>
+          <Reveal><CTAButtons /></Reveal>
+          <Reveal delay={0.06}>
+            <div className="mt-4 grid w-full grid-cols-2 gap-3 sm:max-w-3xl md:grid-cols-4">
+              {HERO_STATS.map((s, i) => (
+                <StatChip key={i} k={s.k} v={s.v} />
+              ))}
             </div>
-          </div>
+          </Reveal>
         </div>
         <div className="vbg-seam-bottom" />
       </section>
 
-      {/* Stats strip */}
-      <section className="vbg vbg-emerald relative -mt-8 z-10 mx-auto w-full max-w-6xl rounded-3xl px-4 py-6">
-        <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
-        <Reveal className="grid grid-cols-2 gap-3 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50 p-4 text-slate-800 shadow-md md:grid-cols-4">
-          {[
-            ["200+", "Hours of Content"],
-            ["300+", "Past-Paper Analyses"],
-            ["2600+", "Math & Physics Videos"],
-            ["30+", "Hours of IMAT-like Qs"],
-          ].map(([k, v], i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="rounded-xl bg-white px-3 py-2 text-2xl font-extrabold text-sky-600 shadow-sm ring-1 ring-slate-200">{k}</div>
-              <div className="text-sm font-semibold text-slate-700">{v}</div>
+      {/* Highlights: Bento feature grid */}
+      <section id="highlights" className="vbg vbg-emerald relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <Reveal>
+            <div className="mb-6">
+              <ShimmerHeading pretitle="Course Highlights" title={"Everything You Need, In One Flow"} variant="teal" size="md" />
             </div>
-          ))}
-        </Reveal>
-        <div className="vbg-seam-bottom" />
-      </section>
-
-      {/* Features */}
-      <section id="features" className="relative z-10 mx-auto w-full max-w-6xl px-4">
-        <div className="pointer-events-none absolute -top-8 left-1/2 h-10 w-[92%] -translate-x-1/2 rounded-[48px] bg-[radial-gradient(140px_20px_at_50%_0%,rgba(99,102,241,0.10),transparent)]" />
-        <div className="grid gap-16">
-          {FEATURES.map((f, i) => (
-            <article key={i} className={`grid items-center gap-8 md:grid-cols-2 ${f.reverse ? 'md:[&>div:first-child]:order-2' : ''}`}>
-              <Reveal>
-                {f.eyebrow ? <Eyebrow>{f.eyebrow}</Eyebrow> : null}
-                <h2 className="font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
-                  {f.title}
-                </h2>
-                <ul className="mt-4 space-y-2 text-slate-700">
-                  {f.bullets.map((b, j) => (
-                    <li key={j} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-bold text-indigo-700">{j + 1}</span>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-                <a href="#pricing" className="mt-5 inline-block btn-primary-shine">Start Studying Today</a>
-              </Reveal>
-              <Reveal delay={0.08} className="">
-                <div className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-xl">
-                  <div className="relative">
-                    <Image src={f.image} alt={f.imageAlt} width={1200} height={800} className="h-full w-full transform-gpu object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] group-hover:rotate-[0.8deg]" />
-                    <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10" />
-                  </div>
-                </div>
-              </Reveal>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* Small features grid */}
-      <section className="vbg vbg-amber relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10">
-        <div className="mx-auto w-full max-w-6xl px-4">
-          <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {SMALL_FEATURES.map((it, idx) => (
-            <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-transform duration-200 hover:-translate-y-[2px] hover:shadow-md">
-              <div className="overflow-hidden rounded-lg">
-                <Image src={it.image} alt="" width={900} height={600} className="h-44 w-full object-cover transition-transform duration-500 ease-out hover:scale-[1.04]" />
-              </div>
-              <div className="px-1 pb-2 pt-3 text-center text-sm font-semibold text-slate-800">{it.title}</div>
+          </Reveal>
+          <Reveal delay={0.04}>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {BENTO.map((t, i) => (
+                <BentoCard key={i} t={t} />
+              ))}
             </div>
-          ))}
           </Reveal>
         </div>
         <div className="vbg-seam-bottom" />
@@ -249,250 +343,72 @@ export default function IMATCoursePage() {
 
       {/* Student videos */}
       <section className="vbg vbg-violet relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
-        <div className="mx-auto w-full max-w-6xl px-4">
-        <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
-          Here Is What My Students Have To Say
-        </h2>
-        <Reveal className="grid gap-6 md:grid-cols-3">
-          {[
-            { url: "https://www.youtube.com/embed/cM4qJmzAGzA", label: "Top 0.7%" },
-            { url: "https://www.youtube.com/embed/vCHf00ACxjE", label: "Top 1.5%" },
-            { url: "https://www.youtube.com/embed/2kD5e_JUCck", label: "Top 0.4%" },
-          ].map((v, i) => (
-            <div key={i} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
-              <div className="relative aspect-video overflow-hidden rounded-xl">
-                <iframe
-                  className="absolute inset-0 h-full w-full"
-                  src={v.url}
-                  title="Student video testimonial"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              <div className="mt-2 inline-block rounded-md bg-yellow-300 px-2 py-1 text-xs font-bold text-slate-900">
-                {v.label}
-              </div>
-            </div>
-          ))}
-        </Reveal>
-        </div>
-        <div className="vbg-seam-bottom" />
-      </section>
-
-      {/* Pricing (concise) */}
-      <section id="pricing" className="vbg vbg-emerald relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
-        <div className="mx-auto w-full max-w-6xl px-4">
-          <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
-          Course Enrollment — Join The Club!
-          </h2>
-
-        {/* Main plans */}
-        <Reveal className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              tag: 'Incredible Value',
-              name: 'IMAT 2025 Last Minute Online Course + BONUS: 2 WEEKS of Live Question‑Solving Sessions During September',
-              price: '€699',
-              oldPrice: '€999',
-              note: "Use 'LASTPUSH30' for 30% OFF",
-              cta: 'Join Last Minute Crash Course',
-              features: [
-                '200+ Hours of Content',
-                '30+ Hours of Practice Marathons',
-                '200+ IMAT‑Styled Questions',
-                '300+ Hands‑on Analysis Videos',
-                'Student‑only Platform',
-                'Archive of All Past Student Questions',
-                'NEW: 2,600+ Math and Physics Videos',
-                'Critical Thinking Crash Course',
-                'Analyzing Past IMAT Tricks Playlist',
-                'Complete 8‑Week Study Planner',
-                'Free Retake Pass Guarantee!',
-                'Lowest Price Guarantee',
-                '2‑Weeks Intensive Marathon: 10 Live Classes starting 2 Weeks Before IMAT 2025',
-                'Recordings of both 2023 and 2024 Live Zoom Summer Classes',
-              ],
-            },
-            {
-              tag: '0 to 100 Solution',
-              name: 'Full IMAT 2026 Online Course + 4 WEEKS of Live Question‑Solving Sessions',
-              price: '€699',
-              oldPrice: '€899',
-              note: "Use 'IAMEARLY200' To Get 200EUR Discount",
-              cta: 'Start Studying Today',
-              highlight: true,
-              features: [
-                '200+ Hours of Content',
-                '4 Weeks of Live Practice Sessions',
-                '300+ Hands‑on Analysis Videos',
-                '5000+ IMAT‑Styled Questions (Yes, not a typo)',
-                'Student‑only Platform',
-                'Archive of All Past Student Questions',
-                'NEW: 2,600+ Math and Physics Videos',
-                'Analyzing Past IMAT Tricks Playlist',
-                'New 2026 60 Days Planner',
-                'Lowest Price Guarantee',
-                'Recordings of the 2023‑2025 Live Zoom Summer Classes (2099 EUR)',
-                'Free Retake Pass Guarantee!',
-              ],
-            },
-            {
-              tag: 'Next Year Summer Intake',
-              name: 'Live Zoom Summer 2026 Bootcamp · 3 Months of Intensive Classes',
-              price: '€2099',
-              oldPrice: '€3999',
-              note: 'Half the Price of Other Prep Courses',
-              cta: 'Enroll Today – Waiting List',
-              waitlist: true,
-              features: [
-                "Everything in 'Full Online Course Access', and also:",
-                "Everything in '1‑on‑1 Coaching with Ari'",
-                '4 Sessions Per Week During the Entire Summer',
-                'Classes and Questions Based on Students\' Requests',
-                'New IMAT‑Style Question Marathons — Based on IMAT 2024',
-                'Ideal for those ready to invest time, and keen to deepen their understanding',
-                'Dissect advanced content, review crucial videos, and challenge yourself with the toughest questions out there',
-                'Lowest Price Guarantee',
-                'The most demanding and comprehensive live course on the market. If you have any question, contact Ari before!',
-              ],
-            },
-          ].map((p, i) => (
-            <div key={i} className={`relative flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md ${p.highlight ? 'border-transparent bg-gradient-to-b from-sky-50 to-white p-[1.5px]' : 'border-slate-200'}`}>
-              {p.highlight ? (
-                <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-sky-200 to-indigo-200" />
-              ) : null}
-              <div className={`absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-semibold ${p.highlight ? 'bg-indigo-600 text-white' : 'bg-sky-600 text-white'}`}>
-                {p.tag}
-              </div>
-              <h3 className="mt-1 pr-10 text-lg font-bold text-slate-900">{p.name}</h3>
-              <div className="mt-3 flex items-baseline gap-3">
-                {p.oldPrice ? <div className="text-lg font-semibold text-slate-400 line-through">{p.oldPrice}</div> : null}
-                <div className="text-3xl font-extrabold text-slate-900">{p.price}</div>
-              </div>
-              {p.note ? <p className="mt-1 text-xs font-semibold text-emerald-700">{p.note}</p> : null}
-              <ul className="mt-4 space-y-2 text-sm text-slate-700">
-                {p.features.map((f, j) => (
-                  <li key={j} className="flex items-start gap-2">
-                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-indigo-500" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <a href="#" className="mt-5 btn-primary-shine">{p.cta}</a>
-            </div>
-          ))}
-        </Reveal>
-
-        {/* Private lessons */}
-        <Reveal className="mt-8 grid gap-6 md:grid-cols-2">
-          {[
-            {
-              tag: 'Private Lessons',
-              name: 'IMAT 2026 1‑on‑1 Coaching with Ari',
-              price: '€1499',
-              note: 'For students who want someone to oversee their progress.',
-              soldOut: true,
-              cta: 'Fully Booked',
-              features: [
-                "Everything in 'Full Online Course Access'",
-                'Individual Approach',
-                'Customized Study Planner',
-                'Unlimited Sessions During The Summer',
-                'Progress Analysis',
-                'Simulator Results Analysis',
-              ],
-            },
-            {
-              tag: 'Private Lessons',
-              name: 'Single 3 Hours 1‑on‑1 Session with Ari',
-              price: '€150',
-              note: 'Get Ari\'s insight, custom study planner, and find weakspots together.',
-              soldOut: true,
-              cta: 'Schedule (Fully Booked for 2026)',
-              features: [
-                'Customized Study Planner',
-                'Customized Homework',
-                '180 Minute Private Coaching Lesson',
-                'Solving Qs of All Topic and Finding Weakspots',
-              ],
-            },
-          ].map((p, i) => (
-            <div key={i} className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="absolute -top-3 left-4 rounded-full bg-slate-700 px-3 py-1 text-[11px] font-semibold text-white">{p.tag}</div>
-              <h3 className="mt-1 text-lg font-bold text-slate-900">{p.name}</h3>
-              <div className="mt-2 text-3xl font-extrabold text-slate-900">{p.price}</div>
-              <p className="mt-2 text-sm text-slate-600">{p.note}</p>
-              <button className="mt-4 w-full btn-primary-shine" disabled aria-disabled="true">
-                {p.cta}
-              </button>
-              <div className="mt-4 text-sm font-semibold text-slate-700">What&apos;s included:</div>
-              <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                {p.features.map((f, j) => (
-                  <li key={j} className="flex items-start gap-2">
-                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-slate-400" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              {p.soldOut && (
-                <div className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-inset ring-slate-300/60">
-                  <div className="absolute right-3 top-3 rounded-md bg-slate-800/90 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">Fully Booked</div>
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <Reveal>
+            <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
+              Real Results, Real Voices
+            </h2>
+          </Reveal>
+          <Reveal delay={0.04} className="grid gap-6 md:grid-cols-3">
+            {VIDEO_TESTIMONIALS.map((v, i) => (
+              <div key={i} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                <div className="relative aspect-video overflow-hidden rounded-xl">
+                  <iframe
+                    className="absolute inset-0 h-full w-full"
+                    src={v.url}
+                    title="Student video testimonial"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
                 </div>
-              )}
-            </div>
-          ))}
-        </Reveal>
+                <div className="mt-2 inline-block rounded-md bg-yellow-300 px-2 py-1 text-xs font-bold text-slate-900">
+                  {v.label}
+                </div>
+              </div>
+            ))}
+          </Reveal>
         </div>
         <div className="vbg-seam-bottom" />
       </section>
 
-      {/* Reviews grid (images) */}
-      <section className="mx-auto max-w-6xl px-4">
-        <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
-          Real Reviews From Real Students
-        </h2>
-        <Reveal className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          {REVIEW_IMAGES.map((src, i) => (
-            <div key={i} className="overflow-hidden rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
-              <Image src={src} alt="Student review screenshot" width={600} height={600} className="h-full w-full object-contain" />
-            </div>
-          ))}
-        </Reveal>
-      </section>
+      {/* Pricing */}
+      <section id="pricing" className="vbg vbg-emerald relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <Reveal>
+            <h2 className="mb-6 text-center font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
+              Course Enrollment — Join the Club
+            </h2>
+          </Reveal>
 
-      {/* Story */}
-      <section className="mx-auto max-w-3xl px-4">
-        <Reveal>
-        <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h2 className="font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900">My Story — How I Built This Course</h2>
-          <p className="mt-3 text-slate-700">
-            In 2019 I was in the same position you are in now. After passing the exam, I realized the available resources were expensive and incomplete. In 2021 I paused my studies to build an affordable, results‑driven IMAT preparation platform. Since then the course has helped hundreds of students study smarter, avoid common mistakes, and score offers from Italy’s top medical schools.
-          </p>
-          <p className="mt-3 text-slate-700">
-            The program is updated continuously with new videos, past‑paper analysis, strategy breakdowns, and focused review material — so you can prepare with confidence and clarity.
-          </p>
-        </article>
-        </Reveal>
+          <Reveal delay={0.04} className="grid gap-6 md:grid-cols-3">
+            {PLANS.map((p, i) => (
+              <PriceCard key={i} p={p} />
+            ))}
+          </Reveal>
+
+          <Reveal delay={0.06}>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {REVIEW_IMAGES.slice(0, 6).map((src, i) => (
+                <div key={i} className="overflow-hidden rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+                  <Image src={src} alt="Student review screenshot" width={600} height={600} className="h-full w-full object-contain" />
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+        <div className="vbg-seam-bottom" />
       </section>
 
       {/* FAQ */}
-      <section className="mx-auto max-w-6xl px-4 pb-10">
+      <section className="mx-auto w-full max-w-6xl px-6 pb-10">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <h2 className="font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900">Frequently Asked Questions</h2>
-            <p className="mt-2 text-slate-600">Have another question? Email contact@arihoresh.com or message on WhatsApp at +39 375 612 311.</p>
+            <p className="mt-2 text-slate-600">Have another question? Email contact@arihoresh.com or WhatsApp +39 375 612 311.</p>
           </div>
           <div className="md:col-span-2">
             <div className="space-y-3">
-              {[
-                { q: "Will the course fully prepare me for the exam?", a: "Yes. It covers strategy, content, and timed practice with exam‑style questions and past paper analysis." },
-                { q: "What makes this course different?", a: "A clear plan, constantly updated lessons, and personal support from someone who has been through the process." },
-                { q: "Does it work for other exams?", a: "Many concepts transfer, but the course is optimized for IMAT." },
-                { q: "What’s the refund policy?", a: "We aim for satisfaction; reach out and we’ll do our best to help. Pass‑guarantee offers extended access under set conditions." },
-                { q: "Can I retake the online course for free if I don’t pass?", a: "Yes — students who used the course but didn’t pass get another year of access for free." },
-                { q: "Do you offer a payment plan?", a: "Contact us to discuss installment options." },
-                { q: "How long is access?", a: "Full access for the exam cycle, with extensions for returning students." },
-              ].map((item, idx) => (
+              {FAQ.map((item, idx) => (
                 <details key={idx} className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm open:glow-ring">
                   <summary className="cursor-pointer list-none font-medium text-slate-900">
                     <span className="mr-2 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">FAQ</span>
@@ -506,7 +422,9 @@ export default function IMATCoursePage() {
         </div>
       </section>
 
+      {/* Vibrant helpers */}
       <VibrantSectionStyles />
     </div>
   );
 }
+

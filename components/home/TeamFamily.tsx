@@ -57,32 +57,42 @@ export default function TeamFamily() {
 
         {/* People */}
         <div className="fam-people">
-          <article className="person">
-            <div className="p-head">
-              <img className="avatar" alt="Ari Horesh" src="https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/channels4_profile-768x768.jpg" />
-              <div>
-                <div className="name">Ari Horesh</div>
-                <div className="role">Medical Student • Code • Design • Course Author</div>
+          {/* Ari */}
+          <article className="photo-card">
+            <img className="pc-img" alt="Ari Horesh" src="https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/channels4_profile-768x768.jpg" />
+            <div className="pc-bubbles" aria-hidden>
+              <span className="bubble b1" />
+              <span className="bubble b2" />
+              <span className="bubble b3" />
+            </div>
+            <div className="pc-overlay">
+              <div className="pc-name">Ari Horesh</div>
+              <div className="pc-role">Medical Student • Code • Design • Course Author</div>
+              <div className="pc-tags">
+                <span className="tag">Product</span>
+                <span className="tag">Engineering</span>
+                <span className="tag">Content</span>
               </div>
             </div>
-            <p className="p-body">
-              Responsible for product design and development, building the
-              platform and writing course content.
-            </p>
           </article>
 
-          <article className="person">
-            <div className="p-head">
-              <img className="avatar" alt="Daniela Horesh" src="https://entermedschool.b-cdn.net/wp-content/uploads/2024/04/Daniela--768x955.jpg" />
-              <div>
-                <div className="name">Daniela Horesh</div>
-                <div className="role">Psychology & CS Student • Math/Physics • Research • Support</div>
+          {/* Daniela */}
+          <article className="photo-card">
+            <img className="pc-img" alt="Daniela Horesh" src="https://entermedschool.b-cdn.net/wp-content/uploads/2024/04/Daniela--768x955.jpg" />
+            <div className="pc-bubbles" aria-hidden>
+              <span className="bubble c1" />
+              <span className="bubble c2" />
+              <span className="bubble c3" />
+            </div>
+            <div className="pc-overlay">
+              <div className="pc-name">Daniela Horesh</div>
+              <div className="pc-role">Psychology & CS Student • Math/Physics • Research • Support</div>
+              <div className="pc-tags">
+                <span className="tag">Math & Physics</span>
+                <span className="tag">Articles</span>
+                <span className="tag">Student Support</span>
               </div>
             </div>
-            <p className="p-body">
-              Responsible for math and physics content, writing articles,
-              gathering helpful data for applicants and supporting students.
-            </p>
           </article>
 
           {/* Easter egg */}
@@ -116,11 +126,23 @@ export default function TeamFamily() {
         .fam-people { display:grid; gap:14px; grid-template-columns:1fr; }
         @media (min-width: 680px) { .fam-people { grid-template-columns:1fr 1fr; } }
         .person { position:relative; background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding:12px; box-shadow:0 16px 40px rgba(2,6,23,.10); }
-        .p-head { display:flex; align-items:center; gap:10px; }
-        .avatar { width:54px; height:54px; object-fit:cover; border-radius:14px; border:1px solid #e2e8f0; box-shadow:0 10px 22px rgba(2,6,23,.10); }
-        .name { font-weight:900; color:#0f172a; }
-        .role { font-size:12px; color:#475569; font-weight:800; }
-        .p-body { margin-top:8px; color:#0f172a; }
+
+        .photo-card { position:relative; overflow:hidden; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 16px 40px rgba(2,6,23,.10); background:#000; aspect-ratio: 4/3; }
+        .pc-img { width:100%; height:100%; object-fit:cover; opacity:.96; }
+        .pc-overlay { position:absolute; inset:auto 0 0 0; padding:12px; color:white; background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0)); }
+        .pc-name { font-weight:900; letter-spacing:.01em; }
+        .pc-role { font-size:12px; opacity:.95; }
+        .pc-tags { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+        .tag { font-size:11px; font-weight:900; border-radius:9999px; padding:4px 8px; background: rgba(255,255,255,.85); color:#0f172a; border:1px solid rgba(255,255,255,.6); }
+        .pc-bubbles { position:absolute; inset:0; pointer-events:none; }
+        .bubble { position:absolute; width:90px; height:90px; border-radius:9999px; filter: blur(18px); opacity:.35; animation: floatB 8s ease-in-out infinite; }
+        .b1 { left:-10px; top:-10px; background: radial-gradient(circle at 30% 30%, rgba(99,102,241,.9), transparent 60%); }
+        .b2 { right:-20px; top:10px; background: radial-gradient(circle at 60% 40%, rgba(6,182,212,.9), transparent 60%); animation-delay:1.3s; }
+        .b3 { left:40%; bottom:-20px; background: radial-gradient(circle at 40% 60%, rgba(167,139,250,.9), transparent 60%); animation-delay:.6s; }
+        .c1 { left:-10px; top:-12px; background: radial-gradient(circle at 30% 30%, rgba(244,114,182,.9), transparent 60%); }
+        .c2 { right:-18px; bottom:16px; background: radial-gradient(circle at 60% 40%, rgba(251,113,133,.9), transparent 60%); animation-delay:1.1s; }
+        .c3 { left:36%; top:10%; background: radial-gradient(circle at 60% 60%, rgba(99,102,241,.9), transparent 60%); animation-delay:.4s; }
+        @keyframes floatB { 0% { transform: translateY(0) } 50% { transform: translateY(-8px) } 100% { transform: translateY(0) } }
 
         .pup { display:grid; justify-items:center; align-items:center; padding:10px; }
         .pup-wrap { position:relative; width:100%; aspect-ratio: 16/9; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; box-shadow:0 14px 34px rgba(2,6,23,.12); background: linear-gradient(135deg,#e0e7ff,#cffafe); cursor:pointer; }
@@ -136,4 +158,3 @@ export default function TeamFamily() {
     </section>
   );
 }
-
