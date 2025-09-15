@@ -110,7 +110,7 @@ export default function MissionShowcase({
       <div className="ms-grid">
         {/* Copy */}
         <div className="ms-copy">
-          <ShimmerHeading pretitle="Our Mission" title={"EnterMedSchool"} variant="indigo" size="md" />
+          <ShimmerHeading pretitle="Our Mission" title={"EnterMedSchool"} variant="electric" size="md" />
           <p className="ms-lead">A vibrant home for choosing, preparing and thriving in medical school.</p>
 
           <AnimatePresence mode="wait">
