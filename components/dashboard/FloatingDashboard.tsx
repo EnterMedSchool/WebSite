@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence, useMotionValue } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, useMotionValue, useMotionTemplate, animate } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 export default function FloatingDashboard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<'overview'|'learning'|'class'|'settings'>('overview');
@@ -31,7 +32,7 @@ export default function FloatingDashboard({ open, onClose }: { open: boolean; on
 
   // Shared menu items used by both the side rail (desktop) and mobile nav
   const MENU = [
-    { key: 'overview' as const, label: 'Overview', icon: (
+    { key: 'overview' as const, label: 'Dashboard', icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
     )},
     { key: 'learning' as const, label: 'Learning', icon: (
@@ -463,9 +464,16 @@ function MobileDashboardDrawer({
   MENU: readonly { key: 'overview'|'learning'|'class'|'settings'; label: string; icon: JSX.Element }[];
   firstName: string;
 }) {
+  const { data: session } = useSession();
+  const img = (session as any)?.user?.image as string | undefined;
+  const displayName = (session as any)?.user?.name || firstName || 'there';
+
   const [vh, setVh] = useState(0);
   const [snap, setSnap] = useState<'peek'|'half'|'full'>('half');
+  // y represents the distance from the top of the viewport to the sheet's top (in px)
   const y = useMotionValue(0);
+  const startY = useRef(0);
+  const sheetHeight = useMotionTemplate`calc(100vh - ${y}px)`;
 
   useEffect(() => {
     const set = () => setVh(window.innerHeight);
@@ -474,6 +482,18 @@ function MobileDashboardDrawer({
     return () => window.removeEventListener('resize', set);
   }, []);
 
+  // On first mount, start from 'peek' and slide up to 'half'
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (!vh || didInit.current) return;
+    didInit.current = true;
+    y.set(snapTop('peek'));
+    // small delay to ensure layout applied
+    requestAnimationFrame(() => {
+      animate(y, snapTop('half'), { type: 'spring', stiffness: 240, damping: 28 });
+    });
+  }, [vh]);
+
   const snapTop = (s: 'peek'|'half'|'full') => {
     // Values are the top offset in px (how far from the top the sheet's top is)
     const ratios: Record<typeof s, number> = { full: 0.08, half: 0.45, peek: 0.72 } as any;
@@ -481,17 +501,19 @@ function MobileDashboardDrawer({
   };
 
   useEffect(() => {
-    y.set(snapTop(snap));
+    // On viewport change or snap change, animate to the target position
+    const target = snapTop(snap);
+    animate(y, target, { type: 'spring', stiffness: 260, damping: 30 });
   }, [vh, snap]);
 
-  const currentLabel = MENU.find(m => m.key === tab)?.label ?? 'Overview';
+  const currentLabel = MENU.find(m => m.key === tab)?.label ?? 'Dashboard';
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[9998] sm:hidden">
       {/* Blue app background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-700 to-blue-600" />
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-700 to-blue-600" onClick={onClose} />
 
       {/* Header over blue background */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-end justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
@@ -501,8 +523,13 @@ function MobileDashboardDrawer({
           </button>
           <div className="text-xl font-extrabold tracking-tight">{currentLabel}</div>
         </div>
-        <div className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
-          <span className="text-[11px] font-bold uppercase">{firstName?.[0] ?? 'U'}</span>
+        <div className="pointer-events-auto grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-white/15 ring-1 ring-white/25">
+          {img ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={img} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-[11px] font-bold uppercase">{displayName?.[0] ?? 'U'}</span>
+          )}
         </div>
       </div>
 
@@ -511,22 +538,41 @@ function MobileDashboardDrawer({
         {currentLabel}
       </div>
 
+      {/* Top segmented nav */}
+      <div className="absolute inset-x-0 top-[72px] px-4">
+        <div className="mx-auto grid grid-cols-4 gap-2 rounded-full bg-white/10 p-1 ring-1 ring-white/20">
+          {MENU.map(m => (
+            <button key={m.key} onClick={() => setTab(m.key)}
+                    className={`flex items-center justify-center gap-1 rounded-full px-2 py-1.5 text-[12px] font-semibold ${tab===m.key ? 'bg-white text-blue-700' : 'text-white/90 hover:bg-white/10'}`}>
+              <span className="h-4 w-4 text-current">{m.icon}</span>
+              <span className="truncate">{m.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Bottom Sheet */}
       <AnimatePresence>
         <motion.div
           className="fixed inset-x-0 bottom-0 z-[9999] rounded-t-[28px] bg-white shadow-[0_-20px_80px_rgba(0,0,0,0.25)] ring-1 ring-black/5"
-          style={{ y }}
+          style={{ height: sheetHeight }}
           drag="y"
-          dragElastic={0.05}
-          dragConstraints={{ top: Math.max(-vh, -1000), bottom: vh }}
-          onDragEnd={(_, info) => {
-            const endY = y.get() + info.offset.y;
+          dragElastic={0}
+          onDragStart={() => { startY.current = y.get(); }}
+          onDrag={(e, info) => {
+            const next = Math.min(snapTop('peek'), Math.max(snapTop('full'), startY.current + info.offset.y));
+            y.set(next);
+          }}
+          onDragEnd={() => {
+            const endTop = y.get();
             const points = [
               { k: 'full' as const, y: snapTop('full') },
               { k: 'half' as const, y: snapTop('half') },
               { k: 'peek' as const, y: snapTop('peek') },
             ];
-            const target = points.reduce((a, b) => Math.abs(b.y - endY) < Math.abs(a.y - endY) ? b : a, points[0]);
+            const target = points.reduce((a, b) => Math.abs(b.y - endTop) < Math.abs(a.y - endTop) ? b : a, points[0]);
+            // If dragged very close to bottom, close
+            if (endTop > snapTop('peek') - 24) { onClose(); return; }
             setSnap(target.k);
           }}
           initial={false}
@@ -540,7 +586,7 @@ function MobileDashboardDrawer({
           <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+64px)]">
             {/* Quick header inside sheet */}
             <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm font-semibold text-gray-900">Welcome{firstName?`, ${firstName}`:''}</div>
+              <div className="text-sm font-semibold text-gray-900">Welcome{displayName?`, ${displayName.split(' ')[0]}`:''}</div>
               <a href="/course-mates" className="rounded-full bg-gray-100 px-3 py-1 text-[12px] font-semibold text-gray-800">Hub</a>
             </div>
 
@@ -619,22 +665,7 @@ function MobileDashboardDrawer({
             )}
           </div>
 
-          {/* Bottom nav inside the sheet */}
-          <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[10000] mx-auto w-full px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <div className="grid grid-cols-5 gap-2 rounded-2xl bg-gray-100 p-1 ring-1 ring-gray-200">
-              {MENU.map(m => (
-                <button key={m.key}
-                        onClick={() => setTab(m.key)}
-                        className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-[12px] font-semibold transition ${tab===m.key ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-700 hover:bg-white'}`}>
-                  <span className={`grid h-5 w-5 place-items-center ${tab===m.key ? 'text-indigo-700' : 'text-gray-700'}`}>{m.icon}</span>
-                  <span className="truncate">{m.label}</span>
-                </button>
-              ))}
-              <button className="ml-auto grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 text-white shadow-md">
-                <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2z"/></svg>
-              </button>
-            </div>
-          </div>
+          {/* No bottom nav; navigation moved to top in blue area */}
         </motion.div>
       </AnimatePresence>
     </div>
