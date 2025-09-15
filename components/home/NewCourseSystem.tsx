@@ -154,11 +154,11 @@ export default function NewCourseSystem() {
         .wncs-demos { position: relative; min-height: 460px; }
         @media (max-width: 1023px) { .wncs-demos { min-height: 560px; } }
 
-        .card { border-radius: 18px; background: white; box-shadow: 0 14px 38px rgba(2,6,23,.12); border: 1px solid rgba(99,102,241,.12); }
+        .card { border-radius: 24px; background: white; box-shadow: 0 16px 40px rgba(2,6,23,.12); border: 1px solid rgba(99,102,241,.12); }
 
         .demo-card.lesson { position: relative; overflow: hidden; }
 
-        .lesson-header { padding: 14px 14px 10px; background: linear-gradient(90deg,#6366f1 0%,#a78bfa 48%,#06b6d4 100%); color: white; }
+        .lesson-header { padding: 14px 14px 10px; background: linear-gradient(90deg,#6366f1 0%,#a78bfa 48%,#06b6d4 100%); color: white; border-radius: 22px 22px 0 0; }
         .tabs { display: inline-flex; gap: 8px; padding: 4px; background: rgba(255,255,255,.16); border-radius: 9999px; }
         .tab { appearance: none; border: 0; cursor: pointer; font-weight: 700; color: white; padding: 6px 12px; border-radius: 9999px; opacity: .85; transition: all .18s ease; }
         .tab:hover { opacity: 1; transform: translateY(-1px); }
@@ -166,14 +166,14 @@ export default function NewCourseSystem() {
         .progress { height: 6px; border-radius: 9999px; background: rgba(255,255,255,.28); margin-top: 10px; overflow: hidden; }
         .bar { height: 100%; background: linear-gradient(90deg,#22d3ee,#60a5fa); border-radius: 9999px; transition: width .6s cubic-bezier(.22,1,.36,1); }
 
-        .lesson-body { position: relative; background: #fff; padding: 16px; }
+        .lesson-body { position: relative; background: #fff; padding: 16px; border-radius: 0 0 22px 22px; }
         .lesson-body .view { display: none; }
         .lesson-body.show-learn .view.learn,
         .lesson-body.show-flash .view.flash,
         .lesson-body.show-practice .view.practice { display: block; }
 
         /* Learn view */
-        .video { position: relative; border-radius: 16px; overflow: hidden; background:
+        .video { position: relative; border-radius: 20px; overflow: hidden; background:
           linear-gradient(180deg, rgba(49,46,129,.12), rgba(167,139,250,.10)); height: 220px; display: grid; place-items: center; }
         .video::after { content: ""; position: absolute; inset: 0; background: radial-gradient(180px 40px at 20% 25%, rgba(255,255,255,.55), transparent); opacity: .4; }
         .play { width: 58px; height: 58px; border-radius: 9999px; background: linear-gradient(135deg,#22d3ee,#6366f1); box-shadow: 0 10px 28px rgba(99,102,241,.35); position: relative; }
@@ -195,7 +195,7 @@ export default function NewCourseSystem() {
         /* Practice view */
         .q { font-weight: 800; color: #0f172a; margin-bottom: 10px; }
         .choices { display: grid; gap: 8px; }
-        .choice { display: flex; align-items: center; gap: 10px; border: 1px solid #e5e7eb; background: #fff; padding: 10px 12px; border-radius: 12px; font-weight: 700; color: #0f172a; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+        .choice { display: flex; align-items: center; gap: 10px; border: 1px solid #e5e7eb; background: #fff; padding: 10px 12px; border-radius: 14px; font-weight: 700; color: #0f172a; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
         .choice .dot { width: 10px; height: 10px; border-radius: 9999px; background: #cbd5e1; }
         .choice:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(2,6,23,.06); }
         .choice.correct { border-color: #10b981; background: linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04)); }

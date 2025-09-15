@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { resolveUserIdFromSession } from "@/lib/user";
 import { isCourseModerator } from "@/lib/course-mates/moderation";
+import { verifiedCourseForUser } from "@/lib/course-mates/guard";
 
 async function listUpcoming(courseId: number) {
   const r = await sql`SELECT id, title, start_at, end_at, location, thumb_url
@@ -18,10 +19,9 @@ export async function GET() {
   try {
     const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    const me = (await sql`SELECT medical_course_id FROM users WHERE id=${userId} LIMIT 1`).rows[0] || {};
-    const courseId = me?.medical_course_id || 0;
-    if (!courseId) return NextResponse.json({ data: [] });
-    const data = await listUpcoming(courseId);
+    const ctx = await verifiedCourseForUser(userId);
+    if (!ctx) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    const data = await listUpcoming(ctx.courseId);
     return NextResponse.json({ data });
   } catch (e: any) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });

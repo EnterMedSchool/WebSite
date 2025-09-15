@@ -4,15 +4,15 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { resolveUserIdFromSession } from "@/lib/user";
 import { isCourseModerator } from "@/lib/course-mates/moderation";
+import { verifiedCourseForUser } from "@/lib/course-mates/guard";
 
 export async function GET() {
   try {
     const userId = await resolveUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    const me = (await sql`SELECT medical_course_id FROM users WHERE id=${userId} LIMIT 1`).rows[0] || {};
-    const courseId = me?.medical_course_id || 0;
-    if (!courseId) return NextResponse.json({ settings: {} });
-    const r = await sql`SELECT study_vibe FROM course_mates_settings WHERE course_id=${courseId} LIMIT 1`;
+    const ctx = await verifiedCourseForUser(userId);
+    if (!ctx) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    const r = await sql`SELECT study_vibe FROM course_mates_settings WHERE course_id=${ctx.courseId} LIMIT 1`;
     return NextResponse.json({ settings: { studyVibe: r.rows[0]?.study_vibe ?? null } });
   } catch (e: any) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
@@ -42,4 +42,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'internal_error', message: String(e?.message || e) }, { status: 500 });
   }
 }
-

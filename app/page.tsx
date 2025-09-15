@@ -2,6 +2,8 @@ import dynamic from "next/dynamic";
 import MissionShowcase from "@/components/home/MissionShowcase";
 import WhatsNew2026 from "@/components/home/WhatsNew2026";
 import VibrantSectionStyles from "@/components/home/VibrantSectionStyles";
+import CourseHub2026 from "@/components/home/CourseHub2026";
+import HomeVibrantBackdrop from "@/components/home/HomeVibrantBackdrop";
 // Home backdrop temporarily removed per design refresh
 // Scroll-driven showcase and Sticky CTA temporarily removed
 
@@ -10,6 +12,7 @@ const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false 
 export default function HomePage() {
   return (
     <div className="space-y-12">
+      <HomeVibrantBackdrop />
       {/* Global background cleared for now */}
       {/* Map section with rounded base and soft fade */}
       <section
@@ -32,6 +35,13 @@ export default function HomePage() {
 
       {/* Full‑bleed: What’s New 2026 */}
       <WhatsNew2026 />
+
+      {/* Alternating section: Course Hub */}
+      <section className="vbg vbg-amber relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+        <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
+          <CourseHub2026 />
+        </div>
+      </section>
 
       {/* Sections below temporarily removed */}
       <VibrantSectionStyles />

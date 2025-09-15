@@ -80,23 +80,23 @@ export default async function CourseMatesPage() {
   }
 
   let studyVibe: string | null = null;
-  if (courseId) {
+  if (isVerified && courseId) {
     try { const r = await sql`SELECT study_vibe FROM course_mates_settings WHERE course_id=${courseId} LIMIT 1`; studyVibe = r.rows[0]?.study_vibe ?? null; } catch {}
   }
   let moderators: any[] = [];
-  if (courseId) {
+  if (isVerified && courseId && year) {
     try { const r = await sql`SELECT m.user_id AS id, u.name, u.username, u.image FROM course_mates_moderators m LEFT JOIN users u ON u.id = m.user_id WHERE m.course_id=${courseId} ORDER BY u.name NULLS LAST, u.username NULLS LAST`; moderators = r.rows; } catch {}
   }
   let feed: any[] = [];
-  if (courseId) {
+  if (isVerified && courseId && year) {
     try { const r = await sql`SELECT p.id, p.content, p.created_at, u.name, u.username, u.image FROM course_feed_posts p LEFT JOIN users u ON u.id = p.user_id WHERE p.course_id=${courseId} ORDER BY p.created_at DESC LIMIT 10`; feed = r.rows; } catch {}
   }
   let events: any[] = [];
-  if (courseId) {
+  if (isVerified && courseId && year) {
     try { const r = await sql`SELECT id, title, start_at, end_at, location FROM course_events WHERE course_id=${courseId} AND start_at >= now() - interval '1 day' ORDER BY start_at ASC LIMIT 6`; events = r.rows; } catch {}
   }
   let photos: any[] = [];
-  if (courseId) {
+  if (isVerified && courseId && year) {
     try { const r = await sql`SELECT p.id, p.url, p.thumb_url, p.caption FROM course_event_photos p WHERE p.event_id IN (SELECT id FROM course_events WHERE course_id=${courseId} ORDER BY start_at DESC LIMIT 50) ORDER BY p.created_at DESC LIMIT 9`; photos = r.rows; } catch {}
   }
 

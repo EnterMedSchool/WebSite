@@ -116,16 +116,16 @@ export async function GET() {
 
     // Course settings
     let studyVibe: string | null = null;
-    if (courseId) {
+    if (isVerified && courseId && year) {
       try {
         const r = await sql`SELECT study_vibe FROM course_mates_settings WHERE course_id=${courseId} LIMIT 1`;
         studyVibe = r.rows[0]?.study_vibe ?? null;
       } catch {}
     }
 
-    // Moderators list
+    // Moderators list (limit visibility to verified users)
     let moderators: any[] = [];
-    if (courseId) {
+    if (isVerified && courseId && year) {
       try {
         const r = await sql`SELECT m.user_id AS id, u.name, u.username, u.image
                              FROM course_mates_moderators m
@@ -136,9 +136,9 @@ export async function GET() {
       } catch {}
     }
 
-    // Feed posts
+    // Feed posts (only for verified users)
     let feed: any[] = [];
-    if (courseId) {
+    if (isVerified && courseId && year) {
       try {
         const r = await sql`SELECT p.id, p.content, p.created_at, u.name, u.username, u.image
                              FROM course_feed_posts p
@@ -150,9 +150,9 @@ export async function GET() {
       } catch {}
     }
 
-    // Upcoming events
+    // Upcoming events (only for verified users)
     let events: any[] = [];
-    if (courseId) {
+    if (isVerified && courseId && year) {
       try {
         const r = await sql`SELECT id, title, start_at, end_at, location
                              FROM course_events
@@ -163,9 +163,9 @@ export async function GET() {
       } catch {}
     }
 
-    // Recent photos
+    // Recent photos (only for verified users)
     let photos: any[] = [];
-    if (courseId) {
+    if (isVerified && courseId && year) {
       try {
         const r = await sql`SELECT p.id, p.url, p.caption
                              FROM course_event_photos p

@@ -16,10 +16,10 @@ export default function VibrantSectionStyles() {
         background-size: 56px 56px; background-position: center; animation: vbg-grid 22s linear infinite; }
       .vbg-blue { --c1: rgba(59,130,246,.26); --c2: rgba(167,139,250,.26); background: linear-gradient(180deg, rgba(99,102,241,.12), rgba(6,182,212,.06)); }
       .vbg-emerald { --c1: rgba(16,185,129,.25); --c2: rgba(20,184,166,.22); background: linear-gradient(180deg, rgba(16,185,129,.10), rgba(59,130,246,.06)); }
+      .vbg-amber { --c1: rgba(245,158,11,.24); --c2: rgba(251,113,133,.24); background: linear-gradient(180deg, rgba(251,191,36,.10), rgba(251,113,133,.08)); }
       @keyframes vbg-float { from { transform: translateY(0) } to { transform: translateY(12px) } }
       @keyframes vbg-grid { 0% { background-position: 0 0, 0 0 } 100% { background-position: 56px 0, 0 56px } }
       @media (prefers-reduced-motion: reduce) { .vbg::before, .vbg::after { animation: none; } }
     `}</style>
   );
 }
-
