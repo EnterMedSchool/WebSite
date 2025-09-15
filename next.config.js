@@ -55,8 +55,8 @@ const nextConfig = {
     });
     // Aggressive caching for icons and manifest-like assets
     headers.push({
-      // Matches /favicon.ico, /icon.png, /apple-touch-icon.png, /safari-pinned-tab.svg
-      source: '/:file(favicon.ico|icon.png|apple-touch-icon.png|safari-pinned-tab.svg)',
+      // Matches common icon filenames
+      source: '/:file(favicon.ico|favicon-16x16.png|favicon-32x32.png|icon.png|apple-touch-icon.png|android-chrome-192x192.png|android-chrome-512x512.png|safari-pinned-tab.svg)',
       headers: [
         { key: 'Cache-Control', value: 'public, immutable, max-age=31536000, s-maxage=31536000' },
       ],

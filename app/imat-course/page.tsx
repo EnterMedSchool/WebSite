@@ -5,6 +5,7 @@ import ShimmerHeading from "@/components/ui/ShimmerHeading";
 import Reveal from "@/components/imat/Reveal";
 import StickyCTA from "@/components/imat/StickyCTA";
 import { AnalyzerDemo, DifficultyKnob, PlannerDemo, PrimerGrid, QuestionLabDemo } from "@/components/imat/InteractiveDemos";
+import SectionRail from "@/components/imat/SectionRail";
 
 export const metadata: Metadata = {
   title: "IMAT Course | EnterMedSchool",
@@ -128,8 +129,19 @@ export default function IMATCoursePage() {
     <div className="space-y-20">
       <HomeVibrantBackdrop />
       <StickyCTA />
+      <SectionRail
+        items={[
+          { id: "hero", label: "Overview" },
+          { id: "planner", label: "Planner" },
+          { id: "lab", label: "Practice" },
+          { id: "analyzer", label: "Analyzer" },
+          { id: "primer", label: "Primer" },
+          { id: "pricing", label: "Pricing" },
+          { id: "faq", label: "FAQ" },
+        ]}
+      />
       {/* 1) Hero: shimmer + interactive knob */}
-      <section className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.12)]">
+      <section id="hero" className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.12)]">
         <div className="mx-auto grid min-h-[60vh] w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 py-16 md:grid-cols-2">
           <div>
             <ShimmerHeading pretitle="IMAT 2025" title={"Choose. Prepare. Pass."} variant="electric" size="lg" />
@@ -158,7 +170,7 @@ export default function IMATCoursePage() {
       </section>
 
       {/* 2) Planner vs copy (alternating) */}
-      <section id="demos" className="vbg vbg-emerald relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
+      <section id="planner" className="vbg vbg-emerald relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2">
           <div className="order-2 md:order-1">
             <Reveal><PlannerDemo /></Reveal>
@@ -175,7 +187,7 @@ export default function IMATCoursePage() {
       </section>
 
       {/* 3) Question lab (alternating) */}
-      <section className="vbg vbg-amber relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
+      <section id="lab" className="vbg vbg-amber relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2">
           <div>
             <Reveal>
@@ -192,7 +204,7 @@ export default function IMATCoursePage() {
       </section>
 
       {/* 4) Analyzer (alternating back) */}
-      <section className="vbg vbg-violet relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
+      <section id="analyzer" className="vbg vbg-violet relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2">
           <div className="order-2 md:order-1">
             <Reveal><AnalyzerDemo /></Reveal>
@@ -209,7 +221,7 @@ export default function IMATCoursePage() {
       </section>
 
       {/* 5) Primer grid (alternating) */}
-      <section className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
+      <section id="primer" className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-14">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2">
           <div>
             <Reveal>
@@ -243,7 +255,7 @@ export default function IMATCoursePage() {
       </section>
 
       {/* 7) FAQ */}
-      <section className="mx-auto w-full max-w-6xl px-6 pb-10">
+      <section id="faq" className="mx-auto w-full max-w-6xl px-6 pb-10">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <h2 className="font-[var(--font-baloo,_inherit)] text-2xl font-extrabold text-slate-900">Frequently Asked Questions</h2>
