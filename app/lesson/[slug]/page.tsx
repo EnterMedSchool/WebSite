@@ -171,29 +171,21 @@ export default function LessonPage() {
         } catch { return new Map(); }
       };
       const loadGuest = async (idx: Map<string,string>) => {
-        const h = idx.get(slug);
-        const v = h ? `?v=${encodeURIComponent(h)}` : '';
-        // Try lite payload first when indexed
-        try {
-          if (h) {
-            const rl = await fetch(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
-            if (rl.ok) { setGuest(await rl.json()); return; }
-          }
-        } catch {}
-        // Fallback to non-lite payload if indexed
-        try {
-          if (h) {
-            const rf = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json${v}`, { cache: 'force-cache' });
-            if (rf.ok) { setGuest(await rf.json()); return; }
-          }
-        } catch {}
-        // As a last resort (index failure during dev), try direct fetch
-        if (!h && idx.size === 0) {
+        const hash = idx.get(slug);
+        const hasEntry = idx.has(slug);
+        const version = hash ? `?v=${encodeURIComponent(hash)}` : '';
+        const tryLoad = async (path: string) => {
           try {
-            const rfDirect = await fetch(`/free-lessons/v1/${encodeURIComponent(slug)}.json`, { cache: 'force-cache' });
-            if (rfDirect.ok) { setGuest(await rfDirect.json()); return; }
+            const res = await fetch(path, { cache: 'force-cache' });
+            if (res.ok) { setGuest(await res.json()); return true; }
           } catch {}
+          return false;
+        };
+        if (hasEntry) {
+          if (await tryLoad(`/free-lessons/v1/lite/${encodeURIComponent(slug)}.json${version}`)) return;
+          if (await tryLoad(`/free-lessons/v1/${encodeURIComponent(slug)}.json${version}`)) return;
         }
+        await tryLoad(`/free-lessons/v1/${encodeURIComponent(slug)}.json`);
       };
       ensureIndex().then((idx) => { if (!alive) return; loadGuest(idx); }).catch(() => { 
         // As a final fallback, try direct without index

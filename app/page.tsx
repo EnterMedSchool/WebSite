@@ -16,9 +16,9 @@ const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false 
 
 export default function HomePage() {
   return (
-    <div className="space-y-12">
-      <HomeVibrantBackdrop />
+    <div className="space-y-12 overflow-x-hidden">
       {/* Global background cleared for now */}
+      <HomeVibrantBackdrop />
       {/* Map section with rounded base and soft fade */}
       <section
         id="universities"

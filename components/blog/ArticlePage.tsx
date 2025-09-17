@@ -1,5 +1,3 @@
-'use client';
-
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import type { ArticleContent, BlogArticleMeta } from "@/lib/blog/types";
@@ -109,114 +107,146 @@ export default function ArticlePage({ meta, article, siteUrl }: Props) {
 
   return (
     <>
-      <div className="relative isolate overflow-hidden pb-24">
-        <div className="pointer-events-none absolute inset-x-0 top-[-320px] h-[520px] bg-[radial-gradient(120%_60%_at_50%_0%,rgba(79,70,229,0.18),transparent)]" />
+      <div className="relative isolate overflow-hidden pb-32">
+        <div className="pointer-events-none absolute inset-x-0 top-[-380px] h-[620px] bg-[radial-gradient(160%_120%_at_50%_0%,rgba(88,28,135,0.22),rgba(30,64,175,0.12)_45%,transparent)]" />
+        <div className="pointer-events-none absolute left-[-240px] top-24 h-[580px] w-[480px] rounded-full bg-[radial-gradient(circle,_rgba(236,72,153,0.18)_0%,_transparent_62%)] blur-3xl" />
+        <div className="pointer-events-none absolute right-[-200px] top-12 h-[540px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(56,189,248,0.18)_0%,_transparent_68%)] blur-3xl" />
 
-        <section className="vbg vbg-violet relative mx-auto w-full max-w-6xl overflow-hidden rounded-[42px] px-6 py-16 shadow-[0_24px_80px_rgba(46,37,107,0.28)] sm:px-10 lg:py-20">
-          <div className="pointer-events-none absolute left-1/2 top-[-160px] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.18)_0%,_rgba(37,99,235,0)_66%)]" />
-          <div className="pointer-events-none absolute -right-24 bottom-[-180px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(6,182,212,0.22)_0%,_transparent_70%)]" />
+        <section className="relative -mx-4 px-4 sm:-mx-8 sm:px-8 lg:-mx-24 lg:px-24">
+          <div className="mx-auto w-full max-w-[min(1280px,calc(100vw-4rem))]">
+            <div className="relative overflow-hidden rounded-[54px] bg-gradient-to-br from-indigo-900/10 via-white/92 to-white/95 shadow-[0_40px_120px_rgba(30,64,175,0.32)] ring-1 ring-white/40 backdrop-blur-xl">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(180%_120%_at_0%_10%,rgba(129,140,248,0.28),transparent_60%)]" />
+              <div className="pointer-events-none absolute inset-y-0 right-[-12%] w-[40%] bg-[radial-gradient(120%_120%_at_50%_50%,rgba(14,165,233,0.16),transparent_71%)]" />
 
-          <div className="relative flex flex-col gap-10 lg:flex-row lg:items-center">
-            <div className="flex-1 space-y-6 text-slate-900">
-              <div className="flex flex-wrap gap-3 text-sm text-slate-700">
-                {meta.exam && (
-                  <span className="rounded-full bg-white/70 px-4 py-1 font-medium shadow-sm backdrop-blur">{meta.exam}</span>
-                )}
-                {meta.country && (
-                  <span className="rounded-full bg-white/40 px-4 py-1 font-medium shadow-sm backdrop-blur">{meta.country}</span>
-                )}
-                <span className="rounded-full bg-indigo-500/90 px-4 py-1 font-semibold text-white shadow">{`${article.readingMinutes}-minute read`}</span>
-              </div>
-              <h1 className="font-brand text-4xl leading-tight text-slate-900 sm:text-5xl lg:text-6xl">{meta.title}</h1>
-              <p className="max-w-2xl text-lg text-slate-800 sm:text-xl">{meta.description}</p>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-                <div className="flex items-center gap-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-400 text-xl font-semibold text-white shadow-lg">
-                    {meta.author.avatarInitials ?? meta.author.name.slice(0, 2).toUpperCase()}
-                  </span>
-                  <div className="text-sm">
-                    <p className="font-semibold text-slate-900">{meta.author.name}</p>
-                    <p className="text-slate-700">{meta.author.title}</p>
-                    <p className="text-slate-600">
-                      <time dateTime={published.toISOString().slice(0, 10)}>Published {readableDateFormatter.format(published)}</time>
-                      <span className="mx-2">&bull;</span>
-                      <time dateTime={updated.toISOString().slice(0, 10)}>Updated {readableDateFormatter.format(updated)}</time>
-                    </p>
-                  </div>
-                </div>
-                {meta.callToActions?.length ? (
-                  <div className="flex flex-wrap gap-3">
-                    {meta.callToActions.map((cta) => (
-                      <a key={cta.href} href={cta.href} className="btn-primary-shine text-sm">
-                        {cta.label}
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="relative flex w-full max-w-lg shrink-0 flex-col gap-4 overflow-hidden rounded-[36px] bg-white/70 p-6 shadow-[0_28px_60px_rgba(30,64,175,0.18)] ring-1 ring-indigo-200/60 backdrop-blur-xl">
-              <div className="absolute inset-x-0 top-0 h-[120px] bg-gradient-to-b from-indigo-100/80 via-transparent to-transparent" />
-              <div className="relative">
-                <Image
-                  src={meta.heroImage.src}
-                  alt={meta.heroImage.alt}
-                  width={meta.heroImage.width ?? 720}
-                  height={meta.heroImage.height ?? 480}
-                  className="h-52 w-full rounded-[28px] object-cover shadow-lg"
-                  priority
-                />
-              </div>
-              {meta.personas?.length ? (
-                <div className="relative space-y-4 text-slate-800">
-                  <h2 className="text-lg font-semibold text-slate-900">Who this guide is for</h2>
-                  <ul className="space-y-2 text-sm">
-                    {meta.personas.map((item) => (
-                      <li key={item} className="flex items-start gap-2">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-indigo-500" aria-hidden="true" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-700">
+              <div className="relative grid gap-12 px-6 py-12 sm:px-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:py-16">
+                <div className="flex flex-col gap-8">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-100">
                     {meta.exam && (
-                      <div className="rounded-2xl bg-slate-50 px-3 py-3">
-                        <span className="block text-[11px] uppercase tracking-wide text-slate-500">Exam</span>
-                        <span>{meta.exam}</span>
-                      </div>
+                      <span className="rounded-full bg-indigo-600/70 px-4 py-1 font-medium text-white shadow-lg shadow-indigo-500/40">{meta.exam}</span>
                     )}
                     {meta.country && (
-                      <div className="rounded-2xl bg-slate-50 px-3 py-3">
-                        <span className="block text-[11px] uppercase tracking-wide text-slate-500">Country</span>
-                        <span>{meta.country}</span>
-                      </div>
+                      <span className="rounded-full bg-slate-50/60 px-4 py-1 font-medium text-slate-800 shadow shadow-slate-900/10">{meta.country}</span>
                     )}
-                    {meta.educationLevels?.length ? (
-                      <div className="rounded-2xl bg-slate-50 px-3 py-3">
-                        <span className="block text-[11px] uppercase tracking-wide text-slate-500">Level</span>
-                        <span>{meta.educationLevels.join(", ")}</span>
+                    <span className="rounded-full bg-white/60 px-4 py-1 font-semibold text-indigo-600 shadow shadow-indigo-500/20">{readingLabel}</span>
+                  </div>
+                  <div className="space-y-6 text-slate-900">
+                    <h1 className="font-brand text-4xl leading-tight sm:text-5xl lg:text-7xl">
+                      {meta.title}
+                    </h1>
+                    <p className="max-w-2xl text-lg text-slate-700 sm:text-xl">
+                      {meta.description}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                    <div className="rounded-3xl bg-white/80 p-5 shadow-[0_16px_42px_rgba(15,23,42,0.15)] ring-1 ring-white/60">
+                      <div className="flex items-center gap-4">
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-400 text-xl font-semibold text-white shadow-lg">
+                          {meta.author.avatarInitials ?? meta.author.name.slice(0, 2).toUpperCase()}
+                        </span>
+                        <div className="text-xs sm:text-sm">
+                          <p className="font-semibold text-slate-900">{meta.author.name}</p>
+                          <p className="text-slate-600">{meta.author.title}</p>
+                          <p className="text-slate-500">
+                            <time dateTime={published.toISOString().slice(0, 10)}>Published {readableDateFormatter.format(published)}</time>
+                            <span className="mx-2">{"\u2022"}</span>
+                            <time dateTime={updated.toISOString().slice(0, 10)}>Updated {readableDateFormatter.format(updated)}</time>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {meta.callToActions?.length ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        {meta.callToActions.map((cta) => (
+                          <a key={cta.href} href={cta.href} className="btn-primary-shine text-sm">
+                            {cta.label}
+                          </a>
+                        ))}
                       </div>
                     ) : null}
-                    <div className="rounded-2xl bg-slate-50 px-3 py-3">
-                      <span className="block text-[11px] uppercase tracking-wide text-slate-500">Reading time</span>
-                      <span>{readingLabel}</span>
-                    </div>
                   </div>
                 </div>
-              ) : null}
+
+                <div className="relative flex w-full flex-col gap-6">
+                  <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-indigo-600/85 via-indigo-500/60 to-sky-400/75 p-[6px] shadow-[0_30px_80px_rgba(30,64,175,0.35)]">
+                    <div className="absolute inset-0 rounded-[38px] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.28),transparent_55%)]" />
+                    <div className="relative rounded-[34px] bg-white/95 p-2">
+                      <div className="relative overflow-hidden rounded-[30px]">
+                        <Image
+                          src={meta.heroImage.src}
+                          alt={meta.heroImage.alt}
+                          width={meta.heroImage.width ?? 920}
+                          height={meta.heroImage.height ?? 520}
+                          className="h-[320px] w-full object-cover"
+                          priority
+                        />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-indigo-900/40 via-transparent to-transparent" />
+                        <div className="pointer-events-none absolute left-5 top-5 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-indigo-600 shadow-lg">
+                          ?
+                        </div>
+                      </div>
+                      {meta.personas?.length ? (
+                        <div className="mt-5 space-y-3 rounded-3xl bg-white/90 p-5 text-sm text-slate-700 ring-1 ring-slate-200/70">
+                          <h2 className="text-base font-semibold text-slate-900">Who this guide is for</h2>
+                          <ul className="space-y-2 text-sm">
+                            {meta.personas.map((item) => (
+                              <li key={item} className="flex items-start gap-2">
+                                <span className="mt-1 h-2 w-2 rounded-full bg-indigo-500" aria-hidden="true" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-600">
+                            {meta.exam && (
+                              <div className="rounded-2xl bg-slate-100 px-3 py-3">
+                                <span className="block text-[11px] uppercase tracking-wide text-slate-500">Exam</span>
+                                <span>{meta.exam}</span>
+                              </div>
+                            )}
+                            {meta.country && (
+                              <div className="rounded-2xl bg-slate-100 px-3 py-3">
+                                <span className="block text-[11px] uppercase tracking-wide text-slate-500">Country</span>
+                                <span>{meta.country}</span>
+                              </div>
+                            )}
+                            {meta.educationLevels?.length ? (
+                              <div className="rounded-2xl bg-slate-100 px-3 py-3">
+                                <span className="block text-[11px] uppercase tracking-wide text-slate-500">Level</span>
+                                <span>{meta.educationLevels.join(", ")}</span>
+                              </div>
+                            ) : null}
+                            <div className="rounded-2xl bg-slate-100 px-3 py-3">
+                              <span className="block text-[11px] uppercase tracking-wide text-slate-500">Reading</span>
+                              <span>{readingLabel}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {meta.tags?.length ? (
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {meta.tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/80 px-3 py-1 font-semibold text-indigo-600 shadow">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="relative z-10 mx-auto -mt-20 w-full max-w-6xl px-6 pb-24 pt-12 sm:px-10 lg:px-12">
-          <span id="top" className="sr-only" aria-hidden="true" />
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,2.6fr)_minmax(0,1fr)]">
-            <article className="imat-article prose prose-slate max-w-none rounded-[32px] bg-white/80 p-8 shadow-[0_24px_72px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/60 backdrop-blur-xl sm:p-10">
+        <section className="relative z-10 mx-auto mt-[-90px] w-full max-w-[min(1280px,calc(100vw-4rem))] px-4 sm:px-8 lg:px-0">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,2.75fr)_minmax(0,1.15fr)]">
+            <article className="imat-article prose prose-slate max-w-none rounded-[40px] bg-white/95 p-8 shadow-[0_34px_120px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/60 backdrop-blur-xl sm:p-12">
               <div dangerouslySetInnerHTML={{ __html: article.html }} />
             </article>
 
-            <div className="space-y-6">
+            <div className="space-y-7">
               {meta.map ? (
                 <CountrySpotlight
                   dataset={meta.map.dataset}
@@ -228,8 +258,8 @@ export default function ArticlePage({ meta, article, siteUrl }: Props) {
                 />
               ) : null}
 
-              <aside className="rounded-[28px] bg-gradient-to-br from-indigo-500/12 via-white to-sky-500/10 p-6 text-sm shadow-[0_18px_48px_rgba(37,99,235,0.18)] ring-1 ring-indigo-200/60 backdrop-blur">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-indigo-500">Article Snapshot</h2>
+              <aside className="rounded-[32px] bg-gradient-to-br from-white via-indigo-50/60 to-sky-50/70 p-6 text-sm shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-indigo-100/60 backdrop-blur">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.32em] text-indigo-500">Article Snapshot</h2>
                 <dl className="mt-5 space-y-4 text-slate-700">
                   {meta.exam && (
                     <div className="flex justify-between gap-4">
@@ -258,26 +288,17 @@ export default function ArticlePage({ meta, article, siteUrl }: Props) {
                     <dd className="font-semibold text-slate-900">{readingLabel}</dd>
                   </div>
                 </dl>
-                {meta.tags?.length ? (
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {meta.tags.map((tag) => (
-                      <span key={tag} className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
               </aside>
 
               {topLevelHeadings.length > 0 && (
-                <aside className="rounded-[28px] bg-white/90 p-6 text-sm shadow-[0_18px_48px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/60 backdrop-blur">
+                <aside className="rounded-[32px] bg-white/95 p-6 text-sm shadow-[0_18px_54px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/60 backdrop-blur">
                   <h2 className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">On this page</h2>
                   <nav aria-label="On this page" className="mt-4 space-y-2">
                     {topLevelHeadings.map((heading) => (
                       <a
                         key={heading.id}
                         href={`#${heading.id}`}
-                        className="group block rounded-2xl px-4 py-3 transition hover:bg-slate-100"
+                        className="group block rounded-2xl px-4 py-3 transition hover:bg-indigo-50/80"
                       >
                         <span className="font-semibold text-slate-800 group-hover:text-indigo-600">{heading.text}</span>
                       </a>
@@ -287,7 +308,7 @@ export default function ArticlePage({ meta, article, siteUrl }: Props) {
               )}
 
               {meta.resources?.length ? (
-                <aside className="rounded-[28px] bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-6 text-sm text-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.45)]">
+                <aside className="rounded-[32px] bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-6 text-sm text-slate-100 shadow-[0_26px_72px_rgba(15,23,42,0.45)]">
                   <h2 className="text-xs font-semibold uppercase tracking-[0.32em] text-indigo-200">Next steps</h2>
                   <p className="mt-4 text-sm text-slate-200">
                     Continue building momentum with the roadmap and tools we created specifically for this journey.
@@ -411,3 +432,5 @@ export default function ArticlePage({ meta, article, siteUrl }: Props) {
     </>
   );
 }
+
+
