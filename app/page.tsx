@@ -21,7 +21,7 @@ export default function HomePage() {
       {/* Map section with rounded base and soft fade */}
       <section
         id="universities"
-        className="vbg vbg-blue relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mt-0 -top-16 sm:-top-20 md:-top-24 overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.08)]"
+        className="vbg vbg-blue relative w-full mt-0 -top-16 sm:-top-20 md:-top-24 overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.08)] lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen"
       >
         <HomeMap />
         {/* Soft fade into page background */}
@@ -43,7 +43,7 @@ export default function HomePage() {
       <WhatsNew2026 />
 
       {/* Alternating section: Course Hub */}
-      <section className="vbg vbg-amber relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+      <section className="vbg vbg-amber relative w-full py-12 lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
           <CourseHub2026 />
         </div>
@@ -51,7 +51,7 @@ export default function HomePage() {
       </section>
 
       {/* Anki Integration */}
-      <section className="vbg vbg-violet relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+      <section className="vbg vbg-violet relative w-full py-12 lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
           <AnkiIntegration />
         </div>
@@ -62,7 +62,7 @@ export default function HomePage() {
       <SectionDivider />
 
       {/* Family Team */}
-      <section className="vbg vbg-rose relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+      <section className="vbg vbg-rose relative w-full py-12 lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
         <div className="vbg-seam-top" />
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
           <TeamFamily />
@@ -71,7 +71,7 @@ export default function HomePage() {
       </section>
 
       {/* Reviews */}
-      <section className="vbg vbg-teal relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-12">
+      <section className="vbg vbg-teal relative w-full py-12 lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
           <ReviewsSection />
         </div>
@@ -83,6 +83,7 @@ export default function HomePage() {
     </div>
   );
 }
+
 
 
 

@@ -7,7 +7,7 @@ export default function WhatsNew2026() {
   return (
     <section
       id="whats-new-2026"
-      className="wn-bg wn-purple relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen py-10 sm:py-14 md:py-16"
+      className="wn-bg wn-purple relative w-full py-10 sm:py-14 md:py-16 lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen"
       aria-labelledby="whats-new-2026-heading"
     >
       <div className="wn-seam-top" aria-hidden />
@@ -172,3 +172,4 @@ export default function WhatsNew2026() {
     </section>
   );
 }
+
