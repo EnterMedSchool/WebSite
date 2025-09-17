@@ -81,6 +81,27 @@ export const lessons = pgTable(
   (t) => ({ courseIdx: index("lessons_course_idx").on(t.courseId) })
 );
 
+export const lessonBundles = pgTable(
+  "lesson_bundles",
+  {
+    lessonId: integer("lesson_id")
+      .references(() => lessons.id, { onDelete: "cascade" })
+      .primaryKey(),
+    slug: varchar("slug", { length: 120 }).notNull().unique(),
+    courseId: integer("course_id")
+      .references(() => courses.id, { onDelete: "cascade" })
+      .notNull(),
+    bundle: jsonb("bundle").notNull(),
+    contentRev: integer("content_rev").default(0).notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    slugIdx: index("lesson_bundles_slug_idx").on(t.slug),
+    courseIdx: index("lesson_bundles_course_idx").on(t.courseId),
+    updatedIdx: index("lesson_bundles_updated_idx").on(t.updatedAt),
+  })
+);
+
 // Chapters group lessons within a course. Lessons can appear in multiple
 // chapters via the junction table below, and chapters have an explicit
 // sequence (position) within a course.

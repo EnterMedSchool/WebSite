@@ -33,7 +33,7 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [travel, setTravel] = useState<{ top: number; height: number; show: boolean } | null>(null);
   const [claimedChests, setClaimedChests] = useState<Record<number, number>>({});
-  const patchedSlugsRef = useRef<Record<string, boolean>>({});
+
 
   // Lazy load more chapters when sentinel enters viewport
   useEffect(() => {
@@ -153,40 +153,6 @@ export default function CourseTimeline({ slug, initial, courseTitle }: { slug: s
     const pct = total ? Math.round((completed / total) * 100) : 0;
     return { total, completed, pct, minutes };
   }, [chapters]);
-
-  // Patch per-lesson progress client-side (ensures correctness if SSR missed user)
-  useEffect(() => {
-    const allSlugs: string[] = [];
-    for (const c of chapters) for (const l of c.lessons) if (!patchedSlugsRef.current[l.slug]) allSlugs.push(l.slug);
-    if (allSlugs.length === 0) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const entries = await Promise.all(
-          allSlugs.map(async (s) => {
-            try {
-              const r = await fetch(`/api/lesson/${encodeURIComponent(s)}/progress`, { credentials: 'include' });
-              if (!r.ok) return [s, null] as const;
-              const j = await r.json();
-              return [s, j] as const;
-            } catch { return [s, null] as const; }
-          })
-        );
-        if (cancelled) return;
-        const map = new Map<string, any>(entries as any);
-        setChapters((prev) => prev.map((c) => ({
-          ...c,
-          lessons: c.lessons.map((l) => {
-            const j = map.get(l.slug);
-            if (!j) return l;
-            patchedSlugsRef.current[l.slug] = true;
-            return { ...l, completed: !!j.completed || !!l.completed, qTotal: Math.max(Number(j.qTotal ?? 0), l.qTotal), qCorrect: Math.max(Number(j.qCorrect ?? 0), l.qCorrect) } as any;
-          }),
-        })));
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, [chapters.length]);
 
   return (
     <div>
