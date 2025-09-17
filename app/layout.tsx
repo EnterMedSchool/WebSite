@@ -111,7 +111,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <Providers>
           <Navbar />
-          <main className="mx-auto max-w-[1400px] px-0 sm:px-6 py-6 flex-1">{children}</main>
+          <main className="flex-1 w-full">{children}</main>
           <EMSFooter />
           <RewardsOverlay />
           <TimerWidget />
