@@ -25,6 +25,11 @@ type Props = {
   examTag?: string;
 };
 
+type RenderGeography = {
+  rsmKey: string;
+  properties?: { name?: string; iso_a3?: string } & Record<string, unknown>;
+} & Record<string, unknown>;
+
 const latestScore = (city: City) => {
   if (!city.trendPoints?.length) return null;
   return city.trendPoints.reduce<number | null>((acc, point) => {
@@ -107,9 +112,9 @@ export default function CountrySpotlight({ dataset, countryName, isoA3, center, 
               </radialGradient>
             </defs>
             <Geographies geography={GEO_URL}>
-              {({ geographies }) =>
+              {({ geographies }: { geographies: RenderGeography[] }) =>
                 geographies.map((geo) => {
-                  const props = geo.properties as { name?: string; iso_a3?: string };
+                  const props = (geo.properties ?? {}) as { name?: string; iso_a3?: string };
                   const isTarget =
                     (isoA3 && props.iso_a3 === isoA3) ||
                     props.name?.toLowerCase() === countryName.toLowerCase();
@@ -162,7 +167,7 @@ export default function CountrySpotlight({ dataset, countryName, isoA3, center, 
                 >
                   <div>
                     <p className="font-semibold text-slate-900">{city.uni}</p>
-                    <p className="text-xs text-slate-600">{city.city}{city.language ? ` · ${city.language}` : ""}</p>
+                    <p className="text-xs text-slate-600">{city.city}{city.language ? ` \u00B7 ${city.language}` : ""}</p>
                   </div>
                   <div className="text-right text-xs text-slate-500">
                     {score !== null && (

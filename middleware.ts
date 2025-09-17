@@ -198,4 +198,4 @@ export const config = {
     '/api/timer/:path*',
     '/api/todos/:path*',
   ],
-};\r\n
+};

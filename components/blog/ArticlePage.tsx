@@ -1,3 +1,5 @@
+'use client';
+
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import type { ArticleContent, BlogArticleMeta } from "@/lib/blog/types";
