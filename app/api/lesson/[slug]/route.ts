@@ -1,28 +1,38 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { checkCourseAccess } from "@/lib/lesson/access";
+import { checkCourseAccess, entitlementCookieOptions } from "@/lib/lesson/access";
+import { courseTokenName } from "@/lib/lesson/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(_req: Request, { params }: { params: { slug: string } }) {
+export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const slug = params.slug;
   const lr = await sql`SELECT id, slug, title, course_id FROM lessons WHERE slug=${slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  let tokenToSet: { value: string; expiresAt: number } | null = null;
 
   // Gate paid courses for this route as well
   try {
     const session = await getServerSession(authOptions as any);
     let userId = session && (session as any).userId ? Number((session as any).userId) : 0;
     if (!Number.isSafeInteger(userId) || userId <= 0 || userId > 2147483647) userId = 0;
-    const access = await checkCourseAccess(userId || 0, Number(lesson.course_id));
+    const access = await checkCourseAccess(userId || 0, Number(lesson.course_id), { req });
     if (access.accessType === 'paid' && !access.allowed) {
-      return NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
+      const deny = NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
+      deny.cookies.set(`ems_paid_denied_${Number(lesson.course_id)}`, String(Date.now()), { maxAge: 600, path: '/' });
+      try { deny.cookies.set(`ems_paid_denied_l_${slug}`, '1', { maxAge: 600, path: '/' }); } catch {}
+      if (access.clearToken) {
+        try { deny.cookies.set(courseTokenName(Number(lesson.course_id)), '', { maxAge: 0, path: '/' }); } catch {}
+      }
+      return deny;
     }
+    if (access.tokenToSet) tokenToSet = access.tokenToSet;
   } catch {}
 
   const br = await sql`SELECT id, kind, content FROM lesson_blocks WHERE lesson_id=${lesson.id} ORDER BY COALESCE(rank_key,'')`;
@@ -97,7 +107,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     }
   } catch {}
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     lesson: { id: lesson.id, slug: lesson.slug, title: lesson.title },
     course: cr.rows[0],
     chapter: chapterObj,
@@ -107,4 +117,11 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     chapterProgress,
     timeline: { lessons: timelineLessons ?? [] }
   });
+
+  if (tokenToSet) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    res.cookies.set(courseTokenName(Number(lesson.course_id)), tokenToSet.value, entitlementCookieOptions(tokenToSet.expiresAt, nowSeconds));
+  }
+
+  return res;
 }

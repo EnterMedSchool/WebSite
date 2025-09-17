@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { requireUserId } from "@/lib/study/auth";
-import { checkCourseAccess } from "@/lib/lesson/access";
+import { checkCourseAccess, entitlementCookieOptions } from "@/lib/lesson/access";
+import { courseTokenName } from "@/lib/lesson/entitlements";
 import { extractIframeSrc, detectProviderFromSrc, isPremiumSrc } from "@/lib/video/embed";
 
 export const runtime = "nodejs";
@@ -18,22 +19,30 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
   const url = new URL(req.url);
   const scope = url.searchParams.get("scope") || "chapter"; // chapter | lesson
+  const include = new Set((url.searchParams.get("include") || "").split(",").map((s) => s.trim()).filter(Boolean));
 
   // Resolve lesson + course (include body and video_html for optional embeds)
   const lr = await sql`SELECT id, slug, title, course_id, body, video_html, meta, content_rev, content_changed_at FROM lessons WHERE slug=${params.slug} LIMIT 1`;
   const lesson = lr.rows[0];
   if (!lesson) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
   const cr = await sql`SELECT id, slug, title, visibility, meta FROM courses WHERE id=${lesson.course_id} LIMIT 1`;
-  const course = cr.rows[0] ? { id: Number(cr.rows[0].id), slug: String(cr.rows[0].slug), title: String(cr.rows[0].title) } : null;
+  const courseRow = cr.rows[0] as any;
+  const course = courseRow ? { id: Number(courseRow.id), slug: String(courseRow.slug), title: String(courseRow.title) } : null;
 
   // Gate paid access (multiple paid courses supported via per-course entitlements)
-  const access = await checkCourseAccess(userId, Number(lesson.course_id));
-  if (access.accessType === 'paid' && !access.allowed) {
-    const res = NextResponse.json({ error: 'forbidden', reason: 'paid_course' }, { status: 403 });
+  const access = await checkCourseAccess(userId, Number(lesson.course_id), {
+    req,
+    courseMeta: courseRow ? { visibility: courseRow.visibility, access: courseRow.meta?.access, meta: courseRow.meta } : undefined,
+  });
+  if (access.accessType === "paid" && !access.allowed) {
+    const res = NextResponse.json({ error: "forbidden", reason: "paid_course" }, { status: 403 });
     // Throttle repeated attempts for this course for ~10 minutes
-    res.cookies.set(`ems_paid_denied_${Number(lesson.course_id)}`, String(Date.now()), { maxAge: 600, path: '/' });
-    // Also set a slug-based cookie to let middleware short-circuit without DB
-    try { res.cookies.set(`ems_paid_denied_l_${params.slug}`, '1', { maxAge: 600, path: '/' }); } catch {}
+    res.cookies.set(`ems_paid_denied_${Number(lesson.course_id)}`, String(Date.now()), { maxAge: 600, path: "/" });
+    try { res.cookies.set(`ems_paid_denied_l_${params.slug}`, "1", { maxAge: 600, path: "/" }); } catch {}
+    if (access.clearToken) {
+      try { res.cookies.set(courseTokenName(Number(lesson.course_id)), "", { maxAge: 0, path: "/" }); } catch {}
+    }
     return res;
   }
 
@@ -60,8 +69,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                             JOIN lessons l ON l.id = cl.lesson_id
                            WHERE cl.chapter_id=${chapterId}
                         ORDER BY cl.position ASC, l.id ASC`;
-    chapterLessons = lsr.rows.map((r:any)=>({ id: Number(r.id), slug: String(r.slug), title: String(r.title), position: Number(r.position||0) }));
-    if (scope === "chapter") lessonIds = chapterLessons.map((l:any)=> Number(l.id));
+    chapterLessons = lsr.rows.map((r: any) => ({ id: Number(r.id), slug: String(r.slug), title: String(r.title), position: Number(r.position || 0) }));
+    if (scope === "chapter") lessonIds = chapterLessons.map((l: any) => Number(l.id));
   }
 
   // Batch load questions (choices aggregated per question) for the chosen scope
@@ -96,25 +105,22 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     }
   } catch {}
 
-  // Optional includes to reduce client calls: include=player,body
-  const include = new Set((url.searchParams.get('include') || '').split(',').map((s)=>s.trim()).filter(Boolean));
   let player: any = undefined;
   let html: string | undefined = undefined;
-  if (include.has('player')) {
-    let iframeSrc: string | null = extractIframeSrc(String((lesson as any).video_html || ''));
-    let locked = false; let lockReason: string | undefined;
+  if (include.has("player")) {
+    let iframeSrc: string | null = extractIframeSrc(String((lesson as any).video_html || ""));
     const provider = detectProviderFromSrc(iframeSrc || undefined);
-    if (iframeSrc) {
-      const access = await checkCourseAccess(userId, Number(lesson.course_id));
-      if (access.accessType === 'paid' && !access.allowed) {
-        locked = true; lockReason = 'paid_course';
-        if (isPremiumSrc(iframeSrc)) iframeSrc = null;
-      }
+    let locked = false;
+    let lockReason: string | undefined;
+    if (iframeSrc && access.accessType === "paid" && !access.allowed) {
+      locked = true;
+      lockReason = "paid_course";
+      if (isPremiumSrc(iframeSrc)) iframeSrc = null;
     }
-    player = { provider, iframeSrc, locked, lockReason, source: 'bundle' };
+    player = { provider, iframeSrc, locked, lockReason, source: "bundle" };
   }
-  if (include.has('body')) {
-    html = String((lesson as any).body || '');
+  if (include.has("body")) {
+    html = String((lesson as any).body || "");
   }
 
   // Build lightweight chapter summary (per-lesson counts + completion) to avoid extra requests on client
@@ -124,15 +130,14 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     for (const l of chapterLessons.length ? chapterLessons : [{ id: Number(lesson.id) }]) {
       byLesson[String(Number(l.id))] = { total: 0, correct: 0, incorrect: 0, attempted: 0 };
     }
-    // Use already fetched questionsByLesson when available; otherwise compute totals by querying
     if (Object.keys(questionsByLesson).length) {
       for (const [lid, arr] of Object.entries<any[]>(questionsByLesson)) {
         const stats = byLesson[lid] || (byLesson[lid] = { total: 0, correct: 0, incorrect: 0, attempted: 0 });
         stats.total = arr.length;
         for (const q of arr) {
           const st = (progress.questions || {})[Number(q.id)]?.status;
-          if (st === 'correct') { stats.correct++; stats.attempted++; }
-          else if (st === 'incorrect') { stats.incorrect++; stats.attempted++; }
+          if (st === "correct") { stats.correct++; stats.attempted++; }
+          else if (st === "incorrect") { stats.incorrect++; stats.attempted++; }
         }
       }
     } else if (lessonIds.length) {
@@ -142,16 +147,14 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
         const stats = byLesson[key] || (byLesson[key] = { total: 0, correct: 0, incorrect: 0, attempted: 0 });
         stats.total = Number(r.n || 0);
       }
-      // For attempted/correct/incorrect, rely on progress map
-      for (const [qid, v] of Object.entries<any>(progress.questions || {})) {
-        // We don't have q->lesson quickly; skip in this fallback to keep it cheap
-      }
     }
-    const lessonsCompleted = Object.keys(progress.lessons || {}).map((k) => Number(k)).filter((id) => (chapterLessons.length ? chapterLessons.some((l:any)=> Number(l.id)===id) : id===Number(lesson.id)));
+    const lessonsCompleted = Object.keys(progress.lessons || {})
+      .map((k) => Number(k))
+      .filter((id) => (chapterLessons.length ? chapterLessons.some((l: any) => Number(l.id) === id) : id === Number(lesson.id)));
     summary = { byLesson, lessonsCompleted };
   } catch {}
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     lesson: { id: Number(lesson.id), slug: String(lesson.slug), title: String(lesson.title), courseId: Number(lesson.course_id), contentRev: Number((lesson as any).content_rev || 0), contentChangedAt: (lesson as any).content_changed_at || null },
     course,
     chapter,
@@ -164,4 +167,11 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     summary,
     scope,
   });
+
+  if (access.tokenToSet) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    res.cookies.set(courseTokenName(Number(lesson.course_id)), access.tokenToSet.value, entitlementCookieOptions(access.tokenToSet.expiresAt, nowSeconds));
+  }
+
+  return res;
 }

@@ -239,6 +239,25 @@ export default function MissionShowcase({
         .ms-bursts { position: absolute; inset: 0; pointer-events: none; }
         .p { position: absolute; width: 10px; height: 10px; border-radius: 9999px; opacity: .0; transform: scale(.4); animation: pop 1.1s ease forwards; box-shadow: 0 8px 18px rgba(0,0,0,.15); }
         @keyframes pop { 10% { opacity: .95; transform: scale(1) } 100% { opacity: 0; transform: translateY(-18px) scale(.75) } }
+        @media (max-width: 768px) {
+          .ms-root { border-radius: 28px; padding: 20px; box-shadow: 0 20px 44px rgba(15,23,42,0.18); gap: 16px; }
+          .ms-grid { gap: 18px; }
+          .ms-copy { padding: 4px 2px 0; }
+          .ms-lead { margin-top: 10px; font-size: 15px; line-height: 1.55; }
+          .ms-cue-title { font-size: 18px; }
+          .ms-cue-body { font-size: 14px; }
+          .ms-bullets { gap: 8px; }
+          .ms-bullets li { font-size: 14px; align-items: flex-start; }
+          .ms-cta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+          .ms-cta .btn-primary,
+          .ms-cta .btn-ghost { width: 100%; justify-content: center; font-size: 14px; padding: 10px 0; }
+          .ms-steps { width: 100%; justify-content: space-between; margin-top: 20px; }
+          .step { font-size: 13px; padding: 8px 12px; }
+          .ms-video-wrap { padding: 0; }
+          .ms-progress { margin: 14px 0 10px; }
+          .ms-video { width: 100%; border-radius: 24px; box-shadow: 0 16px 40px rgba(15,23,42,0.18); }
+          .ms-controls { top: 12px; right: 12px; }
+        }
       `}</style>
     </div>
   );

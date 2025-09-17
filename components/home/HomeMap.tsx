@@ -52,8 +52,11 @@ type Feature = {
   properties: { name: string; iso_a3?: string };
 };
 
-export default function HomeMap() {
+type Viewport = { width: number; height: number };
+
+export default function HomeMap({ variant = "default" }: { variant?: "default" | "compact" } = {}) {
   const router = useRouter();
+  const forcedCompact = variant === "compact";
   const [selected, setSelected] = useState<{ name: string; center: [number, number]; baseCenter: [number, number] } | null>(null);
   // Pull the world closer to the header by default
   // Start 50% closer than before (zoom 1.5 instead of 1)
@@ -110,6 +113,7 @@ export default function HomeMap() {
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const [viewport, setViewport] = useState<Viewport>({ width: 1440, height: 900 });
   const [panelOffset, setPanelOffset] = useState(140);
   const searchParams = useSearchParams();
   const [compareOpen, setCompareOpen] = useState(false);
@@ -121,7 +125,7 @@ export default function HomeMap() {
   const savedSet = useMemo(() => new Set(saved.map((i) => i.uni)), [saved]);
   // Mobile results control
   const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
-  const [isSmall, setIsSmall] = useState(false);
+  const [isSmall, setIsSmall] = useState(forcedCompact);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Compare persistence + deep link
@@ -313,15 +317,17 @@ export default function HomeMap() {
   // Detect small screens (sm/md) for sheet behavior
   useEffect(() => {
     function check() {
-      const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
-      setIsSmall(w < 1024); // match < lg
+      const w = typeof window !== "undefined" ? window.innerWidth : 1440;
+      const h = typeof window !== "undefined" ? window.innerHeight : 900;
+      setViewport({ width: w, height: h });
+      setIsSmall(forcedCompact || w < 1024); // match < lg or compact override
     }
     check();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', check);
-      return () => window.removeEventListener('resize', check);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
     }
-  }, []);
+  }, [forcedCompact]);
 
   // Initial mobile focus will be snapped to Italy centroid once geographies are available
   const initApplied = useRef(false);
@@ -412,10 +418,18 @@ export default function HomeMap() {
     }
   }, [uniData, isSmall, selected]);
 
+  const compactHeight = Math.max(Math.min(viewport.height - 120, 620), 420);
+  const desktopHeight = Math.max(viewport.height - 120, 640);
+  const mapHeight = (forcedCompact || isSmall) ? compactHeight : desktopHeight;
+  const outerClass = (forcedCompact || isSmall) ? "relative px-4 pb-10 pt-4 space-y-6" : "relative";
+  const mapShellClass = (forcedCompact || isSmall)
+    ? "relative overflow-hidden rounded-[28px] border border-white/30 bg-white/10 p-0 shadow-[0_24px_60px_rgba(30,64,175,0.18)] backdrop-blur"
+    : "relative rounded-none border-0 p-0 overflow-hidden";
+
   return (
-    <div className="relative">
+    <div className={outerClass}>
       {/* Hero map */}
-      <div className="relative rounded-none border-0 p-0 overflow-hidden" style={{ height: "calc(100svh - 120px)" }}>
+      <div className={mapShellClass} style={{ height: mapHeight }}>
         {/* No Back to world button per new default UX */}
 
         {/* Title removed per latest UX request */}
@@ -817,6 +831,3 @@ export default function HomeMap() {
     </div>
   );
 }
-
-
-

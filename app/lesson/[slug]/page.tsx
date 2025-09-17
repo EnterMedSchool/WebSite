@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -76,80 +76,64 @@ export default function LessonPage() {
     })();
 
     const precheckAndRun = async () => {
-      // Optional pre-check: if user lacks any paid entitlements, skip authed lesson APIs entirely
-      // This prevents repeated 403s when visiting paid content without membership.
-      let notEntitled = false;
-      if (hasAuth) {
-        try {
-          const w: any = typeof window !== 'undefined' ? (window as any) : {};
-          let ms: any = w.__ems_membership;
-          if (!ms) {
-            const r = await fetch('/api/me/membership', { cache: 'no-store', credentials: 'include' }).catch(()=>null as any);
-            if (r) {
-              const j = await r.json().catch(()=> ({}));
-              if (r.ok) { ms = j; w.__ems_membership = j; }
-            }
-          }
-          if (ms && (ms.isPremium || ms.hasImat)) {
-            notEntitled = false;
-          } else if (ms) {
-            notEntitled = true;
-          }
-        } catch {}
-      }
-
-      // Only let denial cookie block when user is not entitled
-      const cookieBlocks = deniedPaid && notEntitled;
-      if (hasAuth && !cookieBlocks && !notEntitled) {
-    // Always fetch fresh bundle for authed users to reflect latest progress
-    let gotPlayerFromBundle = false;
-    fetchBundleDedupe(slug, async () => {
-      const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
-      if (r.status === 200) return r.json();
-      if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
-      if (r.status === 403) {
+      if (!hasAuth) return;
+      if (deniedPaid) {
         setBundleErr('forbidden');
-        try { document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`; } catch {}
-        throw new Error('forbidden');
+        setPlayerErr('forbidden');
+        try { setPlayer({ provider: null, iframeSrc: null, locked: true, lockReason: 'paid_course', source: 'client' } as any); } catch {}
+        return;
       }
-      setBundleErr('error'); throw new Error('error');
-    })
-      .then((j) => { if (!alive) return; setBundle(j); setBundleCached(slug, j); if (j?.player) { setPlayer(j.player); setPlayerCached(slug, j.player); gotPlayerFromBundle = true; } })
-      .catch(() => { if (alive) { setBundleErr((e)=> e||'error'); setAuthed(false); } });
-    // Player info (iframeSrc / locked)  short TTL cache (60s) due to signed URLs
-    setPlayer(null); setPlayerErr(null);
-    const cachedP = getPlayerCached(slug, 0) as any;
-    if (cachedP) {
-      setPlayer(cachedP);
-    } else if (!gotPlayerFromBundle && !deniedPaid) {
-      fetchPlayerDedupe(slug, async () => {
-        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include', cache: 'no-store' });
+      const cachedP = getPlayerCached(slug, 0) as any;
+      if (cachedP) {
+        setPlayer(cachedP);
+      } else {
+        setPlayer(null);
+      }
+      setPlayerErr(null);
+      const loadPlayer = () => {
+        fetchPlayerDedupe(slug, async () => {
+          const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/player`, { credentials: 'include', cache: 'no-store' });
+          if (r.status === 200) return r.json();
+          if (r.status === 401) { setPlayerErr('unauthenticated'); throw new Error('unauthenticated'); }
+          if (r.status === 403) {
+            setPlayerErr('forbidden');
+            try { document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`; } catch {}
+            throw new Error('forbidden');
+          }
+          setPlayerErr('error'); throw new Error('error');
+        })
+          .then((j) => { if (!alive) return; setPlayer(j); setPlayerCached(slug, j); })
+          .catch(() => {});
+      };
+      fetchBundleDedupe(slug, async () => {
+        const r = await fetch(`/api/lesson/${encodeURIComponent(slug)}/bundle?scope=chapter&include=player,body`, { credentials: 'include' });
         if (r.status === 200) return r.json();
-        if (r.status === 401) { setPlayerErr('unauthenticated'); throw new Error('unauthenticated'); }
+        if (r.status === 401) { setBundleErr('unauthenticated'); throw new Error('unauthenticated'); }
         if (r.status === 403) {
-          setPlayerErr('forbidden');
+          setBundleErr('forbidden');
           try { document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`; } catch {}
           throw new Error('forbidden');
         }
-        setPlayerErr('error'); throw new Error('error');
+        setBundleErr('error'); throw new Error('error');
       })
-        .then((j) => { if (!alive) return; setPlayer(j); setPlayerCached(slug, j); })
-        .catch(() => {});
-    }
-    } else if (hasAuth && (deniedPaid && notEntitled) ) {
-      // Reflect denial immediately in UI without making API calls
-      setBundleErr('forbidden');
-      setPlayerErr('forbidden');
-      try { if (notEntitled) setPlayer({ provider: null, iframeSrc: null, locked: true, lockReason: 'paid_course', source: 'client' } as any); } catch {}
-    } else if (hasAuth && notEntitled) {
-      // No cookie yet but clearly not entitled – avoid hitting APIs and set a soft lock
-      setBundleErr('forbidden');
-      setPlayerErr('forbidden');
-      try {
-        setPlayer({ provider: null, iframeSrc: null, locked: true, lockReason: 'paid_course', source: 'client' } as any);
-        document.cookie = `ems_paid_denied_l_${slug}=1; Max-Age=600; Path=/`;
-      } catch {}
-    }
+        .then((j) => {
+          if (!alive) return;
+          setBundle(j);
+          setBundleCached(slug, j);
+          if (j?.player) {
+            setPlayer(j.player);
+            setPlayerCached(slug, j.player);
+          } else if (!cachedP) {
+            loadPlayer();
+          }
+        })
+        .catch(() => {
+          if (!alive) return;
+          setBundleErr((e) => e || 'error');
+          if (!cachedP) {
+            loadPlayer();
+          }
+        });
     };
     precheckAndRun();
     // Try static guest JSON from CDN (free lessons)
@@ -293,6 +277,7 @@ export default function LessonPage() {
   const relevantQuestions = useMemo(() => {
     // Guests: do not expose or compute questions; keep the card blurred only
     if (!authed) return [] as LessonQuestionItem[];
+    void pendingVersion; // re-run when local pending progress changes
     let arr: any[] = [];
     if (bundle?.questionsByLesson && lessonId) arr = bundle.questionsByLesson[String(lessonId)] || [];
     else if (guest?.questionsByLesson && lessonId) arr = guest.questionsByLesson[String(lessonId)] || [];
@@ -319,7 +304,7 @@ export default function LessonPage() {
       const status = st === 'correct' ? 'correct' : st === 'incorrect' ? 'incorrect' : 'todo';
       return { id: String(q.id), title: String(q.prompt || q.text || `Q${i+1}`), status };
     });
-  }, [bundle, guest, lessonId, pendingVersion]) as LessonQuestionItem[];
+  }, [bundle, guest, lessonId, pendingVersion, authed]) as LessonQuestionItem[];
   const qTotal = relevantQuestions.length;
   const qCorrect = relevantQuestions.filter((q) => q.status === 'correct').length;
   const lessonsList = useMemo(() => (bundle?.lessons || guest?.lessons || []) as any[], [bundle, guest]);
@@ -365,13 +350,13 @@ export default function LessonPage() {
   const chapterLabelsDetailed = useMemo(() => {
     const arr: string[] = [];
     try {
-      arr.push(`${String(chapter.title || 'Chapter')} – ${Number(chapterQCorrect||0)}/${Number(chapterQTotal||0)} correct across ${Math.max(0, lessonsList.length)} lessons`);
+      arr.push(`${String(chapter.title || 'Chapter')} - ${Number(chapterQCorrect||0)}/${Number(chapterQTotal||0)} correct across ${Math.max(0, lessonsList.length)} lessons`);
     } catch { arr.push(String(chapter.title || 'Chapter')); }
     for (const l of lessonsList as any[]) {
       const s = byLessonMap[String(Number(l.id))] || {};
       const q = Number(s.total || 0);
       const done = completedIdSet.has(Number(l.id));
-      arr.push(`${String(l.title)} – ${done ? 'Done' : 'To do'} – ${q} questions`);
+      arr.push(`${String(l.title)} - ${done ? 'Done' : 'To do'} - ${q} questions`);
     }
     return arr;
   }, [chapter.title, lessonsList, byLessonMap, completedIdSet, chapterQTotal, chapterQCorrect]);
@@ -871,6 +856,12 @@ export default function LessonPage() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

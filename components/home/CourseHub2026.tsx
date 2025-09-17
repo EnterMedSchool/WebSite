@@ -17,9 +17,65 @@ export default function CourseHub2026() {
     { name: 'Sat', items: [ { type: 'Event', title: 'Student Meetup', time: '11:00', span: 40 } ] },
     { name: 'Sun', items: [ { type: 'Revision', title: 'Study Group — Library', time: '13:00', span: 60 } ] },
   ]), []);
+  const mobileHighlights = [
+    {
+      id: 'feed',
+      label: 'Feed',
+      title: 'Stay on track',
+      copy: 'Reminders, events and quick wins gathered in one scrollable feed.',
+      bullets: ['Pin urgent tasks', 'Color-coded priorities', 'Swipe to acknowledge'],
+      accent: 'indigo',
+    },
+    {
+      id: 'planner',
+      label: 'Planner',
+      title: 'Plan and preview',
+      copy: 'Weekly overview with tap targets for lectures, labs and rotations.',
+      bullets: ['Drag-and-drop scheduling', 'Alerts before busy weeks', 'Tap to open detailed view'],
+      accent: 'emerald',
+    },
+    {
+      id: 'support',
+      label: 'Support',
+      title: 'Never study alone',
+      copy: 'Messages, annotations and mentor tips living alongside your coursework.',
+      bullets: ['Reply inline with classmates', 'Flag concepts for review', 'Share resources instantly'],
+      accent: 'violet',
+    },
+  ];
 
   return (
     <section className="wch-root" aria-labelledby="wch-heading">
+      <div className="wch-mobile" aria-labelledby="wch-mobile-heading">
+        <div className="mobile-card hero">
+          <span className="mobile-kicker">Course Hub</span>
+          <h3 id="wch-mobile-heading" className="mobile-title">Entirely New Course System</h3>
+          <p className="mobile-copy">A redesigned flow that bundles lessons, flashcards and live planning into a single hub made for phones.</p>
+          <div className="mobile-cta">
+            <button type="button" className="mobile-primary">Explore lessons</button>
+            <button type="button" className="mobile-ghost">Open calendar</button>
+          </div>
+        </div>
+        <div className="mobile-highlights">
+          {mobileHighlights.map((item) => (
+            <article key={item.id} className={`mobile-card accent-${item.accent}`}>
+              <span className="mobile-label">{item.label}</span>
+              <h4 className="mobile-card-title">{item.title}</h4>
+              <p className="mobile-card-copy">{item.copy}</p>
+              <ul className="mobile-bullets" role="list">
+                {item.bullets.map((bullet, idx) => (
+                  <li key={idx}>{bullet}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+        <div className="mobile-support">
+          <p>Need a guided plan? We can tailor a weekly path or help you pick the right university shortlist.</p>
+          <button type="button" className="mobile-outline">Book a free consult</button>
+        </div>
+      </div>
+      <div className="wch-desktop">
       <div className="wch-grid">
         {/* Left: demos */}
         <div className="wch-demos">
@@ -206,6 +262,7 @@ export default function CourseHub2026() {
         </div>
       </div>
 
+      </div>
       <style jsx>{`
         .wch-root { margin-top: 3rem; }
         .wch-grid { display:grid; grid-template-columns: 1fr; gap: 24px; }
@@ -324,6 +381,31 @@ export default function CourseHub2026() {
         .mini-events { width:180px; padding:12px; background: linear-gradient(180deg,rgba(255,255,255,1),rgba(99,102,241,.10)); }
         .mini-list { display:grid; gap:6px; }
         .mini-list span { display:block; height:8px; border-radius:9999px; background: linear-gradient(90deg,#a78bfa,#60a5fa); box-shadow:0 6px 14px rgba(99,102,241,.28); }
+        .wch-mobile { display: none; }
+        .wch-desktop { display: block; }
+        .mobile-card { position: relative; border-radius: 24px; padding: 20px; background: rgba(255,255,255,0.94); border: 1px solid rgba(15,23,42,0.08); box-shadow: 0 18px 40px rgba(15,23,42,0.12); display: grid; gap: 12px; color: #0f172a; }
+        .mobile-card.hero { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.22)); }
+        .mobile-kicker { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #312e81; }
+        .mobile-title { font-size: 24px; font-weight: 900; line-height: 1.15; color: #0f172a; }
+        .mobile-copy { color: #1e293b; font-size: 15px; line-height: 1.55; }
+        .mobile-cta { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .mobile-primary { border-radius: 9999px; padding: 10px 0; font-weight: 800; background: linear-gradient(90deg,#6366f1,#22d3ee); color: white; border: none; box-shadow: 0 12px 28px rgba(79,70,229,0.32); }
+        .mobile-ghost { border-radius: 9999px; padding: 10px 0; font-weight: 800; border: 1px solid rgba(79,70,229,0.3); background: white; color: #312e81; }
+        .mobile-highlights { display: grid; gap: 16px; }
+        .mobile-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: rgba(15,23,42,0.55); }
+        .mobile-card-title { font-size: 18px; font-weight: 800; color: #0f172a; }
+        .mobile-card-copy { font-size: 14px; color: #1f2937; opacity: .85; }
+        .mobile-bullets { display: grid; gap: 6px; list-style: none; padding: 0; margin: 0; font-size: 13px; color: #0f172a; }
+        .mobile-bullets li { position: relative; padding-left: 18px; }
+        .mobile-bullets li::before { content: ""; position: absolute; left: 0; top: 8px; width: 8px; height: 8px; border-radius: 9999px; background: linear-gradient(135deg,#6366f1,#22d3ee); box-shadow: 0 6px 14px rgba(79,70,229,0.25); }
+        .accent-indigo { background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(79,70,229,0.08)); }
+        .accent-emerald { background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(45,212,191,0.08)); }
+        .accent-violet { background: linear-gradient(135deg, rgba(168,85,247,0.16), rgba(99,102,241,0.1)); }
+        .mobile-support { text-align: center; display: grid; gap: 10px; padding: 16px; border-radius: 24px; background: rgba(255,255,255,0.88); border: 1px solid rgba(15,23,42,0.08); box-shadow: 0 16px 36px rgba(15,23,42,0.12); }
+        .mobile-support p { font-size: 14px; color: #1e293b; }
+        .mobile-outline { border-radius: 9999px; padding: 10px 0; font-weight: 800; border: 1px solid rgba(6,95,70,0.25); background: white; color: #047857; }
+        @media (max-width: 1023px) { .wch-mobile { display: grid; gap: 18px; } .wch-desktop { display: none; } }
+        @media (min-width: 1024px) { .wch-mobile { display: none; } }
       `}</style>
     </section>
   );

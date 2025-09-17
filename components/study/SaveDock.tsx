@@ -21,7 +21,6 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
     });
     return () => {
       if (typeof unsub === 'function') {
-        // Call and ignore any return value to satisfy Effect cleanup type
         void unsub();
       }
     };
@@ -61,15 +60,17 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
     setSaving(false);
   }
 
-  // Autosave every 120s only when there are changes vs last saved hash
+  // Autosave every 3 minutes only when there are meaningful changes
   useEffect(() => {
     if (!cid) return;
     const id = window.setInterval(async () => {
       const pending = StudyStore.getPending(cid);
       const hash = StudyStore.getPendingHash(cid);
       const items = pending.lessons_completed.length + (pending.lessons_incomplete?.length || 0) + pending.question_status.length;
-      if (items === 0) return;
+      if (items === 0 || items < 3) return;
       if (pending.lastSavedHash && pending.lastSavedHash === hash) return;
+      const lastSavedAt = pending.lastSavedAt ? Number(pending.lastSavedAt) : 0;
+      if (lastSavedAt && Date.now() - lastSavedAt < 180000) return;
       try {
         setSaving(true);
         const res = await fetch('/api/study/sync', {
@@ -92,7 +93,7 @@ export default function SaveDock({ courseId }: { courseId?: number }) {
         }
       } catch {}
       setSaving(false);
-    }, 120000);
+    }, 180000);
     return () => window.clearInterval(id);
   }, [cid]);
 

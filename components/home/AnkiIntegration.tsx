@@ -277,6 +277,15 @@ export default function AnkiIntegration() {
         .pop-title { font-weight: 900; color: #111827; }
         .pop-body { margin-top: 4px; color: #334155; font-size: 13px; }
         .pop-cta { margin-top: 8px; font-size: 12px; font-weight: 900; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; padding: 4px 8px; border-radius: 9999px; display: inline-block; }
+        @media (max-width: 768px) {
+          .anki-root { border-radius: 28px; padding: 20px; background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); box-shadow: 0 18px 44px rgba(15,23,42,0.15); }
+          .anki-grid { gap: 18px; }
+          .anki-copy { padding: 4px 2px; }
+          .lead { font-size: 15px; line-height: 1.6; }
+          .points { font-size: 14px; }
+          .anki-demos { gap: 14px; }
+          .card { border-radius: 18px; }
+        }
       `}</style>
     </section>
   );

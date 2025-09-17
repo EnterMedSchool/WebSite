@@ -4,7 +4,8 @@ import { lessons } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { detectProviderFromSrc, extractIframeSrc, isPremiumSrc } from "@/lib/video/embed";
 import { requireUserId } from "@/lib/study/auth";
-import { checkCourseAccess } from "@/lib/lesson/access";
+import { checkCourseAccess, entitlementCookieOptions } from "@/lib/lesson/access";
+import { courseTokenName } from "@/lib/lesson/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,12 +39,16 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     const provider = detectProviderFromSrc(iframeSrc);
     let locked = false;
     let lockReason: string | undefined;
+    let accessTokenToSet: { value: string; expiresAt: number } | null = null;
 
     if (!demo) {
-      const access = await checkCourseAccess(userId || 0, Number((l as any).courseId));
+      const access = await checkCourseAccess(userId || 0, Number((l as any).courseId), { req });
       if (access.accessType === 'paid' && !access.allowed) {
         locked = true;
-        lockReason = 'Paid course — access required';
+        lockReason = 'Paid course - access required';
+        if (access.clearToken) accessTokenToSet = { value: '', expiresAt: 0 };
+      } else if (access.tokenToSet) {
+        accessTokenToSet = access.tokenToSet;
       }
     }
 
@@ -55,6 +60,17 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     const res = NextResponse.json({ provider, iframeSrc, locked, lockReason, source });
     // Short cache to reduce DB hits while developing
     res.headers.set("Cache-Control", userId ? "private, max-age=30" : "public, max-age=60");
+
+    if (accessTokenToSet) {
+      const name = courseTokenName(Number((l as any).courseId));
+      if (accessTokenToSet.value) {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        res.cookies.set(name, accessTokenToSet.value, entitlementCookieOptions(accessTokenToSet.expiresAt, nowSeconds));
+      } else {
+        res.cookies.set(name, '', { maxAge: 0, path: '/' });
+      }
+    }
+
     if (locked) {
       try {
         res.cookies.set(`ems_paid_denied_${Number((l as any).courseId)}`, String(Date.now()), { maxAge: 600, path: '/' });
@@ -66,3 +82,4 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     return NextResponse.json({ error: "internal_error", message: String(e?.message || e) }, { status: 500 });
   }
 }
+

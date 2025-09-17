@@ -4,6 +4,7 @@ import { getToken } from 'next-auth/jwt';
 import { db } from "@/lib/db";
 import { users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
+import { FREE_LESSON_SLUGS } from "@/lib/lesson/free-slugs";
 
 function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
@@ -52,16 +53,35 @@ export async function middleware(req: NextRequest) {
       // If referer is missing or invalid, deny to prevent off-page usage
       return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
     }
+
   }
 
-  // Temporary block: courses and chapters pages (focus on lessons only)
-  // - Block top-level /course and /courses (but not /course-mates)
-  // - Also block any /chapters or /chapter paths if present
+  // Temporary block: legacy course pages (focus on lessons/chapter experiences)
   const blockCourses = /^\/(courses?)(\/|$)/.test(pathname);
   const blockCourseSingular = /^\/course(\/|$)/.test(pathname);
-  const blockChapters = /^\/(chapters?|chapter)(\/|$)/.test(pathname);
-  if (blockCourses || blockCourseSingular || blockChapters) {
+  if (blockCourses || blockCourseSingular) {
     return new NextResponse('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  const lessonMatch = pathname.match(/^\/lesson\/([^/]+)/);
+  if (lessonMatch) {
+    const slug = lessonMatch[1];
+    if (!FREE_LESSON_SLUGS.has(slug)) {
+      try {
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+        if (!token) {
+          const url = req.nextUrl.clone();
+          url.pathname = '/signin';
+          url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
+          return NextResponse.redirect(url);
+        }
+      } catch {
+        const url = req.nextUrl.clone();
+        url.pathname = '/signin';
+        url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   // Feature guard: Timer/Tasks APIs hidden unless explicitly enabled
@@ -170,13 +190,12 @@ export const config = {
     '/api/course-mates/:path*',
     // Lesson APIs guarded with early checks
     '/api/lesson/:path*',
-    // Blocked sections
+    '/lesson/:path*',
+    // Blocked legacy sections
     '/course/:path*',
     '/courses/:path*',
-    '/chapter/:path*',
-    '/chapters/:path*',
     // Feature-flag block for widgets APIs
     '/api/timer/:path*',
     '/api/todos/:path*',
   ],
-};
+};\r\n

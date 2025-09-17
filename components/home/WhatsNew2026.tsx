@@ -158,6 +158,14 @@ export default function WhatsNew2026() {
         @media (prefers-reduced-motion: reduce) {
           .dash-path { animation: none; }
         }
+        @media (max-width: 768px) {
+          .wn-bg { border-radius: 28px; padding-left: 1.5rem; padding-right: 1.5rem; }
+          .wn-bg .select-none { text-align: left; }
+          .wn-bg .mx-auto { max-width: 100%; }
+          .wn-bg .mt-4 { margin-top: 1.25rem; }
+          .wn-bg .mt-6 { margin-top: 1.4rem; }
+          .wn-bg .dash-path { stroke-width: 8; }
+        }
       `}</style>
       <style jsx>{`
         .wn-seam-top { position:absolute; left:0; right:0; top:-2px; height:72px; pointer-events:none; }
@@ -172,4 +180,3 @@ export default function WhatsNew2026() {
     </section>
   );
 }
-
