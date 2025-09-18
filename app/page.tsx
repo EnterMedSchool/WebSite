@@ -1,5 +1,7 @@
 import { cookies, headers } from "next/headers";
+import PlatformCookieSync from "@/components/home/PlatformCookieSync";
 import { parsePlatformOverride, resolvePlatform } from "@/lib/platform";
+import type { PlatformTarget } from "@/lib/platform";
 
 type PageProps = {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -26,28 +28,24 @@ export default async function HomePage({ searchParams = {} }: PageProps) {
 
   const queryOverride = parsePlatformOverride(queryOverrideRaw);
   const cookieOverride = parsePlatformOverride(cookieOverrideRaw);
-
-  if (queryOverride) {
-    cookieStore.set(cookieKey, queryOverride, {
-      httpOnly: false,
-      sameSite: "lax",
-      secure: headerStore.get("x-forwarded-proto") === "https",
-      path: "/",
-    });
-  } else if (!cookieOverride || cookieOverride !== platform) {
-    cookieStore.set(cookieKey, platform, {
-      httpOnly: false,
-      sameSite: "lax",
-      secure: headerStore.get("x-forwarded-proto") === "https",
-      path: "/",
-    });
-  }
+  const desiredCookie: PlatformTarget = queryOverride ?? platform;
+  const shouldSync = desiredCookie !== cookieOverride;
 
   if (platform === "mobile") {
     const MobileHome = (await import("@/components/home/mobile/MobileHome")).default;
-    return <MobileHome />;
+    return (
+      <>
+        {shouldSync ? <PlatformCookieSync cookieKey={cookieKey} desired={desiredCookie} /> : null}
+        <MobileHome />
+      </>
+    );
   }
 
   const DesktopHome = (await import("@/components/home/desktop/DesktopHome")).default;
-  return <DesktopHome />;
+  return (
+    <>
+      {shouldSync ? <PlatformCookieSync cookieKey={cookieKey} desired={desiredCookie} /> : null}
+      <DesktopHome />
+    </>
+  );
 }

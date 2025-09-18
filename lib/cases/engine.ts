@@ -52,7 +52,8 @@ type CaseEngineAction =
   | { type: "hydrate"; summary: CaseSummary | undefined }
   | { type: "reset"; summary?: CaseSummary }
   | { type: "select-option"; stageSlug?: string; optionValue: string }
-  | { type: "jump-stage"; stageSlug: string };
+  | { type: "jump-stage"; stageSlug: string }
+  | { type: "advance-stage"; stageSlug?: string };
 
 const INITIAL_STATE: CaseEngineState = {
   status: "loading",
@@ -172,7 +173,7 @@ function createInitialState(summary: CaseSummary | undefined): CaseEngineState {
   };
 }
 
-function registerSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption) {
+function registerSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption, config?: { neutral?: boolean }) {
   const selected = state.selectedOptions[stage.slug] ?? [];
   if (!stage.allowMultiple && selected.includes(option.value)) {
     return state;
@@ -181,8 +182,9 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
     return state;
   }
 
-  const costTime = option.costTime ?? 0;
-  const scoreDelta = option.scoreDelta ?? 0;
+  const neutral = config?.neutral ?? false;
+  const costTime = neutral ? 0 : option.costTime ?? 0;
+  const scoreDelta = neutral ? 0 : option.scoreDelta ?? 0;
   const newScore = state.score + scoreDelta;
   const newTime = state.timeSpent + costTime;
   const reveals = option.reveals ?? [];
@@ -194,10 +196,10 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
 
   const feedback = typeof option.outcomes?.feedback === "string" ? (option.outcomes?.feedback as string) : undefined;
 
-  const newStreak = option.isCorrect ? state.streak + 1 : 0;
-  const mistakes = state.mistakes + (option.isCorrect ? 0 : 1);
-  const comboLevel = newStreak >= 3 ? Math.min(5, newStreak - 2) : 0;
-  const rawEnergyDelta = -costTime * 0.6 + scoreDelta * 1.2 + (option.isCorrect ? 8 : -10) + comboLevel * 2;
+  const newStreak = neutral ? state.streak : option.isCorrect ? state.streak + 1 : 0;
+  const mistakes = neutral ? state.mistakes : state.mistakes + (option.isCorrect ? 0 : 1);
+  const comboLevel = neutral ? state.comboLevel : newStreak >= 3 ? Math.min(5, newStreak - 2) : 0;
+  const rawEnergyDelta = neutral ? 0 : -costTime * 0.6 + scoreDelta * 1.2 + (option.isCorrect ? 8 : -10) + comboLevel * 2;
   const newEnergy = clampEnergy(state.masteryEnergy + rawEnergyDelta);
   const energyDelta = newEnergy - state.masteryEnergy;
 
@@ -219,7 +221,7 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
     takenAt: Date.now(),
     outcomes: option.outcomes ?? null,
     masteryEnergy: newEnergy,
-    masteryEnergyDelta: energyDelta,
+    masteryEnergyDelta: neutral ? 0 : energyDelta,
     comboLevel,
   };
 
@@ -249,8 +251,8 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
   } satisfies CaseEngineState;
 }
 
-function nextStateAfterSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption): CaseEngineState {
-  const registered = registerSelection(state, stage, option);
+function nextStateAfterSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption, config?: { neutral?: boolean }): CaseEngineState {
+  const registered = registerSelection(state, stage, option, config);
   let nextStageSlug = option.advanceTo ?? null;
 
   if (!nextStageSlug && stage.allowMultiple) {
@@ -283,6 +285,29 @@ function nextStateAfterSelection(state: CaseEngineState, stage: CaseStage, optio
   } satisfies CaseEngineState;
 }
 
+function advanceStage(state: CaseEngineState, stage: CaseStage): CaseEngineState {
+  if (stage.options.length > 0) {
+    return state;
+  }
+
+  const continueOption: CaseStageOption = {
+    id: -1,
+    value: "__advance__",
+    label: "Continue",
+    description: "",
+    detail: "",
+    isCorrect: true,
+    advanceTo: null,
+    costTime: 0,
+    scoreDelta: 0,
+    reveals: [],
+    outcomes: null,
+  };
+
+  return nextStateAfterSelection(state, stage, continueOption, { neutral: true });
+}
+
+
 function caseEngineReducer(state: CaseEngineState, action: CaseEngineAction): CaseEngineState {
   switch (action.type) {
     case "hydrate":
@@ -307,6 +332,14 @@ function caseEngineReducer(state: CaseEngineState, action: CaseEngineAction): Ca
       const option = stage.options.find((candidate) => candidate.value === action.optionValue);
       if (!option) return state;
       return nextStateAfterSelection(state, stage, option);
+    }
+    case "advance-stage": {
+      if (state.status !== "active" && state.status !== "completed") return state;
+      const stageSlug = action.stageSlug ?? state.currentStageSlug;
+      if (!stageSlug) return state;
+      const stage = state.stageMap[stageSlug];
+      if (!stage) return state;
+      return advanceStage(state, stage);
     }
     default:
       return state;
@@ -338,6 +371,12 @@ export function useCaseEngine(summary: CaseSummary | undefined) {
     dispatch({ type: "reset" });
   }, []);
 
+  const advance = useCallback(() => {
+    const target = currentStageRef.current;
+    if (!target) return;
+    dispatch({ type: "advance-stage", stageSlug: target });
+  }, []);
+
   const jumpToStage = useCallback(
     (stageSlug: string) => {
       dispatch({ type: "jump-stage", stageSlug });
@@ -354,6 +393,7 @@ export function useCaseEngine(summary: CaseSummary | undefined) {
     state,
     selectOption,
     reset,
+    advance,
     jumpToStage,
     currentStage,
   };

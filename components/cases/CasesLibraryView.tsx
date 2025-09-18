@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CaseSummary } from "@/lib/cases/types";
 import Link from "next/link";
 import { usePractice } from "./PracticeProvider";
 
@@ -22,6 +23,8 @@ export default function CasesLibraryView() {
   const systems = useMemo(() => ["All", ...new Set(bundle.cases.map((c) => c.system))], [bundle.cases]);
   const difficulties = useMemo(() => ["All", ...new Set(bundle.cases.map((c) => c.difficulty))], [bundle.cases]);
   const subjectOptions = useMemo(() => ["All", ...bundle.subjects.map((subject) => subject.slug)], [bundle.subjects]);
+
+  const firstCase = bundle.cases[0];
 
   const filtered = bundle.cases.filter((c) => {
     const matchesQuery = query.trim().length === 0 || `${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase());
@@ -56,6 +59,8 @@ export default function CasesLibraryView() {
           </Link>
         </div>
       </header>
+
+      <QuickStartCard primaryCase={firstCase} baseHref={baseHref} />
 
       <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
         <input
@@ -141,3 +146,51 @@ export default function CasesLibraryView() {
     </div>
   );
 }
+
+function QuickStartCard({ primaryCase, baseHref }: { primaryCase: CaseSummary | undefined; baseHref: string }) {
+  if (!primaryCase) {
+    return (
+      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-6 text-sm text-slate-200 shadow-xl shadow-indigo-950/20">
+        <p className="font-semibold text-white">No cases loaded yet.</p>
+        <p className="mt-1 text-slate-400">Switch collections or adjust filters to load your first guided case.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 rounded-3xl border border-slate-800/60 bg-slate-950/70 p-6 text-sm text-slate-200 shadow-xl shadow-indigo-950/20 md:grid-cols-[1.4fr,1fr]">
+      <div>
+        <h3 className="text-lg font-semibold text-white md:text-xl">Start your first guided case</h3>
+        <p className="mt-2 text-slate-300">Follow the prompts scene by scene and we will let you know when to continue.</p>
+        <ol className="mt-4 list-decimal space-y-1 pl-4 text-xs text-slate-400">
+          <li>Read the clue card carefully.</li>
+          <li>Select the action that best advances the workup.</li>
+          <li>Tap Continue whenever the card has no actions.</li>
+        </ol>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link
+            href={`${baseHref}/practice/${primaryCase.id}`}
+            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30"
+          >
+            Start guided case
+          </Link>
+          <Link href={`${baseHref}/debrief/${primaryCase.id}`} className="inline-flex items-center rounded-full border border-slate-800/60 px-4 py-2 text-sm text-slate-200 hover:border-indigo-400/60">
+            Preview debrief
+          </Link>
+        </div>
+      </div>
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-4 text-xs text-slate-300">
+        <p className="uppercase tracking-[0.3em] text-indigo-300">Next case</p>
+        <h4 className="mt-2 text-base font-semibold text-white">{primaryCase.title}</h4>
+        <p className="mt-1 text-slate-400">{primaryCase.subtitle ?? "Step-by-step diagnostic pathway."}</p>
+        <div className="mt-3 grid gap-1 text-xs text-slate-400">
+          <span>System: {primaryCase.system}</span>
+          <span>Difficulty: {primaryCase.difficulty}</span>
+          <span>Estimated time: {primaryCase.estimatedMinutes ?? 20} min</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+

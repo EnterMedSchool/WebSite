@@ -118,52 +118,47 @@ export default async function ChapterPage({ params }: { params: { slug: string }
   const firstLessonSlug = lessons[0]?.slug || null;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-slate-950">
-      <div className="pointer-events-none absolute inset-x-0 top-[-220px] h-[420px] bg-gradient-to-br from-indigo-500 via-violet-500 to-sky-500 opacity-60 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-56 left-12 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute -top-32 right-6 h-80 w-80 rounded-full bg-purple-500/20 blur-2xl" />
-      <div className="relative mx-auto w-full max-w-6xl px-4 pb-24 pt-16 lg:px-8">
-        <div className="space-y-10">
-          <section className="relative overflow-hidden rounded-[36px] bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 p-10 text-white shadow-[0_32px_84px_rgba(79,70,229,0.35)] ring-1 ring-white/10">
-            <div className="absolute -right-24 top-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
-            <div className="absolute -bottom-28 right-12 h-64 w-64 rounded-full bg-emerald-400/25 blur-3xl" />
-            <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+    <div className="min-h-screen bg-[#f5f7fb] pb-24">
+      <div className="mx-auto w-full max-w-6xl px-4 pt-14 lg:px-6">
+        <div className="space-y-8">
+          <section className="rounded-[32px] border border-slate-200 bg-white/95 px-8 py-10 shadow-sm">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_220px]">
               <div className="space-y-6">
-                <span className="inline-flex w-max items-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">Chapter</span>
-                <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl">{chapterRow.title}</h1>
+                <span className="inline-flex w-max items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500">Chapter overview</span>
+                <h1 className="text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">{chapterRow.title}</h1>
                 {chapterRow.description && (
-                  <p className="max-w-2xl text-base text-white/80">{chapterRow.description}</p>
+                  <p className="max-w-2xl text-base text-slate-600">{chapterRow.description}</p>
                 )}
-                <div className="flex flex-wrap items-center gap-3 text-[12px]">
-                  <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white/90">{formatCount(lessons.length, 'lesson')}</span>
-                  <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white/90">{formatCount(totalQuestions, 'question')}</span>
-                  <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white/90">{completedCount}/{lessons.length} completed</span>
-                </div>
-                <div className="space-y-3 text-[12px] text-white/85">
-                  <div className="font-medium uppercase tracking-[0.3em] text-white/60">Overall progress</div>
-                  <div className="relative h-2 w-full max-w-lg overflow-hidden rounded-full bg-white/25">
-                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${chapterProgressPct}%` }} />
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Lessons</div>
+                    <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCount(lessons.length, 'lesson')}</p>
+                    <p className="text-xs text-slate-600">{completedCount}/{lessons.length} completed</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <span>{completedCount}/{lessons.length} lessons</span>
-                    <span className="opacity-60">&bull;</span>
-                    <span>
-                      {totalCorrect}/{totalQuestions} correct
-                      {totalQuestions ? ` (${questionAccuracyPct}% accuracy)` : ''}
-                    </span>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Questions</div>
+                    <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCount(totalQuestions, 'question')}</p>
+                    <p className="text-xs text-slate-600">Across this chapter</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Progress</div>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white">
+                      <div className="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-indigo-600" style={{ width: `${chapterProgressPct}%` }} />
+                    </div>
+                    <p className="mt-3 text-xs text-slate-600">{totalCorrect}/{totalQuestions} correct &bull; {questionAccuracyPct}% accuracy</p>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-4 text-sm text-white/85">
+              <div className="flex flex-col gap-3">
                 {player?.iframeSrc && (
-                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90">Video preview available</span>
+                  <span className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Video preview</span>
                 )}
                 {firstLessonSlug && (
                   <Link
                     href={`/lesson/${firstLessonSlug}`}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition hover:shadow-xl hover:shadow-indigo-900/25"
+                    className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-slate-400/30 transition hover:bg-slate-800"
                   >
-                    Start chapter
+                    Start first lesson
                   </Link>
                 )}
               </div>
@@ -171,35 +166,29 @@ export default async function ChapterPage({ params }: { params: { slug: string }
           </section>
 
           {player?.iframeSrc && (
-            <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/80 p-2 shadow-2xl backdrop-blur">
-              <div className="relative overflow-hidden rounded-[28px] bg-slate-950/90">
-                <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-                  <iframe
-                    src={player.iframeSrc}
-                    className="absolute inset-0 h-full w-full rounded-[28px]"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    title={chapterRow.title}
-                  />
-                  <div className="absolute bottom-4 left-4 right-4 text-white drop-shadow">
-                    <div className="text-xs uppercase tracking-[0.3em] text-white/70">Video preview</div>
-                    <div className="text-lg font-semibold">{chapterRow.title}</div>
-                  </div>
-                </div>
+            <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
+              <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                <iframe
+                  src={player.iframeSrc}
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  title={chapterRow.title}
+                />
               </div>
             </section>
           )}
 
-          <section className="rounded-[32px] border border-white/10 bg-white/85 p-8 shadow-xl backdrop-blur">
+          <section className="rounded-[32px] border border-slate-200 bg-white/95 p-8 shadow-sm">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold text-slate-900">Lessons in this chapter</h2>
                 <p className="text-sm text-slate-500">{completedCount} of {lessons.length} completed &bull; {formatCount(totalQuestions, 'question')} across the chapter.</p>
               </div>
-              <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">{questionCounts.size} lesson{questionCounts.size === 1 ? '' : 's'} with questions</span>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">{questionCounts.size} lesson{questionCounts.size === 1 ? '' : 's'} with questions</span>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {lessons.map((lesson) => {
+            <div className="space-y-4">
+              {lessons.map((lesson, idx) => {
                 const totalQ = questionCounts.get(lesson.id) || 0;
                 const correct = correctByLesson.get(lesson.id) || 0;
                 const incorrect = incorrectByLesson.get(lesson.id) || 0;
@@ -209,22 +198,21 @@ export default async function ChapterPage({ params }: { params: { slug: string }
                   <Link
                     key={lesson.id}
                     href={`/lesson/${lesson.slug}`}
-                    className={`group relative overflow-hidden rounded-[24px] border border-white/30 bg-white/80 p-5 shadow-lg ring-1 ring-transparent transition hover:-translate-y-1 hover:shadow-2xl ${completed ? 'ring-emerald-300/80' : 'hover:ring-indigo-300/80'}`}
+                    className={`group flex items-center gap-5 rounded-3xl border px-5 py-4 shadow-sm transition hover:border-indigo-200 hover:shadow-md ${completed ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-white'}`}
                   >
-                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-indigo-400 to-violet-500 opacity-60" />
-                    <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-indigo-500">
-                      <span>Lesson {lesson.position + 1}</span>
-                      {completed && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">Completed</span>}
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600">{idx + 1}</span>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h3 className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600">{lesson.title}</h3>
+                        {completed && <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Completed</span>}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                        <span>{formatCount(totalQ, 'question')}</span>
+                        {attempted > 0 && <span>{correct}/{attempted} correct</span>}
+                        <span>Lesson {lesson.position + 1}</span>
+                      </div>
                     </div>
-                    <h3 className="mt-3 text-lg font-semibold text-slate-900 transition group-hover:text-indigo-600">{lesson.title}</h3>
-                    <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                      <span>{formatCount(totalQ, 'question')}</span>
-                      {attempted > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                          {correct}/{attempted} correct
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-xs font-semibold text-indigo-600 group-hover:text-indigo-700">Open</span>
                   </Link>
                 );
               })}
@@ -235,3 +223,4 @@ export default async function ChapterPage({ params }: { params: { slug: string }
     </div>
   );
 }
+
