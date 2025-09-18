@@ -549,301 +549,282 @@ export default function LessonPage() {
 
 
   return (
-    <div className="lesson-root mx-auto max-w-[1400px] p-6">
-      <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
-      {/* Header - UI only */}
-      <div className="lesson-header sticky top-16 z-10 relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_14px_42px_rgba(49,46,129,0.35)] ring-1 ring-indigo-900/20">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            {/* Breadcrumb-like pill with course > chapter (UI only) */}
-            <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
-              <a href={`/${course.slug}`} className="opacity-95 hover:underline">{course.title}</a>
-              <span className="opacity-80"></span>
-              <a href={`/${course.slug}/${chapter.slug}`} className="opacity-95 hover:underline">{chapter.title}</a>
-            </div>
-            <h1 className="truncate text-3xl font-extrabold tracking-tight sm:text-4xl">{lessonTitle}</h1>
-
-            {/* Compact status + visual bar (chapter-wide) */}
-            <div className="mt-3 w-full max-w-md text-[11px] font-medium text-white/90">
-              <div className="mb-1">Completed {chapterQCorrect}/{chapterQTotal} questions</div>
-              <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/25">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
-              </div>
-              <div className="mt-1 text-[10px] opacity-90">Chapter progress: {chapterPctUnits}%</div>
-            </div>
-
-            {/* Credits row */}
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-white/90">
-              <span>Author  <span className="font-semibold">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || ''}</span></span>
-              <span className="opacity-80"></span>
-              <span>Reviewed by  <span className="font-semibold">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || ''}</span></span>
-              <span className="opacity-80"></span>
-              <span className="hidden inline-flex items-center gap-1">Recently completed <span className="inline-flex -space-x-2 overflow-hidden pl-1">
-                <span className="h-5 w-5 rounded-full bg-white/70 ring-1 ring-white/80" />
-                <span className="h-5 w-5 rounded-full bg-white/60 ring-1 ring-white/80" />
-                <span className="h-5 w-5 rounded-full bg-white/50 ring-1 ring-white/80" />
-              </span></span>
-            </div>
-          </div>
-
-          {/* Actions cluster: course pill, favorite, mark complete (UI only) */}
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">{course.title}</span>
-            {/* Removed: open all chapters (redundant) */}
-            <button
-              onClick={() => setFav((v) => !v)}
-              className={`rounded-full px-2 py-1 text-xs font-semibold ${fav ? 'bg-rose-500 text-white' : 'bg-white/20 text-white/90 hover:bg-white/30'}`}
-              title={fav ? 'Unfavorite' : 'Favorite'}
-              aria-pressed={fav}
-            >
-              {fav ? '' : ''}
-            </button>
-            <button
-              disabled={!authed || !bundle?.lesson?.courseId || !bundle?.lesson?.id}
-              onClick={() => {
-                if (!authed) return;
-                if (bundle?.lesson?.courseId && bundle?.lesson?.id) {
-                  try {
-                    if (completed) {
-                      StudyStore.removeLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
-                      setCompleted(false);
-                    } else {
-                      StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
-                      setCompleted(true);
-                    }
-                  } catch {}
-                }
-              }}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${!authed ? 'bg-white/10 text-white/60 ring-white/25 cursor-not-allowed' : (completed ? 'bg-emerald-100 text-emerald-700 ring-emerald-300 hover:bg-emerald-100' : 'bg-white/20 text-white/90 ring-white/40 hover:bg-white/30')}`}
-              title={!authed ? 'Log in to track progress' : (completed ? 'Click to undo completion' : 'Mark this lesson complete')}
-            >
-              {!authed ? 'Login to complete' : (completed ? 'Completed (Undo)' : 'Mark as complete')}
-            </button>
-          </div>
-        </div>
-      </div>
-      {/* Toolbar */}
-      <div className="mt-4">
-        <StudyToolbar
-          mode={tab}
-          onMode={(m) => setTab(m)}
-          onFocusToggle={() => setFocusMode((v) => !v)}
-          focus={focusMode}
-          softLockPractice={false}
-          chapterCount={chapterDotsCount}
-          activeStep={activeDot}
-          chapterLabels={chapterLabelsDetailed}
-          chapterCompleted={chapterCompletedList}
-          lessonMenu={chapterLessonMenu}
-        />
-      </div>
-
-      {/* Content area */}
-      <div className={`mt-4 grid gap-4 ${focusMode ? '' : 'lg:grid-cols-[280px_1fr_320px]'}`}>
-        {/* Left: Chapter progress */}
-        {!focusMode && (
-          <aside className="order-first space-y-3">
-            {/* Flashcards (hide on mobile for now) */}
-            <div className="ios-card relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5 hidden md:block">
-              <div className="text-[12px] font-semibold text-indigo-900">Flashcards</div>
-              <div className="mt-2 opacity-40 pointer-events-none select-none">
-                <FlashcardsCTA count={10} tags={["hematology", "coagulation", "DIC"]} onStart={() => {}} />
-              </div>
-              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/40">
-                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
-              </div>
-              {!authed && (
-                <div className="pointer-events-none absolute inset-0 grid place-items-center rounded-2xl bg-white/70 backdrop-blur-sm">
-                  <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Log in to practice questions</span>
+    <div className="relative min-h-screen overflow-x-hidden bg-slate-950">
+      <div className="pointer-events-none absolute inset-x-0 top-[-220px] h-[420px] bg-gradient-to-br from-indigo-500 via-violet-500 to-sky-500 opacity-60 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-60 left-[12%] h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
+      <div className="pointer-events-none absolute -top-32 right-6 h-80 w-80 rounded-full bg-purple-500/20 blur-2xl" />
+      <div className="relative mx-auto w-full max-w-[1400px] px-4 pb-28 pt-16 lg:px-8">
+        <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
+        <div className="space-y-10">
+          <div className="relative overflow-hidden rounded-[36px] bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 p-10 text-white shadow-[0_32px_84px_rgba(79,70,229,0.35)] ring-1 ring-white/10">
+            <div className="absolute -right-24 top-12 h-48 w-48 rounded-full bg-white/20 blur-3xl" />
+            <div className="absolute -bottom-28 right-10 h-72 w-72 rounded-full bg-emerald-400/25 blur-3xl" />
+            <div className="relative flex flex-wrap items-start justify-between gap-8">
+              <div className="min-w-0 space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">
+                  <a href={`/${course.slug}`} className="opacity-95 hover:underline">{course.title}</a>
+                  <span className="opacity-60">/</span>
+                  <a href={`/${course.slug}/${chapter.slug}`} className="opacity-95 hover:underline">{chapter.title}</a>
                 </div>
-              )}
-            </div>
-            <div className="ios-card relative rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
-              <div className="text-[12px] font-semibold text-indigo-900">Question progress</div>
-
-              {/* Lesson summary */}
-              <div className="hidden mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
-                <div className="text-xs font-semibold text-indigo-900 truncate">Chapter: {chapter.title}</div>
-                <div className="text-[11px] text-indigo-800/70">Intro  35 min read</div>
-              </div>
-
-              {/* Lesson summary */}
-              <div className="mt-2 rounded-xl bg-indigo-50/60 p-3 ring-1 ring-inset ring-indigo-100">
-                <div className="truncate text-xs font-semibold text-indigo-900">Relevant to: {lessonTitle}</div>
-                <div className="text-[11px] text-indigo-800/80">{qCorrect}/{relevantQuestions.length} correct - {relevantQuestions.length - qCorrect} remaining</div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/60">
-                  <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${Math.round((qCorrect / Math.max(1, relevantQuestions.length)) * 100)}%` }} />
+                <h1 className="max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-5xl">{lessonTitle}</h1>
+                <div className="space-y-3 text-[12px] text-white/85">
+                  <div className="font-medium uppercase tracking-[0.3em] text-white/60">Chapter Progress</div>
+                  <div className="relative h-2 w-full max-w-md overflow-hidden rounded-full bg-white/25">
+                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                    <span>{chapterLessonsDone} lessons completed</span>
+                    <span className="opacity-60">&bull;</span>
+                    <span>{chapterQCorrect}/{chapterQTotal} questions correct</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-[12px] text-white/85">
+                  <span>Author <span className="font-semibold">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || ''}</span></span>
+                  <span className="opacity-50">/</span>
+                  <span>Reviewed by <span className="font-semibold">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || ''}</span></span>
                 </div>
               </div>
-
-              {/* Question list */}
-              <ul className="relative mt-2">
-                {relevantQuestions.map((q, i) => {
-                  const cls = q.status === 'correct' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : q.status === 'incorrect' ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-transparent hover:bg-gray-50 text-gray-800';
-                  const chip = q.status === 'correct' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : q.status === 'incorrect' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-gray-100 text-gray-700 ring-gray-300';
-                  const label = q.status === 'correct' ? 'Correct' : q.status === 'incorrect' ? 'Review' : 'To do';
-                  return (
-                    <li key={q.id} className="relative pl-8">
-                      {i < relevantQuestions.length - 1 && (
-                        <span className="absolute left-3 top-8 bottom-0 w-px bg-indigo-100" />
-                      )}
-                      <span className="absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full bg-gray-200 text-gray-700 text-[12px] font-semibold">{i + 1}</span>
-                      <button type="button" onClick={() => { setTab('practice'); setPracticeAll(false); setOpenQuestionId(Number(q.id)); }} className={`mb-2 w-full rounded-xl border px-3 py-2 text-left transition ${cls}`}>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="truncate text-sm font-medium">{q.title}</div>
-                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
-                          <div className="mt-0.5 text-[11px] text-gray-600">Single best answer  1 point</div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {/* Footer actions */}
-              <div className="mt-2 flex justify-end">
+              <div className="flex flex-col items-end gap-3 text-sm">
                 <button
                   type="button"
-                  onClick={() => { setTab('practice'); setPracticeAll(true); setOpenQuestionId(null); }}
-                  className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700"
+                  onClick={() => setTab('learn')}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition hover:shadow-xl hover:shadow-indigo-900/25"
                 >
-                  Practice all
+                  Start / Resume
                 </button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    onClick={() => setFav((v) => !v)}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition ${fav ? 'bg-rose-100/90 text-rose-700 ring-1 ring-inset ring-rose-200 hover:bg-rose-100' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                    title={fav ? 'Remove from favorites' : 'Save for later'}
+                    aria-pressed={fav}
+                  >
+                    {fav ? 'Saved to favorites' : 'Save for later'}
+                  </button>
+                  <button
+                    disabled={!authed || !bundle?.lesson?.courseId || !bundle?.lesson?.id}
+                    onClick={() => {
+                      if (!authed) return;
+                      if (bundle?.lesson?.courseId && bundle?.lesson?.id) {
+                        try {
+                          if (completed) {
+                            StudyStore.removeLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
+                            setCompleted(false);
+                          } else {
+                            StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
+                            setCompleted(true);
+                          }
+                        } catch {}
+                      }
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ring-1 ring-inset transition ${!authed ? 'cursor-not-allowed bg-white/10 text-white/60 ring-white/25' : (completed ? 'bg-emerald-100/90 text-emerald-700 ring-emerald-300 hover:bg-emerald-100' : 'bg-white/15 text-white/90 ring-white/30 hover:bg-white/25')}`}
+                    title={!authed ? 'Log in to track progress' : (completed ? 'Click to undo completion' : 'Mark this lesson complete')}
+                  >
+                    {!authed ? 'Login to complete' : (completed ? 'Completed (Undo)' : 'Mark as complete')}
+                  </button>
+                </div>
               </div>
-            </div>
-          </aside>
-        )}
-
-        {/* Middle: Main */}
-        <div className="space-y-4">
-          {/* Video embed */}
-          <div className="video-card ios-card relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
-            <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-              {effectiveIframeSrc ? (
-                <iframe
-                  className="absolute inset-0 h-full w-full"
-                  src={effectiveIframeSrc}
-                  title="Lesson video"
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  loading="lazy"
-                  style={{ border: 0 }}
-                />
-              ) : (
-                <div className="absolute inset-0 grid place-items-center bg-gray-100 text-gray-500">No video</div>
-              )}
-              {player?.locked && (
-                <div className="absolute inset-0 grid place-items-center bg-white/80 backdrop-blur-sm">
-                  <div className="rounded-xl border bg-white p-4 text-center shadow ring-1 ring-black/5">
-                    <div className="text-sm font-semibold text-gray-900">Locked</div>
-                    <div className="text-xs text-gray-600">{player?.lockReason || 'Login and enroll to watch this video.'}</div>
-                  </div>
-                </div>
-              )}
-              {effectiveIframeSrc && (
-                <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <div className="text-xs opacity-90">{course.title}</div>
-                  <div className="text-lg font-semibold">{lessonTitle}</div>
-                </div>
-              )}
             </div>
           </div>
-
-          {/* Learn tab  render lesson HTML body */}
-          {tab === "learn" && (
-            <div className="ios-card rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-              {!bodyHtml ? (
-                <div aria-busy="true" className="relative">
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-6 w-1/3 rounded bg-indigo-100" />
-                    <div className="h-3 w-5/6 rounded bg-indigo-50" />
-                    <div className="h-3 w-11/12 rounded bg-indigo-50" />
-                    <div className="h-3 w-10/12 rounded bg-indigo-50" />
-                    <div className="h-64 w-full rounded-xl bg-indigo-50" />
-                    <div className="h-3 w-4/5 rounded bg-indigo-50" />
-                    <div className="h-3 w-9/12 rounded bg-indigo-50" />
-                    <div className="h-3 w-7/12 rounded bg-indigo-50" />
+          <div className="rounded-[28px] border border-white/10 bg-white/80 p-5 shadow-xl backdrop-blur">
+            <StudyToolbar
+              mode={tab}
+              onMode={(m) => setTab(m)}
+              onFocusToggle={() => setFocusMode((v) => !v)}
+              focus={focusMode}
+              softLockPractice={false}
+              chapterCount={chapterDotsCount}
+              activeStep={activeDot}
+              chapterLabels={chapterLabelsDetailed}
+              chapterCompleted={chapterCompletedList}
+              lessonMenu={chapterLessonMenu}
+            />
+          </div>
+          <div className={`grid gap-6 ${focusMode ? '' : 'xl:grid-cols-[320px_minmax(0,1fr)_320px]'}`}>
+            {!focusMode && (
+              <aside className="space-y-6">
+                <div className="relative overflow-hidden rounded-[28px] border border-white/15 bg-white/80 p-6 shadow-lg backdrop-blur">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-indigo-800">Flashcards</div>
+                  <div className="mt-3 opacity-50 pointer-events-none select-none">
+                    <FlashcardsCTA count={10} tags={["hematology", "coagulation", "DIC"]} onStart={() => {}} />
                   </div>
-                  <div className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-2 rounded-full bg-indigo-600/90 px-3 py-1 text-xs font-semibold text-white shadow">
-                    <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white [animation-delay:-200ms]" />
-                    <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white [animation-delay:-100ms]" />
-                    <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-white" />
-                    <span>Loading lesson</span>
+                  <div className="pointer-events-none absolute inset-0 grid place-items-center bg-white/75 backdrop-blur">
+                    <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
+                  </div>
+                  {!authed && (
+                    <div className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-white/80 backdrop-blur">
+                      <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Log in to practice questions</span>
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-[28px] border border-white/15 bg-white/80 p-6 shadow-lg backdrop-blur">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-indigo-800">Question progress</div>
+                  <div className="mt-3 rounded-2xl bg-indigo-50/70 p-4 ring-1 ring-inset ring-indigo-100">
+                    <div className="truncate text-xs font-semibold text-indigo-900">Relevant to: {lessonTitle}</div>
+                    <div className="text-[11px] text-indigo-800/80">{qCorrect}/{relevantQuestions.length} correct - {relevantQuestions.length - qCorrect} remaining</div>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/70">
+                      <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-emerald-300" style={{ width: `${Math.round((qCorrect / Math.max(1, relevantQuestions.length)) * 100)}%` }} />
+                    </div>
+                  </div>
+                  {relevantQuestions.length > 0 && (
+                    <ul className="mt-4 space-y-3">
+                      {relevantQuestions.map((q, i) => {
+                        const cls = q.status === 'correct' ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900' : q.status === 'incorrect' ? 'border-rose-200 bg-rose-50/80 text-rose-900' : 'border-transparent bg-white/60 text-slate-800 hover:border-indigo-200 hover:bg-indigo-50/80';
+                        const chip = q.status === 'correct' ? 'bg-emerald-100 text-emerald-700 ring-emerald-200' : q.status === 'incorrect' ? 'bg-rose-100 text-rose-700 ring-rose-200' : 'bg-indigo-100 text-indigo-700 ring-indigo-200';
+                        const label = q.status === 'correct' ? 'Correct' : q.status === 'incorrect' ? 'Review' : 'To do';
+                        return (
+                          <li key={q.id} className="relative">
+                            <button
+                              type="button"
+                              onClick={() => { setTab('practice'); setPracticeAll(false); setOpenQuestionId(Number(q.id)); }}
+                              className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium shadow-sm transition ${cls}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="truncate">
+                                  <span className="mr-2 text-xs font-semibold text-slate-500">#{i + 1}</span>
+                                  {q.title}
+                                </div>
+                                <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 ring-inset ${chip}`}>{label}</span>
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => { setTab('practice'); setPracticeAll(true); setOpenQuestionId(null); }}
+                      className="rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 px-4 py-2 text-xs font-semibold text-white shadow transition hover:from-indigo-500 hover:to-violet-500"
+                    >
+                      Practice all
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <LessonBody slug={slug} html={bodyHtml} noApi={!authed} />
-              )}
-            </div>
-          )}
-
-          {/* Practice tab - shows bundled questions when available */}
-          {tab === "practice" && (
-            <div className="ios-card rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-              <div className="mb-2 text-sm font-semibold text-indigo-900">Practice</div>
-              {!bundle && !bundleErr && <p className="text-gray-700">Loading questions</p>}
-              {bundleErr === 'unauthenticated' && !guest && (
-                <p className="text-gray-700">Log in to see and practice questions.</p>
-              )}
-              {bundleErr === 'forbidden' && (
-                <p className="text-gray-700">This course is paid. Your account doesn&apos;t have access.</p>
-              )}
-              {bundle && mcqs.length > 0 && (
-                <div className="mt-2">
-                  <MCQPanel
-                    courseId={courseIdNum}
-                    questions={mcqs}
-                    initialStatus={initialStatus}
-                    openAll={practiceAll}
-                    openOnlyId={openQuestionId}
-                    disabled={!authed}
-                    onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
-                  />
+              </aside>
+            )}
+            <div className="space-y-6">
+              <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/80 p-2 shadow-2xl backdrop-blur">
+                <div className="relative overflow-hidden rounded-[28px] bg-slate-950/90">
+                  <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                    {effectiveIframeSrc ? (
+                      <iframe
+                        className="absolute inset-0 h-full w-full rounded-[28px]"
+                        src={effectiveIframeSrc}
+                        title="Lesson video"
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        loading="lazy"
+                        style={{ border: 0 }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 grid place-items-center bg-slate-900 text-sm font-semibold text-white/70">No video</div>
+                    )}
+                    {player?.locked && (
+                      <div className="absolute inset-0 grid place-items-center rounded-[28px] bg-slate-950/80 backdrop-blur">
+                        <div className="rounded-2xl border border-white/20 bg-white/90 p-5 text-center shadow-xl">
+                          <div className="text-sm font-semibold text-slate-900">Locked</div>
+                          <div className="text-xs text-slate-600">{player?.lockReason || 'Login and enroll to watch this video.'}</div>
+                        </div>
+                      </div>
+                    )}
+                    {effectiveIframeSrc && (
+                      <div className="absolute bottom-4 left-4 right-4 text-white drop-shadow">
+                        <div className="text-xs uppercase tracking-[0.3em] text-white/70">{course.title}</div>
+                        <div className="text-lg font-semibold">{lessonTitle}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Background tab  placeholder only */}
-          {tab === "background" && (
-            <>
-              <div className="ios-card rounded-2xl border bg-white p-6 text-sm shadow-sm ring-1 ring-black/5">
-                <div className="mb-2 text-sm font-semibold text-indigo-900">Background knowledge</div>
-                <p className="text-gray-700">Relevant foundations and reference material will appear here.</p>
               </div>
-              <BackgroundMap comingSoon />
-            </>
-          )}
+              {tab === "learn" && (
+                <div className="rounded-[32px] border border-white/15 bg-white/90 p-8 text-sm shadow-xl backdrop-blur">
+                  {!bodyHtml ? (
+                    <div aria-busy="true" className="relative">
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-6 w-1/3 rounded bg-indigo-100/70" />
+                        <div className="h-3 w-full rounded bg-indigo-50" />
+                        <div className="h-3 w-5/6 rounded bg-indigo-50" />
+                        <div className="h-3 w-4/5 rounded bg-indigo-50" />
+                        <div className="h-64 w-full rounded-3xl bg-indigo-50" />
+                        <div className="h-3 w-2/3 rounded bg-indigo-50" />
+                        <div className="h-3 w-3/4 rounded bg-indigo-50" />
+                        <div className="h-3 w-1/2 rounded bg-indigo-50" />
+                      </div>
+                      <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-indigo-600/90 px-3 py-1 text-xs font-semibold text-white shadow">
+                        <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-white [animation-delay:-200ms]" />
+                        <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-white [animation-delay:-100ms]" />
+                        <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-white" />
+                        <span>Loading lesson</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <LessonBody slug={slug} html={bodyHtml} noApi={!authed} />
+                  )}
+                </div>
+              )}
+              {tab === "practice" && (
+                <div className="rounded-[32px] border border-white/15 bg-white/90 p-8 text-sm shadow-xl backdrop-blur">
+                  <div className="mb-4 text-sm font-semibold text-indigo-900">Practice questions</div>
+                  {!bundle && !bundleErr && <p className="text-slate-600">Loading questions...</p>}
+                  {bundleErr === 'unauthenticated' && !guest && (
+                    <p className="text-slate-600">Log in to see and practice questions.</p>
+                  )}
+                  {bundleErr === 'forbidden' && (
+                    <p className="text-slate-600">This course is paid. Your account does not have access.</p>
+                  )}
+                  {bundle && mcqs.length > 0 && (
+                    <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 shadow-inner">
+                      <MCQPanel
+                        courseId={courseIdNum}
+                        questions={mcqs}
+                        initialStatus={initialStatus}
+                        openAll={practiceAll}
+                        openOnlyId={openQuestionId}
+                        disabled={!authed}
+                        onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+              {tab === "background" && (
+                <div className="space-y-6">
+                  <div className="rounded-[32px] border border-white/15 bg-white/90 p-8 text-sm shadow-xl backdrop-blur">
+                    <div className="mb-2 text-sm font-semibold text-indigo-900">Background knowledge</div>
+                    <p className="text-slate-600">Relevant foundations and reference material will appear here.</p>
+                  </div>
+                  <BackgroundMap comingSoon />
+                </div>
+              )}
+            </div>
+            {!focusMode && (
+              <div className="hidden space-y-6 xl:block">
+                <div className="relative overflow-hidden rounded-[28px] border border-white/15 bg-white/80 p-6 shadow-lg backdrop-blur">
+                  <div className="text-sm font-semibold text-indigo-900">Concept check</div>
+                  <div className="mt-6 h-24 rounded-2xl bg-indigo-50/70" />
+                  <div className="absolute inset-0 grid place-items-center bg-white/70 backdrop-blur">
+                    <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
+                  </div>
+                </div>
+                <div id="uni-resources" className="relative overflow-hidden rounded-[28px] border border-white/15 bg-white/80 p-6 shadow-lg backdrop-blur">
+                  <div className="text-sm font-semibold text-indigo-900">University Resources</div>
+                  <div className="mt-6 h-24 rounded-2xl bg-indigo-50/70" />
+                  <div className="absolute inset-0 grid place-items-center bg-white/70 backdrop-blur">
+                    <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Right: Sidebar (collapsible sections) */}
-        {!focusMode && (
-          <div className="hidden lg:block space-y-3">
-            <div className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
-              <div className="p-2 text-sm font-semibold text-indigo-900">Concept check</div>
-              <div className="h-24 opacity-30" />
-              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/60">
-                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
-              </div>
-            </div>
-            <div id="uni-resources" className="relative rounded-2xl border bg-white p-2 shadow-sm ring-1 ring-black/5 overflow-hidden">
-              <div className="p-2 text-sm font-semibold text-indigo-900">University Resources</div>
-              <div className="h-24 opacity-30" />
-              <div className="absolute inset-0 grid place-items-center backdrop-blur-sm bg-white/60">
-                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">Coming soon</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Mobile bottom nav for Learn/Practice/Notes (skeleton) */}
-      <div className="lesson-bottom-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t bg-white/90 p-3 shadow md:hidden supports-[backdrop-filter]:backdrop-blur-lg">
+      <div className="lesson-bottom-nav fixed inset-x-4 bottom-6 z-30 grid grid-cols-3 gap-3 rounded-3xl border border-white/20 bg-slate-900/90 p-3 shadow-2xl shadow-slate-900/40 backdrop-blur md:hidden">
         {(['learn','practice','background'] as const).map((m) => (
-          <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-2xl text-sm font-semibold transition active:scale-[.98] ${tab===m ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 text-gray-800'}`}>{m}</button>
+          <button key={m} onClick={() => setTab(m)} className={`h-11 rounded-2xl text-sm font-semibold transition active:scale-[.98] ${tab===m ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white shadow-lg' : 'bg-white/10 text-white/80 hover:bg-white/20'}`}>{m}</button>
         ))}
       </div>
-
-      {/* Save dock */}
       <SaveDock courseId={Number(bundle?.lesson?.courseId || 0)} />
     </div>
   );

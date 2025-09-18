@@ -1142,6 +1142,164 @@ export const termComments = pgTable(
 );
 
 
+// ---------------- Clinical case collections ----------------
+
+export const caseCollections = pgTable(
+  "case_collections",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 80 }).notNull().unique(),
+    name: varchar("name", { length: 160 }).notNull(),
+    description: text("description"),
+    accentColor: varchar("accent_color", { length: 32 }),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({ slugIdx: index("case_collections_slug_idx").on(t.slug) })
+);
+
+export const caseSubjects = pgTable(
+  "case_subjects",
+  {
+    id: serial("id").primaryKey(),
+    collectionId: integer("collection_id")
+      .references(() => caseCollections.id, { onDelete: "cascade" })
+      .notNull(),
+    slug: varchar("slug", { length: 80 }).notNull(),
+    name: varchar("name", { length: 160 }).notNull(),
+    description: text("description"),
+    position: integer("position").default(0).notNull(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    collectionIdx: index("case_subjects_collection_idx").on(t.collectionId),
+    collectionSlugIdx: uniqueIndex("case_subjects_collection_slug_idx").on(t.collectionId, t.slug),
+  })
+);
+
+export const caseCases = pgTable(
+  "case_cases",
+  {
+    id: serial("id").primaryKey(),
+    subjectId: integer("subject_id")
+      .references(() => caseSubjects.id, { onDelete: "cascade" })
+      .notNull(),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    subtitle: text("subtitle"),
+    overview: text("overview"),
+    difficulty: varchar("difficulty", { length: 24 }).default("moderate").notNull(),
+    estimatedMinutes: integer("estimated_minutes").default(15).notNull(),
+    phaseCount: integer("phase_count").default(2).notNull(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    subjectIdx: index("case_cases_subject_idx").on(t.subjectId),
+    subjectSlugIdx: uniqueIndex("case_cases_subject_slug_idx").on(t.subjectId, t.slug),
+  })
+);
+
+export const caseStages = pgTable(
+  "case_stages",
+  {
+    id: serial("id").primaryKey(),
+    caseId: integer("case_id")
+      .references(() => caseCases.id, { onDelete: "cascade" })
+      .notNull(),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    subtitle: text("subtitle"),
+    phase: integer("phase").default(1).notNull(),
+    stageType: varchar("stage_type", { length: 32 }).default("info").notNull(),
+    orderIndex: integer("order_index").default(0).notNull(),
+    allowMultiple: boolean("allow_multiple").default(false).notNull(),
+    isTerminal: boolean("is_terminal").default(false).notNull(),
+    info: jsonb("info"),
+    metadata: jsonb("metadata"),
+  },
+  (t) => ({
+    caseOrderIdx: index("case_stages_case_order_idx").on(t.caseId, t.phase, t.orderIndex),
+    caseSlugIdx: uniqueIndex("case_stages_case_slug_idx").on(t.caseId, t.slug),
+  })
+);
+
+export const caseStageOptions = pgTable(
+  "case_stage_options",
+  {
+    id: serial("id").primaryKey(),
+    stageId: integer("stage_id")
+      .references(() => caseStages.id, { onDelete: "cascade" })
+      .notNull(),
+    value: varchar("value", { length: 80 }).notNull(),
+    label: text("label").notNull(),
+    description: text("description"),
+    detail: text("detail"),
+    isCorrect: boolean("is_correct").default(false).notNull(),
+    advanceTo: varchar("advance_to", { length: 120 }),
+    costTime: integer("cost_time"),
+    scoreDelta: integer("score_delta").default(0).notNull(),
+    reveals: jsonb("reveals"),
+    outcomes: jsonb("outcomes"),
+    metadata: jsonb("metadata"),
+  },
+  (t) => ({
+    stageIdx: index("case_stage_options_stage_idx").on(t.stageId),
+    uniqueOption: uniqueIndex("case_stage_options_unique_idx").on(t.stageId, t.value),
+  })
+);
+
+export const caseAttempts = pgTable(
+  "case_attempts",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    caseId: integer("case_id")
+      .references(() => caseCases.id, { onDelete: "cascade" })
+      .notNull(),
+    status: varchar("status", { length: 24 }).default("in_progress").notNull(),
+    phase: integer("phase").default(1).notNull(),
+    currentStageSlug: varchar("current_stage_slug", { length: 120 }),
+    score: integer("score").default(0).notNull(),
+    evidence: jsonb("evidence").default('[]'::jsonb),
+    state: jsonb("state").default('{}'::jsonb),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+  },
+  (t) => ({
+    userCaseUnique: uniqueIndex("case_attempts_user_active_idx").on(t.userId, t.caseId, t.status),
+    userIdx: index("case_attempts_user_idx").on(t.userId, t.caseId),
+  })
+);
+
+export const caseAttemptSteps = pgTable(
+  "case_attempt_steps",
+  {
+    id: serial("id").primaryKey(),
+    attemptId: integer("attempt_id")
+      .references(() => caseAttempts.id, { onDelete: "cascade" })
+      .notNull(),
+    stageId: integer("stage_id")
+      .references(() => caseStages.id, { onDelete: "cascade" })
+      .notNull(),
+    optionId: integer("option_id")
+      .references(() => caseStageOptions.id, { onDelete: "cascade" })
+      .notNull(),
+    optionValue: varchar("option_value", { length: 80 }).notNull(),
+    correct: boolean("correct").default(false).notNull(),
+    timeSpent: integer("time_spent"),
+    evidence: jsonb("evidence"),
+    state: jsonb("state"),
+    takenAt: timestamp("taken_at").defaultNow().notNull(),
+  },
+  (t) => ({ attemptIdx: index("case_attempt_steps_attempt_idx").on(t.attemptId) })
+);
+
 // ---------------- Auth helper: verification/password reset tokens ----------------
 
 export const verificationTokens = pgTable(

@@ -1,14 +1,48 @@
 {
   "version": 1,
-  "generatedAt": "dev-placeholder",
-  "totalNodes": 5,
-  "totalEdges": 4,
-  "courses": [
-    { "id": 1, "slug": "foundations", "title": "Foundations", "size": 3, "x": 4000, "y": 0, "r": 500 },
-    { "id": 2, "slug": "physiology", "title": "Physiology", "size": 2, "x": -4000, "y": 0, "r": 500 }
-  ],
-  "cross": [
-    { "from": 1, "to": 2, "count": 1 }
+  "generatedAt": "2025-09-18T11:30:18.988Z",
+  "totalNodes": 86,
+  "totalEdges": 197,
+  "tracks": [
+    {
+      "key": "bio",
+      "title": "Core Biology Foundations",
+      "courseId": 101,
+      "color": "#22c55e",
+      "tiers": 6,
+      "totalLessons": 17
+    },
+    {
+      "key": "chem",
+      "title": "Chemistry & Biochemistry",
+      "courseId": 102,
+      "color": "#6366f1",
+      "tiers": 6,
+      "totalLessons": 18
+    },
+    {
+      "key": "phys",
+      "title": "Systems Physiology",
+      "courseId": 103,
+      "color": "#0ea5e9",
+      "tiers": 6,
+      "totalLessons": 17
+    },
+    {
+      "key": "immune",
+      "title": "Immunology & Hemostasis",
+      "courseId": 104,
+      "color": "#f97316",
+      "tiers": 6,
+      "totalLessons": 17
+    },
+    {
+      "key": "clinical",
+      "title": "Clinical Integration",
+      "courseId": 105,
+      "color": "#facc15",
+      "tiers": 6,
+      "totalLessons": 17
+    }
   ]
 }
-

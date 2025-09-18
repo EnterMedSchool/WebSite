@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ArticleContent, BlogArticleMeta } from "@/lib/blog/types";
 import clsx from "clsx";
+import type { ArticleContent, BlogArticleMeta } from "@/lib/blog/types";
 
 const CountrySpotlight = dynamic(() => import("./CountrySpotlight"), { ssr: false });
 const HomeMap = dynamic(() => import("../home/HomeMap"), { ssr: false });
@@ -35,9 +35,9 @@ type RecommendedArticle = {
 export default function ArticleClient({ meta, article, siteUrl, structuredData }: ArticleClientProps) {
   const heroChips = useMemo(
     () => [
-      meta.exam ? { label: meta.exam, tone: "exam" } : null,
-      meta.country ? { label: meta.country, tone: "country" } : null,
-      { label: `${article.readingMinutes}-minute read`, tone: "time" },
+      meta.exam ? { label: meta.exam, tone: "exam" as const } : null,
+      meta.country ? { label: meta.country, tone: "country" as const } : null,
+      { label: `${article.readingMinutes}-minute read`, tone: "time" as const },
     ].filter(Boolean) as Array<{ label: string; tone: "exam" | "country" | "time" }>,
     [meta.exam, meta.country, article.readingMinutes],
   );
@@ -51,19 +51,19 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
         action: "Download the planning template",
       },
       {
-        phase: "February - April",
+        phase: "February – April",
         title: "Master the fundamentals",
         description: "Alternate scientific theory blocks with logical reasoning drills. Track weekly scores to spot gaps early.",
         action: "Follow the adaptive weekly schedule",
       },
       {
-        phase: "May - June",
+        phase: "May – June",
         title: "Simulate admission day",
         description: "Sit full IMAT mocks under timed conditions, then review errors with our analytics workbook for targeted fixes.",
         action: "Book proctored mock sessions",
       },
       {
-        phase: "July - August",
+        phase: "July – August",
         title: "Paperwork + rankings",
         description: "Finish translations, notarise certificates, and finalise Universitaly rankings before submissions open.",
         action: "Preview the application checklist",
@@ -81,7 +81,7 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
   const recommendedArticles: RecommendedArticle[] = useMemo(
     () => [
       {
-        title: "IMAT Past Papers 2014-2024: Smart Analysis",
+        title: "IMAT Past Papers 2014–2024: Smart Analysis",
         summary: "Discover the recurring question themes and weightings to prioritise what moves your score.",
         href: "#",
         readMinutes: 7,
@@ -157,43 +157,47 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
         <div className="pointer-events-none absolute left-[-220px] top-12 h-[620px] w-[520px] rounded-full bg-[radial-gradient(circle,_rgba(236,72,153,0.28)_0%,_transparent_62%)] blur-3xl" />
         <div className="pointer-events-none absolute right-[-180px] top-24 h-[520px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(56,189,248,0.24)_0%,_transparent_64%)] blur-3xl" />
 
-        <div className="relative mx-auto flex max-w-[1600px] flex-col gap-6 px-4 pt-10 sm:px-8 xl:flex-row xl:gap-10 xl:px-12 2xl:px-16">
-          {toc.length > 0 && (
-            <motion.aside
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0, transition: { delay: 0.2, duration: 0.5, ease: "easeOut" } }}
-              className="sticky top-28 hidden h-fit min-w-[240px] xl:flex"
-            >
-              <div className="relative w-full">
-                <div className="absolute -top-10 left-1/2 hidden h-24 w-24 -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/30 via-transparent to-transparent blur-2xl xl:block" />
-                <div className="rounded-3xl bg-white/80 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.24)] ring-1 ring-white/60 backdrop-blur">
-                  <p className="text-xs font-semibold uppercase tracking-[0.38em] text-indigo-500">Quick map</p>
-                  <p className="mt-2 text-sm text-slate-600">Jump between the key sections of this IMAT roadmap.</p>
-                  <ul className="mt-4 space-y-2 text-sm">
-                    {toc.map((heading) => (
-                      <li key={heading.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleJumpTo(heading.id)}
-                          className={clsx(
-                            "group flex w-full items-center gap-2 rounded-2xl px-4 py-2 text-left transition",
-                            activeHeading === heading.id
-                              ? "bg-indigo-50 text-indigo-600 shadow-inner shadow-indigo-500/20"
-                              : "text-slate-600 hover:bg-slate-100/80 hover:text-indigo-600",
-                          )}
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-current transition-transform group-hover:scale-125" aria-hidden="true" />
-                          <span>{heading.text}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </motion.aside>
-          )}
+        {toc.length > 0 && (
+          <motion.aside
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0, transition: { delay: 0.2, duration: 0.5, ease: "easeOut" } }}
+            className="hidden xl:block"
+            style={{
+              position: "fixed",
+              top: "7.5rem",
+              left: "max(1.5rem, calc((100vw - 1280px) / 2 - 280px))",
+              width: "18rem",
+              zIndex: 40,
+            }}
+          >
+            <div className="rounded-3xl bg-white/80 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.24)] ring-1 ring-white/60 backdrop-blur">
+              <p className="text-xs font-semibold uppercase tracking-[0.38em] text-indigo-500">Quick map</p>
+              <p className="mt-2 text-sm text-slate-600">Jump between the key sections of this IMAT roadmap.</p>
+              <ul className="mt-4 space-y-2 text-sm">
+                {toc.map((heading) => (
+                  <li key={heading.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleJumpTo(heading.id)}
+                      className={clsx(
+                        "group flex w-full items-center gap-2 rounded-2xl px-4 py-2 text-left transition",
+                        activeHeading === heading.id
+                          ? "bg-indigo-50 text-indigo-600 shadow-inner shadow-indigo-500/20"
+                          : "text-slate-600 hover:bg-slate-100/80 hover:text-indigo-600",
+                      )}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current transition-transform group-hover:scale-125" aria-hidden="true" />
+                      <span>{heading.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.aside>
+        )}
 
-          <div className="flex-1 space-y-16">
+        <div className="relative mx-auto w-full max-w-[1600px] px-4 pt-10 sm:px-8 xl:px-12 2xl:px-16">
+          <div className="space-y-16">
             <section className="relative overflow-hidden rounded-[54px] bg-gradient-to-br from-indigo-950/70 via-indigo-900/55 to-indigo-900/60 p-[1px] shadow-[0_40px_120px_rgba(30,64,175,0.4)] ring-1 ring-indigo-500/30">
               <div className="rounded-[53px] bg-gradient-to-br from-white/90 via-white/92 to-white/95 p-8 sm:p-12 lg:p-14">
                 <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-14">
@@ -233,9 +237,13 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                             <p className="font-semibold text-slate-900">{meta.author.name}</p>
                             <p className="text-slate-600">{meta.author.title}</p>
                             <p className="text-slate-500">
-                              <time dateTime={meta.published}>Published {new Date(meta.published).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</time>
+                              <time dateTime={meta.published}>
+                                Published {new Date(meta.published).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                              </time>
                               <span className="mx-2">{"\u2022"}</span>
-                              <time dateTime={meta.updated}>Updated {new Date(meta.updated).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</time>
+                              <time dateTime={meta.updated}>
+                                Updated {new Date(meta.updated).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                              </time>
                             </p>
                           </div>
                         </div>
@@ -530,7 +538,7 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                 <span className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-200">Interactive map</span>
                 <h3 className="text-2xl font-semibold">Explore IMAT universities across {meta.country ?? "the country"}</h3>
                 <p className="text-sm text-slate-200">
-                  Filter by seat availability, scores, or student community support - just like on the homepage map.
+                  Filter by seat availability, scores, or student community support just like on the homepage map.
                 </p>
               </div>
               <div className="overflow-hidden rounded-[28px] bg-slate-900">
@@ -542,12 +550,101 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
           </motion.div>
         )}
       </AnimatePresence>
-      <style jsx global>{`\n        .imat-article h1,\n        .imat-article h2,\n        .imat-article h3,\n        .imat-article h4 {\n          font-family: var(--font-baloo), "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;\n          color: rgb(30, 41, 59);\n        }\n        .imat-article h2 {\n          font-size: clamp(2rem, 2.6vw + 1.2rem, 2.75rem);\n          line-height: 1.15;\n          margin-top: 3.5rem;\n        }\n        .imat-article h3 {\n          font-size: clamp(1.6rem, 1.4vw + 1rem, 2.15rem);\n          line-height: 1.2;\n          margin-top: 2.75rem;\n        }\n        .imat-article p {\n          color: rgb(71, 85, 105);\n        }\n        .imat-article a {\n          color: rgb(79, 70, 229);\n          font-weight: 600;\n          text-decoration: underline;\n          text-decoration-thickness: 2px;\n          text-underline-offset: 6px;\n          transition: color 0.2s ease;\n        }\n        .imat-article a:hover {\n          color: rgb(55, 48, 163);\n        }\n        .imat-article .cards {\n          display: grid;\n          gap: 1.5rem;\n          margin: 2.75rem 0;\n        }\n        @media (min-width: 768px) {\n          .imat-article .cards {\n            grid-template-columns: repeat(3, minmax(0, 1fr));\n          }\n        }\n        .imat-article .card {\n          border-radius: 1.5rem;\n          padding: 1.6rem;\n          background: linear-gradient(180deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.08));\n          box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);\n          border: 1px solid rgba(79, 70, 229, 0.18);\n        }\n        .imat-article .card h4 {\n          font-size: 1.1rem;\n          margin-bottom: 0.5rem;\n          color: rgb(30, 41, 59);\n        }\n        .imat-article .card .more {\n          display: inline-flex;\n          align-items: center;\n          gap: 0.35rem;\n          font-size: 0.95rem;\n          color: rgb(79, 70, 229);\n          text-decoration: none;\n        }\n        .imat-article .card .more::after {\n          content: ">";\n          font-size: 0.9rem;\n        }\n        .imat-article table {\n          border-radius: 1.25rem;\n          overflow: hidden;\n          background: rgba(255, 255, 255, 0.92);\n          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);\n        }\n        .imat-article table thead {\n          background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(45, 212, 191, 0.12));\n        }\n        .imat-article table th,\n        .imat-article table td {\n          padding: 0.85rem 1rem;\n          border-bottom: 1px solid rgba(148, 163, 184, 0.25);\n        }\n        .imat-article table tbody tr:nth-child(odd) {\n          background-color: rgba(148, 163, 184, 0.08);\n        }\n        .imat-article .backtop a {\n          display: inline-flex;\n          align-items: center;\n          gap: 0.35rem;\n          border-radius: 9999px;\n          padding: 0.4rem 0.9rem;\n          background: rgba(79, 70, 229, 0.12);\n          color: rgb(79, 70, 229);\n          text-decoration: none;\n        }\n      `}</style>
+
+      <style jsx global>{`
+        .imat-article h1,
+        .imat-article h2,
+        .imat-article h3,
+        .imat-article h4 {
+          font-family: var(--font-baloo), "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
+          color: rgb(30, 41, 59);
+        }
+        .imat-article h2 {
+          font-size: clamp(2rem, 2.6vw + 1.2rem, 2.75rem);
+          line-height: 1.15;
+          margin-top: 3.5rem;
+        }
+        .imat-article h3 {
+          font-size: clamp(1.6rem, 1.4vw + 1rem, 2.15rem);
+          line-height: 1.2;
+          margin-top: 2.75rem;
+        }
+        .imat-article p {
+          color: rgb(71, 85, 105);
+        }
+        .imat-article a {
+          color: rgb(79, 70, 229);
+          font-weight: 600;
+          text-decoration: underline;
+          text-decoration-thickness: 2px;
+          text-underline-offset: 6px;
+          transition: color 0.2s ease;
+        }
+        .imat-article a:hover {
+          color: rgb(55, 48, 163);
+        }
+        .imat-article .cards {
+          display: grid;
+          gap: 1.5rem;
+          margin: 2.75rem 0;
+        }
+        @media (min-width: 768px) {
+          .imat-article .cards {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+        .imat-article .card {
+          border-radius: 1.5rem;
+          padding: 1.6rem;
+          background: linear-gradient(180deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.08));
+          box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+          border: 1px solid rgba(79, 70, 229, 0.18);
+        }
+        .imat-article .card h4 {
+          font-size: 1.1rem;
+          margin-bottom: 0.5rem;
+          color: rgb(30, 41, 59);
+        }
+        .imat-article .card .more {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.95rem;
+          color: rgb(79, 70, 229);
+          text-decoration: none;
+        }
+        .imat-article .card .more::after {
+          content: ">";
+          font-size: 0.9rem;
+        }
+        .imat-article table {
+          border-radius: 1.25rem;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        }
+        .imat-article table thead {
+          background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(45, 212, 191, 0.12));
+        }
+        .imat-article table th,
+        .imat-article table td {
+          padding: 0.85rem 1rem;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        .imat-article table tbody tr:nth-child(odd) {
+          background-color: rgba(148, 163, 184, 0.08);
+        }
+        .imat-article .backtop a {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          border-radius: 9999px;
+          padding: 0.4rem 0.9rem;
+          background: rgba(79, 70, 229, 0.12);
+          color: rgb(79, 70, 229);
+          text-decoration: none;
+        }
+      `}</style>
     </>
   );
 }
-
-
-
-
-

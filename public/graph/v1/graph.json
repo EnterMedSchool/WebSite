@@ -1,20 +1,2267 @@
 {
   "version": 1,
-  "generatedAt": "dev-placeholder",
+  "generatedAt": "2025-09-18T11:30:18.988Z",
   "nodes": [
-    { "id": "1", "label": "Cell Biology Basics", "slug": "cell-biology-basics", "courseId": 1, "x": 0, "y": 0, "size": 3 },
-    { "id": "2", "label": "Biochemistry I", "slug": "biochemistry-1", "courseId": 1, "x": 200, "y": 80, "size": 2 },
-    { "id": "3", "label": "Biochemistry II", "slug": "biochemistry-2", "courseId": 1, "x": 380, "y": 160, "size": 2 },
-    { "id": "4", "label": "Physiology: Membranes", "slug": "physiology-membranes", "courseId": 2, "x": -180, "y": 220, "size": 2 },
-    { "id": "5", "label": "Neurophysiology", "slug": "neurophysiology", "courseId": 2, "x": -360, "y": 320, "size": 2 }
+    {
+      "id": "bio-0-0",
+      "label": "Orientation to the Learning Graph",
+      "slug": "bio-orientation",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 0,
+      "summary": "Orientation to the Learning Graph within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-0-1",
+      "label": "Scientific Thinking & Experiment Design",
+      "slug": "bio-scientific-method",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 0,
+      "summary": "Scientific Thinking & Experiment Design within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-1-0",
+      "label": "Cells & Organelles Primer",
+      "slug": "bio-cell-structure",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 1,
+      "summary": "Cells & Organelles Primer within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-1-1",
+      "label": "Membrane Transport Mechanisms",
+      "slug": "bio-membrane-transport",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 1,
+      "summary": "Membrane Transport Mechanisms within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-1-2",
+      "label": "Metabolism Overview",
+      "slug": "bio-metabolism-overview",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 1,
+      "summary": "Metabolism Overview within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-2-0",
+      "label": "DNA Replication Essentials",
+      "slug": "bio-dna-replication",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 2,
+      "summary": "DNA Replication Essentials within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-2-1",
+      "label": "Gene Expression Pipeline",
+      "slug": "bio-gene-expression",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 2,
+      "summary": "Gene Expression Pipeline within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-2-2",
+      "label": "Cell Cycle Checkpoints",
+      "slug": "bio-cell-cycle",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 2,
+      "summary": "Cell Cycle Checkpoints within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-3-0",
+      "label": "Cell Signaling Networks",
+      "slug": "bio-signal-transduction",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 3,
+      "summary": "Cell Signaling Networks within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-3-1",
+      "label": "Intercellular Communication",
+      "slug": "bio-cell-communication",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 3,
+      "summary": "Intercellular Communication within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-3-2",
+      "label": "Apoptosis & Cell Fate Decisions",
+      "slug": "bio-apoptosis",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 3,
+      "summary": "Apoptosis & Cell Fate Decisions within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-4-0",
+      "label": "Microbiology Foundations",
+      "slug": "bio-microbiology-foundations",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 4,
+      "summary": "Microbiology Foundations within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-4-1",
+      "label": "Tissue Organization & Histology",
+      "slug": "bio-tissue-organization",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 4,
+      "summary": "Tissue Organization & Histology within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-4-2",
+      "label": "Host-Pathogen Interactions",
+      "slug": "bio-host-pathogen",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 4,
+      "summary": "Host-Pathogen Interactions within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-5-0",
+      "label": "Immune System Primer",
+      "slug": "bio-immune-primers",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 5,
+      "summary": "Immune System Primer within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-5-1",
+      "label": "Baseline Lab Interpretation",
+      "slug": "bio-lab-interpretation",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 5,
+      "summary": "Baseline Lab Interpretation within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "bio-5-2",
+      "label": "Biology Problem-Solving Drills",
+      "slug": "bio-problem-solving",
+      "courseId": 101,
+      "area": "Core Biology Foundations",
+      "tier": 5,
+      "summary": "Biology Problem-Solving Drills within Core Biology Foundations. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#22c55e",
+      "dimColor": "rgba(34, 197, 94, 0.18)"
+    },
+    {
+      "id": "chem-0-0",
+      "label": "Math & Measurement Refresher",
+      "slug": "chem-math-refresh",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 0,
+      "summary": "Math & Measurement Refresher within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-0-1",
+      "label": "Atomic Structure Basics",
+      "slug": "chem-atomic-structure",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 0,
+      "summary": "Atomic Structure Basics within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-0-2",
+      "label": "Periodic Table Orientation",
+      "slug": "chem-periodic-overview",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 0,
+      "summary": "Periodic Table Orientation within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-1-0",
+      "label": "Periodic Trends & Bonding",
+      "slug": "chem-periodic-trends",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 1,
+      "summary": "Periodic Trends & Bonding within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-1-1",
+      "label": "Chemical Bonding Profiles",
+      "slug": "chem-chemical-bonding",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 1,
+      "summary": "Chemical Bonding Profiles within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-1-2",
+      "label": "Stoichiometry Practice Sets",
+      "slug": "chem-stoichiometry",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 1,
+      "summary": "Stoichiometry Practice Sets within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-2-0",
+      "label": "Thermodynamics & Energetics",
+      "slug": "chem-thermodynamics",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 2,
+      "summary": "Thermodynamics & Energetics within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-2-1",
+      "label": "Reaction Kinetics",
+      "slug": "chem-kinetics",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 2,
+      "summary": "Reaction Kinetics within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-2-2",
+      "label": "Dynamic Equilibrium",
+      "slug": "chem-equilibrium",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 2,
+      "summary": "Dynamic Equilibrium within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-3-0",
+      "label": "Acid-Base Systems",
+      "slug": "chem-acid-base",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 3,
+      "summary": "Acid-Base Systems within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-3-1",
+      "label": "Solutions & Concentrations",
+      "slug": "chem-solutions",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 3,
+      "summary": "Solutions & Concentrations within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-3-2",
+      "label": "Redox & Electrochemistry",
+      "slug": "chem-redox",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 3,
+      "summary": "Redox & Electrochemistry within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-4-0",
+      "label": "Biochemical Building Blocks",
+      "slug": "chem-biochem-building",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 4,
+      "summary": "Biochemical Building Blocks within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-4-1",
+      "label": "Protein Structure & Function",
+      "slug": "chem-protein-structure",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 4,
+      "summary": "Protein Structure & Function within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-4-2",
+      "label": "Enzyme Kinetics Applications",
+      "slug": "chem-enzyme-kinetics",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 4,
+      "summary": "Enzyme Kinetics Applications within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-5-0",
+      "label": "Glycolysis Control Points",
+      "slug": "chem-glycolysis",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 5,
+      "summary": "Glycolysis Control Points within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-5-1",
+      "label": "Oxidative Phosphorylation",
+      "slug": "chem-oxidative-phosphorylation",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 5,
+      "summary": "Oxidative Phosphorylation within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "chem-5-2",
+      "label": "Metabolic Integration Cases",
+      "slug": "chem-metabolic-integration",
+      "courseId": 102,
+      "area": "Chemistry & Biochemistry",
+      "tier": 5,
+      "summary": "Metabolic Integration Cases within Chemistry & Biochemistry. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#6366f1",
+      "dimColor": "rgba(99, 102, 241, 0.18)"
+    },
+    {
+      "id": "phys-0-0",
+      "label": "Physiology Orientation",
+      "slug": "phys-orientation",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 0,
+      "summary": "Physiology Orientation within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-0-1",
+      "label": "Homeostasis Overview",
+      "slug": "phys-homeostasis",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 0,
+      "summary": "Homeostasis Overview within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-1-0",
+      "label": "Membrane Potentials",
+      "slug": "phys-membrane-potentials",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 1,
+      "summary": "Membrane Potentials within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-1-1",
+      "label": "Neuronal Signaling",
+      "slug": "phys-neuronal-signaling",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 1,
+      "summary": "Neuronal Signaling within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-1-2",
+      "label": "Muscle Physiology",
+      "slug": "phys-muscle-physiology",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 1,
+      "summary": "Muscle Physiology within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-2-0",
+      "label": "Respiratory Basics",
+      "slug": "phys-respiratory-basics",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 2,
+      "summary": "Respiratory Basics within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-2-1",
+      "label": "Cardiac Cellular Physiology",
+      "slug": "phys-cardiac-cells",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 2,
+      "summary": "Cardiac Cellular Physiology within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-2-2",
+      "label": "Renal Filtration Overview",
+      "slug": "phys-renal-overview",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 2,
+      "summary": "Renal Filtration Overview within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-3-0",
+      "label": "Cardiovascular Circuit Dynamics",
+      "slug": "phys-cardiovascular-circuit",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 3,
+      "summary": "Cardiovascular Circuit Dynamics within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-3-1",
+      "label": "Blood Pressure Regulation",
+      "slug": "phys-blood-pressure",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 3,
+      "summary": "Blood Pressure Regulation within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-3-2",
+      "label": "Ventilation Control",
+      "slug": "phys-respiratory-control",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 3,
+      "summary": "Ventilation Control within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-4-0",
+      "label": "Fluid Compartments & Balance",
+      "slug": "phys-fluid-balance",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 4,
+      "summary": "Fluid Compartments & Balance within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-4-1",
+      "label": "Endocrine Integration",
+      "slug": "phys-endocrine-integration",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 4,
+      "summary": "Endocrine Integration within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-4-2",
+      "label": "Hemodynamics of Coagulation",
+      "slug": "phys-coagulation-hemodynamics",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 4,
+      "summary": "Hemodynamics of Coagulation within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-5-0",
+      "label": "Systemic Shock Physiology",
+      "slug": "phys-shock",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 5,
+      "summary": "Systemic Shock Physiology within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-5-1",
+      "label": "Microcirculation in Crisis",
+      "slug": "phys-microcirculation",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 5,
+      "summary": "Microcirculation in Crisis within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "phys-5-2",
+      "label": "Critical Care Physiology",
+      "slug": "phys-critical-care",
+      "courseId": 103,
+      "area": "Systems Physiology",
+      "tier": 5,
+      "summary": "Critical Care Physiology within Systems Physiology. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#0ea5e9",
+      "dimColor": "rgba(14, 165, 233, 0.18)"
+    },
+    {
+      "id": "immune-0-0",
+      "label": "Physical & Chemical Barriers",
+      "slug": "immune-barriers",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 0,
+      "summary": "Physical & Chemical Barriers within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-0-1",
+      "label": "Innate Immune Cells",
+      "slug": "immune-innate",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 0,
+      "summary": "Innate Immune Cells within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-1-0",
+      "label": "Adaptive Immunity Overview",
+      "slug": "immune-adaptive",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 1,
+      "summary": "Adaptive Immunity Overview within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-1-1",
+      "label": "Lymphoid Organs Tour",
+      "slug": "immune-lymphoid-organs",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 1,
+      "summary": "Lymphoid Organs Tour within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-1-2",
+      "label": "Clonal Selection Mechanics",
+      "slug": "immune-clonal-selection",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 1,
+      "summary": "Clonal Selection Mechanics within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-2-0",
+      "label": "Immunoglobulin Classes",
+      "slug": "immune-immunoglobulins",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 2,
+      "summary": "Immunoglobulin Classes within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-2-1",
+      "label": "MHC & Antigen Presentation",
+      "slug": "immune-mhc",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 2,
+      "summary": "MHC & Antigen Presentation within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-2-2",
+      "label": "Complement System",
+      "slug": "immune-complement",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 2,
+      "summary": "Complement System within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-3-0",
+      "label": "Inflammation Mediators",
+      "slug": "immune-inflammation",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 3,
+      "summary": "Inflammation Mediators within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-3-1",
+      "label": "Cytokine Networks",
+      "slug": "immune-cytokines",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 3,
+      "summary": "Cytokine Networks within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-3-2",
+      "label": "Hypersensitivity Patterns",
+      "slug": "immune-hypersensitivity",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 3,
+      "summary": "Hypersensitivity Patterns within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-4-0",
+      "label": "Hematopoiesis Overview",
+      "slug": "immune-hematopoiesis",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 4,
+      "summary": "Hematopoiesis Overview within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-4-1",
+      "label": "Platelet Function Essentials",
+      "slug": "immune-platelet-function",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 4,
+      "summary": "Platelet Function Essentials within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-4-2",
+      "label": "Coagulation Cascade Deep Dive",
+      "slug": "immune-coagulation-cascade",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 4,
+      "summary": "Coagulation Cascade Deep Dive within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-5-0",
+      "label": "Sepsis Pathophysiology",
+      "slug": "immune-sepsis",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 5,
+      "summary": "Sepsis Pathophysiology within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-5-1",
+      "label": "Coagulopathy Patterns",
+      "slug": "immune-coagulopathy",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 5,
+      "summary": "Coagulopathy Patterns within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "immune-5-2",
+      "label": "Hyperinflammation Syndromes",
+      "slug": "immune-hyperinflammation",
+      "courseId": 104,
+      "area": "Immunology & Hemostasis",
+      "tier": 5,
+      "summary": "Hyperinflammation Syndromes within Immunology & Hemostasis. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#f97316",
+      "dimColor": "rgba(249, 115, 22, 0.18)"
+    },
+    {
+      "id": "clinical-0-0",
+      "label": "Case-Based Reasoning Skills",
+      "slug": "clinical-case-approach",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 0,
+      "summary": "Case-Based Reasoning Skills within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-0-1",
+      "label": "Core Laboratory Panels",
+      "slug": "clinical-labs",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 0,
+      "summary": "Core Laboratory Panels within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 25,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-1-0",
+      "label": "Targeted History Taking",
+      "slug": "clinical-history",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 1,
+      "summary": "Targeted History Taking within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-1-1",
+      "label": "Focused Physical Examination",
+      "slug": "clinical-physical",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 1,
+      "summary": "Focused Physical Examination within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-1-2",
+      "label": "Emergency Triage Systems",
+      "slug": "clinical-triage",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 1,
+      "summary": "Emergency Triage Systems within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 35,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-2-0",
+      "label": "Anemia Workup Strategy",
+      "slug": "clinical-anemia-workup",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 2,
+      "summary": "Anemia Workup Strategy within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-2-1",
+      "label": "Bleeding Evaluation Toolkit",
+      "slug": "clinical-bleeding-evaluation",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 2,
+      "summary": "Bleeding Evaluation Toolkit within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-2-2",
+      "label": "Infection Risk Assessment",
+      "slug": "clinical-infection-risk",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 2,
+      "summary": "Infection Risk Assessment within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 45,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-3-0",
+      "label": "Critical Lab Values",
+      "slug": "clinical-critical-values",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 3,
+      "summary": "Critical Lab Values within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-3-1",
+      "label": "Hemostasis in the Clinic",
+      "slug": "clinical-hemostasis-clinic",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 3,
+      "summary": "Hemostasis in the Clinic within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-3-2",
+      "label": "Intensive Care Monitoring",
+      "slug": "clinical-ic-management",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 3,
+      "summary": "Intensive Care Monitoring within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 55,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-4-0",
+      "label": "Massive Transfusion Protocols",
+      "slug": "clinical-massive-transfusion",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 4,
+      "summary": "Massive Transfusion Protocols within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-4-1",
+      "label": "Multi-Organ Dysfunction Management",
+      "slug": "clinical-multi-organ-dysfunction",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 4,
+      "summary": "Multi-Organ Dysfunction Management within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-4-2",
+      "label": "Vascular Failure Rescue",
+      "slug": "clinical-vascular-failure",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 4,
+      "summary": "Vascular Failure Rescue within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 65,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-5-0",
+      "label": "DIC Overview & Patterns",
+      "slug": "clinical-dic-overview",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 5,
+      "summary": "DIC Overview & Patterns within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-5-1",
+      "label": "Disseminated Intravascular Coagulation Pathway",
+      "slug": "clinical-dic",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 5,
+      "summary": "Disseminated Intravascular Coagulation Pathway within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    },
+    {
+      "id": "clinical-5-2",
+      "label": "Recovery Pathways & Follow-up",
+      "slug": "clinical-recovery-pathways",
+      "courseId": 105,
+      "area": "Clinical Integration",
+      "tier": 5,
+      "summary": "Recovery Pathways & Follow-up within Clinical Integration. Focus on core mechanisms and IMAT-style connections.",
+      "minutes": 75,
+      "color": "#facc15",
+      "dimColor": "rgba(250, 204, 21, 0.18)"
+    }
   ],
   "edges": [
-    { "id": "e1", "source": "1", "target": "2", "kind": "required" },
-    { "id": "e2", "source": "2", "target": "3", "kind": "required" },
-    { "id": "e3", "source": "1", "target": "4", "kind": "required" },
-    { "id": "e4", "source": "4", "target": "5", "kind": "required" }
+    {
+      "id": "edge-0",
+      "source": "bio-0-0",
+      "target": "bio-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-1",
+      "source": "bio-0-1",
+      "target": "bio-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-2",
+      "source": "bio-0-1",
+      "target": "bio-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-3",
+      "source": "bio-0-0",
+      "target": "bio-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-4",
+      "source": "bio-0-0",
+      "target": "bio-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-5",
+      "source": "bio-0-1",
+      "target": "bio-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-6",
+      "source": "bio-1-0",
+      "target": "bio-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-7",
+      "source": "bio-1-1",
+      "target": "bio-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-8",
+      "source": "bio-1-1",
+      "target": "bio-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-9",
+      "source": "bio-1-2",
+      "target": "bio-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-10",
+      "source": "bio-1-2",
+      "target": "bio-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-11",
+      "source": "bio-1-0",
+      "target": "bio-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-12",
+      "source": "bio-2-0",
+      "target": "bio-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-13",
+      "source": "bio-2-1",
+      "target": "bio-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-14",
+      "source": "bio-2-1",
+      "target": "bio-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-15",
+      "source": "bio-2-2",
+      "target": "bio-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-16",
+      "source": "bio-2-2",
+      "target": "bio-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-17",
+      "source": "bio-2-0",
+      "target": "bio-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-18",
+      "source": "bio-3-0",
+      "target": "bio-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-19",
+      "source": "bio-3-1",
+      "target": "bio-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-20",
+      "source": "bio-3-1",
+      "target": "bio-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-21",
+      "source": "bio-3-2",
+      "target": "bio-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-22",
+      "source": "bio-3-2",
+      "target": "bio-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-23",
+      "source": "bio-3-0",
+      "target": "bio-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-24",
+      "source": "bio-4-0",
+      "target": "bio-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-25",
+      "source": "bio-4-1",
+      "target": "bio-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-26",
+      "source": "bio-4-1",
+      "target": "bio-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-27",
+      "source": "bio-4-2",
+      "target": "bio-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-28",
+      "source": "bio-4-2",
+      "target": "bio-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-29",
+      "source": "bio-4-0",
+      "target": "bio-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-30",
+      "source": "chem-0-0",
+      "target": "chem-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-31",
+      "source": "chem-0-1",
+      "target": "chem-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-32",
+      "source": "chem-0-1",
+      "target": "chem-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-33",
+      "source": "chem-0-2",
+      "target": "chem-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-34",
+      "source": "chem-0-2",
+      "target": "chem-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-35",
+      "source": "chem-0-0",
+      "target": "chem-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-36",
+      "source": "chem-1-0",
+      "target": "chem-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-37",
+      "source": "chem-1-1",
+      "target": "chem-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-38",
+      "source": "chem-1-1",
+      "target": "chem-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-39",
+      "source": "chem-1-2",
+      "target": "chem-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-40",
+      "source": "chem-1-2",
+      "target": "chem-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-41",
+      "source": "chem-1-0",
+      "target": "chem-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-42",
+      "source": "chem-2-0",
+      "target": "chem-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-43",
+      "source": "chem-2-1",
+      "target": "chem-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-44",
+      "source": "chem-2-1",
+      "target": "chem-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-45",
+      "source": "chem-2-2",
+      "target": "chem-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-46",
+      "source": "chem-2-2",
+      "target": "chem-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-47",
+      "source": "chem-2-0",
+      "target": "chem-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-48",
+      "source": "chem-3-0",
+      "target": "chem-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-49",
+      "source": "chem-3-1",
+      "target": "chem-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-50",
+      "source": "chem-3-1",
+      "target": "chem-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-51",
+      "source": "chem-3-2",
+      "target": "chem-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-52",
+      "source": "chem-3-2",
+      "target": "chem-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-53",
+      "source": "chem-3-0",
+      "target": "chem-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-54",
+      "source": "chem-4-0",
+      "target": "chem-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-55",
+      "source": "chem-4-1",
+      "target": "chem-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-56",
+      "source": "chem-4-1",
+      "target": "chem-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-57",
+      "source": "chem-4-2",
+      "target": "chem-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-58",
+      "source": "chem-4-2",
+      "target": "chem-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-59",
+      "source": "chem-4-0",
+      "target": "chem-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-60",
+      "source": "phys-0-0",
+      "target": "phys-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-61",
+      "source": "phys-0-1",
+      "target": "phys-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-62",
+      "source": "phys-0-1",
+      "target": "phys-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-63",
+      "source": "phys-0-0",
+      "target": "phys-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-64",
+      "source": "phys-0-0",
+      "target": "phys-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-65",
+      "source": "phys-0-1",
+      "target": "phys-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-66",
+      "source": "phys-1-0",
+      "target": "phys-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-67",
+      "source": "phys-1-1",
+      "target": "phys-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-68",
+      "source": "phys-1-1",
+      "target": "phys-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-69",
+      "source": "phys-1-2",
+      "target": "phys-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-70",
+      "source": "phys-1-2",
+      "target": "phys-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-71",
+      "source": "phys-1-0",
+      "target": "phys-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-72",
+      "source": "phys-2-0",
+      "target": "phys-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-73",
+      "source": "phys-2-1",
+      "target": "phys-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-74",
+      "source": "phys-2-1",
+      "target": "phys-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-75",
+      "source": "phys-2-2",
+      "target": "phys-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-76",
+      "source": "phys-2-2",
+      "target": "phys-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-77",
+      "source": "phys-2-0",
+      "target": "phys-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-78",
+      "source": "phys-3-0",
+      "target": "phys-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-79",
+      "source": "phys-3-1",
+      "target": "phys-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-80",
+      "source": "phys-3-1",
+      "target": "phys-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-81",
+      "source": "phys-3-2",
+      "target": "phys-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-82",
+      "source": "phys-3-2",
+      "target": "phys-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-83",
+      "source": "phys-3-0",
+      "target": "phys-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-84",
+      "source": "phys-4-0",
+      "target": "phys-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-85",
+      "source": "phys-4-1",
+      "target": "phys-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-86",
+      "source": "phys-4-1",
+      "target": "phys-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-87",
+      "source": "phys-4-2",
+      "target": "phys-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-88",
+      "source": "phys-4-2",
+      "target": "phys-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-89",
+      "source": "phys-4-0",
+      "target": "phys-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-90",
+      "source": "immune-0-0",
+      "target": "immune-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-91",
+      "source": "immune-0-1",
+      "target": "immune-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-92",
+      "source": "immune-0-1",
+      "target": "immune-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-93",
+      "source": "immune-0-0",
+      "target": "immune-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-94",
+      "source": "immune-0-0",
+      "target": "immune-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-95",
+      "source": "immune-0-1",
+      "target": "immune-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-96",
+      "source": "immune-1-0",
+      "target": "immune-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-97",
+      "source": "immune-1-1",
+      "target": "immune-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-98",
+      "source": "immune-1-1",
+      "target": "immune-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-99",
+      "source": "immune-1-2",
+      "target": "immune-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-100",
+      "source": "immune-1-2",
+      "target": "immune-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-101",
+      "source": "immune-1-0",
+      "target": "immune-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-102",
+      "source": "immune-2-0",
+      "target": "immune-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-103",
+      "source": "immune-2-1",
+      "target": "immune-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-104",
+      "source": "immune-2-1",
+      "target": "immune-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-105",
+      "source": "immune-2-2",
+      "target": "immune-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-106",
+      "source": "immune-2-2",
+      "target": "immune-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-107",
+      "source": "immune-2-0",
+      "target": "immune-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-108",
+      "source": "immune-3-0",
+      "target": "immune-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-109",
+      "source": "immune-3-1",
+      "target": "immune-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-110",
+      "source": "immune-3-1",
+      "target": "immune-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-111",
+      "source": "immune-3-2",
+      "target": "immune-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-112",
+      "source": "immune-3-2",
+      "target": "immune-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-113",
+      "source": "immune-3-0",
+      "target": "immune-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-114",
+      "source": "immune-4-0",
+      "target": "immune-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-115",
+      "source": "immune-4-1",
+      "target": "immune-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-116",
+      "source": "immune-4-1",
+      "target": "immune-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-117",
+      "source": "immune-4-2",
+      "target": "immune-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-118",
+      "source": "immune-4-2",
+      "target": "immune-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-119",
+      "source": "immune-4-0",
+      "target": "immune-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-120",
+      "source": "clinical-0-0",
+      "target": "clinical-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-121",
+      "source": "clinical-0-1",
+      "target": "clinical-1-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-122",
+      "source": "clinical-0-1",
+      "target": "clinical-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-123",
+      "source": "clinical-0-0",
+      "target": "clinical-1-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-124",
+      "source": "clinical-0-0",
+      "target": "clinical-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-125",
+      "source": "clinical-0-1",
+      "target": "clinical-1-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-126",
+      "source": "clinical-1-0",
+      "target": "clinical-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-127",
+      "source": "clinical-1-1",
+      "target": "clinical-2-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-128",
+      "source": "clinical-1-1",
+      "target": "clinical-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-129",
+      "source": "clinical-1-2",
+      "target": "clinical-2-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-130",
+      "source": "clinical-1-2",
+      "target": "clinical-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-131",
+      "source": "clinical-1-0",
+      "target": "clinical-2-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-132",
+      "source": "clinical-2-0",
+      "target": "clinical-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-133",
+      "source": "clinical-2-1",
+      "target": "clinical-3-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-134",
+      "source": "clinical-2-1",
+      "target": "clinical-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-135",
+      "source": "clinical-2-2",
+      "target": "clinical-3-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-136",
+      "source": "clinical-2-2",
+      "target": "clinical-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-137",
+      "source": "clinical-2-0",
+      "target": "clinical-3-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-138",
+      "source": "clinical-3-0",
+      "target": "clinical-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-139",
+      "source": "clinical-3-1",
+      "target": "clinical-4-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-140",
+      "source": "clinical-3-1",
+      "target": "clinical-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-141",
+      "source": "clinical-3-2",
+      "target": "clinical-4-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-142",
+      "source": "clinical-3-2",
+      "target": "clinical-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-143",
+      "source": "clinical-3-0",
+      "target": "clinical-4-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-144",
+      "source": "clinical-4-0",
+      "target": "clinical-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-145",
+      "source": "clinical-4-1",
+      "target": "clinical-5-0",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-146",
+      "source": "clinical-4-1",
+      "target": "clinical-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-147",
+      "source": "clinical-4-2",
+      "target": "clinical-5-1",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-148",
+      "source": "clinical-4-2",
+      "target": "clinical-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-149",
+      "source": "clinical-4-0",
+      "target": "clinical-5-2",
+      "type": "scaffold"
+    },
+    {
+      "id": "edge-150",
+      "source": "bio-1-2",
+      "target": "chem-4-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-151",
+      "source": "chem-4-0",
+      "target": "chem-4-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-152",
+      "source": "chem-2-0",
+      "target": "chem-4-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-153",
+      "source": "chem-4-2",
+      "target": "chem-5-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-154",
+      "source": "chem-5-0",
+      "target": "chem-5-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-155",
+      "source": "chem-5-1",
+      "target": "chem-5-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-156",
+      "source": "bio-1-1",
+      "target": "phys-1-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-157",
+      "source": "phys-1-0",
+      "target": "phys-1-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-158",
+      "source": "phys-1-0",
+      "target": "phys-1-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-159",
+      "source": "chem-3-1",
+      "target": "phys-2-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-160",
+      "source": "phys-3-0",
+      "target": "phys-3-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-161",
+      "source": "phys-2-2",
+      "target": "phys-4-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-162",
+      "source": "phys-0-1",
+      "target": "phys-4-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-163",
+      "source": "immune-4-1",
+      "target": "phys-4-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-164",
+      "source": "phys-3-1",
+      "target": "phys-5-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-165",
+      "source": "immune-3-0",
+      "target": "phys-5-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-166",
+      "source": "phys-3-0",
+      "target": "phys-5-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-167",
+      "source": "phys-3-2",
+      "target": "phys-5-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-168",
+      "source": "immune-1-0",
+      "target": "immune-1-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-169",
+      "source": "chem-4-1",
+      "target": "immune-2-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-170",
+      "source": "immune-1-0",
+      "target": "immune-2-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-171",
+      "source": "immune-0-1",
+      "target": "immune-2-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-172",
+      "source": "bio-3-0",
+      "target": "immune-3-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-173",
+      "source": "immune-3-0",
+      "target": "immune-3-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-174",
+      "source": "bio-4-1",
+      "target": "immune-4-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-175",
+      "source": "chem-4-0",
+      "target": "immune-4-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-176",
+      "source": "chem-5-0",
+      "target": "immune-4-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-177",
+      "source": "phys-4-2",
+      "target": "immune-4-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-178",
+      "source": "immune-3-0",
+      "target": "immune-5-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-179",
+      "source": "phys-5-0",
+      "target": "immune-5-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-180",
+      "source": "immune-3-1",
+      "target": "immune-5-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-181",
+      "source": "phys-0-1",
+      "target": "clinical-1-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-182",
+      "source": "immune-4-0",
+      "target": "clinical-2-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-183",
+      "source": "immune-4-1",
+      "target": "clinical-2-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-184",
+      "source": "immune-0-1",
+      "target": "clinical-2-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-185",
+      "source": "clinical-0-1",
+      "target": "clinical-3-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-186",
+      "source": "immune-4-2",
+      "target": "clinical-3-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-187",
+      "source": "phys-5-2",
+      "target": "clinical-3-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-188",
+      "source": "phys-5-0",
+      "target": "clinical-4-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-189",
+      "source": "immune-5-0",
+      "target": "clinical-4-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-190",
+      "source": "phys-5-1",
+      "target": "clinical-4-2",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-191",
+      "source": "immune-5-1",
+      "target": "clinical-5-0",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-192",
+      "source": "clinical-5-0",
+      "target": "clinical-5-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-193",
+      "source": "clinical-4-0",
+      "target": "clinical-5-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-194",
+      "source": "immune-5-2",
+      "target": "clinical-5-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-195",
+      "source": "phys-5-0",
+      "target": "clinical-5-1",
+      "type": "bridge"
+    },
+    {
+      "id": "edge-196",
+      "source": "clinical-4-1",
+      "target": "clinical-5-2",
+      "type": "bridge"
+    }
   ],
-  "meta": { "courses": { "1": { "id": 1, "slug": "foundations", "title": "Foundations" }, "2": { "id": 2, "slug": "physiology", "title": "Physiology" } } },
-  "layout": { "type": "dev" }
+  "meta": {
+    "trackCount": 5,
+    "tracks": [
+      {
+        "key": "bio",
+        "title": "Core Biology Foundations",
+        "courseId": 101,
+        "color": "#22c55e",
+        "tiers": 6,
+        "totalLessons": 17
+      },
+      {
+        "key": "chem",
+        "title": "Chemistry & Biochemistry",
+        "courseId": 102,
+        "color": "#6366f1",
+        "tiers": 6,
+        "totalLessons": 18
+      },
+      {
+        "key": "phys",
+        "title": "Systems Physiology",
+        "courseId": 103,
+        "color": "#0ea5e9",
+        "tiers": 6,
+        "totalLessons": 17
+      },
+      {
+        "key": "immune",
+        "title": "Immunology & Hemostasis",
+        "courseId": 104,
+        "color": "#f97316",
+        "tiers": 6,
+        "totalLessons": 17
+      },
+      {
+        "key": "clinical",
+        "title": "Clinical Integration",
+        "courseId": 105,
+        "color": "#facc15",
+        "tiers": 6,
+        "totalLessons": 17
+      }
+    ]
+  }
 }
-

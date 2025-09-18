@@ -111,86 +111,126 @@ export default async function ChapterPage({ params }: { params: { slug: string }
   }
 
   const completedCount = lessons.filter((l) => progressLessons.has(l.id)).length;
+  const totalQuestions = Array.from(questionCounts.values()).reduce((a, b) => a + b, 0);
+  const totalCorrect = Array.from(correctByLesson.values()).reduce((a, b) => a + b, 0);
+  const chapterProgressPct = lessons.length ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const questionAccuracyPct = totalQuestions ? Math.round((totalCorrect / Math.max(1, totalQuestions)) * 100) : 0;
+  const firstLessonSlug = lessons[0]?.slug || null;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4">
-        <section className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="md:max-w-2xl">
-              <h1 className="text-3xl font-semibold text-slate-900">{chapterRow.title}</h1>
-              {chapterRow.description && (
-                <p className="mt-3 text-base text-slate-600">{chapterRow.description}</p>
-              )}
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                <span>{formatCount(lessons.length, 'lesson')}</span>
-                <span>&middot;</span>
-                <span>
-                  {completedCount}/{lessons.length} completed
-                </span>
+    <div className="relative min-h-screen overflow-x-hidden bg-slate-950">
+      <div className="pointer-events-none absolute inset-x-0 top-[-220px] h-[420px] bg-gradient-to-br from-indigo-500 via-violet-500 to-sky-500 opacity-60 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-56 left-12 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
+      <div className="pointer-events-none absolute -top-32 right-6 h-80 w-80 rounded-full bg-purple-500/20 blur-2xl" />
+      <div className="relative mx-auto w-full max-w-6xl px-4 pb-24 pt-16 lg:px-8">
+        <div className="space-y-10">
+          <section className="relative overflow-hidden rounded-[36px] bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 p-10 text-white shadow-[0_32px_84px_rgba(79,70,229,0.35)] ring-1 ring-white/10">
+            <div className="absolute -right-24 top-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
+            <div className="absolute -bottom-28 right-12 h-64 w-64 rounded-full bg-emerald-400/25 blur-3xl" />
+            <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-6">
+                <span className="inline-flex w-max items-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">Chapter</span>
+                <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl">{chapterRow.title}</h1>
+                {chapterRow.description && (
+                  <p className="max-w-2xl text-base text-white/80">{chapterRow.description}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-3 text-[12px]">
+                  <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white/90">{formatCount(lessons.length, 'lesson')}</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white/90">{formatCount(totalQuestions, 'question')}</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white/90">{completedCount}/{lessons.length} completed</span>
+                </div>
+                <div className="space-y-3 text-[12px] text-white/85">
+                  <div className="font-medium uppercase tracking-[0.3em] text-white/60">Overall progress</div>
+                  <div className="relative h-2 w-full max-w-lg overflow-hidden rounded-full bg-white/25">
+                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-white/60" style={{ width: `${chapterProgressPct}%` }} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span>{completedCount}/{lessons.length} lessons</span>
+                    <span className="opacity-60">&bull;</span>
+                    <span>
+                      {totalCorrect}/{totalQuestions} correct
+                      {totalQuestions ? ` (${questionAccuracyPct}% accuracy)` : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-4 text-sm text-white/85">
+                {player?.iframeSrc && (
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90">Video preview available</span>
+                )}
+                {firstLessonSlug && (
+                  <Link
+                    href={`/lesson/${firstLessonSlug}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-indigo-700 shadow-lg shadow-indigo-900/20 transition hover:shadow-xl hover:shadow-indigo-900/25"
+                  >
+                    Start chapter
+                  </Link>
+                )}
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2 text-sm text-slate-600">
-              <span className="rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-600">
-                {formatCount(Array.from(questionCounts.values()).reduce((a, b) => a + b, 0), 'question')}
-              </span>
-              {player?.iframeSrc && (
-                <span className="text-xs text-slate-400">Video preview available</span>
-              )}
-            </div>
-          </div>
-          {player?.iframeSrc && (
-            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-black/5 shadow-inner">
-              <iframe
-                src={player.iframeSrc}
-                className="aspect-video w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-          )}
-        </section>
+          </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-slate-900">Lessons in this chapter</h2>
-            <span className="text-sm text-slate-500">{completedCount} of {lessons.length} completed</span>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {lessons.map((lesson) => {
-              const totalQ = questionCounts.get(lesson.id) || 0;
-              const correct = correctByLesson.get(lesson.id) || 0;
-              const incorrect = incorrectByLesson.get(lesson.id) || 0;
-              const attempted = correct + incorrect;
-              const completed = progressLessons.has(lesson.id);
-              return (
-                <Link
-                  key={lesson.id}
-                  href={`/lesson/${lesson.slug}`}
-                  className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
-                >
-                  <div>
+          {player?.iframeSrc && (
+            <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/80 p-2 shadow-2xl backdrop-blur">
+              <div className="relative overflow-hidden rounded-[28px] bg-slate-950/90">
+                <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                  <iframe
+                    src={player.iframeSrc}
+                    className="absolute inset-0 h-full w-full rounded-[28px]"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    title={chapterRow.title}
+                  />
+                  <div className="absolute bottom-4 left-4 right-4 text-white drop-shadow">
+                    <div className="text-xs uppercase tracking-[0.3em] text-white/70">Video preview</div>
+                    <div className="text-lg font-semibold">{chapterRow.title}</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-[32px] border border-white/10 bg-white/85 p-8 shadow-xl backdrop-blur">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900">Lessons in this chapter</h2>
+                <p className="text-sm text-slate-500">{completedCount} of {lessons.length} completed &bull; {formatCount(totalQuestions, 'question')} across the chapter.</p>
+              </div>
+              <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">{questionCounts.size} lesson{questionCounts.size === 1 ? '' : 's'} with questions</span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {lessons.map((lesson) => {
+                const totalQ = questionCounts.get(lesson.id) || 0;
+                const correct = correctByLesson.get(lesson.id) || 0;
+                const incorrect = incorrectByLesson.get(lesson.id) || 0;
+                const attempted = correct + incorrect;
+                const completed = progressLessons.has(lesson.id);
+                return (
+                  <Link
+                    key={lesson.id}
+                    href={`/lesson/${lesson.slug}`}
+                    className={`group relative overflow-hidden rounded-[24px] border border-white/30 bg-white/80 p-5 shadow-lg ring-1 ring-transparent transition hover:-translate-y-1 hover:shadow-2xl ${completed ? 'ring-emerald-300/80' : 'hover:ring-indigo-300/80'}`}
+                  >
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-indigo-400 to-violet-500 opacity-60" />
                     <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-indigo-500">
                       <span>Lesson {lesson.position + 1}</span>
                       {completed && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">Completed</span>}
                     </div>
-                    <h3 className="mt-2 text-lg font-semibold text-slate-900 group-hover:text-indigo-600">
-                      {lesson.title}
-                    </h3>
-                  </div>
-                  <div className="mt-4 flex items-center gap-4 text-sm text-slate-600">
-                    <span>{formatCount(totalQ, 'question')}</span>
-                    {attempted > 0 && (
-                      <span>
-                        {correct}/{attempted} correct
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+                    <h3 className="mt-3 text-lg font-semibold text-slate-900 transition group-hover:text-indigo-600">{lesson.title}</h3>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                      <span>{formatCount(totalQ, 'question')}</span>
+                      {attempted > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                          {correct}/{attempted} correct
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

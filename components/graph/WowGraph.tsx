@@ -1,474 +1,336 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import ForceGraph2D from "react-force-graph-2d";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
+import { buildFakeMindmap, type MindmapEdge, type MindmapGraph, type MindmapNode } from "./fakeGraphData";
 
-type GraphJSON = {
-  nodes: { id: string; label: string; slug?: string; courseId?: number }[];
-  edges: { id: string; source: string; target: string }[];
-  meta?: any;
-};
+type GraphNode = MindmapNode & { x?: number; y?: number; vx?: number; vy?: number };
+type GraphLink = MindmapEdge & { source: string | GraphNode; target: string | GraphNode; __key?: string };
 
-type Manifest = {
-  version: number;
-  courses: { id: number; slug: string; title: string; size: number; x: number; y: number; r: number }[];
-  cross: { from: number; to: number; count: number }[];
-};
+type GraphStatus = "idle" | "loading" | "ready" | "error";
 
-export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: string }) {
-  // Always render the full graph (no sharding) so all dots are visible ("open").
-  return <WowFullGraph src={src}/>;
+const FALLBACK_GRAPH = buildFakeMindmap();
+
+function normalizeGraph(payload: any): MindmapGraph {
+  if (!payload || !Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) {
+    return FALLBACK_GRAPH;
+  }
+
+  const colorFallback = "#6366f1";
+  const dimFallback = "rgba(99, 102, 241, 0.2)";
+
+  const nodes: MindmapNode[] = payload.nodes.map((raw: any, idx: number) => {
+    const color = typeof raw.color === "string" ? raw.color : colorFallback;
+    const dimColor = typeof raw.dimColor === "string" ? raw.dimColor : dimFallback;
+    const tier = Number.isFinite(raw.tier) ? Number(raw.tier) : Number(raw.level ?? raw.depth ?? 0);
+
+    return {
+      id: String(raw.id ?? idx),
+      label: String(raw.label ?? raw.slug ?? `Node ${idx + 1}`),
+      slug: String(raw.slug ?? raw.id ?? idx),
+      courseId: Number.isFinite(raw.courseId) ? Number(raw.courseId) : 0,
+      area: String(raw.area ?? raw.category ?? "General"),
+      tier,
+      summary: String(raw.summary ?? `Review ${raw.label ?? raw.slug ?? `node ${idx + 1}`}.`),
+      minutes: Number.isFinite(raw.minutes) ? Number(raw.minutes) : 20 + tier * 5,
+      color,
+      dimColor,
+    };
+  });
+
+  const edges: MindmapEdge[] = payload.edges.map((raw: any, idx: number) => ({
+    id: String(raw.id ?? `edge-${idx}`),
+    source: typeof raw.source === "object" ? String(raw.source.id ?? raw.source) : String(raw.source),
+    target: typeof raw.target === "object" ? String(raw.target.id ?? raw.target) : String(raw.target),
+    type: raw.type === "bridge" ? "bridge" : "scaffold",
+  }));
+
+  return { nodes, edges };
 }
 
-function WowFullGraph({ src }: { src: string }) {
-  const [data, setData] = useState<GraphJSON | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const ref = useRef<any>(null);
-  const [size, setSize] = useState<{ w: number; h: number }>({ w: 1, h: 1 });
-  const [focus, setFocus] = useState<string | null>(null);
-  const [hover, setHover] = useState<any | null>(null);
-  const [, setFrame] = useState(0);
-  const mouse = useRef<{x:number;y:number}>({x:0,y:0});
-  const tRef = useRef(0);
+export default function WowGraph({ src = "/graph/v1/graph.json" }: { src?: string }) {
+  const [graph, setGraph] = useState<MindmapGraph>(FALLBACK_GRAPH);
+  const [status, setStatus] = useState<GraphStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const [hoverNode, setHoverNode] = useState<GraphNode | null>(null);
+  const graphRef = useRef<ForceGraphMethods>();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const pointerRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const initialFocusApplied = useRef(false);
+  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
 
-  // Load static data
   useEffect(() => {
     let cancelled = false;
+    setStatus("loading");
     fetch(src)
-      .then(r => r.json())
-      .then(j => { if (!cancelled) setData(j); })
-      .catch(e => { if (!cancelled) setErr(String(e)); });
-    return () => { cancelled = true; };
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load graph (${res.status})`);
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        const next = normalizeGraph(json);
+        if (next.nodes.length) {
+          setGraph(next);
+          setStatus("ready");
+          setError(null);
+        } else {
+          setStatus("error");
+          setError("Graph payload was empty");
+        }
+      })
+      .catch((err: any) => {
+        if (cancelled) return;
+        setStatus("error");
+        setError(err?.message ?? "Unable to load graph data");
+        setGraph(FALLBACK_GRAPH);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
 
-  // Dev augmentation: if dataset small, synthesize ~100 lessons to play with
-  const augmented = useMemo<GraphJSON | null>(() => {
-    if (!data) return null;
-    const DEV = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).has('dev') || process.env.NODE_ENV !== 'production');
-    if (!DEV) return data;
-    if (data.nodes.length >= 50) return data;
-    // Deterministic pseudo-random for stable builds
-    let seed = 42; const rand = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
-    const nodes = data.nodes.slice();
-    const edges = data.edges.slice();
-    const startId = nodes.length ? Math.max(...nodes.map(n => Number(n.id) || 0)) + 1 : 1;
-    const targetCount = 50; // total nodes including originals
-    const courseCount = 5;
-    const cats = ['anatomy','physiology','biochem','path','pharm'];
-    for (let i = startId; i < targetCount + 1; i++) {
-      nodes.push({ id: String(i), label: `Lesson ${i}` as any, courseId: 1 + Math.floor(rand() * courseCount), category: cats[Math.floor(rand()*cats.length)] } as any);
-      // add 1-3 prerequisites among previous 20 nodes to ensure DAG
-      const prereqCandidates = [] as number[];
-      for (let k = Math.max(1, i - 20); k < i; k++) prereqCandidates.push(k);
-      const prereqNum = 1 + Math.floor(rand() * 3);
-      for (let t = 0; t < prereqNum && prereqCandidates.length; t++) {
-        const j = Math.floor(rand() * prereqCandidates.length);
-        const src = prereqCandidates.splice(j, 1)[0];
-        edges.push({ id: `e${src}-${i}-${t}` as any, source: String(src), target: String(i) });
-      }
-    }
-    // Ensure single connected component (ignore direction for connectivity)
-    const idSet = new Set(nodes.map(n => String(n.id)));
-    const undirected = new Map<string, Set<string>>();
-    const addUndirected = (a:string,b:string) => {
-      if (!undirected.has(a)) undirected.set(a, new Set());
-      if (!undirected.has(b)) undirected.set(b, new Set());
-      undirected.get(a)!.add(b); undirected.get(b)!.add(a);
-    };
-    for (const id of idSet) addUndirected(id, id); // init
-    for (const e of edges) addUndirected(String((e as any).source), String((e as any).target));
-    const all = Array.from(idSet);
-    if (all.length) {
-      const visited = new Set<string>();
-      const q=[all[0]]; visited.add(all[0]);
-      while(q.length){ const v=q.shift()!; const nbrs=undirected.get(v) || new Set(); for(const u of nbrs){ if(!visited.has(u)){ visited.add(u); q.push(u); } } }
-      let bridgeIdx = 0;
-      for (const id of all) {
-        if (!visited.has(id)) {
-          // connect this orphan to some visited node
-          const target = all[bridgeIdx % visited.size];
-          edges.push({ id: `b${id}-${target}`, source: target, target: id } as any);
-          addUndirected(target, id);
-          visited.add(id);
-          bridgeIdx++;
-        }
-      }
-    }
-    return { ...data, nodes, edges };
-  }, [data]);
-
-  // Build runtime graph data for force-graph (objects are mutated by the lib)
-  const fgData = useMemo(() => {
-    if (!augmented) return null as any;
-    // Randomly mark ~35% as completed for demo
-    let seed = 7; const rand = () => (seed = (seed * 1103515245 + 12345) % 4294967296) / 4294967296;
-    const nodes = augmented.nodes.map((n: any) => ({
-      id: n.id,
-      name: n.label,
-      courseId: n.courseId,
-      completed: rand() < 0.35,
-      href: n.href || (n.slug ? `/lesson/${n.slug}` : undefined),
-      lengthMin: n.lengthMin,
-      excerpt: n.excerpt,
-      courseSlug: n.courseSlug,
-      courseTitle: n.courseTitle,
-      slug: n.slug,
-      category: n.category,
-    }));
-    const links = augmented.edges.map(e => ({ id: e.id, source: e.source, target: e.target }));
-    return { nodes, links } as any;
-  }, [augmented]);
-
-  // Precompute incoming adjacency for fast ancestor traversal
-  const inMap = useMemo(() => {
-    if (!augmented) return null as Map<string, string[]> | null;
-    const m = new Map<string, string[]>();
-    for (const e of augmented.edges) {
-      const tgt = String(e.target);
-      const src = String(e.source);
-      const arr = m.get(tgt) || [];
-      arr.push(src);
-      m.set(tgt, arr);
-    }
-    return m;
-  }, [augmented]);
-
-  // Highlight computation
-  useEffect(() => {
-    if (!fgData || !inMap) return;
-    const nodes = fgData.nodes as any[];
-    const links = fgData.links as any[];
-    // reset
-    nodes.forEach(n => { n.__on = false; });
-    links.forEach(l => { l.__on = false; l.__tier = undefined; });
-    if (!focus) return;
-    // BFS on reversed edges: compute depth to focus
-    const depth = new Map<string, number>();
-    const q: string[] = [focus];
-    depth.set(focus, 0);
-    while (q.length) {
-      const t = q.shift()!;
-      const d = depth.get(t)!;
-      const parents = inMap.get(t) || [];
-      for (const p of parents) if (!depth.has(p)) { depth.set(p, d + 1); q.push(p); }
-    }
-    // mark nodes
-    nodes.forEach(n => { if (depth.has(String(n.id))) n.__on = true; });
-    // mark edges on path: parent -> child where depth[parent] = depth[child]+1
-    links.forEach(l => {
-      const s = String((l.source as any)?.id ?? (l as any).source);
-      const t = String((l.target as any)?.id ?? (l as any).target);
-      const ds = depth.get(s); const dt = depth.get(t);
-      (l as any).__tier = dt;
-      if (ds !== undefined && dt !== undefined && ds === dt + 1) l.__on = true; else l.__on = false;
+  useLayoutEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      setDimensions({ width, height });
     });
-
-    // Emit a wave of particles along the whole chain tier-by-tier so long paths animate
-    const maxTier = Math.max(...Array.from(depth.values()));
-    let step = 0;
-    const tick = () => {
-      if (!ref.current) return;
-      for (const l of links as any[]) {
-        if (!l.__on) continue;
-        if ((l.__tier ?? 0) === step) {
-          try {
-            ref.current.emitParticle(l);
-            ref.current.emitParticle(l);
-            ref.current.emitParticle(l);
-          } catch {}
-        }
-      }
-      step = (step + 1) % Math.max(1, maxTier + 1);
-    };
-    const id = window.setInterval(tick, 250);
-    return () => window.clearInterval(id);
-  }, [focus, fgData, inMap]);
-
-  // Camera fit on first render
-  useEffect(() => {
-    if (!ref.current || !fgData) return;
-    const t = setTimeout(() => {
-      try {
-        if (typeof (ref.current as any).zoomToFit === "function") {
-          (ref.current as any).zoomToFit(400, 50);
-        }
-      } catch {}
-    }, 0);
-    return () => clearTimeout(t);
-  }, [fgData]);
-
-  // Continuous rope animation (trigger canvas redraw via React re-render)
-  useEffect(() => {
-    let raf: number;
-    const loop = () => {
-      tRef.current += 0.02;
-      // bump a noop state to trigger React re-render
-      setFrame((f) => (f + 1) % 1000000);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
 
-  if (err) return <div className="p-4 text-red-600">Failed to load: {err}</div>;
-  if (!fgData) return <div className="p-4 text-gray-500">Loading…</div>;
+  const nodesById = useMemo(() => {
+    const map = new Map<string, MindmapNode>();
+    for (const node of graph.nodes) map.set(node.id, node);
+    return map;
+  }, [graph]);
 
-  function colorForCourse(courseId?: number, category?: string) {
-    if (category) {
-      const catColors: Record<string,string> = {
-        anatomy: '#ff6b6b', physiology: '#34d399', biochem: '#60a5fa', path: '#f59e0b', pharm: '#a78bfa'
-      };
-      return catColors[category] || '#e5e7eb';
+  useEffect(() => {
+    if (initialFocusApplied.current) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const focusParam = params.get("focus");
+    if (!focusParam) {
+      initialFocusApplied.current = true;
+      return;
     }
-    if (!courseId) return "#9aa3af";
-    const hues = [0, 24, 48, 72, 96, 150, 180, 210, 260, 300];
-    const h = hues[Math.abs(courseId) % hues.length];
-    return `hsl(${h} 80% 60%)`;
-  }
+    const match = graph.nodes.find((node) => node.slug === focusParam || node.id === focusParam);
+    if (match) {
+      setFocusId(match.id);
+      initialFocusApplied.current = true;
+    }
+  }, [graph]);
+
+  const incoming = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const edge of graph.edges) {
+      if (!map.has(edge.target)) map.set(edge.target, []);
+      map.get(edge.target)!.push(edge.source);
+    }
+    return map;
+  }, [graph]);
+
+  const highlight = useMemo(() => {
+    if (!focusId) {
+      return { nodes: new Set<string>(), edges: new Set<string>(), depth: new Map<string, number>() };
+    }
+    const depth = new Map<string, number>();
+    const queue: string[] = [focusId];
+    depth.set(focusId, 0);
+    while (queue.length) {
+      const current = queue.shift()!;
+      const parents = incoming.get(current) ?? [];
+      const nextDepth = depth.get(current)! + 1;
+      for (const parent of parents) {
+        if (depth.has(parent)) continue;
+        depth.set(parent, nextDepth);
+        queue.push(parent);
+      }
+    }
+    const highlightNodes = new Set(depth.keys());
+    const highlightEdges = new Set<string>();
+    for (const edge of graph.edges) {
+      const srcDepth = depth.get(edge.source);
+      const tgtDepth = depth.get(edge.target);
+      if (srcDepth === undefined || tgtDepth === undefined) continue;
+      if (srcDepth === tgtDepth + 1) highlightEdges.add(edge.id);
+    }
+    return { nodes: highlightNodes, edges: highlightEdges, depth };
+  }, [focusId, graph.edges, incoming]);
+
+  const focusTrail = useMemo(() => {
+    if (!focusId) return [] as Array<{ node: MindmapNode; depth: number }>;
+    const entries = Array.from(highlight.depth.entries());
+    entries.sort((a, b) => b[1] - a[1]);
+    const enriched: Array<{ node: MindmapNode; depth: number }> = [];
+    for (const [nodeId, depth] of entries) {
+      const node = nodesById.get(nodeId);
+      if (!node) continue;
+      enriched.push({ node, depth });
+    }
+    return enriched;
+  }, [focusId, highlight.depth, nodesById]);
+
+  const graphData = useMemo(() => {
+    const links: GraphLink[] = graph.edges.map((edge) => ({ ...edge, __key: edge.id }));
+    const nodes: GraphNode[] = graph.nodes.map((node) => ({ ...node }));
+    return { nodes, links };
+  }, [graph]);
+
+  useEffect(() => {
+    if (!graphRef.current) return;
+    const linkForce = graphRef.current.d3Force("link") as any;
+    if (linkForce?.distance) linkForce.distance((link: GraphLink) => (link.type === "bridge" ? 180 : 105));
+    if (linkForce?.strength) linkForce.strength((link: GraphLink) => (link.type === "bridge" ? 0.25 : 0.9));
+    const charge = graphRef.current.d3Force("charge") as any;
+    if (charge?.strength) charge.strength(-85);
+    if (charge?.distanceMax) charge.distanceMax(600);
+  }, [graphData]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      try {
+        graphRef.current?.zoomToFit(600, 120);
+      } catch (err) {
+        console.warn("Failed to zoom graph", err);
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [graphData]);
 
   return (
     <div
+      ref={containerRef}
       className="relative h-full w-full"
-      onMouseMove={(e) => { const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect(); mouse.current = { x: e.clientX - r.left, y: e.clientY - r.top }; }}
+      onMouseMove={(evt) => {
+        if (!containerRef.current) return;
+        const bounds = containerRef.current.getBoundingClientRect();
+        pointerRef.current = { x: evt.clientX - bounds.left, y: evt.clientY - bounds.top };
+      }}
     >
       <ForceGraph2D
-        ref={ref}
-        graphData={fgData}
-        cooldownTicks={200}
-        linkColor={(l: any) => (l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)")}
-        linkDirectionalParticles={(l: any) => (l.__on ? 2 : 0)}
-        linkDirectionalParticleWidth={(l: any) => (l.__on ? 2.0 : 0)}
-        linkDirectionalParticleSpeed={(l: any) => (l.__on ? 0.01 : 0)}
-        nodeRelSize={5}
-        nodeLabel={(n: any) => ""}
-        onNodeClick={(n: any) => setFocus(String(n.id))}
-        onNodeHover={(n: any) => setHover(n || null)}
-        enableNodeDrag
-        d3VelocityDecay={0.9}
-        enablePanInteraction
-        enableZoomInteraction
-        width={undefined}
-        height={undefined}
-        // Rope-like bezier with wobble
-        linkCanvasObjectMode={() => "replace"}
-        linkCanvasObject={(l: any, ctx: CanvasRenderingContext2D, scale: number) => {
-          const s = (l.source as any); const t = (l.target as any);
-          if (!s || !t) return;
-          const x1 = s.x, y1 = s.y, x2 = t.x, y2 = t.y;
-          const dx = x2 - x1, dy = y2 - y1;
-          const len = Math.max(1, Math.hypot(dx, dy));
-          const nx = -dy / len, ny = dx / len; // normal
-          const baseAmp = Math.min(20, len * 0.08) / Math.sqrt(scale);
-          const amp = (l.__on ? baseAmp : baseAmp * 0.5);
-          const phase = tRef.current * (l.__on ? 1.2 : 0.6) + (l.__tier || 0) * 0.5;
-          const cx = (x1 + x2) / 2 + nx * amp * Math.sin(phase);
-          const cy = (y1 + y2) / 2 + ny * amp * Math.sin(phase);
-          // Base track (dim)
-          ctx.lineWidth = (l.__on ? 3 : 1.2) / Math.sqrt(scale);
-          ctx.strokeStyle = (l.__on ? "rgba(16,185,129,0.3)" : "rgba(99,102,241,0.12)");
+        ref={graphRef}
+        graphData={graphData as any}
+        width={dimensions.width}
+        height={dimensions.height}
+        cooldownTicks={120}
+        warmupTicks={100}
+        d3VelocityDecay={0.35}
+        nodeRelSize={6}
+        linkDirectionalParticles={(link: GraphLink) => (highlight.edges.has(link.id ?? link.__key ?? "") ? 2 : 0)}
+        linkDirectionalParticleWidth={(link: GraphLink) => (highlight.edges.has(link.id ?? link.__key ?? "") ? 2.2 : 0)}
+        linkDirectionalParticleSpeed={() => 0.01}
+        linkColor={(link: GraphLink) =>
+          highlight.edges.has(link.id ?? link.__key ?? "")
+            ? "rgba(250, 204, 21, 0.92)"
+            : link.type === "bridge"
+            ? "rgba(99, 102, 241, 0.18)"
+            : "rgba(148, 163, 184, 0.25)"
+        }
+        linkWidth={(link: GraphLink) => (highlight.edges.has(link.id ?? link.__key ?? "") ? 2.4 : 0.6)}
+        linkCurvature={(link: GraphLink) => (link.type === "bridge" ? 0.25 : 0)}
+        nodePointerAreaPaint={(node: GraphNode, color, ctx) => {
           ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.quadraticCurveTo(cx, cy, x2, y2);
-          ctx.stroke();
-          // XP fill overlay
-          if (l.__on) {
-            const grad = ctx.createLinearGradient(x1, y1, x2, y2);
-            grad.addColorStop(0, "#34d399");
-            grad.addColorStop(0.5, "#a7f3d0");
-            grad.addColorStop(1, "#34d399");
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 4 / Math.sqrt(scale);
-            ctx.shadowColor = '#34d399';
-            ctx.shadowBlur = 12;
-            // dash animation to simulate fill motion
-            ctx.setLineDash([len * 0.25, len]);
-            const offset = (1 - ((tRef.current * 40 + (l.__tier || 0) * 120) % (len)))
-            ctx.lineDashOffset = offset;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.quadraticCurveTo(cx, cy, x2, y2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.shadowBlur = 0;
-          }
-        }}
-        // Custom node draw with completion ring and checkmark
-        nodeCanvasObject={(n: any, ctx: CanvasRenderingContext2D, scale: number) => {
-          const r = 4 + (n.__on || !focus ? 3 : 1);
-          const color = n.completed ? "#22c55e" : (n.__on || !focus ? colorForCourse(n.courseId, n.category) : "#475569");
-          ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-          ctx.fillStyle = color; ctx.fill();
-          // ring
-          ctx.lineWidth = 2 / Math.sqrt(scale);
-          ctx.strokeStyle = n.__on ? "#34d399" : "rgba(148,163,184,0.25)";
-          ctx.stroke();
-          // checkmark if completed
-          if (n.completed) {
-            ctx.strokeStyle = "white"; ctx.lineWidth = 2 / Math.sqrt(scale); ctx.lineCap = "round";
-            ctx.beginPath();
-            ctx.moveTo(n.x - r * 0.6, n.y + r * 0.05);
-            ctx.lineTo(n.x - r * 0.15, n.y + r * 0.5);
-            ctx.lineTo(n.x + r * 0.7, n.y - r * 0.4);
-            ctx.stroke();
-          }
-        }}
-      />
-
-      {hover && (
-        <div
-          style={{ left: mouse.current.x + 14, top: mouse.current.y + 14 }}
-          className="pointer-events-none absolute z-10 w-72 rounded-xl border border-black/5 bg-white/95 p-3 text-xs shadow-xl ring-1 ring-black/10 backdrop-blur"
-        >
-          <div className="flex items-center gap-2">
-            <div className={`h-2 w-2 rounded-full ${hover.completed ? 'bg-green-500' : 'bg-indigo-500'}`}></div>
-            <div className="font-semibold text-gray-900 truncate">{hover.name}</div>
-          </div>
-          {hover.courseTitle && (
-            <div className="mt-0.5 text-[11px] text-gray-500">{hover.courseTitle}{hover.lengthMin ? ` • ${hover.lengthMin} min` : ''}</div>
-          )}
-          {hover.excerpt && (
-            <div className="mt-2 line-clamp-4 text-[11px] text-gray-600">{hover.excerpt}</div>
-          )}
-          <div className="mt-2 flex items-center justify-between">
-            <div className={`text-[11px] ${hover.completed ? 'text-green-600' : 'text-gray-600'}`}>{hover.completed ? 'Completed' : 'Not completed'}</div>
-            {hover.href && (
-              <a href={hover.href} className="pointer-events-auto rounded-full bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Open</a>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// =========================
-// Sharded animated viewer
-// =========================
-function WowShardedGraph({ baseSrc, manifest }: { baseSrc: string; manifest: Manifest }) {
-  const ref = useRef<any>(null);
-  const [focus, setFocus] = useState<string | null>(null);
-  const [hover, setHover] = useState<any | null>(null);
-  const mouse = useRef<{x:number;y:number}>({x:0,y:0});
-  const tRef = useRef(0);
-
-  // Graph state
-  const [nodes, setNodes] = useState<any[]>(() => manifest.courses.map(c => ({ id: `c:${c.id}`, course: true, courseId: c.id, name: c.title, x: c.x, y: c.y, fx: c.x, fy: c.y })));
-  const [links, setLinks] = useState<any[]>(() => manifest.cross.map((e, i) => ({ id:`ce:${i}`, source: `c:${e.from}`, target: `c:${e.to}`, weight: e.count })));
-
-  // Incoming adjacency for lessons only
-  const inMapRef = useRef<Map<string,string[]>>(new Map());
-
-  // helpers
-  function colorForCourse(courseId?: number) {
-    if (!courseId) return "#9aa3af";
-    const hues = [0,24,48,72,96,150,180,210,260,300];
-    const h = hues[Math.abs(courseId)%hues.length];
-    return `hsl(${h} 70% 52%)`;
-  }
-
-  // expand a course into its lessons
-  async function expandCourse(courseId: number) {
-    const existing = nodes.find(n => n.id === `c:${courseId}`);
-    if (!existing) return; // already expanded
-    const res = await fetch(`${baseSrc}course-${courseId}.json`);
-    const data: GraphJSON = await res.json();
-    // remove the course node and any aggregated cross links touching it
-    const center = manifest.courses.find(c => c.id === courseId);
-    const cx = center?.x ?? 0; const cy = center?.y ?? 0;
-    const jitter = 60;
-    setNodes(prev => prev.filter(n => n.id !== `c:${courseId}`).concat(
-      data.nodes.map((n:any) => ({ id: n.id, name: n.label, courseId: n.courseId, href: n.slug ? `/lesson/${n.slug}`:undefined, x: cx + (Math.random()*2-1)*jitter, y: cy + (Math.random()*2-1)*jitter }))
-    ));
-    setLinks(prev => prev
-      .filter(l => {
-        const s = String((l as any).source && typeof (l as any).source === 'object' ? (l as any).source.id : (l as any).source);
-        const t = String((l as any).target && typeof (l as any).target === 'object' ? (l as any).target.id : (l as any).target);
-        return s !== `c:${courseId}` && t !== `c:${courseId}`;
-      })
-      .concat(
-        data.edges.map((e:any) => ({ id: e.id, source: e.source, target: e.target }))
-      )
-    );
-    // update inMap
-    for (const e of data.edges) {
-      const arr = inMapRef.current.get(String(e.target)) || [];
-      arr.push(String(e.source));
-      inMapRef.current.set(String(e.target), arr);
-    }
-  }
-
-  // rope refresh
-  useEffect(() => {
-    let raf:number; const loop=()=>{ tRef.current += 0.02; if (ref.current) ref.current.refresh(); raf=requestAnimationFrame(loop);}; raf=requestAnimationFrame(loop); return ()=>cancelAnimationFrame(raf);
-  }, []);
-
-  // highlight computation (lessons only, among loaded ones)
-  useEffect(() => {
-    if (!focus) return; if (!ref.current) return;
-    const depth = new Map<string,number>(); const q=[focus]; depth.set(focus,0);
-    while(q.length){ const t=q.shift()!; const d=depth.get(t)!; const parents=inMapRef.current.get(t)||[]; for(const p of parents) if(!depth.has(p)){ depth.set(p,d+1); q.push(p);} }
-    // wave along links
-    let step=0; const maxTier=Math.max(...Array.from(depth.values()));
-    const id=setInterval(()=>{ if(!ref.current) return; (links as any[]).forEach((l:any)=>{ const s=String((l.source as any)?.id ?? l.source); const t=String((l.target as any)?.id ?? l.target); const ds=depth.get(s); const dt=depth.get(t); l.__on = ds!==undefined && dt!==undefined && ds===dt+1; l.__tier = dt; if(l.__on && (l.__tier??0)===step){ try{ ref.current.emitParticle(l); ref.current.emitParticle(l);}catch{} } }); step=(step+1)%Math.max(1,maxTier+1); },250);
-    return ()=>clearInterval(id);
-  }, [focus, links]);
-
-  // fit on first render
-  useEffect(()=>{
-    if(!ref.current) return;
-    const t=setTimeout(()=>{
-      try {
-        if (typeof (ref.current as any).zoomToFit === 'function') (ref.current as any).zoomToFit(400,50);
-      } catch {}
-    },0);
-    return ()=>clearTimeout(t);
-  }, []);
-
-  return (
-    <div className="relative h-full w-full" onMouseMove={(e)=>{const r=(e.currentTarget as HTMLDivElement).getBoundingClientRect(); mouse.current={x:e.clientX-r.left,y:e.clientY-r.top};}}>
-      <ForceGraph2D
-        ref={ref}
-        graphData={{ nodes, links }}
-        cooldownTicks={0}
-        enableNodeDrag
-        d3VelocityDecay={0.9}
-        linkColor={(l:any)=> l.__on ? "rgba(245,158,11,0.9)" : "rgba(99,102,241,0.15)"}
-        linkDirectionalParticles={(l:any)=> l.__on ? 2 : 0}
-        linkDirectionalParticleWidth={(l:any)=> l.__on ? 2.0 : 0}
-        linkDirectionalParticleSpeed={(l:any)=> l.__on ? 0.01 : 0}
-        nodeRelSize={5}
-        nodeLabel={(n:any)=> n.course ? n.name : ""}
-        // Ensure clicks always register by painting a reliable pointer area
-        nodePointerAreaPaint={(n: any, color: string, ctx: CanvasRenderingContext2D) => {
-          // Mirror the visual radius from nodeCanvasObject and add a small margin
-          const r = (n.course ? 8 : (4 + 2)) + 4;
+          ctx.arc(node.x ?? 0, node.y ?? 0, 16, 0, Math.PI * 2);
           ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
           ctx.fill();
         }}
-        // Click to focus prerequisites chain (no course expansion in full graph mode)
-        onNodeClick={(n:any)=>{ setFocus(String(n.id)); }}
-        onNodeHover={(n:any)=> setHover(n || null)}
-        linkCanvasObjectMode={()=>"replace"}
-        linkCanvasObject={(l:any, ctx:CanvasRenderingContext2D, scale:number)=>{ const s=(l.source as any); const t=(l.target as any); if(!s||!t) return; const x1=s.x,y1=s.y,x2=t.x,y2=t.y; const dx=x2-x1,dy=y2-y1; const len=Math.max(1,Math.hypot(dx,dy)); const nx=-dy/len, ny=dx/len; const baseAmp=Math.min(20,len*0.08)/Math.sqrt(scale); const amp=l.__on?baseAmp:baseAmp*0.5; const phase=tRef.current*(l.__on?1.2:0.6)+(l.__tier||0)*0.5; const cx=(x1+x2)/2 + nx*amp*Math.sin(phase); const cy=(y1+y2)/2 + ny*amp*Math.sin(phase); ctx.lineWidth=(l.__on?2.5:1)/Math.sqrt(scale); ctx.strokeStyle=l.__on?"rgba(245,158,11,0.9)":"rgba(99,102,241,0.15)"; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(cx,cy,x2,y2); ctx.stroke(); }}
-        nodeCanvasObject={(n:any, ctx:CanvasRenderingContext2D, scale:number)=>{ if(n.course){ const r=8; ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fillStyle="#ffffff"; ctx.fill(); ctx.lineWidth=2/Math.sqrt(scale); ctx.strokeStyle=colorForCourse(n.courseId); ctx.stroke(); ctx.fillStyle="#111827"; ctx.font=`${12/Math.sqrt(scale)}px Inter, system-ui`; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(n.name, n.x + r + 4, n.y); return; } const r=4 + 2; const color = n.completed ? "#22c55e" : colorForCourse(n.courseId); ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 2/Math.sqrt(scale); ctx.strokeStyle = n.__on?"#f59e0b":"rgba(0,0,0,0.08)"; ctx.stroke(); if(n.completed){ ctx.strokeStyle="white"; ctx.lineWidth=2/Math.sqrt(scale); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(n.x-r*0.6,n.y+r*0.05); ctx.lineTo(n.x-r*0.15,n.y+r*0.5); ctx.lineTo(n.x+r*0.7,n.y-r*0.4); ctx.stroke(); } }}
-        width={undefined}
-        height={undefined}
+        nodeCanvasObject={(node: GraphNode, ctx, globalScale) => {
+          const radiusBase = 5 + node.tier * 0.6;
+          const isFocus = focusId === node.id;
+          const isHighlighted = highlight.nodes.has(node.id);
+          const radius = isFocus ? radiusBase + 5 : isHighlighted ? radiusBase + 2 : radiusBase;
+          const fill = isFocus ? "#facc15" : isHighlighted ? node.color : node.dimColor ?? "rgba(148, 163, 184, 0.22)";
+
+          ctx.beginPath();
+          ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, Math.PI * 2);
+          ctx.fillStyle = fill;
+          ctx.fill();
+
+          ctx.lineWidth = (isFocus ? 2.6 : 1.4) / Math.sqrt(globalScale);
+          ctx.strokeStyle = isFocus ? "rgba(250, 204, 21, 0.95)" : isHighlighted ? "rgba(255, 255, 255, 0.35)" : "rgba(15, 23, 42, 0.18)";
+          ctx.stroke();
+
+          const shouldLabel = isFocus || isHighlighted || globalScale < 1.2;
+          if (shouldLabel) {
+            ctx.fillStyle = isFocus ? "#0f172a" : "rgba(236, 239, 244, 0.92)";
+            const fontSize = Math.max(7, 14 / Math.sqrt(globalScale));
+            ctx.font = `${fontSize}px 'Inter', 'Segoe UI', sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillText(node.label, node.x ?? 0, (node.y ?? 0) + radius + 4);
+          }
+        }}
+        onNodeClick={(node: GraphNode) => {
+          setFocusId((prev) => (prev === node.id ? null : node.id));
+        }}
+        onNodeHover={(node) => {
+          setHoverNode(node as GraphNode | null);
+        }}
+        onBackgroundClick={() => setFocusId(null)}
+        backgroundColor="rgba(15, 23, 42, 0.35)"
       />
 
-      {hover && !hover.course && (
-        <div style={{ left: mouse.current.x + 14, top: mouse.current.y + 14 }} className="pointer-events-none absolute z-10 w-72 rounded-xl border border-black/5 bg-white/95 p-3 text-xs shadow-xl ring-1 ring-black/10 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <div className={`h-2 w-2 rounded-full ${hover.completed ? 'bg-green-500' : 'bg-indigo-500'}`}></div>
-            <div className="font-semibold text-gray-900 truncate">{hover.name}</div>
+      <div className="pointer-events-none absolute left-4 top-4 flex max-w-xl flex-col gap-2 rounded-2xl bg-slate-900/60 p-4 text-slate-100 shadow-lg ring-1 ring-white/10 backdrop-blur">
+        <div className="text-xs uppercase tracking-wide text-slate-400">Interactive Mindmap</div>
+        <div className="text-lg font-semibold text-white">{focusId ? nodesById.get(focusId)?.label : "Click a lesson to light the path"}</div>
+        <div className="text-xs text-slate-300">
+          {focusId
+            ? nodesById.get(focusId)?.summary ?? ""
+            : "Zoom, drag, and click to explore how lessons reinforce each other. The highlighted path shows every prerequisite back to the fundamentals."}
+        </div>
+        {focusId && (
+          <div className="mt-1 max-h-48 overflow-y-auto pr-1 text-xs text-slate-200">
+            {focusTrail.map(({ node, depth }) => (
+              <div key={node.id} className="flex items-center gap-2 py-1">
+                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-amber-300">
+                  {depth}
+                </span>
+                <div>
+                  <div className="font-semibold text-slate-100">{node.label}</div>
+                  <div className="text-[11px] text-slate-400">{node.area} • ~{node.minutes} min</div>
+                </div>
+              </div>
+            ))}
           </div>
-          {hover.courseTitle && (<div className="mt-0.5 text-[11px] text-gray-500">{hover.courseTitle}{hover.lengthMin ? ` • ${hover.lengthMin} min` : ''}</div>)}
-          {hover.excerpt && (<div className="mt-2 line-clamp-4 text-[11px] text-gray-600">{hover.excerpt}</div>)}
-          <div className="mt-2 flex items-center justify-between">
-            <div className={`text-[11px] ${hover.completed ? 'text-green-600' : 'text-gray-600'}`}>{hover.completed ? 'Completed' : 'Not completed'}</div>
-            {hover.href && (<a href={hover.href} className="pointer-events-auto rounded-full bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Open</a>)}
+        )}
+        {!focusId && (
+          <div className="text-[11px] text-slate-400">
+            Tip: open the URL with <span className="rounded bg-slate-800 px-1 py-0.5 font-mono text-[10px]">?focus=clinical-dic</span> to jump directly to the DIC lesson.
           </div>
+        )}
+        {status === "loading" && <div className="text-[11px] text-indigo-300">Loading data…</div>}
+        {status === "error" && (
+          <div className="text-[11px] text-rose-300">{error ?? "Falling back to bundled demo graph."}</div>
+        )}
+      </div>
+
+      {hoverNode && (
+        <div
+          style={{ left: pointerRef.current.x + 16, top: pointerRef.current.y + 16 }}
+          className="pointer-events-none absolute z-20 w-72 -translate-y-1/2 rounded-xl border border-white/10 bg-slate-900/90 p-3 text-xs text-slate-100 shadow-xl backdrop-blur"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-white">{hoverNode.label}</div>
+              <div className="text-[11px] text-slate-300">{hoverNode.area} • ~{hoverNode.minutes} min</div>
+            </div>
+            <span className="mt-1 inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">
+              Tier {hoverNode.tier + 1}
+            </span>
+          </div>
+          <div className="mt-2 text-[11px] leading-relaxed text-slate-200">{hoverNode.summary}</div>
+          {focusId === hoverNode.id ? (
+            <div className="mt-2 text-[11px] text-amber-300">Focus node • full prerequisite chain shown</div>
+          ) : highlight.nodes.has(hoverNode.id) ? (
+            <div className="mt-2 text-[11px] text-emerald-300">On prerequisite path</div>
+          ) : (
+            <div className="mt-2 text-[11px] text-slate-400">Click to highlight prerequisites</div>
+          )}
         </div>
       )}
     </div>
