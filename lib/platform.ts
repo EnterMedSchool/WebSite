@@ -40,7 +40,7 @@ export function resolvePlatform(params: {
     return "desktop";
   }
 
-  if (MOBILE_REGEX.test(userAgent)) {
+  if (MOBILE_REGEX.test(userAgent ?? "")) {
     return "mobile";
   }
 

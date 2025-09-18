@@ -75,7 +75,7 @@ export default function ReviewQueueView() {
               <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-indigo-500/10 to-transparent" aria-hidden="true" />
               <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-lg font-semibold text-white md:text-xl">{item.caseId}</p>
+                  <p className="text-lg font-semibold text-white md:text-xl">{item.caseSlug}</p>
                   <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">Mode {item.mode}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">

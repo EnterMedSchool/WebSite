@@ -12,6 +12,8 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { sql } from "drizzle-orm";
+
 // Core domain tables (minimal starting point)
 
 export const users = pgTable("users", {
@@ -1265,8 +1267,8 @@ export const caseAttempts = pgTable(
     phase: integer("phase").default(1).notNull(),
     currentStageSlug: varchar("current_stage_slug", { length: 120 }),
     score: integer("score").default(0).notNull(),
-    evidence: jsonb("evidence").default('[]'::jsonb),
-    state: jsonb("state").default('{}'::jsonb),
+    evidence: jsonb("evidence").default(sql`'[]'::jsonb`),
+    state: jsonb("state").default(sql`'{}'::jsonb`),
     startedAt: timestamp("started_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),

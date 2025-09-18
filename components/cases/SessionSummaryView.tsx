@@ -60,7 +60,7 @@ export default function SessionSummaryView() {
               <ul className="mt-3 space-y-2 text-sm text-slate-300">
                 {bundle.reviewQueue.due.slice(0, 3).map((item) => (
                   <li key={item.id} className="flex items-center justify-between rounded-2xl border border-slate-800/60 bg-slate-950/70 px-3 py-2">
-                    <span>{item.caseId}</span>
+                    <span>{item.caseSlug}</span>
                     <span className="text-xs uppercase tracking-[0.3em] text-indigo-300">{item.urgency}</span>
                   </li>
                 ))}
@@ -75,8 +75,8 @@ export default function SessionSummaryView() {
                 const over = entry.timeSeconds - entry.budgetSeconds;
                 const tone = over > 0 ? "text-amber-200" : "text-emerald-200";
                 return (
-                  <li key={entry.caseId} className="rounded-2xl border border-slate-800/60 bg-slate-950/70 px-3 py-2">
-                    <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">{entry.caseId}</p>
+                  <li key={entry.caseSlug} className="rounded-2xl border border-slate-800/60 bg-slate-950/70 px-3 py-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">{entry.caseSlug}</p>
                     <p className={`text-sm font-semibold ${tone}`}>
                       {Math.round(entry.timeSeconds)}s ({over > 0 ? "+" : ""}{Math.round(over)} vs budget)
                     </p>

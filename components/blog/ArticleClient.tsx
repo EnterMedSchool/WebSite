@@ -51,19 +51,19 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
         action: "Download the planning template",
       },
       {
-        phase: "February – April",
+        phase: "February - April",
         title: "Master the fundamentals",
         description: "Alternate scientific theory blocks with logical reasoning drills. Track weekly scores to spot gaps early.",
         action: "Follow the adaptive weekly schedule",
       },
       {
-        phase: "May – June",
+        phase: "May - June",
         title: "Simulate admission day",
         description: "Sit full IMAT mocks under timed conditions, then review errors with our analytics workbook for targeted fixes.",
         action: "Book proctored mock sessions",
       },
       {
-        phase: "July – August",
+        phase: "July - August",
         title: "Paperwork + rankings",
         description: "Finish translations, notarise certificates, and finalise Universitaly rankings before submissions open.",
         action: "Preview the application checklist",
@@ -81,7 +81,7 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
   const recommendedArticles: RecommendedArticle[] = useMemo(
     () => [
       {
-        title: "IMAT Past Papers 2014–2024: Smart Analysis",
+        title: "IMAT Past Papers 2014-2024: Smart Analysis",
         summary: "Discover the recurring question themes and weightings to prioritise what moves your score.",
         href: "#",
         readMinutes: 7,

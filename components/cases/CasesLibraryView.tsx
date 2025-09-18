@@ -115,7 +115,7 @@ export default function CasesLibraryView() {
             <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-400">{bundle.subjects.find((subject) => subject.slug === c.subjectSlug)?.name ?? ""}</p>
             <h3 className="relative mt-3 text-lg font-semibold text-white md:text-xl">{c.title}</h3>
             <p className="mt-2 text-sm text-slate-300">{c.subtitle}</p>
-            <p className="mt-3 text-xs text-slate-400">Tasks: {c.physicianTasks.join(", ")} - Skills: {c.skills.join(", ")}</p>
+            <p className="mt-3 text-xs text-slate-400">Tasks: {(c.physicianTasks ?? []).join(", ")} - Skills: {(c.skills ?? []).join(", ")}</p>
             <div className="mt-5 flex flex-wrap gap-2 text-sm">
               <Link
                 href={`${baseHref}/practice/${c.id}`}

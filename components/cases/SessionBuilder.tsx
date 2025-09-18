@@ -38,10 +38,10 @@ export default function SessionBuilder() {
 
   const matchedCases = useMemo(() => {
     return bundle.cases.filter((c) => {
-      const systemMatch = selectedSystems.length === 0 || selectedSystems.includes(c.system);
+      const systemMatch = selectedSystems.length === 0 || (c.system ? selectedSystems.includes(c.system) : false);
       const diffMatch = selectedDifficulty.length === 0 || selectedDifficulty.includes(c.difficulty);
-      const taskMatch = selectedTasks.length === 0 || selectedTasks.some((task) => c.physicianTasks.includes(task));
-      const skillMatch = selectedSkills.length === 0 || selectedSkills.some((skill) => c.skills.includes(skill));
+      const taskMatch = selectedTasks.length === 0 || selectedTasks.some((task) => (c.physicianTasks ?? []).includes(task));
+      const skillMatch = selectedSkills.length === 0 || selectedSkills.some((skill) => (c.skills ?? []).includes(skill));
       return systemMatch && diffMatch && taskMatch && skillMatch;
     });
   }, [bundle.cases, selectedSystems, selectedDifficulty, selectedTasks, selectedSkills]);

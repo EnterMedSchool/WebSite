@@ -59,37 +59,41 @@ export default function CaseDebrief({ caseId }: { caseId: string }) {
             Follow the high-yield route from presentation to management. We surface one exemplary branch per stage.
           </p>
           <div className="mt-5 space-y-4">
-            {goldenPath.map((segment) => (
-              <div key={segment.stage.slug} className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 shadow-inner shadow-emerald-900/20">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-emerald-200">
-                      Phase {segment.stage.phase} - {segment.stage.title}
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-white">{segment.option.label}</p>
-                    {segment.option.description && <p className="mt-1 text-sm text-emerald-100/90">{segment.option.description}</p>}
+            {goldenPath.map((segment) => {
+              const feedbackRaw = segment.option.outcomes?.feedback;
+              const feedbackText = feedbackRaw == null ? null : String(feedbackRaw);
+              return (
+                <div key={segment.stage.slug} className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 shadow-inner shadow-emerald-900/20">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-emerald-200">
+                        Phase {segment.stage.phase} - {segment.stage.title}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-white">{segment.option.label}</p>
+                      {segment.option.description && <p className="mt-1 text-sm text-emerald-100/90">{segment.option.description}</p>}
+                    </div>
+                    <div className="flex flex-col items-end text-xs text-emerald-100/80">
+                      <span className="rounded-full border border-emerald-400/40 px-3 py-1 uppercase tracking-[0.2em]">{segment.stage.stageType}</span>
+                      <span className="mt-2 rounded-full bg-emerald-500/20 px-2 py-1 font-semibold text-emerald-50">
+                        {segment.option.costTime ?? 0} min - {segment.option.scoreDelta ?? 0} pts
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end text-xs text-emerald-100/80">
-                    <span className="rounded-full border border-emerald-400/40 px-3 py-1 uppercase tracking-[0.2em]">{segment.stage.stageType}</span>
-                    <span className="mt-2 rounded-full bg-emerald-500/20 px-2 py-1 font-semibold text-emerald-50">
-                      {segment.option.costTime ?? 0} min - {segment.option.scoreDelta ?? 0} pts
-                    </span>
-                  </div>
+                  {segment.option.reveals.length > 0 && (
+                    <ul className="mt-3 space-y-2 text-sm text-emerald-100">
+                      {segment.option.reveals.map((item, idx) => (
+                        <li key={idx} className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {feedbackText && (
+                    <p className="mt-3 text-xs text-emerald-200/80">{feedbackText}</p>
+                  )}
                 </div>
-                {segment.option.reveals.length > 0 && (
-                  <ul className="mt-3 space-y-2 text-sm text-emerald-100">
-                    {segment.option.reveals.map((item, idx) => (
-                      <li key={idx} className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {segment.option.outcomes?.feedback && (
-                  <p className="mt-3 text-xs text-emerald-200/80">{String(segment.option.outcomes.feedback)}</p>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -169,12 +173,16 @@ function computeGoldenPath(graph: CaseGraph): GoldenSegment[] {
   const segments: GoldenSegment[] = [];
   const stageMap = graph.stageMap;
   const ordered = [...graph.stages].sort((a, b) => (a.phase === b.phase ? a.orderIndex - b.orderIndex : a.phase - b.phase));
-  let currentSlug = graph.entryStageSlug || ordered[0]?.slug;
+  let currentSlug: string | null = graph.entryStageSlug ?? ordered[0]?.slug ?? null;
   const visited = new Set<string>();
 
-  while (currentSlug && !visited.has(currentSlug)) {
-    visited.add(currentSlug);
-    const stage = stageMap[currentSlug];
+  while (currentSlug) {
+    const slug: string = currentSlug!;
+    if (visited.has(slug)) {
+      break;
+    }
+    visited.add(slug);
+    const stage: CaseStage | undefined = stageMap[slug];
     if (!stage) break;
     const preferred = pickPreferredOption(stage);
     if (preferred) {
@@ -234,16 +242,21 @@ function StageInsight({ stage }: { stage: CaseStage }) {
       )}
       {alternates.length > 0 && (
         <div className="mt-4 space-y-3 text-sm text-slate-200">
-          {alternates.map((option) => (
-            <div key={option.value} className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3">
-              <p className="font-semibold text-white">{option.label}</p>
-              {option.description && <p className="mt-1 text-rose-100/80">{option.description}</p>}
-              <MetaRow option={option} />
-              {option.outcomes?.feedback && (
-                <p className="mt-1 text-xs text-rose-100/70">{String(option.outcomes.feedback)}</p>
-              )}
-            </div>
-          ))}
+          {alternates.map((option) => {
+            const feedbackRaw = option.outcomes?.feedback;
+            const feedbackText = feedbackRaw == null ? null : String(feedbackRaw);
+            return (
+              <div key={option.value} className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3">
+                <p className="font-semibold text-white">{option.label}</p>
+                {option.description && <p className="mt-1 text-rose-100/80">{option.description}</p>}
+                <MetaRow option={option} />
+                {feedbackText && (
+                  <p className="mt-1 text-xs text-rose-100/70">{feedbackText}</p>
+                )}
+              </div>
+            );
+          })}
+
         </div>
       )}
     </div>
