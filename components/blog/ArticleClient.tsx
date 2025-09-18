@@ -51,19 +51,19 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
         action: "Download the planning template",
       },
       {
-        phase: "February – April",
+        phase: "February - April",
         title: "Master the fundamentals",
         description: "Alternate scientific theory blocks with logical reasoning drills. Track weekly scores to spot gaps early.",
         action: "Follow the adaptive weekly schedule",
       },
       {
-        phase: "May – June",
+        phase: "May - June",
         title: "Simulate admission day",
         description: "Sit full IMAT mocks under timed conditions, then review errors with our analytics workbook for targeted fixes.",
         action: "Book proctored mock sessions",
       },
       {
-        phase: "July – August",
+        phase: "July - August",
         title: "Paperwork + rankings",
         description: "Finish translations, notarise certificates, and finalise Universitaly rankings before submissions open.",
         action: "Preview the application checklist",
@@ -81,7 +81,7 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
   const recommendedArticles: RecommendedArticle[] = useMemo(
     () => [
       {
-        title: "IMAT Past Papers 2014–2024: Smart Analysis",
+        title: "IMAT Past Papers 2014-2024: Smart Analysis",
         summary: "Discover the recurring question themes and weightings to prioritise what moves your score.",
         href: "#",
         readMinutes: 7,
@@ -524,13 +524,13 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                 className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow"
                 aria-label="Close map"
               >
-                ×
+                x
               </button>
               <div className="mb-5 flex flex-col gap-2 text-white">
                 <span className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-200">Interactive map</span>
                 <h3 className="text-2xl font-semibold">Explore IMAT universities across {meta.country ?? "the country"}</h3>
                 <p className="text-sm text-slate-200">
-                  Filter by seat availability, scores, or student community support — just like on the homepage map.
+                  Filter by seat availability, scores, or student community support - just like on the homepage map.
                 </p>
               </div>
               <div className="overflow-hidden rounded-[28px] bg-slate-900">

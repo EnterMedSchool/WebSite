@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 ];
 
 export default function PracticeTopNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const { bundle } = usePractice();
   const formattedExamDate = useMemo(() => {
     try {
@@ -79,3 +79,4 @@ export default function PracticeTopNav() {
     </div>
   );
 }
+

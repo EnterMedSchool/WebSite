@@ -16,6 +16,11 @@ type City = {
   trendSeats?: Array<{ year: number; type?: string; seats: number }>;
 };
 
+type RenderGeography = {
+  rsmKey: string;
+  properties: Record<string, unknown>;
+} & Record<string, unknown>;
+
 type Props = {
   dataset: string;
   countryName: string;
@@ -138,7 +143,7 @@ export default function CountrySpotlight({ dataset, countryName, isoA3, center, 
                   </radialGradient>
                 </defs>
                 <Geographies geography={GEO_URL}>
-                  {({ geographies }) =>
+                  {({ geographies }: { geographies: RenderGeography[] }) =>
                     geographies.map((geo) => {
                       const props = geo.properties as { name?: string; iso_a3?: string };
                       const isTarget =
@@ -185,15 +190,15 @@ export default function CountrySpotlight({ dataset, countryName, isoA3, center, 
           <div className="grid grid-cols-3 gap-3 text-center text-xs font-semibold uppercase text-slate-500">
             <div className="rounded-2xl bg-slate-100 px-3 py-2">
               <p className="text-[11px] tracking-[0.18em] text-slate-500">Universities</p>
-              <p className="mt-1 text-lg text-slate-900">{cities.length || "—"}</p>
+              <p className="mt-1 text-lg text-slate-900">{cities.length || "-"}</p>
             </div>
             <div className="rounded-2xl bg-slate-100 px-3 py-2">
               <p className="text-[11px] tracking-[0.18em] text-slate-500">Top score</p>
-              <p className="mt-1 text-lg text-slate-900">{peakScore ? peakScore.toFixed(1) : "—"}</p>
+              <p className="mt-1 text-lg text-slate-900">{peakScore ? peakScore.toFixed(1) : "-"}</p>
             </div>
             <div className="rounded-2xl bg-slate-100 px-3 py-2">
               <p className="text-[11px] tracking-[0.18em] text-slate-500">Seats</p>
-              <p className="mt-1 text-lg text-slate-900">{totalSeats ? totalSeats : "—"}</p>
+              <p className="mt-1 text-lg text-slate-900">{totalSeats ? totalSeats : "-"}</p>
             </div>
           </div>
 
@@ -212,7 +217,7 @@ export default function CountrySpotlight({ dataset, countryName, isoA3, center, 
                   >
                     <div>
                       <p className="font-semibold text-slate-900">{city.uni}</p>
-                      <p className="text-xs text-slate-500">{city.city}{city.language ? ` · ${city.language}` : ""}</p>
+                      <p className="text-xs text-slate-500">{city.city}{city.language ? ` \u00B7 ${city.language}` : ""}</p>
                     </div>
                     <div className="text-right text-xs text-slate-500">
                       {score !== null && <p className="font-semibold text-indigo-600">Score {score.toFixed(1)}</p>}

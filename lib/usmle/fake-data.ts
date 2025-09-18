@@ -1,4 +1,4 @@
-﻿import type { PracticeBundle, PracticeNotification, ReviewQueueItem } from "./types";
+import type { PracticeBundle, PracticeNotification, ReviewQueueItem } from "./types";
 
 const today = new Date();
 const iso = (d: Date) => d.toISOString();
@@ -9,7 +9,7 @@ const futureDate = (offsetDays: number) => {
   return iso(d);
 };
 
-const reviewDue = (offset: number, urgency: ReviewQueueItem["urgency"]) => ({
+const reviewDue = (offset: number, urgency: ReviewQueueItem["urgency"]): ReviewQueueItem => ({
   id: `review-${offset}`,
   caseId: offset % 2 === 0 ? "case-cushing" : "case-hf",
   due: futureDate(offset),
