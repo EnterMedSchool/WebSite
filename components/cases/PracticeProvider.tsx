@@ -19,6 +19,39 @@ import type {
   TodayPlanBlock,
 } from "@/lib/cases/types";
 
+export type SessionFilters = {
+  systems: string[];
+  disciplines: string[];
+  tasks: string[];
+  skills: string[];
+  difficulty: string[];
+};
+
+export type SessionAids = {
+  hints: boolean;
+  ruleOut: boolean;
+  labRef: boolean;
+  calculator: boolean;
+};
+
+export interface SessionDraft {
+  title?: string;
+  mode: PracticeMode;
+  caseSlugs: string[];
+  timeBox: number | null;
+  aids: SessionAids;
+  filters: SessionFilters;
+}
+
+export interface ActiveSession extends SessionDraft {
+  id: string;
+  createdAt: number;
+  cursor: number;
+  completedSlugs: string[];
+  status: "active" | "completed";
+  completedAt?: number;
+}
+
 type AnswerRecord = {
   choiceId: string;
   confidence: "low" | "medium" | "high";
@@ -48,6 +81,7 @@ type PracticeState = {
   hintsConsumed: Record<string, number>;
   todayPlanStatus: Record<string, "pending" | "in_progress" | "completed">;
   onboarding: OnboardingState;
+  activeSession: ActiveSession | null;
 };
 
 type Action =
@@ -63,7 +97,10 @@ type Action =
   | { type: "set-onboarding-step"; step: number }
   | { type: "update-goal"; patch: Partial<OnboardingState["goals"]> }
   | { type: "record-baseline"; itemId: string; choiceId?: string | null; confidence?: "low" | "medium" | "high" | null }
-  | { type: "complete-onboarding" };
+  | { type: "complete-onboarding" }
+  | { type: "start-session"; session: ActiveSession }
+  | { type: "advance-session"; completedSlug?: string | null }
+  | { type: "end-session" };
 
 export interface PracticeContextValue {
   bundle: PracticeBundle;
@@ -81,6 +118,9 @@ export interface PracticeContextValue {
   updateGoals: (patch: Partial<OnboardingState["goals"]>) => void;
   recordBaselineResponse: (itemId: string, choiceId?: string | null, confidence?: "low" | "medium" | "high" | null) => void;
   completeOnboarding: () => void;
+  startSession: (draft: SessionDraft) => void;
+  advanceSession: (completedSlug?: string | null) => void;
+  endSession: () => void;
 }
 
 const PracticeContext = createContext<PracticeContextValue | null>(null);
@@ -111,6 +151,13 @@ const buildDefaultOnboarding = (bundle: PracticeBundle): OnboardingState => {
   };
 };
 
+const generateSessionId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
 const deriveSubjectCases = (bundle: PracticeBundle, subjectSlug: string): { subject: CaseSubjectSummary; cases: CaseSummary[] } => {
   const subject = bundle.subjects.find((s) => s.slug === subjectSlug) ?? bundle.subjects[0] ?? {
     slug: subjectSlug,
@@ -138,6 +185,7 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
     hintsConsumed: {},
     todayPlanStatus: buildInitialPlanStatus(initialPlan),
     onboarding: buildDefaultOnboarding(bundle),
+    activeSession: null,
   };
 
   const reducer = (state: PracticeState, action: Action): PracticeState => {
@@ -152,10 +200,26 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
           activeSubjectSlug: subject.slug,
           activeCaseSlug: cases[0]?.slug ?? null,
           todayPlanStatus: buildInitialPlanStatus(nextPlan),
+          activeSession: null,
         };
       }
-      case "select-case":
-        return { ...state, activeCaseSlug: action.caseSlug };
+      case "select-case": {
+        if (!state.activeSession || !action.caseSlug) {
+          return { ...state, activeCaseSlug: action.caseSlug };
+        }
+        const idx = state.activeSession.caseSlugs.indexOf(action.caseSlug);
+        if (idx === -1 || idx === state.activeSession.cursor) {
+          return { ...state, activeCaseSlug: action.caseSlug };
+        }
+        return {
+          ...state,
+          activeCaseSlug: action.caseSlug,
+          activeSession: {
+            ...state.activeSession,
+            cursor: idx,
+          },
+        };
+      }
       case "record-answer": {
         const prev = state.answers[action.caseSlug];
         const changed = prev ? prev.choiceId !== action.choiceId : false;
@@ -222,6 +286,49 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
       }
       case "complete-onboarding":
         return { ...state, onboarding: { ...state.onboarding, active: false, completed: true } };
+      case "start-session": {
+        const firstSlug = action.session.caseSlugs[0] ?? null;
+        return {
+          ...state,
+          mode: action.session.mode,
+          activeSession: action.session,
+          activeCaseSlug: firstSlug,
+        };
+      }
+      case "advance-session": {
+        if (!state.activeSession) return state;
+        const currentIndex = state.activeSession.cursor;
+        const currentSlug = state.activeSession.caseSlugs[currentIndex] ?? null;
+        const completed = new Set(state.activeSession.completedSlugs);
+        if (currentSlug) {
+          completed.add(currentSlug);
+        }
+        if (action.completedSlug) {
+          completed.add(action.completedSlug);
+        }
+        const nextIndex = currentIndex + 1;
+        const isDone = nextIndex >= state.activeSession.caseSlugs.length;
+        const cursor = isDone ? Math.max(0, state.activeSession.caseSlugs.length - 1) : nextIndex;
+        const nextSlug = isDone ? currentSlug : state.activeSession.caseSlugs[nextIndex];
+        return {
+          ...state,
+          activeSession: {
+            ...state.activeSession,
+            cursor,
+            completedSlugs: Array.from(completed),
+            status: isDone ? "completed" : "active",
+            completedAt: isDone ? Date.now() : state.activeSession.completedAt,
+          },
+          activeCaseSlug: nextSlug,
+        };
+      }
+      case "end-session": {
+        if (!state.activeSession) return state;
+        return {
+          ...state,
+          activeSession: null,
+        };
+      }
       default:
         return state;
     }
@@ -288,6 +395,20 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
       recordBaselineResponse: (itemId, choiceId, confidence) =>
         dispatch({ type: "record-baseline", itemId, choiceId, confidence }),
       completeOnboarding: () => dispatch({ type: "complete-onboarding" }),
+      startSession: (draft) => {
+        if (!draft.caseSlugs.length) return;
+        const session: ActiveSession = {
+          ...draft,
+          id: generateSessionId(),
+          createdAt: Date.now(),
+          cursor: 0,
+          completedSlugs: [],
+          status: "active",
+        };
+        dispatch({ type: "start-session", session });
+      },
+      advanceSession: (completedSlug) => dispatch({ type: "advance-session", completedSlug: completedSlug ?? null }),
+      endSession: () => dispatch({ type: "end-session" }),
     }),
     [derivedBundle, state]
   );

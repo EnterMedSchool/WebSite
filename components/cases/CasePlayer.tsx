@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCaseEngine } from "@/lib/cases/engine";
 import type { CaseEngineState, CaseEngineStep } from "@/lib/cases/engine";
 import type { CaseStage, CaseStageOption, CaseSummary, CaseStageInteraction, CommentaryTone } from "@/lib/cases/types";
-import { usePractice } from "./PracticeProvider";
+import { usePractice, type ActiveSession } from "./PracticeProvider";
 
 const HOTKEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -42,13 +42,19 @@ const TONE_META: Record<CommentaryTone, { label: string; helper: string; classNa
 
 export default function CasePlayer({ caseId }: { caseId: string }) {
   const router = useRouter();
-  const { bundle } = usePractice();
+  const { bundle, state: practiceState, selectCase: setActiveCase, advanceSession, endSession } = usePractice();
   const baseHref = useMemo(() => `/cases/${bundle.collection.slug}`, [bundle.collection.slug]);
   const caseSummary = useMemo(
     () => bundle.cases.find((item) => item.id === caseId || item.slug === caseId),
     [bundle.cases, caseId]
   );
 
+
+  useEffect(() => {
+    if (caseSummary && practiceState.activeCaseSlug !== caseSummary.slug) {
+      setActiveCase(caseSummary.slug);
+    }
+  }, [caseSummary, practiceState.activeCaseSlug, setActiveCase]);
   const engine = useCaseEngine(caseSummary);
   const { state, currentStage, selectOption, reset, advance, triggerInteraction } = engine;
   const theme = state.phase > 1 ? MANAGEMENT_THEME : DIAGNOSIS_THEME;
@@ -69,6 +75,51 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [currentStage, selectOption]);
+
+  const orderedStages = useMemo(() => buildStepper(state), [state]);
+  const selectedForStage = currentStage ? state.selectedOptions[currentStage.slug] ?? [] : [];
+  const totalSteps = state.orderedStageSlugs.length;
+  const currentIndex = currentStage ? state.orderedStageSlugs.indexOf(currentStage.slug) : -1;
+  const progressPercent = Math.round((state.visitedStageSlugs.length / Math.max(totalSteps, 1)) * 100);
+  const achievements = useMemo(() => {
+    if (!caseSummary) return [];
+    return buildAchievements(state, caseSummary, progressPercent);
+  }, [state, caseSummary, progressPercent]);
+  const recommendedOption = currentStage?.options.find((option) => option.isCorrect) ?? null;
+  const triggeredInteractions = useMemo(() => {
+    const set = new Set<string>();
+    for (const step of state.timeline) {
+      if (step.kind === "interaction" && step.interactionId) {
+        set.add(step.interactionId);
+      }
+    }
+    return set;
+  }, [state.timeline]);
+
+  const session = practiceState.activeSession;
+  const sessionIndex = useMemo(() => {
+    if (!session || !caseSummary) return -1;
+    return session.caseSlugs.indexOf(caseSummary.slug);
+  }, [session, caseSummary]);
+  const nextSessionSlug = useMemo(() => {
+    if (!session || session.status !== "active" || sessionIndex === -1) return null;
+    return session.caseSlugs[sessionIndex + 1] ?? null;
+  }, [session, sessionIndex]);
+  const handleSessionAdvance = useCallback(() => {
+    if (!session || !caseSummary) return;
+    advanceSession(caseSummary.slug);
+    if (nextSessionSlug) {
+      router.push(`${baseHref}/practice/${nextSessionSlug}`);
+    }
+  }, [session, caseSummary, advanceSession, nextSessionSlug, router, baseHref]);
+  const handleSessionFinish = useCallback(() => {
+    if (!session || !caseSummary) return;
+    if (session.status !== "completed") {
+      advanceSession(caseSummary.slug);
+    }
+    endSession();
+    router.push(`${baseHref}/build`);
+  }, [session, caseSummary, advanceSession, endSession, router, baseHref]);
 
   if (!caseSummary) {
     return (
@@ -100,23 +151,6 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
     );
   }
 
-  const orderedStages = useMemo(() => buildStepper(state), [state]);
-  const selectedForStage = currentStage ? state.selectedOptions[currentStage.slug] ?? [] : [];
-  const totalSteps = state.orderedStageSlugs.length;
-  const currentIndex = currentStage ? state.orderedStageSlugs.indexOf(currentStage.slug) : -1;
-  const progressPercent = Math.round((state.visitedStageSlugs.length / Math.max(totalSteps, 1)) * 100);
-  const achievements = useMemo(() => buildAchievements(state, caseSummary, progressPercent), [state, caseSummary, progressPercent]);
-  const recommendedOption = currentStage?.options.find((option) => option.isCorrect) ?? null;
-  const triggeredInteractions = useMemo(() => {
-    const set = new Set<string>();
-    for (const step of state.timeline) {
-      if (step.kind === "interaction" && step.interactionId) {
-        set.add(step.interactionId);
-      }
-    }
-    return set;
-  }, [state.timeline]);
-
   return (
     <div className="space-y-6">
       <header className={`relative overflow-hidden rounded-3xl border border-slate-800/60 bg-gradient-to-r ${theme.headerGradient} p-6 shadow-2xl shadow-indigo-950/30`}>
@@ -135,6 +169,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
             <StatCard label="Time budget" value={`${state.timeSpent} / ${caseSummary.estimatedMinutes ?? 20} min`} helper="Target the budget but do not rush." accent={theme.statAccent} />
             <StatCard label="Score" value={`${state.score > 0 ? "+" : ""}${state.score}`} helper="Score shifts with each decision." accent={theme.statAccent} />
             <StatCard label="Actions" value={`${state.totalActions}`} helper={`${state.mistakes} missteps - streak ${state.streak}`} accent={theme.statAccent} />
+            {session && <SessionBadge session={session} currentSlug={caseSummary.slug} />}
           </div>
         </div>
       </header>
@@ -158,6 +193,11 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
           recommended={recommendedOption?.value ?? null}
           feedbackStep={state.lastStep}
           triggeredInteractions={triggeredInteractions}
+          session={session}
+          sessionCursor={sessionIndex}
+          onSessionAdvance={nextSessionSlug ? handleSessionAdvance : undefined}
+          onSessionFinish={session ? handleSessionFinish : undefined}
+          nextSessionSlug={nextSessionSlug}
         />
 
         <RightRail
@@ -225,6 +265,11 @@ function StagePanel({
   recommended,
   feedbackStep,
   triggeredInteractions,
+  session,
+  sessionCursor,
+  onSessionAdvance,
+  onSessionFinish,
+  nextSessionSlug,
 }: {
   stage?: CaseStage;
   stepIndex: number;
@@ -241,6 +286,11 @@ function StagePanel({
   recommended: string | null;
   feedbackStep?: CaseEngineStep;
   triggeredInteractions: Set<string>;
+  session?: ActiveSession | null;
+  sessionCursor: number;
+  onSessionAdvance?: () => void;
+  onSessionFinish?: () => void;
+  nextSessionSlug?: string | null;
 }) {
   if (!stage) {
     return (
@@ -256,6 +306,11 @@ function StagePanel({
   const infoOnly = options.length === 0;
   const interactions = stage.interactions ?? [];
   const feedback = feedbackStep && feedbackStep.stageSlug === stage.slug ? feedbackStep : undefined;
+  const inSession = Boolean(session && sessionCursor >= 0);
+  const sessionTotal = session?.caseSlugs.length ?? 0;
+  const showNextCaseButton = Boolean(onSessionAdvance && nextSessionSlug);
+  const showFinishSessionButton = Boolean(onSessionFinish && session && session.status === "active" && !nextSessionSlug);
+  const showReturnToBuilder = Boolean(onSessionFinish && session && session.status === "completed");
 
   return (
     <section className="space-y-4">
@@ -265,6 +320,11 @@ function StagePanel({
             <div className="flex items-center gap-3 text-xs text-slate-400">
               <span className={`rounded-full border ${theme.stepChip} px-3 py-1 uppercase tracking-[0.3em]`}>Step {stepNumber} of {total}</span>
               <span className={`rounded-full border border-slate-700 px-3 py-1 uppercase tracking-[0.3em] ${STAGE_TYPE_META[stage.stageType].accent}`}>{stage.stageType}</span>
+              {inSession && (
+                <span className="rounded-full border border-indigo-400 px-3 py-1 uppercase tracking-[0.3em] text-indigo-200">
+                  Session {sessionCursor + 1} of {sessionTotal}
+                </span>
+              )}
             </div>
             <h2 className="mt-3 text-2xl font-semibold text-white">{stage.title}</h2>
             {stage.subtitle && <p className="mt-1 text-sm text-slate-300">{stage.subtitle}</p>}
@@ -331,6 +391,30 @@ function StagePanel({
           <h3 className="text-lg font-semibold text-emerald-100">Diagnosis unlocked!</h3>
           <p className="mt-2 text-emerald-200/80">You completed the reasoning arc. Jump into the debrief or reset to explore alternate paths.</p>
           <div className="mt-4 flex flex-wrap gap-3">
+            {showNextCaseButton && (
+              <button
+                onClick={onSessionAdvance}
+                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400"
+              >
+                Load next case
+              </button>
+            )}
+            {showFinishSessionButton && (
+              <button
+                onClick={onSessionFinish}
+                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400"
+              >
+                Finish session
+              </button>
+            )}
+            {showReturnToBuilder && (
+              <button
+                onClick={onSessionFinish}
+                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400"
+              >
+                Return to builder
+              </button>
+            )}
             <Link href={`${baseHref}/debrief/${caseSummary.id}`} className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 hover:bg-emerald-400">
               Open debrief
             </Link>
@@ -338,6 +422,12 @@ function StagePanel({
               Reset case
             </button>
           </div>
+          {showFinishSessionButton && (
+            <p className="mt-3 text-xs text-slate-400">This was the final case in your session. Finish to wrap up your run.</p>
+          )}
+          {showReturnToBuilder && (
+            <p className="mt-3 text-xs text-slate-400">Session completed. Head back to the builder for the next plan.</p>
+          )}
         </div>
       )}
     </section>
@@ -717,6 +807,22 @@ function StatCard({
       <span className="text-[10px] uppercase tracking-[0.3em] text-slate-400">{label}</span>
       <span className={`text-2xl font-semibold ${accent}`}>{value}</span>
       <span className="text-xs text-slate-400">{helper}</span>
+    </div>
+  );
+}
+
+function SessionBadge({ session, currentSlug }: { session: ActiveSession; currentSlug: string }) {
+  if (!session.caseSlugs.length) return null;
+  const index = session.caseSlugs.indexOf(currentSlug);
+  if (index === -1) return null;
+  const total = session.caseSlugs.length;
+  const remaining = Math.max(total - index - 1, 0);
+  const statusLabel = session.status === "completed" ? "Completed" : `${remaining} remaining`;
+  return (
+    <div className="flex min-w-[180px] flex-col gap-1 rounded-2xl border border-slate-800/60 bg-slate-950/70 p-4 text-xs text-slate-200 shadow-lg shadow-indigo-950/10">
+      <span className="text-[10px] uppercase tracking-[0.3em] text-indigo-200">Session</span>
+      <span className="text-lg font-semibold text-white">{index + 1} / {total}</span>
+      <span className="text-[11px] text-slate-400">{statusLabel}</span>
     </div>
   );
 }
