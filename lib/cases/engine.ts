@@ -1,15 +1,32 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import type { CaseSummary, CaseStage, CaseStageOption, StageType } from "@/lib/cases/types";
+import type {
+  CaseSummary,
+  CaseStage,
+  CaseStageOption,
+  CaseStageInteraction,
+  StageType,
+  BadgeReward,
+  OptionFailure,
+  CommentaryTone,
+} from "@/lib/cases/types";
 
 export interface CaseEngineStep {
   id: string;
+  kind: "option" | "interaction" | "system";
   stageSlug: string;
   stageTitle: string;
   stageType: StageType;
-  optionValue: string;
-  optionLabel: string;
-  isCorrect: boolean;
+  optionValue: string | null;
+  optionLabel: string | null;
+  isCorrect: boolean | null;
   feedback?: string;
+  commentary?: string[] | null;
+  tone?: CommentaryTone;
+  funStatus?: string | null;
+  audio?: string | null;
+  badgeEarned?: BadgeReward | null;
+  failure?: OptionFailure | null;
+  interactionId?: string | null;
   reveals: string[];
   costTime: number;
   scoreDelta: number;
@@ -43,6 +60,7 @@ export interface CaseEngineState {
   visitedStageSlugs: string[];
   selectedOptions: Record<string, string[]>;
   phaseTransitions: Array<{ from: number; to: number; at: string }>;
+  badges: BadgeReward[];
   lastStep?: CaseEngineStep;
   lastFeedback?: string;
   lastOutcome?: Record<string, unknown> | null;
@@ -54,6 +72,7 @@ type CaseEngineAction =
   | { type: "select-option"; stageSlug?: string; optionValue: string }
   | { type: "jump-stage"; stageSlug: string }
   | { type: "advance-stage"; stageSlug?: string };
+  | { type: "trigger-interaction"; stageSlug?: string; interactionId: string };
 
 const INITIAL_STATE: CaseEngineState = {
   status: "loading",
@@ -74,6 +93,7 @@ const INITIAL_STATE: CaseEngineState = {
   visitedStageSlugs: [],
   selectedOptions: {},
   phaseTransitions: [],
+  badges: [],
   lastOutcome: null,
 };
 
@@ -173,7 +193,7 @@ function createInitialState(summary: CaseSummary | undefined): CaseEngineState {
   };
 }
 
-function registerSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption, config?: { neutral?: boolean }) {
+function registerSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption, config?: { neutral?: boolean; kind?: CaseEngineStep["kind"] }) {
   const selected = state.selectedOptions[stage.slug] ?? [];
   if (!stage.allowMultiple && selected.includes(option.value)) {
     return state;
@@ -195,16 +215,25 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
   const hypotheses = deriveHypotheses(evidence);
 
   const feedback = typeof option.outcomes?.feedback === "string" ? (option.outcomes?.feedback as string) : undefined;
+  const commentary = option.commentary ?? [];
+  const tone = option.tone;
+  const funStatus = option.funStatus ?? null;
+  const badge = option.badge ?? null;
+  const failure = option.failure ?? null;
+  const audio = option.audio ?? null;
+  const energyOverride = option.energyDeltaOverride ?? null;
 
   const newStreak = neutral ? state.streak : option.isCorrect ? state.streak + 1 : 0;
   const mistakes = neutral ? state.mistakes : state.mistakes + (option.isCorrect ? 0 : 1);
   const comboLevel = neutral ? state.comboLevel : newStreak >= 3 ? Math.min(5, newStreak - 2) : 0;
-  const rawEnergyDelta = neutral ? 0 : -costTime * 0.6 + scoreDelta * 1.2 + (option.isCorrect ? 8 : -10) + comboLevel * 2;
-  const newEnergy = clampEnergy(state.masteryEnergy + rawEnergyDelta);
+  const baseEnergyDelta = neutral ? 0 : -costTime * 0.6 + scoreDelta * 1.2 + (option.isCorrect ? 8 : -10) + comboLevel * 2;
+  const appliedEnergyDelta = energyOverride ?? baseEnergyDelta;
+  const newEnergy = clampEnergy(state.masteryEnergy + appliedEnergyDelta);
   const energyDelta = newEnergy - state.masteryEnergy;
 
   const step: CaseEngineStep = {
     id: `${stage.slug}:${option.value}:${state.timeline.length + 1}`,
+    kind: config?.kind ?? "option",
     stageSlug: stage.slug,
     stageTitle: stage.title,
     stageType: stage.stageType,
@@ -212,6 +241,13 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
     optionLabel: option.label,
     isCorrect: option.isCorrect,
     feedback,
+    commentary: commentary.length ? commentary : null,
+    tone,
+    funStatus,
+    audio,
+    badgeEarned: badge ?? null,
+    failure: failure ?? null,
+    interactionId: null,
     reveals,
     costTime,
     scoreDelta,
@@ -221,7 +257,7 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
     takenAt: Date.now(),
     outcomes: option.outcomes ?? null,
     masteryEnergy: newEnergy,
-    masteryEnergyDelta: neutral ? 0 : energyDelta,
+    masteryEnergyDelta: energyDelta,
     comboLevel,
   };
 
@@ -231,6 +267,14 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
     ...state.selectedOptions,
     [stage.slug]: stage.allowMultiple ? [...selected, option.value] : [option.value],
   };
+
+  let badges = state.badges;
+  if (badge) {
+    const exists = badges.some((item) => item.id === badge.id);
+    if (!exists) {
+      badges = [...badges, badge];
+    }
+  }
 
   return {
     ...state,
@@ -245,13 +289,15 @@ function registerSelection(state: CaseEngineState, stage: CaseStage, option: Cas
     hypotheses,
     timeline,
     selectedOptions,
+    badges,
     lastStep: step,
     lastFeedback: feedback,
     lastOutcome: option.outcomes ?? null,
   } satisfies CaseEngineState;
 }
 
-function nextStateAfterSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption, config?: { neutral?: boolean }): CaseEngineState {
+
+function nextStateAfterSelection(state: CaseEngineState, stage: CaseStage, option: CaseStageOption, config?: { neutral?: boolean; kind?: CaseEngineStep["kind"] }): CaseEngineState {
   const registered = registerSelection(state, stage, option, config);
   let nextStageSlug = option.advanceTo ?? null;
 
@@ -304,8 +350,71 @@ function advanceStage(state: CaseEngineState, stage: CaseStage): CaseEngineState
     outcomes: null,
   };
 
-  return nextStateAfterSelection(state, stage, continueOption, { neutral: true });
+  return nextStateAfterSelection(state, stage, continueOption, { neutral: true, kind: "system" });
 }
+
+
+function triggerInteraction(state: CaseEngineState, stage: CaseStage, interaction: CaseStageInteraction): CaseEngineState {
+  const reveals = interaction.reveals ?? [];
+  const evidenceSet = new Set(state.evidence);
+  reveals.forEach((item) => evidenceSet.add(item));
+  const evidence = Array.from(evidenceSet);
+  const hypotheses = deriveHypotheses(evidence);
+  const energyDelta = interaction.energyDelta ?? 0;
+  const newEnergy = clampEnergy(state.masteryEnergy + energyDelta);
+  const step: CaseEngineStep = {
+    id: `${stage.slug}:interaction:${interaction.id}:${state.timeline.length + 1}`,
+    kind: "interaction",
+    stageSlug: stage.slug,
+    stageTitle: stage.title,
+    stageType: stage.stageType,
+    optionValue: null,
+    optionLabel: interaction.label,
+    isCorrect: null,
+    feedback: undefined,
+    commentary: interaction.commentary && interaction.commentary.length ? interaction.commentary : null,
+    tone: undefined,
+    funStatus: null,
+    audio: interaction.audio ?? null,
+    badgeEarned: interaction.badge ?? null,
+    failure: null,
+    interactionId: interaction.id,
+    reveals,
+    costTime: 0,
+    scoreDelta: 0,
+    cumulativeScore: state.score,
+    cumulativeTime: state.timeSpent,
+    phase: stage.phase,
+    takenAt: Date.now(),
+    outcomes: null,
+    masteryEnergy: newEnergy,
+    masteryEnergyDelta: newEnergy - state.masteryEnergy,
+    comboLevel: state.comboLevel,
+  };
+
+  const timeline = [...state.timeline, step];
+  let badges = state.badges;
+  if (interaction.badge) {
+    const exists = badges.some((item) => item.id === interaction.badge.id);
+    if (!exists) {
+      badges = [...badges, interaction.badge];
+    }
+  }
+
+  return {
+    ...state,
+    totalActions: state.totalActions + 1,
+    masteryEnergy: newEnergy,
+    evidence,
+    hypotheses,
+    timeline,
+    badges,
+    lastStep: step,
+    lastFeedback: undefined,
+    lastOutcome: null,
+  } satisfies CaseEngineState;
+}
+
 
 
 function caseEngineReducer(state: CaseEngineState, action: CaseEngineAction): CaseEngineState {
@@ -340,6 +449,16 @@ function caseEngineReducer(state: CaseEngineState, action: CaseEngineAction): Ca
       const stage = state.stageMap[stageSlug];
       if (!stage) return state;
       return advanceStage(state, stage);
+    }
+    case "trigger-interaction": {
+      if (state.status !== "active" && state.status !== "completed") return state;
+      const stageSlug = action.stageSlug ?? state.currentStageSlug;
+      if (!stageSlug) return state;
+      const stage = state.stageMap[stageSlug];
+      if (!stage) return state;
+      const interaction = stage.interactions?.find((item) => item.id === action.interactionId);
+      if (!interaction) return state;
+      return triggerInteraction(state, stage, interaction);
     }
     default:
       return state;
@@ -384,6 +503,13 @@ export function useCaseEngine(summary: CaseSummary | undefined) {
     []
   );
 
+
+  const triggerInteraction = useCallback((interactionId: string, stageSlug?: string) => {
+    const target = stageSlug ?? currentStageRef.current;
+    if (!target) return;
+    dispatch({ type: "trigger-interaction", stageSlug: target, interactionId });
+  }, []);
+
   const currentStage = useMemo(() => {
     if (!state.currentStageSlug) return undefined;
     return state.stageMap[state.currentStageSlug];
@@ -394,6 +520,7 @@ export function useCaseEngine(summary: CaseSummary | undefined) {
     selectOption,
     reset,
     advance,
+    triggerInteraction,
     jumpToStage,
     currentStage,
   };

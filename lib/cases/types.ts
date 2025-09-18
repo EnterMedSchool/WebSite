@@ -2,6 +2,33 @@ export type PracticeMode = "study" | "exam" | "adaptive" | "rapid" | "custom";
 
 export type StageType = "info" | "decision" | "order" | "diagnosis" | "management" | "summary";
 
+export type CommentaryTone = "praise" | "snark" | "alert" | "serious" | "neutral";
+
+export interface BadgeReward {
+  id: string;
+  label: string;
+  description?: string | null;
+  icon?: string | null;
+}
+
+export interface OptionFailure {
+  fatal: boolean;
+  headline: string;
+  detail?: string | null;
+  tone?: CommentaryTone;
+}
+
+export interface CaseStageInteraction {
+  id: string;
+  label: string;
+  description?: string | null;
+  reveals: string[];
+  audio?: string | null;
+  commentary?: string[];
+  energyDelta?: number | null;
+  badge?: BadgeReward | null;
+}
+
 export interface CaseCollectionSummary {
   slug: string;
   name: string;
@@ -40,6 +67,7 @@ export interface CaseSummary {
   skills?: string[];
   format?: "guided" | "branching" | "legacy";
   tags?: string[];
+  badgeCatalog?: BadgeReward[];
   graph?: CaseGraph;
 }
 
@@ -54,6 +82,13 @@ export interface CaseStageOption {
   costTime?: number | null;
   scoreDelta?: number | null;
   reveals: string[];
+  commentary?: string[] | null;
+  audio?: string | null;
+  badge?: BadgeReward | null;
+  failure?: OptionFailure | null;
+  tone?: CommentaryTone;
+  funStatus?: string | null;
+  energyDeltaOverride?: number | null;
   outcomes?: Record<string, unknown> | null;
 }
 
@@ -68,6 +103,7 @@ export interface CaseStage {
   allowMultiple: boolean;
   isTerminal: boolean;
   info: string[];
+  interactions?: CaseStageInteraction[];
   metadata?: Record<string, unknown> | null;
   options: CaseStageOption[];
 }

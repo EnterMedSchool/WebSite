@@ -14,6 +14,10 @@ import type {
   CaseSummary,
   CaseStage,
   CaseStageOption,
+  CaseStageInteraction,
+  BadgeReward,
+  OptionFailure,
+  CommentaryTone,
   PracticeBundle,
 } from "@/lib/cases/types";
 import {
@@ -46,6 +50,68 @@ function toStringArray(value: unknown): string[] {
 function toRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function toTone(value: unknown): CommentaryTone | undefined {
+  if (typeof value !== "string") return undefined;
+  const tone = value as CommentaryTone;
+  return ["praise", "snark", "alert", "serious", "neutral"].includes(tone) ? tone : undefined;
+}
+
+function toBadgeReward(value: unknown): BadgeReward | null {
+  const record = toRecord(value);
+  if (!record) return null;
+  const id = typeof record.id === "string" ? record.id : null;
+  const label = typeof record.label === "string" ? record.label : null;
+  if (!id || !label) return null;
+  return {
+    id,
+    label,
+    description: typeof record.description === "string" ? record.description : null,
+    icon: typeof record.icon === "string" ? record.icon : null,
+  };
+}
+
+function toOptionFailure(value: unknown): OptionFailure | null {
+  const record = toRecord(value);
+  if (!record) return null;
+  const headline = typeof record.headline === "string" ? record.headline : null;
+  if (!headline) return null;
+  return {
+    fatal: typeof record.fatal === "boolean" ? record.fatal : false,
+    headline,
+    detail: typeof record.detail === "string" ? record.detail : null,
+    tone: toTone(record.tone),
+  };
+}
+
+function toCommentary(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item));
+  if (typeof value === "string") return [value];
+  return [];
+}
+
+function parseInteractions(value: unknown): CaseStageInteraction[] {
+  if (!Array.isArray(value)) return [];
+  const interactions: CaseStageInteraction[] = [];
+  for (const item of value) {
+    const record = toRecord(item);
+    if (!record) continue;
+    const id = typeof record.id === "string" ? record.id : null;
+    const label = typeof record.label === "string" ? record.label : null;
+    if (!id || !label) continue;
+    interactions.push({
+      id,
+      label,
+      description: typeof record.description === "string" ? record.description : null,
+      reveals: toStringArray(record.reveals),
+      audio: typeof record.audio === "string" ? record.audio : null,
+      commentary: toCommentary(record.commentary),
+      energyDelta: typeof record.energyDelta === "number" ? record.energyDelta : null,
+      badge: toBadgeReward(record.badge),
+    });
+  }
+  return interactions;
 }
 
 function pickFormat(value: unknown): CaseSummary["format"] {
@@ -111,6 +177,13 @@ function buildFallbackCase(subject?: CaseSubjectSummary): CaseSummary {
     costTime: option.costTime,
     scoreDelta: option.scoreDelta,
     reveals: option.reveals ?? [],
+    commentary: option.commentary ?? null,
+    audio: option.audio ?? null,
+    badge: option.badge ?? null,
+    failure: option.failure ?? null,
+    tone: option.tone,
+    funStatus: option.funStatus ?? null,
+    energyDeltaOverride: option.energyDeltaOverride ?? null,
     outcomes: option.outcomes ?? (option.isCorrect ? { feedback: "Keep going!" } : { feedback: "Consider the data again." }),
   });
 
@@ -573,6 +646,14 @@ export async function loadCaseExperience({ userId, collectionSlug }: LoadCaseExp
   const optionsByStage = new Map<number, CaseStageOption[]>();
   for (const option of optionRows) {
     const list = optionsByStage.get(option.stageId) ?? [];
+    const outcomes = toRecord(option.outcomes);
+    const commentary = outcomes ? toCommentary(outcomes.commentary) : [];
+    const badge = outcomes ? toBadgeReward(outcomes.badge) : null;
+    const failure = outcomes ? toOptionFailure(outcomes.failure) : null;
+    const tone = outcomes ? toTone(outcomes.tone) : undefined;
+    const funStatus = outcomes && typeof outcomes.funStatus === "string" ? outcomes.funStatus : null;
+    const energyOverride = outcomes && typeof outcomes.energyDelta === "number" ? outcomes.energyDelta : null;
+    const audio = outcomes && typeof outcomes.audio === "string" ? outcomes.audio : null;
     list.push({
       id: option.id,
       value: option.value,
@@ -584,13 +665,22 @@ export async function loadCaseExperience({ userId, collectionSlug }: LoadCaseExp
       costTime: option.costTime ?? null,
       scoreDelta: option.scoreDelta,
       reveals: toStringArray(option.reveals),
-      outcomes: toRecord(option.outcomes),
+      commentary: commentary.length ? commentary : null,
+      audio,
+      badge,
+      failure,
+      tone,
+      funStatus,
+      energyDeltaOverride: energyOverride,
+      outcomes,
     });
     optionsByStage.set(option.stageId, list);
   }
 
   const stagesByCase = new Map<number, CaseStage[]>();
   for (const stage of stageRows) {
+        const metadata = toRecord(stage.metadata);
+    const interactions = metadata && Object.prototype.hasOwnProperty.call(metadata, "interactions") ? parseInteractions((metadata as any).interactions) : [];
     const mappedStage: CaseStage = {
       id: stage.id,
       slug: stage.slug,
@@ -602,7 +692,8 @@ export async function loadCaseExperience({ userId, collectionSlug }: LoadCaseExp
       allowMultiple: stage.allowMultiple,
       isTerminal: stage.isTerminal,
       info: toStringArray(stage.info),
-      metadata: toRecord(stage.metadata),
+      interactions: interactions.length ? interactions : undefined,
+      metadata,
       options: optionsByStage.get(stage.id) ?? [],
     };
     const list = stagesByCase.get(stage.caseId) ?? [];

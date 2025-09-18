@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCaseEngine } from "@/lib/cases/engine";
-import type { CaseEngineState } from "@/lib/cases/engine";
-import type { CaseStage, CaseStageOption, CaseSummary } from "@/lib/cases/types";
+import type { CaseEngineState, CaseEngineStep } from "@/lib/cases/engine";
+import type { CaseStage, CaseStageOption, CaseSummary, CaseStageInteraction, CommentaryTone } from "@/lib/cases/types";
 import { usePractice } from "./PracticeProvider";
 
 const HOTKEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -25,6 +25,21 @@ type Achievement = {
   status: "earned" | "in_progress";
 };
 
+const STEP_BADGE_META = {
+  interaction: { label: "Interaction", className: "bg-indigo-500/15 text-indigo-200" },
+  system: { label: "Scene update", className: "bg-sky-500/15 text-sky-200" },
+  correct: { label: "Great move", className: "bg-emerald-500/15 text-emerald-200" },
+  incorrect: { label: "Outcome", className: "bg-amber-500/15 text-amber-200" },
+} as const;
+
+const TONE_META: Record<CommentaryTone, { label: string; helper: string; className: string }> = {
+  praise: { label: "Attending fist bump", helper: "Team loves what you just pulled off.", className: "bg-emerald-500/15 text-emerald-200" },
+  snark: { label: "Snark mode", helper: "Attending delivers a spicy aside.", className: "bg-fuchsia-500/20 text-fuchsia-200" },
+  alert: { label: "Red flag", helper: "This move tripped alarms - tread carefully.", className: "bg-amber-500/20 text-amber-200" },
+  serious: { label: "Critical briefing", helper: "Attending gives a sober warning.", className: "bg-sky-500/20 text-sky-200" },
+  neutral: { label: "Quick note", helper: "A calm status update from the attending.", className: "bg-slate-700/60 text-slate-200" },
+};
+
 export default function CasePlayer({ caseId }: { caseId: string }) {
   const router = useRouter();
   const { bundle } = usePractice();
@@ -35,7 +50,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
   );
 
   const engine = useCaseEngine(caseSummary);
-  const { state, currentStage, selectOption, reset, advance } = engine;
+  const { state, currentStage, selectOption, reset, advance, triggerInteraction } = engine;
   const theme = state.phase > 1 ? MANAGEMENT_THEME : DIAGNOSIS_THEME;
 
   useEffect(() => {
@@ -91,8 +106,16 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
   const currentIndex = currentStage ? state.orderedStageSlugs.indexOf(currentStage.slug) : -1;
   const progressPercent = Math.round((state.visitedStageSlugs.length / Math.max(totalSteps, 1)) * 100);
   const achievements = useMemo(() => buildAchievements(state, caseSummary, progressPercent), [state, caseSummary, progressPercent]);
-  const isInfoStage = (currentStage?.options?.length ?? 0) === 0;
   const recommendedOption = currentStage?.options.find((option) => option.isCorrect) ?? null;
+  const triggeredInteractions = useMemo(() => {
+    const set = new Set<string>();
+    for (const step of state.timeline) {
+      if (step.kind === "interaction" && step.interactionId) {
+        set.add(step.interactionId);
+      }
+    }
+    return set;
+  }, [state.timeline]);
 
   return (
     <div className="space-y-6">
@@ -126,11 +149,15 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
           caseSummary={caseSummary}
           selected={selectedForStage}
           onSelect={(option) => selectOption(option.value, currentStage?.slug)}
-          onAdvance={() => advance()}
+          onAdvance={advance}
+          onTriggerInteraction={(interactionId) => triggerInteraction(interactionId, currentStage?.slug ?? undefined)}
+          onReset={reset}
           isCompleted={state.status === "completed"}
           baseHref={baseHref}
           theme={theme}
-          recommended={recommendedOption?.value}
+          recommended={recommendedOption?.value ?? null}
+          feedbackStep={state.lastStep}
+          triggeredInteractions={triggeredInteractions}
         />
 
         <RightRail
@@ -190,11 +217,14 @@ function StagePanel({
   selected,
   onSelect,
   onAdvance,
+  onTriggerInteraction,
   onReset,
   isCompleted,
   baseHref,
   theme,
   recommended,
+  feedbackStep,
+  triggeredInteractions,
 }: {
   stage?: CaseStage;
   stepIndex: number;
@@ -203,11 +233,14 @@ function StagePanel({
   selected: string[];
   onSelect: (option: CaseStageOption) => void;
   onAdvance: () => void;
+  onTriggerInteraction: (interactionId: string) => void;
   onReset: () => void;
   isCompleted: boolean;
   baseHref: string;
   theme: typeof DIAGNOSIS_THEME;
   recommended: string | null;
+  feedbackStep?: CaseEngineStep;
+  triggeredInteractions: Set<string>;
 }) {
   if (!stage) {
     return (
@@ -221,6 +254,8 @@ function StagePanel({
   const stepNumber = stepIndex >= 0 ? stepIndex + 1 : 1;
   const total = totalSteps || 1;
   const infoOnly = options.length === 0;
+  const interactions = stage.interactions ?? [];
+  const feedback = feedbackStep && feedbackStep.stageSlug === stage.slug ? feedbackStep : undefined;
 
   return (
     <section className="space-y-4">
@@ -228,7 +263,7 @@ function StagePanel({
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 text-xs text-slate-400">
-              <span className={`rounded-full border border-slate-700 px-3 py-1 uppercase tracking-[0.3em] ${theme.stepChip}`}>Step {stepNumber} of {total}</span>
+              <span className={`rounded-full border ${theme.stepChip} px-3 py-1 uppercase tracking-[0.3em]`}>Step {stepNumber} of {total}</span>
               <span className={`rounded-full border border-slate-700 px-3 py-1 uppercase tracking-[0.3em] ${STAGE_TYPE_META[stage.stageType].accent}`}>{stage.stageType}</span>
             </div>
             <h2 className="mt-3 text-2xl font-semibold text-white">{stage.title}</h2>
@@ -251,15 +286,25 @@ function StagePanel({
           </ul>
         )}
 
+        {interactions.length > 0 && (
+          <InteractionPanel
+            interactions={interactions}
+            triggered={triggeredInteractions}
+            onTrigger={onTriggerInteraction}
+            disabled={isCompleted}
+          />
+        )}
+
         {infoOnly ? (
           <div className="mt-6">
             <button
               onClick={onAdvance}
               className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30"
+              disabled={isCompleted}
             >
               Continue to the next clue
             </button>
-            <p className="mt-3 text-xs text-slate-400">Read the clue then continue. The next scene will appear instantly.</p>
+            <p className="mt-3 text-xs text-slate-400">Read the clue and continue. Optional inspections stay available above.</p>
           </div>
         ) : (
           <div className="mt-6 space-y-3">
@@ -279,6 +324,8 @@ function StagePanel({
         )}
       </div>
 
+      <FeedbackPanel step={feedback} />
+
       {isCompleted && (
         <div className="rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-5 text-sm text-emerald-100 shadow-lg shadow-emerald-900/30">
           <h3 className="text-lg font-semibold text-emerald-100">Diagnosis unlocked!</h3>
@@ -294,6 +341,162 @@ function StagePanel({
         </div>
       )}
     </section>
+  );
+}
+
+function InteractionPanel({
+  interactions,
+  triggered,
+  onTrigger,
+  disabled,
+}: {
+  interactions: CaseStageInteraction[];
+  triggered: Set<string>;
+  onTrigger: (interactionId: string) => void;
+  disabled: boolean;
+}) {
+  if (!interactions.length) return null;
+  return (
+    <div className="mt-6 space-y-3 rounded-2xl border border-slate-800/60 bg-slate-900/60 p-4">
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span className="uppercase tracking-[0.3em]">Optional inspections</span>
+        <span>Unlock more clues before you continue.</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {interactions.map((interaction) => {
+          const used = triggered.has(interaction.id);
+          return (
+            <button
+              key={interaction.id}
+              onClick={() => onTrigger(interaction.id)}
+              disabled={disabled || used}
+              className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                used ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-100" : "border-slate-700 bg-slate-900/70 text-slate-200 hover:border-indigo-400"
+              } ${disabled ? "opacity-60" : ""}`}
+            >
+              {interaction.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
+  if (!step) return null;
+  const hasCommentary = step.commentary && step.commentary.length > 0;
+  const hasBadge = Boolean(step.badgeEarned);
+  const hasFailure = Boolean(step.failure);
+  const hasFeedback = Boolean(step.feedback || hasCommentary || hasBadge || hasFailure);
+  if (!hasFeedback) return null;
+
+  const baseMeta = step.kind === "interaction"
+    ? STEP_BADGE_META.interaction
+    : step.kind === "system"
+      ? STEP_BADGE_META.system
+      : step.isCorrect
+        ? STEP_BADGE_META.correct
+        : STEP_BADGE_META.incorrect;
+  const toneMeta = step.tone ? TONE_META[step.tone] : undefined;
+  const badgeClass = toneMeta?.className ?? baseMeta.className;
+  const badgeLabel = toneMeta?.label ?? baseMeta.label;
+  const toneHelper = toneMeta?.helper;
+  const fatal = step.failure?.fatal ?? false;
+
+  const badgeChipClass = `rounded-full px-3 py-1 font-semibold uppercase tracking-[0.3em] ${badgeClass}`;
+  const failureClass = fatal
+    ? "mt-3 rounded-2xl border border-rose-500 bg-rose-600/20 p-3 text-rose-50"
+    : "mt-3 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-rose-100";
+
+  return (
+    <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={badgeChipClass}>{badgeLabel}</span>
+          {toneMeta && (
+            <span className="rounded-full border border-slate-700 px-2 py-0.5 uppercase tracking-[0.3em] text-slate-300">{baseMeta.label}</span>
+          )}
+        </div>
+        {step.audio && <AudioCue src={step.audio} label={toneMeta?.label ?? baseMeta.label} />}
+      </div>
+      {toneHelper && <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-slate-400">{toneHelper}</p>}
+      {step.funStatus && <p className="mt-2 text-xs text-slate-400">{step.funStatus}</p>}
+      {step.feedback && <p className="mt-3 text-slate-200">{step.feedback}</p>}
+      {hasCommentary && (
+        <ul className="mt-2 space-y-2 text-slate-300">
+          {step.commentary!.map((line, idx) => (
+            <li key={idx}>{line}</li>
+          ))}
+        </ul>
+      )}
+      {hasFailure && (
+        <div className={failureClass}>
+          <p className="font-semibold">{step.failure!.headline}</p>
+          {step.failure!.detail && <p className="mt-1 text-sm text-current/80">{step.failure!.detail}</p>}
+          {fatal && <p className="mt-2 text-[11px] uppercase tracking-[0.3em]">Run ended - reset to explore fresh branches.</p>}
+        </div>
+      )}
+      {hasBadge && (
+        <div className="mt-3 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-3 text-emerald-100">
+          <p className="text-xs uppercase tracking-[0.3em]">Badge earned</p>
+          <p className="mt-1 text-sm font-semibold text-white">{step.badgeEarned!.label}</p>
+          {step.badgeEarned!.description && <p className="mt-1 text-xs text-emerald-100/80">{step.badgeEarned!.description}</p>}
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+        <span>Energy {step.masteryEnergyDelta >= 0 ? '+' : ''}{Math.round(step.masteryEnergyDelta)}</span>
+        <span>Score {step.scoreDelta >= 0 ? '+' : ''}{step.scoreDelta}</span>
+        <span>Cost {step.costTime} min</span>
+      </div>
+    </div>
+  );
+}
+
+function AudioCue({ src, label }: { src: string; label?: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    setIsPlaying(false);
+  }, [src]);
+
+  const audioButtonClass = `rounded-full border px-3 py-1 font-semibold uppercase tracking-[0.3em] ${isPlaying ? 'border-emerald-400 text-emerald-200' : 'border-slate-700 text-slate-300 hover:border-indigo-400'}`;
+
+  return (
+    <div className="flex items-center gap-2">
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="none"
+        onEnded={() => setIsPlaying(false)}
+        onPause={() => setIsPlaying(false)}
+        onPlay={() => setIsPlaying(true)}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const audio = audioRef.current;
+          if (!audio) return;
+          if (audio.paused) {
+            const playPromise = audio.play();
+            if (playPromise) {
+              playPromise.catch(() => setIsPlaying(false));
+            }
+          } else {
+            audio.pause();
+          }
+        }}
+        className={audioButtonClass}
+        aria-pressed={isPlaying}
+      >
+        {isPlaying ? 'Pause audio' : label ? `Play ${label.toLowerCase()}` : 'Play audio cue'}
+      </button>
+    </div>
   );
 }
 
@@ -498,6 +701,26 @@ function EnergyMeter({ energy, comboLevel }: { energy: number; comboLevel: numbe
   );
 }
 
+function StatCard({
+  label,
+  value,
+  helper,
+  accent,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  accent: string;
+}) {
+  return (
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-2xl border border-slate-800/60 bg-slate-950/70 p-4 text-xs text-slate-200 shadow-lg shadow-indigo-950/10">
+      <span className="text-[10px] uppercase tracking-[0.3em] text-slate-400">{label}</span>
+      <span className={`text-2xl font-semibold ${accent}`}>{value}</span>
+      <span className="text-xs text-slate-400">{helper}</span>
+    </div>
+  );
+}
+
 function buildAchievements(state: CaseEngineState, summary: CaseSummary, progressPercent: number): Achievement[] {
   const achievements: Achievement[] = [];
   const targetMinutes = summary.estimatedMinutes ?? 20;
@@ -555,6 +778,10 @@ const MANAGEMENT_THEME = {
   statAccent: "text-amber-200",
   stepChip: "border-slate-700",
 };
+
+
+
+
 
 
 
