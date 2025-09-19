@@ -167,33 +167,15 @@ export default function ProgressTimeline() {
           margin: 0 auto;
           border-radius: clamp(36px, 6vw, 60px);
           padding: clamp(36px, 7vw, 70px) clamp(30px, 7vw, 56px);
-          background: linear-gradient(145deg, rgba(248, 250, 252, 0.92), rgba(219, 234, 254, 0.88));
-          box-shadow: 0 40px 120px rgba(15, 23, 42, 0.16);
+          background: transparent;
+          box-shadow: none;
           position: relative;
           overflow: hidden;
           display: grid;
           gap: clamp(40px, 7vw, 72px);
         }
 
-        .journey-shell::before {
-          content: "";
-          position: absolute;
-          inset: -45% -20% auto -30%;
-          height: clamp(320px, 50vw, 520px);
-          background: radial-gradient(420px 420px at 20% 40%, rgba(99, 102, 241, 0.22), transparent 70%);
-          opacity: 0.8;
-          pointer-events: none;
-        }
 
-        .journey-shell::after {
-          content: "";
-          position: absolute;
-          inset: auto -30% -60% 20%;
-          height: clamp(280px, 46vw, 460px);
-          background: radial-gradient(360px 360px at 50% 50%, rgba(59, 130, 246, 0.2), transparent 70%);
-          opacity: 0.7;
-          pointer-events: none;
-        }
 
         .journey-header {
           text-align: center;

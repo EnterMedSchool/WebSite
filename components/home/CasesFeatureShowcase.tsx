@@ -230,20 +230,9 @@ export default function CasesFeatureShowcase() {
           margin-top: 3rem;
           padding: clamp(1.75rem, 3vw, 2.5rem);
           border-radius: 38px;
-          background: radial-gradient(140% 120% at 20% 0%, rgba(79,70,229,.18), transparent),
-            radial-gradient(90% 140% at 80% 100%, rgba(34,211,238,.16), rgba(14,165,233,.08));
-          box-shadow: 0 32px 80px rgba(30,64,175,.25);
+          background: transparent;
+          box-shadow: none;
           overflow: hidden;
-        }
-        .wncases-root::before {
-          content: "";
-          position: absolute;
-          inset: -40% -30% auto -30%;
-          height: 60%;
-          background: radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,.25), rgba(255,255,255,0));
-          opacity: .6;
-          filter: blur(60px);
-          animation: float-soft 18s ease-in-out infinite;
         }
         .wncases-grid {
           position: relative;

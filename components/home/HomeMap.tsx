@@ -57,10 +57,14 @@ type Viewport = { width: number; height: number };
 export default function HomeMap({ variant = "default" }: { variant?: "default" | "compact" } = {}) {
   const router = useRouter();
   const forcedCompact = variant === "compact";
-  const [selected, setSelected] = useState<{ name: string; center: [number, number]; baseCenter: [number, number] } | null>(null);
-  // Pull the world closer to the header by default
-  // Start 50% closer than before (zoom 1.5 instead of 1)
-  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>({ center: [0, 4], zoom: 1.5 });
+  const italyCenter: [number, number] = [12.567, 41.8719];
+  const initialSmall = forcedCompact || (typeof window !== "undefined" ? window.innerWidth < 1024 : false);
+  const [selected, setSelected] = useState<{ name: string; center: [number, number]; baseCenter: [number, number] } | null>(() =>
+    initialSmall ? { name: "Italy", center: italyCenter, baseCenter: italyCenter } : null
+  );
+  const [position, setPosition] = useState<{ center: [number, number]; zoom: number }>(() =>
+    initialSmall ? { center: italyCenter, zoom: 9.8 } : { center: [0, 4], zoom: 1.5 }
+  );
 
   // Desktop-only layout constants (we don't handle mobile/tablet yet)
   // Keep panel tightly under the menu inside the map container.
@@ -71,21 +75,22 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
   const [uniData, setUniData] = useState<CountryCities | null>(null);
   const [enrichedCountries, setEnrichedCountries] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState<string | null>(null);
-  const [filters, setFilters] = useState<MapFilters>({ q: "", country: "", language: "", exam: "" });
+  const [filters, setFilters] = useState<MapFilters>(() => ({ q: "", country: initialSmall ? "Italy" : "", language: "", exam: "" }));
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<{ x: number; y: number; data: any } | null>(null);
   const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
   // Flatten all cities
-  const allCityDataRaw = useMemo(() =>
-    uniData ? Object.entries(uniData).flatMap(([country, cities]) => cities.map((c) => ({ ...c, country }))) : []
-  , [uniData]);
+  const allCityDataRaw = useMemo(
+    () => (uniData ? Object.entries(uniData).flatMap(([country, cities]) => cities.map((c) => ({ ...c, country }))) : []),
+    [uniData]
+  );
   // Apply filters
   const allCityData = useMemo(() => {
     const q = filters.q.trim().toLowerCase();
     return allCityDataRaw.filter((c) => {
       if (filters.country && c.country !== filters.country) return false;
-      if (filters.language && (c.language ?? "") !== filters.language) return false;
-      if (filters.exam && (c.exam ?? "") !== filters.exam) return false;
+      if (filters.language && (c.language ?? '') !== filters.language) return false;
+      if (filters.exam && (c.exam ?? '') !== filters.exam) return false;
       if (filters.kind && (c.kind ?? '') !== filters.kind) return false;
       if (q && !(c.uni.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.country.toLowerCase().includes(q))) return false;
       return true;
@@ -125,7 +130,7 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
   const savedSet = useMemo(() => new Set(saved.map((i) => i.uni)), [saved]);
   // Mobile results control
   const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
-  const [isSmall, setIsSmall] = useState(forcedCompact);
+  const [isSmall, setIsSmall] = useState(initialSmall);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Compare persistence + deep link
@@ -196,6 +201,8 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
 
   // Deep-link: read on first render
   useEffect(() => {
+    const hasAnyParam = ['q', 'country', 'language', 'exam', 'sort', 'color', 'kind'].some((key) => searchParams?.has(key));
+    if (!hasAnyParam) return;
     const q = searchParams?.get('q') ?? '';
     const country = searchParams?.get('country') ?? '';
     const language = searchParams?.get('language') ?? '';
@@ -203,13 +210,14 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     const sort = searchParams?.get('sort') ?? '';
     const colorMode = (searchParams?.get('color') as any) as ('exam'|'language'|'type') ?? undefined;
     const kind = (searchParams?.get('kind') as any) as ('public'|'private'|'') ?? '';
-    setFilters({ q, country, language, exam, sort, colorMode, kind });
+    setFilters((prev) => ({ ...prev, q, country, language, exam, sort, colorMode, kind }));
     if (country) {
       // try to preselect country view
       const found = allCityDataRaw.find((c) => c.country === country);
       if (found) {
         // approximate center based on first match
-        setSelected({ name: country, center: position.center, baseCenter: position.center });
+        const baseCenter = country === "Italy" ? italyCenter : position.center;
+        setSelected({ name: country, center: baseCenter, baseCenter });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,7 +377,7 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     const baseCenter = geoCentroid(geo) as [number, number];
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
     // Much deeper zoom on mobile; a bit more on desktop
-    const targetZoom = isSmall ? 9.5 : (vh < 850 ? 6.0 : 6.2);
+    const targetZoom = isSmall ? 10.5 : (vh < 850 ? 6.0 : 6.2);
     const center = isSmall ? baseCenter : computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name, center, baseCenter });
     setPosition({ center, zoom: targetZoom });
@@ -390,7 +398,7 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     function onResize() {
       if (!selected) return;
       const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-      const targetZoom = isSmall ? 9.3 : (vh < 850 ? 6.0 : 6.2);
+      const targetZoom = isSmall ? 10.3 : (vh < 850 ? 6.0 : 6.2);
       const center = isSmall ? selected.baseCenter : computeOffsetCenter(selected.baseCenter, targetZoom);
       setPosition({ center, zoom: targetZoom });
     }
@@ -406,7 +414,7 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     const baseCenter: [number, number] = [12.567, 41.8719]; // Italy approximate centroid
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
     if (isSmall) {
-      const targetZoom = 9.5;
+      const targetZoom = 10.5;
       const center = baseCenter;
       setSelected({ name: "Italy", baseCenter, center });
       setPosition({ center, zoom: targetZoom });
@@ -624,12 +632,24 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
                 countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
                 languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
                 exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-                resultCount={allCityData.length} onOpenSaved={() => setSavedOpen(true)} onOpenCompare={() => setCompareOpen(true)} savedCount={saved.length} compareCount={compare.length}
+                resultCount={allCityData.length}
+                onOpenSaved={() => setSavedOpen(true)}
+                onOpenCompare={() => setCompareOpen(true)}
+                savedCount={saved.length}
+                compareCount={compare.length}
                 onViewMobile={() => {
                   if (filters.country) {
-                    const found = allCityDataRaw.find((c)=> c.country === filters.country);
-                    if (found) { setSelected({ name: filters.country, center: position.center, baseCenter: position.center }); setSheetCustomItems(null); setSheetOpen(true); }
-                  } else { setSheetCustomItems(allCityData); setSheetOpen(true); }
+                    const baseCenter = filters.country === "Italy" ? italyCenter : (selected?.baseCenter ?? position.center);
+                    setSelected({ name: filters.country, center: baseCenter, baseCenter });
+                    if (isSmall) {
+                      setPosition({ center: baseCenter, zoom: 10.5 });
+                    }
+                    setSheetCustomItems(null);
+                    setSheetOpen(true);
+                  } else {
+                    setSheetCustomItems(allCityData);
+                    setSheetOpen(true);
+                  }
                 }}
                 suggestions={
                   filters.q.trim().length >= 1
@@ -638,83 +658,33 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
                         ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
                         ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
                       ].map((s) => `${s.kind}:${s.label}`)))
-                        .map((key) => { const [kind, label] = key.split(':'); return { kind: kind as 'uni'|'city'|'country', label, value: label }; })
+                        .map((key) => {
+                          const [kind, label] = key.split(':');
+                          return { kind: kind as 'uni'|'city'|'country', label, value: label };
+                        })
                         .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
                         .slice(0, 12)
                     : []
                 }
-                onPick={(s) => { if (s.kind === 'country') { setFilters((f) => ({ ...f, country: s.value })); setSelected({ name: s.value, center: position.center, baseCenter: position.center }); } else if (s.kind === 'uni') { const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {} } else { setFilters((f) => ({ ...f, q: s.value })); } }}
+                onPick={(s) => {
+                  if (s.kind === 'country') {
+                    const baseCenter = s.value === 'Italy' ? italyCenter : position.center;
+                    setFilters((f) => ({ ...f, country: s.value }));
+                    setSelected({ name: s.value, center: baseCenter, baseCenter });
+                    if (isSmall) {
+                      setPosition({ center: baseCenter, zoom: 10.5 });
+                    }
+                  } else if (s.kind === 'uni') {
+                    const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+                  } else {
+                    setFilters((f) => ({ ...f, q: s.value }));
+                  }
+                }}
               />
             </motion.div>
           </div>
         ) : (
-          <>
-            <FloatingPanel
-              id="map-filters"
-              initialSize={{ width: 560, height: 420 }}
-              initialPos={{ x: 24, y: 120 }}
-              minWidth={420}
-              minHeight={260}
-              className="bg-transparent"
-            >
-              <MapFiltersBar
-                compact={false}
-                defaultAdvancedOpen={true}
-                filters={filters}
-                onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
-                countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
-                languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
-                exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
-                resultCount={allCityData.length}
-                onOpenSaved={() => setSavedOpen(true)}
-                onOpenCompare={() => setCompareOpen(true)}
-                savedCount={saved.length}
-                compareCount={compare.length}
-                suggestions={
-                  filters.q.trim().length >= 1
-                    ? Array.from(new Set([
-                        ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
-                        ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
-                        ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
-                      ].map((s) => `${s.kind}:${s.label}`)))
-                        .map((key) => { const [kind, label] = key.split(':'); return { kind: kind as 'uni'|'city'|'country', label, value: label }; })
-                        .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
-                        .slice(0, 12)
-                    : []
-                }
-                onPick={(s) => { if (s.kind === 'country') { setFilters((f) => ({ ...f, country: s.value })); setSelected({ name: s.value, center: position.center, baseCenter: position.center }); } else if (s.kind === 'uni') { const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {} } else { setFilters((f) => ({ ...f, q: s.value })); } }}
-              />
-            </FloatingPanel>
-
-            {selected && (
-              <FloatingPanel
-                id="map-universities"
-                initialSize={{ width: 560, height: 720 }}
-                initialPos={{ x: Math.max(24, (typeof window !== 'undefined' ? (window.innerWidth - 560 - 24) : 952)), y: 140 }}
-                minWidth={420}
-                minHeight={420}
-                className="bg-transparent"
-              >
-                <UniversitiesPanelFloating
-                  selectedName={selected!.name}
-                  items={cityDataSorted as any}
-                  onAddCompare={(c:any)=> addToCompare(c)}
-                  compareSet={compareSet}
-                  savedSet={savedSet}
-                  onToggleSave={(c:any)=> toggleSaved(c)}
-                  onHover={(c:any)=>{
-                    if (!c) { setHoveredKey(null); return; }
-                    const key = `${(c as any).country || selected!.name}-${c.city}-${c.uni}`;
-                    setHoveredKey(key);
-                  }}
-                />
-              </FloatingPanel>
-            )}
-          </>
-        )}
-
-        {/* Soft top/bottom gradient to blend edges on mobile */}
-        {isSmall && (
           <>
             <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--page-bg,#f6f7fb)]/0 to-transparent" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--page-bg,#f6f7fb)]/0 to-transparent" />

@@ -1,6 +1,6 @@
 import { buildArticleStructuredData } from "@/lib/blog/structuredData";
 import type { ArticleContent, BlogArticleMeta } from "@/lib/blog/types";
-import ArticleClient from "./ArticleClient";
+import MobileArticleClient from "./MobileArticleClient";
 
 type Props = {
   meta: BlogArticleMeta;
@@ -8,7 +8,8 @@ type Props = {
   siteUrl: string;
 };
 
-export default function ArticlePage({ meta, article, siteUrl }: Props) {
+export default function MobileArticlePage({ meta, article, siteUrl }: Props) {
   const structuredData = buildArticleStructuredData(meta, article, siteUrl);
-  return <ArticleClient meta={meta} article={article} siteUrl={siteUrl} structuredData={structuredData} />;
+  return <MobileArticleClient meta={meta} article={article} structuredData={structuredData} />;
 }
+

@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -14,19 +15,30 @@ type Props = {
 };
 
 export default function BottomSheet({ open, onClose, title, children, height = "70vh", showBackdrop = true, backdropClassName = "bg-black/30" }: Props) {
-  // Prevent background scroll when open
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
-    if (!open) return;
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return;
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = original; };
+    return () => {
+      document.body.style.overflow = original;
+    };
   }, [open]);
 
-  return (
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  const sheet = (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           {showBackdrop && (
             <motion.div
               className={`fixed inset-0 z-40 ${backdropClassName}`}
@@ -36,7 +48,6 @@ export default function BottomSheet({ open, onClose, title, children, height = "
               onClick={onClose}
             />
           )}
-          {/* Sheet */}
           <motion.div
             className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl bg-white shadow-2xl"
             initial={{ y: "100%" }}
@@ -55,4 +66,6 @@ export default function BottomSheet({ open, onClose, title, children, height = "
       )}
     </AnimatePresence>
   );
+
+  return createPortal(sheet, document.body);
 }

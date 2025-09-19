@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type FeatureTestimonial = {
   id: string;
@@ -123,136 +123,134 @@ const SUPPORTING: SupportTestimonial[] = [
     name: "Cole Faulkner",
     role: "Past Student - Studying in Italy",
     quote:
-      "When I first heard about medical school in Italy I had no idea where to begin. EnterMedSchool made the dream possible because they truly cared about our success.",
-    accent: "teal",
-  },
-  {
-    id: "anita",
-    name: "Anita Shams",
-    role: "Community Member",
-    quote:
-      "Excellent and so helpful. I am very grateful for the service, and I can't believe it's free. Without it I would be so lost.",
-    accent: "emerald",
-  },
-  {
-    id: "palak",
-    name: "Palak",
-    role: "IMAT Aspirant",
-    quote:
-      "The quality of the free books is so good. EnterMedSchool gives you exactly the knowledge you need and keeps you motivated every day.",
-    accent: "indigo",
-  },
-  {
-    id: "ido",
-    name: "Ido Hagai",
-    role: "Trustpilot Review",
-    quote:
-      "This project lets students start learning material that would normally cost thousands, for free. Ari takes time for personal calls, answers every question, and inspires us to believe we can succeed.",
+      "When I first heard about medical school in Italy I had no idea where to begin. EnterMedSchool showed me every step of the process and helped me feel confident enough to go for it.",
     accent: "slate",
-  },
-  {
-    id: "katerina-short",
-    name: "Katerina Fisher",
-    role: "University of Pavia",
-    quote:
-      "The EnterMedSchool team was always responsive and helpful, resolving every issue with efficiency and kindness.",
-    accent: "teal",
-  },
-  {
-    id: "ujjwal-short",
-    name: "Ujjwal Ujjain",
-    role: "University of Pavia - 3rd Year",
-    quote:
-      "I wholeheartedly recommend EnterMedSchool to future aspirants who are confused about where to start their IMAT journey.",
-    accent: "indigo",
-  },
-  {
-    id: "diana-short",
-    name: "Diana Nicolae",
-    role: "Ari's Past Student",
-    quote:
-      "The team is very helpful, communicative, and genuinely concerned for future medical students.",
-    accent: "violet",
-  },
-  {
-    id: "darius-short",
-    name: "Darius Duhan",
-    role: "University of Pavia",
-    quote:
-      "I met an amazing community of like-minded students who work hard to help each other grow.",
-    accent: "emerald",
-  },
-  {
-    id: "khine-short",
-    name: "Khine Su Wai (Stella)",
-    role: "University of Turin - 1st Year",
-    quote:
-      "I gained confidence and security by revising with the lessons the EnterMedSchool team provided.",
-    accent: "amber",
   },
 ];
 
 export default function ReviewsSection() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      if (typeof window === "undefined") return;
+      setIsMobile(window.innerWidth <= 640);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const featured = useMemo(
+    () => (isMobile ? FEATURED.slice(0, 2) : FEATURED),
+    [isMobile]
+  );
+  const supporting = useMemo(
+    () => (isMobile ? SUPPORTING.slice(0, 3) : SUPPORTING),
+    [isMobile]
+  );
+
   return (
     <section className="reviews" aria-labelledby="reviews-heading">
       <div className="rev-head">
-        <p className="kicker">Student Stories</p>
-        <h3 id="reviews-heading" className="title">What Learners Say</h3>
+        <span className="badge">Student Stories</span>
+        <h3 id="reviews-heading" className="title title-gradient">
+          Voices from the EnterMedSchool path
+        </h3>
         <p className="sub">
-          Real notes from IMAT candidates and EnterMedSchool alumni about the support, resources, and community that helped them get in.
+          IMAT candidates and EnterMedSchool alumni share how personalised resources, community, and coaching helped them secure their seat.
         </p>
       </div>
 
-      <div className="features">
-        {FEATURED.map((item) => (
-          <article key={item.id} className={`feature accent-${item.accent}`}>
-            <div className="spark" aria-hidden>
-              <span />
-              <span />
-            </div>
-            <p className="lead">{item.lead}</p>
-            <blockquote>
-              {item.quote.map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
-            </blockquote>
-            <footer>
-              <div className="avatar" aria-hidden>{item.name.charAt(0)}</div>
-              <div className="meta">
-                <span className="name">{item.name}</span>
-                <span className="role">{item.role}</span>
-              </div>
-            </footer>
-          </article>
-        ))}
-      </div>
+      {isMobile ? (
+        <>
+          <div className="mobile-stack">
+            {featured.map((item) => (
+              <article key={item.id} className={`mobile-card accent-${item.accent}`}>
+                <div className="mobile-card-glow" aria-hidden />
+                <p className="mobile-lead">{item.lead}</p>
+                <p className="mobile-quote">{item.quote[0]}</p>
+                <footer>
+                  <div className="avatar" aria-hidden>
+                    {item.name.charAt(0)}
+                  </div>
+                  <div className="meta">
+                    <span className="name">{item.name}</span>
+                    <span className="role">{item.role}</span>
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+          <div className="mobile-bites">
+            {supporting.map((item) => (
+              <article key={item.id} className={`bite accent-${item.accent ?? "indigo"}`}>
+                <strong>{item.quote}</strong>
+                <span className="bite-meta">{item.name} {"\u00b7"} {item.role}</span>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="features">
+            {featured.map((item) => (
+              <article key={item.id} className={`feature accent-${item.accent}`}>
+                <div className="spark" aria-hidden>
+                  <span />
+                  <span />
+                </div>
+                <header>
+                  <div className="avatar" aria-hidden>
+                    {item.name.charAt(0)}
+                  </div>
+                  <div className="meta">
+                    <span className="name">{item.name}</span>
+                    <span className="role">{item.role}</span>
+                  </div>
+                </header>
+                <p className="lead">{item.lead}</p>
+                <blockquote>
+                  {item.quote.map((line, idx) => (
+                    <p key={idx}>{line}</p>
+                  ))}
+                </blockquote>
+              </article>
+            ))}
+          </div>
 
-      <div className="support">
-        {SUPPORTING.map((item) => (
-          <article key={item.id} className={`tile accent-${item.accent ?? "slate"}`}>
-            <div className="tile-highlight" aria-hidden />
-            <p className="quote">{item.quote}</p>
-            <footer>
-              <div className="avatar" aria-hidden>{item.name.charAt(0)}</div>
-              <div className="meta">
-                <span className="name">{item.name}</span>
-                <span className="role">{item.role}</span>
-              </div>
-            </footer>
-          </article>
-        ))}
-      </div>
+          <div className="support">
+            {supporting.map((item) => (
+              <article key={item.id} className={`tile accent-${item.accent ?? "indigo"}`}>
+                <div className="tile-highlight" aria-hidden />
+                <p className="quote">{item.quote}</p>
+                <footer>
+                  <div className="avatar" aria-hidden>
+                    {item.name.charAt(0)}
+                  </div>
+                  <div className="meta">
+                    <span className="name">{item.name}</span>
+                    <span className="role">{item.role}</span>
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
 
       <style jsx>{`
         .reviews { position: relative; }
-        .rev-head { text-align: center; margin-bottom: 28px; }
-        .kicker { color: #0f172a; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; font-size: 12px; }
-        .title { margin: 8px 0 10px; font-size: clamp(24px, 5vw, 40px); font-weight: 900; color: #0f172a; }
-        .sub { color: #1e293b; max-width: 66ch; margin: 0 auto; font-size: 15px; }
+        .rev-head { text-align: center; margin-bottom: 28px; display: grid; gap: 12px; justify-items: center; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: linear-gradient(135deg, #6366f1, #ec4899, #f97316); color: #fff; box-shadow: 0 8px 20px rgba(99,102,241,0.35); }
+        .title { margin: 0; font-size: clamp(24px, 5vw, 44px); font-weight: 900; }
+        .title-gradient { background: linear-gradient(135deg, #312e81, #6366f1, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent; letter-spacing: -0.01em; }
+        .sub { color: #1e293b; max-width: 62ch; margin: 0 auto; font-size: 15px; line-height: 1.6; opacity: 0.88; }
 
         .features { display: grid; gap: 20px; margin: 0 auto 32px; max-width: 1120px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
         .feature { position: relative; overflow: hidden; border-radius: 28px; padding: clamp(20px, 4vw, 32px); color: #f8fafc; background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22); border: 1px solid rgba(255, 255, 255, 0.25); display: flex; flex-direction: column; gap: 16px; min-height: 280px; }
         .feature::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 60% at 50% 0%, rgba(255,255,255,0.18), transparent 70%); mix-blend-mode: screen; opacity: 0.8; pointer-events: none; }
+        .feature header { display: flex; align-items: center; gap: 14px; }
         .feature .spark { position: absolute; inset: 0; pointer-events: none; }
         .feature .spark span:first-child { position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.42), transparent 70%); filter: blur(2px); opacity: 0.9; }
         .feature .spark span:last-child { position: absolute; bottom: -36px; left: -24px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%); filter: blur(1px); }
@@ -266,15 +264,30 @@ export default function ReviewsSection() {
         .tile .quote { position: relative; z-index: 1; color: #0f172a; font-weight: 600; font-size: 15px; line-height: 1.55; }
         .tile footer { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
 
+        .mobile-stack { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+        .mobile-card { position: relative; border-radius: 22px; padding: 20px; color: #f8fafc; background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); box-shadow: 0 20px 40px rgba(15,23,42,0.2); overflow: hidden; }
+        .mobile-card-glow { position: absolute; inset: -40% -20%; background: radial-gradient(circle at top, rgba(255,255,255,0.32), transparent 65%); opacity: 0.7; pointer-events: none; }
+        .mobile-lead { position: relative; z-index: 1; font-weight: 800; font-size: 18px; line-height: 1.4; }
+        .mobile-quote { position: relative; z-index: 1; margin-top: 10px; font-size: 14px; line-height: 1.55; color: rgba(248,250,252,0.92); }
+        .mobile-card footer { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+
+        .mobile-bites { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+        .bite { position: relative; border-radius: 18px; padding: 16px; background: rgba(15,23,42,0.04); border: 1px solid rgba(15,23,42,0.08); box-shadow: 0 12px 24px rgba(15,23,42,0.08); display: flex; flex-direction: column; gap: 10px; }
+        .bite::before { content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0.14; background: linear-gradient(135deg, var(--accent-a, #6366f1), transparent); }
+        .bite strong { position: relative; z-index: 1; font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.5; }
+        .bite-meta { position: relative; z-index: 1; font-size: 12px; font-weight: 600; color: #475569; }
+
         .avatar { width: 36px; height: 36px; border-radius: 9999px; background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.4); display: grid; place-items: center; font-weight: 900; }
-        .feature .avatar { background: rgba(15,23,42,0.18); color: #f8fafc; border: 1px solid rgba(255,255,255,0.35); }
+        .feature .avatar,
+        .mobile-card .avatar { background: rgba(15,23,42,0.18); color: #f8fafc; border: 1px solid rgba(255,255,255,0.35); }
         .tile .avatar { background: rgba(15,23,42,0.05); color: #1e293b; border: 1px solid rgba(15,23,42,0.1); }
         .meta { display: flex; flex-direction: column; }
         .meta .name { font-weight: 800; color: inherit; }
-        .feature .meta .name { color: #f8fafc; }
+        .feature .meta .name,
+        .mobile-card .meta .name { color: #f8fafc; }
         .tile .meta .name { color: #0f172a; }
         .meta .role { font-size: 12px; font-weight: 600; opacity: 0.85; }
-        .feature .meta .role { color: rgba(248,250,252,0.85); }
+        .mobile-card .meta .role { color: rgba(248,250,252,0.85); }
         .tile .meta .role { color: #475569; }
 
         .accent-indigo { --accent-a: #6366f1; --accent-b: #22d3ee; }

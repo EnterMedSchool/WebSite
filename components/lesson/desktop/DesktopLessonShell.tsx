@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo } from "react";
@@ -11,6 +11,12 @@ import SaveDock from "@/components/study/SaveDock";
 import { useLessonPageContext } from "@/components/lesson/context";
 import styles from "./desktop-lesson.module.css";
 
+const tabs = [
+  { id: "learn" as const, label: "Overview" },
+  { id: "practice" as const, label: "Quiz" },
+  { id: "background" as const, label: "Resources" },
+];
+
 export default function DesktopLessonShell() {
   const ctx = useLessonPageContext();
 
@@ -22,18 +28,6 @@ export default function DesktopLessonShell() {
     return { total, correct, remaining, pct };
   }, [ctx.relevantQuestions, ctx.qCorrect]);
 
-  const timeline = useMemo(() => {
-    return ctx.lessonsList.map((lesson: any, index: number) => {
-      const done = ctx.chapterCompletedList[index + 1] ?? false;
-      const current = ctx.activeDot === index + 1;
-      return {
-        id: lesson.id,
-        title: String(lesson.title),
-        state: done ? "done" : current ? "current" : "todo",
-      };
-    });
-  }, [ctx.lessonsList, ctx.chapterCompletedList, ctx.activeDot]);
-
   const practiceMessage = useMemo(() => {
     if (ctx.bundleErr === "unauthenticated") return "Log in to unlock practice questions.";
     if (ctx.bundleErr === "forbidden") return "This course is paid. Upgrade to practice these questions.";
@@ -41,252 +35,399 @@ export default function DesktopLessonShell() {
     return "Select a question or open the full practice flow.";
   }, [ctx.bundleErr, ctx.bundleHasQuestions]);
 
+  const navigation = useMemo(() => {
+    const list = ctx.chapterLessonMenu || [];
+    const currentIndex = list.findIndex((item) => item.current);
+    const prevLesson = currentIndex > 0 ? list[currentIndex - 1] : null;
+    const nextLesson = currentIndex >= 0 && currentIndex < list.length - 1 ? list[currentIndex + 1] : null;
+    return { prevLesson, nextLesson };
+  }, [ctx.chapterLessonMenu]);
+
+  const authorName = ctx.authors?.author ? String(ctx.authors.author) : "EMS Faculty";
+  const reviewerName = ctx.authors?.reviewer ? String(ctx.authors.reviewer) : "Pending";
+
   return (
     <div className={styles.page}>
       <FlashcardsWidget open={ctx.flashcardsOpen} onClose={ctx.closeFlashcards} deck={dicDeck} title="DIC Review" />
-      <div className={styles.inner}>
-        <section className={styles.header}>
-          <div className={styles.headerMeta}>
-            <div className={styles.tagRow}>
-              <Link href={`/${ctx.course.slug}`}>{ctx.course.title}</Link>
-              <span>•</span>
-              <Link href={`/${ctx.course.slug}/${ctx.chapter.slug}`}>{ctx.chapter.title}</Link>
+      <div className={styles.shell} data-focus={ctx.focusMode}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarHeader}>
+            <div>
+              <div className={styles.sidebarHeading}>Course Outline</div>
+              <p className={styles.sidebarSubheading}>{ctx.course.title}</p>
             </div>
-            <h1 className={styles.title}>{ctx.lessonTitle}</h1>
-            <div className={styles.statGrid}>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Chapter progress</span>
-                <span className={styles.statValue}>{ctx.chapterPctUnits}%</span>
-                <span className={styles.footerMeta}>
-                  <span>{ctx.chapterLessonsDone}/{ctx.chapterLessonsTotal} lessons complete</span>
-                </span>
+            <Link href={`/${ctx.course.slug}`} className={styles.sidebarLink}>
+              View course
+            </Link>
+          </div>
+
+          <div className={styles.sidebarSection}>
+            <div className={styles.sidebarSectionLabel}>{ctx.chapter.title}</div>
+            <nav className={styles.sidebarList} aria-label="Lessons in this chapter">
+              {ctx.chapterLessonMenu.length === 0 ? (
+                <div className={styles.sidebarEmpty}>Lessons coming soon.</div>
+              ) : (
+                ctx.chapterLessonMenu.map((lesson) => (
+                  <Link
+                    key={lesson.href}
+                    href={lesson.href}
+                    className={styles.sidebarItem}
+                    data-state={lesson.current ? "current" : lesson.done ? "done" : "todo"}
+                    aria-current={lesson.current ? "page" : undefined}
+                  >
+                    <div className={styles.sidebarItemTitle}>{lesson.title}</div>
+                    <div className={styles.sidebarItemMeta}>
+                      {lesson.current ? "In progress" : lesson.done ? "Completed" : lesson.total ? `${lesson.total} questions` : "Preview"}
+                    </div>
+                  </Link>
+                ))
+              )}
+            </nav>
+          </div>
+
+          <div className={styles.sidebarStats}>
+            <div className={styles.sidebarStatCard}>
+              <div className={styles.sidebarStatLabel}>Chapter Progress</div>
+              <div className={styles.sidebarStatValue}>{ctx.chapterPctUnits}%</div>
+              <div className={styles.sidebarStatMeta}>
+                {ctx.chapterLessonsDone}/{ctx.chapterLessonsTotal} lessons done
               </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Question accuracy</span>
-                <span className={styles.statValue}>{ctx.chapterQCorrect}/{ctx.chapterQTotal || 0}</span>
-                <span className={styles.footerMeta}>
-                  <span>Across this chapter</span>
-                </span>
+            </div>
+            <div className={styles.sidebarStatCard}>
+              <div className={styles.sidebarStatLabel}>Question Accuracy</div>
+              <div className={styles.sidebarStatValue}>
+                {ctx.chapterQCorrect}/{ctx.chapterQTotal || 0}
               </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Lesson status</span>
-                <span className={styles.statValue}>{ctx.completed ? "Completed" : "In progress"}</span>
-                <span className={styles.footerMeta}>
-                  <span>{questionTotals.correct} answers logged</span>
-                </span>
-              </div>
+              <div className={styles.sidebarStatMeta}>Across this chapter</div>
             </div>
           </div>
-          <div className={styles.actionColumn}>
-            <button type="button" className={styles.primaryButton} onClick={() => ctx.setTab("learn")}>
-              Resume learning
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={ctx.toggleFavorite}
-              aria-pressed={ctx.fav}
-            >
-              {ctx.fav ? "Saved" : "Save lesson"}
-            </button>
-            <button
-              type="button"
-              className={ctx.canToggleCompleted ? styles.secondaryButton : styles.mutedButton}
-              onClick={ctx.toggleCompleted}
-              disabled={!ctx.canToggleCompleted}
-            >
-              {!ctx.canToggleCompleted ? "Login to track" : ctx.completed ? "Mark not complete" : "Mark complete"}
-            </button>
-            <button type="button" className={styles.secondaryButton} onClick={ctx.openFlashcards}>
-              Open flashcards deck
-            </button>
-            <div className={styles.footerMeta}>
-              <span>
-                Author <strong>{ctx.authors.author || '—'}</strong>
-              </span>
-              <span>
-                Reviewed by <strong>{ctx.authors.reviewer || '—'}</strong>
-              </span>
-            </div>
-          </div>
-        </section>
+        </aside>
 
-        <div className={styles.tabBar} role="tablist">
-          {(
-            [
-              { id: "learn", label: "Learn" },
-              { id: "practice", label: "Practice" },
-              { id: "background", label: "Resources" },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={styles.tabButton}
-              data-active={ctx.tab === tab.id}
-              onClick={() => ctx.setTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className={styles.grid} data-focus={ctx.focusMode}>
-          <aside className={`${styles.panel} ${styles.leftColumn}`}>
-            <div>
-              <div className={styles.cardTitle}>Chapter path</div>
-              <div className={styles.timeline}>
-                {timeline.map((item) => (
-                  <div key={item.id} className={styles.timelineItem} data-state={item.state}>
-                    {item.title}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className={styles.cardTitle}>Progress details</div>
-              <p style={{ margin: 0, color: '#475569', fontSize: 14 }}>
-                {questionTotals.correct}/{questionTotals.total || 0} correct • {questionTotals.remaining} remaining
-              </p>
-            </div>
-          </aside>
-
-          <div style={{ display: 'grid', gap: '24px' }}>
-            <div className={styles.panel}>
-              <div className={styles.videoFrame}>
-                {ctx.effectiveIframeSrc ? (
-                  <iframe
-                    className={styles.videoInner}
-                    src={ctx.effectiveIframeSrc}
-                    title="Lesson video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className={styles.videoInner} style={{ display: 'grid', placeItems: 'center', color: '#475569', fontWeight: 600 }}>
-                    Video coming soon
-                  </div>
-                )}
-                {ctx.player?.locked && (
-                  <div className={styles.videoInner} style={{ background: 'rgba(255,255,255,0.9)', display: 'grid', placeItems: 'center' }}>
-                    <div style={{ padding: '14px 18px', borderRadius: 18, background: '#fff', border: '1px solid rgba(148,163,184,0.35)', fontWeight: 600, color: '#1f2937' }}>
-                      {ctx.player?.lockReason || 'Enroll to access this video.'}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {ctx.tab === "learn" && (
-              <div className={styles.panel}>
-                {ctx.bodyHtml ? (
-                  <LessonBody slug={ctx.slug} html={ctx.bodyHtml} noApi={!ctx.authed} />
-                ) : (
-                  <p style={{ color: '#64748b' }}>Loading lesson…</p>
-                )}
-              </div>
-            )}
-
-            {ctx.tab === "practice" && (
-              <div className={styles.panel}>
-                <div className={styles.practiceSummary}>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(30,64,175,0.65)' }}>Practice deck</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, color: '#1f2937' }}>
-                      {questionTotals.correct}/{questionTotals.total || 0} correct ({questionTotals.pct}%)
-                    </div>
-                    <p style={{ margin: '4px 0 0', color: '#1d4ed8', fontSize: 14 }}>{practiceMessage}</p>
-                  </div>
+        <div className={styles.mainArea}>
+          <header className={styles.hero}>
+            <div className={styles.heroBackdrop} aria-hidden="true" />
+            <div className={styles.heroInner}>
+              <div className={styles.heroTop}>
+                <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+                  <Link href={`/${ctx.course.slug}`} className={styles.breadcrumbLink}>
+                    {ctx.course.title}
+                  </Link>
+                  <span className={styles.breadcrumbSeparator} aria-hidden="true">/</span>
+                  <span className={styles.breadcrumbCurrent}>{ctx.chapter.title}</span>
+                </nav>
+                <div className={styles.heroControls}>
                   <button
                     type="button"
-                    className={ctx.canPractice ? styles.primaryButton : styles.mutedButton}
-                    onClick={ctx.openPracticeAll}
-                    disabled={!ctx.canPractice}
+                    className={styles.heroControlButton}
+                    data-active={ctx.focusMode}
+                    onClick={ctx.toggleFocusMode}
                   >
-                    Open all questions
+                    {ctx.focusMode ? "Exit focus" : "Focus mode"}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.heroControlButton}
+                    data-active={ctx.fav}
+                    aria-pressed={ctx.fav}
+                    onClick={ctx.toggleFavorite}
+                  >
+                    {ctx.fav ? "Saved" : "Save lesson"}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.heroControlButton}
+                    onClick={ctx.toggleCompleted}
+                    disabled={!ctx.canToggleCompleted}
+                  >
+                    {!ctx.canToggleCompleted
+                      ? "Login to track"
+                      : ctx.completed
+                        ? "Mark not complete"
+                        : "Mark complete"}
                   </button>
                 </div>
-                {ctx.bundleHasQuestions ? (
-                  <div style={{ marginTop: 20 }}>
-                    <MCQPanel
-                      courseId={ctx.courseIdNum}
-                      questions={ctx.mcqs}
-                      initialStatus={ctx.initialStatus}
-                      openAll={ctx.practiceAll}
-                      openOnlyId={ctx.openQuestionId}
-                      disabled={!ctx.authed}
-                      onAnswer={ctx.onAnswerQuestion}
-                    />
+              </div>
+
+              <div className={styles.heroBody}>
+                <div className={styles.heroTitleBlock}>
+                  <div className={styles.heroCoursePill}>{ctx.course.title}</div>
+                  <h1 className={styles.heroTitle}>{ctx.lessonTitle}</h1>
+                  <div className={styles.heroMeta}>
+                    <span>By {authorName}</span>
+                    <span>
+                      {ctx.chapterLessonsDone}/{ctx.chapterLessonsTotal} lessons done
+                    </span>
+                    <span>
+                      {questionTotals.correct}/{questionTotals.total || 0} correct so far
+                    </span>
                   </div>
-                ) : (
-                  <p style={{ marginTop: 20, color: '#475569' }}>{practiceMessage}</p>
-                )}
+                </div>
+                <div className={styles.heroNav}>
+                  {navigation.prevLesson ? (
+                    <Link href={navigation.prevLesson.href} className={styles.heroNavButton}>
+                      <span aria-hidden="true">⟵</span>
+                      <span>Previous</span>
+                    </Link>
+                  ) : (
+                    <span className={styles.heroNavButton} data-disabled="true">
+                      <span aria-hidden="true">⟵</span>
+                      <span>Previous</span>
+                    </span>
+                  )}
+                  {navigation.nextLesson ? (
+                    <Link href={navigation.nextLesson.href} className={styles.heroNavButton}>
+                      <span>Next</span>
+                      <span aria-hidden="true">⟶</span>
+                    </Link>
+                  ) : (
+                    <span className={styles.heroNavButton} data-disabled="true">
+                      <span>Next</span>
+                      <span aria-hidden="true">⟶</span>
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
 
-            {ctx.tab === "background" && (
-              <div className={styles.panel}>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 12 }}>Background map</h2>
-                <p style={{ color: '#475569', fontSize: 14 }}>Explore supporting knowledge for this lesson.</p>
-                <BackgroundMap comingSoon />
+              <div className={styles.heroStats}>
+                <div className={styles.heroStatCard}>
+                  <div className={styles.heroStatLabel}>Chapter progress</div>
+                  <div className={styles.heroStatValue}>{ctx.chapterPctUnits}%</div>
+                  <div className={styles.heroStatMeta}>
+                    {ctx.chapterLessonsDone}/{ctx.chapterLessonsTotal} lessons complete
+                  </div>
+                </div>
+                <div className={styles.heroStatCard}>
+                  <div className={styles.heroStatLabel}>Question accuracy</div>
+                  <div className={styles.heroStatValue}>
+                    {ctx.chapterQCorrect}/{ctx.chapterQTotal || 0}
+                  </div>
+                  <div className={styles.heroStatMeta}>Across this chapter</div>
+                </div>
+                <div className={styles.heroStatCard}>
+                  <div className={styles.heroStatLabel}>Lesson status</div>
+                  <div className={styles.heroStatValue}>{ctx.completed ? "Completed" : "In progress"}</div>
+                  <div className={styles.heroStatMeta}>{questionTotals.correct} answers logged</div>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          </header>
 
-          <aside className={styles.rightColumn}>
-            <div className={styles.panel}>
-              <div className={styles.cardTitle}>Quick practice</div>
-              <p style={{ color: '#475569', fontSize: 14, marginBottom: 12 }}>{practiceMessage}</p>
-              <button
-                type="button"
-                className={ctx.canPractice ? styles.secondaryButton : styles.mutedButton}
-                onClick={() => {
-                  if (!ctx.canPractice) return;
-                  ctx.openPracticeAll();
-                  ctx.setTab("practice");
-                }}
-                disabled={!ctx.canPractice}
-              >
-                Open practice flow
-              </button>
-              {ctx.relevantQuestions.length > 0 && (
-                <div className={styles.practiceList}>
-                  {ctx.relevantQuestions.map((q, idx) => (
-                    <button
-                      key={q.id}
-                      type="button"
-                      className={styles.practiceItem}
-                      data-state={q.status}
-                      onClick={() => ctx.openPracticeQuestion(Number(q.id))}
-                    >
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(30,64,175,0.7)' }}>Question {idx + 1}</div>
-                      <div>{q.title}</div>
-                    </button>
-                  ))}
+          <div className={styles.videoCard}>
+            <div className={styles.videoFrame}>
+              {ctx.effectiveIframeSrc ? (
+                <iframe
+                  className={styles.videoInner}
+                  src={ctx.effectiveIframeSrc}
+                  title="Lesson video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <div className={styles.videoPlaceholder}>Video coming soon</div>
+              )}
+              {ctx.player?.locked && (
+                <div className={styles.videoOverlay}>
+                  <div className={styles.videoOverlayContent}>
+                    {ctx.player?.lockReason || "Enroll to access this video."}
+                  </div>
                 </div>
               )}
             </div>
+          </div>
 
-            <div className={styles.panel}>
-              <div className={styles.cardTitle}>Flashcards</div>
-              <p style={{ color: '#475569', fontSize: 14 }}>Reinforce this lesson with a quick micro deck.</p>
-              <button type="button" className={styles.secondaryButton} onClick={ctx.openFlashcards}>
-                Open deck
+          <div className={styles.tabRow} role="tablist">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={styles.tabButton}
+                data-active={ctx.tab === tab.id}
+                role="tab"
+                aria-selected={ctx.tab === tab.id}
+                onClick={() => ctx.setTab(tab.id)}
+              >
+                {tab.label}
               </button>
-            </div>
+            ))}
+          </div>
 
-            <div className={styles.panel}>
-              <div className={styles.cardTitle}>Need a break?</div>
-              <p style={{ color: '#475569', fontSize: 14 }}>Toggle focus mode in the learner toolbar to hide side panels and read distraction-free.</p>
-              <button type="button" className={styles.secondaryButton} onClick={ctx.toggleFocusMode}>
-                {ctx.focusMode ? "Disable focus mode" : "Enable focus mode"}
-              </button>
-            </div>
-          </aside>
+          <div className={styles.mainGrid} data-focus={ctx.focusMode}>
+            <section className={styles.lessonColumn}>
+              {ctx.tab === "learn" && (
+                <article className={styles.sectionCard}>
+                  <header className={styles.sectionHeader}>
+                    <div>
+                      <div className={styles.sectionEyebrow}>Lesson overview</div>
+                      <h2 className={styles.sectionTitle}>Course description</h2>
+                      <p className={styles.sectionSubtitle}>
+                        Work through the narrative, checkpoints, and visuals for this lesson.
+                      </p>
+                    </div>
+                  </header>
+                  <div className={styles.sectionBody}>
+                    {ctx.bodyHtml ? (
+                      <LessonBody slug={ctx.slug} html={ctx.bodyHtml} noApi={!ctx.authed} />
+                    ) : (
+                      <p className={styles.emptyState}>Loading lesson…</p>
+                    )}
+                  </div>
+                </article>
+              )}
+
+              {ctx.tab === "practice" && (
+                <article className={styles.sectionCard}>
+                  <header className={styles.sectionHeader}>
+                    <div>
+                      <div className={styles.sectionEyebrow}>Quiz mode</div>
+                      <h2 className={styles.sectionTitle}>Check your understanding</h2>
+                      <p className={styles.sectionSubtitle}>{practiceMessage}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className={ctx.canPractice ? styles.primaryButton : styles.disabledButton}
+                      onClick={ctx.openPracticeAll}
+                      disabled={!ctx.canPractice}
+                    >
+                      Start quiz
+                    </button>
+                  </header>
+                  <div className={styles.practiceMetrics}>
+                    <div className={styles.practiceMetric}>
+                      <div className={styles.practiceMetricLabel}>Correct</div>
+                      <div className={styles.practiceMetricValue}>{questionTotals.correct}</div>
+                    </div>
+                    <div className={styles.practiceMetric}>
+                      <div className={styles.practiceMetricLabel}>Remaining</div>
+                      <div className={styles.practiceMetricValue}>{questionTotals.remaining}</div>
+                    </div>
+                    <div className={styles.practiceMetric}>
+                      <div className={styles.practiceMetricLabel}>Accuracy</div>
+                      <div className={styles.practiceMetricValue}>{questionTotals.pct}%</div>
+                    </div>
+                  </div>
+                  <div className={styles.sectionBody}>
+                    {ctx.bundleHasQuestions ? (
+                      <MCQPanel
+                        courseId={ctx.courseIdNum}
+                        questions={ctx.mcqs}
+                        initialStatus={ctx.initialStatus}
+                        openAll={ctx.practiceAll}
+                        openOnlyId={ctx.openQuestionId}
+                        disabled={!ctx.authed}
+                        onAnswer={ctx.onAnswerQuestion}
+                      />
+                    ) : (
+                      <div className={styles.emptyState}>{practiceMessage}</div>
+                    )}
+                  </div>
+                </article>
+              )}
+
+              {ctx.tab === "background" && (
+                <article className={styles.sectionCard}>
+                  <header className={styles.sectionHeader}>
+                    <div>
+                      <div className={styles.sectionEyebrow}>Resources</div>
+                      <h2 className={styles.sectionTitle}>Background map</h2>
+                      <p className={styles.sectionSubtitle}>
+                        Trace supporting knowledge and recommended follow-up resources.
+                      </p>
+                    </div>
+                  </header>
+                  <div className={styles.sectionBody}>
+                    <BackgroundMap comingSoon />
+                  </div>
+                </article>
+              )}
+            </section>
+
+            <aside className={styles.rightRail}>
+              <section className={styles.infoCard}>
+                <div className={styles.infoCardHeader}>Course information</div>
+                <dl className={styles.infoList}>
+                  <div className={styles.infoRow}>
+                    <dt className={styles.infoLabel}>Instructor</dt>
+                    <dd className={styles.infoValue}>{authorName}</dd>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <dt className={styles.infoLabel}>Reviewer</dt>
+                    <dd className={styles.infoValue}>{reviewerName}</dd>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <dt className={styles.infoLabel}>Lesson status</dt>
+                    <dd className={styles.infoValue}>{ctx.completed ? "Completed" : "In progress"}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className={styles.infoCard}>
+                <div className={styles.infoCardHeader}>Practice hub</div>
+                <p className={styles.infoCopy}>{practiceMessage}</p>
+                <button
+                  type="button"
+                  className={ctx.canPractice ? styles.secondaryButton : styles.disabledButton}
+                  onClick={() => {
+                    if (!ctx.canPractice) return;
+                    ctx.openPracticeAll();
+                    ctx.setTab("practice");
+                  }}
+                  disabled={!ctx.canPractice}
+                >
+                  Open quiz flow
+                </button>
+                {ctx.relevantQuestions.length > 0 && (
+                  <div className={styles.questionList}>
+                    {ctx.relevantQuestions.map((question, index) => (
+                      <button
+                        key={question.id}
+                        type="button"
+                        className={styles.questionItem}
+                        data-state={question.status}
+                        onClick={() => ctx.openPracticeQuestion(Number(question.id))}
+                      >
+                        <div className={styles.questionItemLabel}>Question {index + 1}</div>
+                        <div className={styles.questionItemTitle}>{question.title}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className={styles.infoCard}>
+                <div className={styles.infoCardHeader}>Resource types</div>
+                <ul className={styles.resourceList}>
+                  <li className={styles.resourceItem}>
+                    <div>
+                      <div className={styles.resourceTitle}>Practice questions</div>
+                      <div className={styles.resourceMeta}>
+                        {ctx.bundleHasQuestions ? `${questionTotals.total} available` : "Coming soon"}
+                      </div>
+                    </div>
+                  </li>
+                  <li className={styles.resourceItem}>
+                    <div>
+                      <div className={styles.resourceTitle}>Flashcards deck</div>
+                      <div className={styles.resourceMeta}>Micro review for quick recall</div>
+                    </div>
+                    <button type="button" className={styles.ghostButton} onClick={ctx.openFlashcards}>
+                      Open
+                    </button>
+                  </li>
+                  <li className={styles.resourceItem}>
+                    <div>
+                      <div className={styles.resourceTitle}>Background map</div>
+                      <div className={styles.resourceMeta}>Concept graph preview</div>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+
+          <SaveDock courseId={ctx.saveDockCourseId} />
         </div>
-
-        <SaveDock courseId={ctx.saveDockCourseId} />
       </div>
     </div>
   );
 }
+
