@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import clsx from "clsx";
 import ShimmerHeading from "@/components/ui/ShimmerHeading";
@@ -10,12 +10,6 @@ type TimelineEvent = {
   year: string;
   title: string;
   body: string;
-  align: "left" | "right";
-};
-
-type MotionContext = {
-  index: number;
-  align: "left" | "right";
 };
 
 const EVENTS: TimelineEvent[] = [
@@ -24,150 +18,81 @@ const EVENTS: TimelineEvent[] = [
     year: "2019",
     title: "EMS 1.0 launches",
     body: "Opened the first free IMAT forum with 30k words of guides and a dream to help anyone get into medical school in Italy.",
-    align: "left",
   },
   {
     id: "2020",
     year: "2020",
     title: "Free prep library",
     body: "Published the full question bank, flashcards and the first iteration of the open-source biology & chemistry books.",
-    align: "right",
   },
   {
     id: "2021",
     year: "2021",
     title: "Community milestones",
     body: "10,000 students joined EMS Discord. Introduced live study rooms, weekly sprint planning and mentor office hours.",
-    align: "left",
   },
   {
     id: "2022",
     year: "2022",
     title: "Scholarships & clinics",
     body: "Launched the paid course to reinvest into free content, funded the first EMS scholarship cohort and started monthly strategy clinics.",
-    align: "right",
   },
   {
     id: "2023",
     year: "2023",
     title: "Learning graph",
     body: "Built the adaptive learning graph, automated diagnostics and progress trackers so every student could see their next best step.",
-    align: "left",
   },
   {
     id: "2024",
     year: "2024",
     title: "Global map & cohorts",
     body: "Released the interactive university map, cohort dashboards and the upgraded mobile learning experience.",
-    align: "right",
   },
   {
     id: "2026",
     year: "2026",
     title: "The next chapter",
     body: "Preparing a full medical journey platform: admissions, courseware, clinical prep and a global support network built with students.",
-    align: "left",
   },
 ];
 
-const CARD_VARIANTS = {
-  hidden: (context: MotionContext) => ({
-    opacity: 0,
-    y: 36,
-    x: context.align === "left" ? -38 : 38,
-  }),
-  visible: (context: MotionContext) => ({
+const ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 40 },
+  visible: (index: number) => ({
     opacity: 1,
     y: 0,
-    x: 0,
     transition: {
-      delay: 0.28 + context.index * 0.12,
-      duration: 0.6,
+      delay: 0.18 + index * 0.1,
+      duration: 0.55,
       ease: [0.22, 1, 0.36, 1],
     },
   }),
 };
 
-const MARKER_VARIANTS = {
-  hidden: { opacity: 0, scale: 0.7 },
-  visible: (context: MotionContext) => ({
-    opacity: 1,
+const DOT_VARIANTS = {
+  hidden: { scale: 0.4, opacity: 0 },
+  visible: (index: number) => ({
     scale: 1,
+    opacity: 1,
     transition: {
-      delay: 0.42 + context.index * 0.12,
-      duration: 0.45,
+      delay: 0.28 + index * 0.1,
+      duration: 0.4,
       ease: [0.22, 1, 0.36, 1],
     },
   }),
 };
 
 export default function ProgressTimeline() {
-  const headingId = "journey-heading";
   const timelineRef = useRef<HTMLDivElement | null>(null);
-  const inView = useInView(timelineRef, { once: true, margin: "-25% 0px" });
-  const [activeIndex, setActiveIndex] = useState(EVENTS.length - 1);
-
-  const pauseRef = useRef(false);
-  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const setActive = (index: number) => {
-    if (resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current);
-      resumeTimeoutRef.current = null;
-    }
-    pauseRef.current = true;
-    setActiveIndex(index);
-  };
-
-  const resumeAuto = () => {
-    if (resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current);
-    }
-    resumeTimeoutRef.current = setTimeout(() => {
-      pauseRef.current = false;
-      resumeTimeoutRef.current = null;
-    }, 1100);
-  };
-
-  useEffect(() => {
-    if (!inView) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    intervalRef.current = setInterval(() => {
-      if (!pauseRef.current) {
-        setActiveIndex((prev) => (prev + 1) % EVENTS.length);
-      }
-    }, 5200);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [inView]);
-
-  useEffect(() => () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    if (resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current);
-    }
-  }, []);
+  const inView = useInView(timelineRef, { once: true, margin: "-20% 0px" });
 
   return (
-    <section className="journey" aria-labelledby={headingId}>
+    <section className="journey" aria-labelledby="journey-heading">
       <div className="journey-shell">
-        <div className="journey-copy">
-          <span id={headingId} className="sr-only">
-            Our journey - Built with students, for students. From 2019 to the next chapter.
+        <header className="journey-header">
+          <span id="journey-heading" className="sr-only">
+            From 2019 to the next chapter
           </span>
           <span className="kicker">Our Journey</span>
           <ShimmerHeading
@@ -175,6 +100,7 @@ export default function ProgressTimeline() {
             pretitle="Built with students, for students"
             size="md"
             variant="electric"
+            align="center"
           />
           <p className="lead">
             EnterMedSchool started as a volunteer side project and grew into a global learning platform. Here are the moments that shaped the experience you see today.
@@ -184,127 +110,97 @@ export default function ProgressTimeline() {
             <li>Every launch reinvested into free, open resources.</li>
             <li>Community-first: mentorship, clinics and scholarships.</li>
           </ul>
-        </div>
+        </header>
 
-        <div className="journey-timeline">
-          <div className="timeline" ref={timelineRef}>
-            <motion.span
-              className="axis"
-              initial={{ scaleY: 0 }}
-              animate={inView ? { scaleY: 1 } : {}}
-              transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
-            />
-            <motion.span
-              className="axis-glow"
-              initial={{ opacity: 0, scaleY: 0.6 }}
-              animate={inView ? { opacity: 0.75, scaleY: 1 } : { opacity: 0 }}
-              transition={{ delay: 0.25, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-            />
+        <div className={clsx("timeline-wrapper", { "in-view": inView })} ref={timelineRef}>
+          <motion.span
+            className="timeline-axis"
+            initial={{ scaleY: 0 }}
+            animate={inView ? { scaleY: 1 } : { scaleY: 0 }}
+            transition={{ duration: 1.3, ease: [0.22, 1, 0.36, 1] }}
+          />
+          <motion.span
+            className="timeline-axis-glow"
+            initial={{ opacity: 0, scaleY: 0.7 }}
+            animate={inView ? { opacity: 0.75, scaleY: 1 } : { opacity: 0 }}
+            transition={{ delay: 0.2, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          />
 
-            <ul className="timeline-events">
-              {EVENTS.map((event, index) => {
-                const active = index === activeIndex;
-                const context: MotionContext = { index, align: event.align };
-                return (
-                  <li
-                    key={event.id}
-                    className={clsx("event", `event-${event.align}`, { active })}
-                  >
-                    <motion.button
-                      type="button"
-                      className={clsx("event-card", { active })}
-                      variants={CARD_VARIANTS}
-                      initial="hidden"
-                      animate={inView ? "visible" : "hidden"}
-                      custom={context}
-                      aria-current={active ? "step" : undefined}
-                      onPointerEnter={() => setActive(index)}
-                      onPointerLeave={resumeAuto}
-                      onFocus={() => setActive(index)}
-                      onBlur={() => {
-                        pauseRef.current = false;
-                      }}
-                      onClick={() => setActive(index)}
-                      whileHover={{ y: -6 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ type: "spring", stiffness: 240, damping: 22 }}
-                    >
-                      <span className="timeline-year">{event.year}</span>
-                      <span className="timeline-title">{event.title}</span>
-                      <span className="timeline-body">{event.body}</span>
-                    </motion.button>
-
-                    <motion.span
-                      className="event-marker"
-                      variants={MARKER_VARIANTS}
-                      initial="hidden"
-                      animate={inView ? "visible" : "hidden"}
-                      custom={context}
-                      aria-hidden
-                    >
-                      <span className="marker-core" />
-                    </motion.span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <ol className="timeline-track">
+            {EVENTS.map((event, index) => (
+              <motion.li
+                key={event.id}
+                className="timeline-item"
+                variants={ITEM_VARIANTS}
+                initial="hidden"
+                animate={inView ? "visible" : "hidden"}
+                custom={index}
+              >
+                <motion.span
+                  className="timeline-dot"
+                  variants={DOT_VARIANTS}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
+                  custom={index}
+                  aria-hidden
+                >
+                  <span className="dot-year">{event.year}</span>
+                </motion.span>
+                <article className="timeline-card">
+                  <h3>{event.title}</h3>
+                  <p>{event.body}</p>
+                </article>
+              </motion.li>
+            ))}
+          </ol>
         </div>
       </div>
 
       <style jsx>{`
         .journey {
-          padding: clamp(48px, 9vw, 120px) 0;
+          padding: clamp(48px, 10vw, 128px) 0;
           position: relative;
         }
 
         .journey-shell {
-          position: relative;
+          width: min(1120px, calc(100vw - clamp(32px, 8vw, 140px)));
           margin: 0 auto;
-          width: min(1180px, calc(100vw - clamp(32px, 8vw, 140px)));
-          border-radius: clamp(32px, 5vw, 58px);
-          padding: clamp(34px, 6vw, 64px);
-          background: linear-gradient(135deg, rgba(79, 70, 229, 0.22), rgba(6, 182, 212, 0.14));
-          box-shadow: 0 36px 110px rgba(15, 23, 42, 0.18);
-          display: grid;
-          gap: clamp(36px, 6vw, 80px);
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-          color: #0f172a;
+          border-radius: clamp(36px, 6vw, 60px);
+          padding: clamp(36px, 7vw, 70px) clamp(30px, 7vw, 56px);
+          background: linear-gradient(145deg, rgba(248, 250, 252, 0.92), rgba(219, 234, 254, 0.88));
+          box-shadow: 0 40px 120px rgba(15, 23, 42, 0.16);
+          position: relative;
           overflow: hidden;
+          display: grid;
+          gap: clamp(40px, 7vw, 72px);
         }
 
         .journey-shell::before {
           content: "";
           position: absolute;
-          inset: -18% -22% -16% -20%;
-          background:
-            radial-gradient(640px 380px at 18% 22%, rgba(99, 102, 241, 0.35), transparent 72%),
-            radial-gradient(560px 340px at 82% 82%, rgba(6, 182, 212, 0.28), transparent 70%),
-            radial-gradient(420px 260px at 50% 10%, rgba(14, 165, 233, 0.22), transparent 70%);
-          opacity: 0.95;
-          z-index: 0;
+          inset: -45% -20% auto -30%;
+          height: clamp(320px, 50vw, 520px);
+          background: radial-gradient(420px 420px at 20% 40%, rgba(99, 102, 241, 0.22), transparent 70%);
+          opacity: 0.8;
+          pointer-events: none;
         }
 
         .journey-shell::after {
           content: "";
           position: absolute;
-          inset: 0;
-          background: radial-gradient(380px 180px at 70% 0%, rgba(255, 255, 255, 0.22), transparent 72%);
-          opacity: 0.6;
-          z-index: 0;
+          inset: auto -30% -60% 20%;
+          height: clamp(280px, 46vw, 460px);
+          background: radial-gradient(360px 360px at 50% 50%, rgba(59, 130, 246, 0.2), transparent 70%);
+          opacity: 0.7;
+          pointer-events: none;
         }
 
-        .journey-copy,
-        .journey-timeline {
+        .journey-header {
+          text-align: center;
+          display: grid;
+          gap: clamp(18px, 4vw, 28px);
           position: relative;
           z-index: 1;
-        }
-
-        .journey-copy {
-          display: grid;
-          gap: clamp(20px, 3.5vw, 32px);
-          align-content: start;
-          max-width: 420px;
         }
 
         .sr-only {
@@ -324,36 +220,40 @@ export default function ProgressTimeline() {
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: rgba(49, 46, 129, 0.75);
+          color: rgba(49, 46, 129, 0.68);
         }
 
         .lead {
-          font-size: 15px;
-          line-height: 1.7;
-          color: rgba(15, 23, 42, 0.85);
+          font-size: clamp(15px, 2.6vw, 17px);
+          line-height: 1.65;
+          color: rgba(15, 23, 42, 0.78);
+          max-width: clamp(420px, 52vw, 520px);
+          margin: 0 auto;
         }
 
         .quick {
-          list-style: none;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px 24px;
+          justify-content: center;
           padding: 0;
           margin: 0;
-          display: grid;
-          gap: 10px;
+          list-style: none;
+          color: rgba(15, 23, 42, 0.88);
           font-size: 14px;
           font-weight: 600;
-          color: rgba(15, 23, 42, 0.9);
         }
 
         .quick li {
           position: relative;
-          padding-left: 20px;
+          padding-left: 18px;
         }
 
         .quick li::before {
           content: "";
           position: absolute;
           left: 0;
-          top: 7px;
+          top: 6px;
           width: 8px;
           height: 8px;
           border-radius: 9999px;
@@ -361,301 +261,183 @@ export default function ProgressTimeline() {
           box-shadow: 0 6px 14px rgba(99, 102, 241, 0.28);
         }
 
-        .journey-timeline {
+        .timeline-wrapper {
           position: relative;
+          padding: clamp(20px, 4vw, 30px) clamp(10px, 4vw, 20px);
         }
 
-        .timeline {
-          position: relative;
-          padding: clamp(8px, 2vw, 30px) 0;
-          --glow-width: clamp(190px, 24vw, 280px);
+        .timeline-axis,
+        .timeline-axis-glow {
+          position: absolute;
+          top: clamp(32px, 6vw, 44px);
+          bottom: clamp(32px, 6vw, 44px);
+          left: clamp(100px, 18vw, 180px);
+          transform-origin: top center;
+          border-radius: 9999px;
+          pointer-events: none;
+          z-index: 0;
         }
 
-        .timeline-events {
+        .timeline-axis {
+          width: 2px;
+          background: linear-gradient(180deg, rgba(99, 102, 241, 0.5), rgba(14, 165, 233, 0.4));
+        }
+
+        .timeline-axis-glow {
+          width: clamp(120px, 18vw, 220px);
+          margin-left: calc(clamp(120px, 18vw, 220px) / -2 + 1px);
+          background: radial-gradient(120px 380px at 50% 50%, rgba(99, 102, 241, 0.24), transparent 70%);
+          opacity: 0;
+        }
+
+        .timeline-track {
+          position: relative;
+          z-index: 1;
           list-style: none;
           margin: 0;
           padding: 0;
           display: grid;
-          gap: clamp(42px, 6.8vw, 90px);
-          position: relative;
-          z-index: 1;
-          --axis-column-width: clamp(86px, 10vw, 118px);
-          --column-gap: clamp(28px, 6vw, 72px);
-          --connector-run: calc(var(--column-gap) + var(--axis-column-width) / 2);
+          gap: clamp(28px, 6vw, 48px);
         }
 
-        .event {
-          position: relative;
+        .timeline-item {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) var(--axis-column-width) minmax(0, 1fr);
-          column-gap: var(--column-gap);
+          grid-template-columns: clamp(140px, 24vw, 220px) minmax(0, 1fr);
           align-items: center;
-        }
-
-        .event-card {
-          width: min(360px, 100%);
-          border-radius: 26px;
-          padding: clamp(20px, 3vw, 26px);
-          background: rgba(255, 255, 255, 0.92);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(148, 163, 184, 0.24);
-          box-shadow: 0 26px 72px rgba(15, 23, 42, 0.22);
-          display: grid;
-          gap: 8px;
-          color: inherit;
-          transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+          column-gap: clamp(18px, 5vw, 40px);
           position: relative;
-          text-align: left;
-          cursor: pointer;
-          border: 0;
         }
 
-        .event-left .event-card {
-          grid-column: 1;
-          justify-self: end;
-          text-align: right;
-        }
-
-        .event-right .event-card {
-          grid-column: 3;
-          justify-self: start;
-        }
-
-        .event-card:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.45), 0 26px 62px rgba(15, 23, 42, 0.28);
-        }
-
-        .event-card::after {
+        .timeline-item::after {
           content: "";
           position: absolute;
+          left: clamp(100px, 18vw, 180px);
           top: 50%;
-          width: var(--connector-run);
-          height: 2px;
+          width: clamp(40px, 12vw, 120px);
+          border-top: 2px dotted rgba(99, 102, 241, 0.35);
           transform: translateY(-50%);
-          opacity: 0.55;
-          background: linear-gradient(90deg, #6366f1, #22d3ee);
-          pointer-events: none;
         }
 
-        .event-left .event-card::after {
-          right: calc(var(--connector-run) * -1);
+        .timeline-item:last-child::after {
+          display: none;
         }
 
-        .event-right .event-card::after {
-          left: calc(var(--connector-run) * -1);
-          background: linear-gradient(90deg, #22d3ee, #6366f1);
-        }
-
-        .timeline-year {
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(79, 70, 229, 0.9);
-        }
-
-        .timeline-title {
-          font-size: 17px;
-          font-weight: 800;
-          color: #0f172a;
-          line-height: 1.35;
-        }
-
-        .timeline-body {
-          font-size: 13px;
-          line-height: 1.6;
-          color: rgba(15, 23, 42, 0.78);
-        }
-
-        .event-marker {
-          grid-column: 2;
-          justify-self: center;
-          width: 18px;
-          height: 18px;
+        .timeline-dot {
+          width: clamp(82px, 12vw, 108px);
+          height: clamp(82px, 12vw, 108px);
           border-radius: 9999px;
-          position: relative;
+          border: 2px dashed rgba(99, 102, 241, 0.5);
           display: grid;
           place-items: center;
+          background: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(219, 234, 254, 0.6));
+          box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+          position: relative;
         }
 
-        .event-marker::before {
+        .timeline-dot::after {
           content: "";
           position: absolute;
-          inset: -20px;
+          inset: 14px;
           border-radius: inherit;
-          background: radial-gradient(circle, rgba(99, 102, 241, 0.32), transparent 70%);
-          opacity: 0;
-          transition: opacity 0.4s ease;
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(14, 165, 233, 0.16));
+          filter: blur(0.2px);
         }
 
-        .event-marker::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          background: linear-gradient(135deg, #6366f1, #22d3ee);
-          box-shadow: 0 16px 36px rgba(79, 70, 229, 0.35);
-        }
-
-        .marker-core {
-          width: 6px;
-          height: 6px;
-          border-radius: 9999px;
-          background: #fff;
+        .dot-year {
+          position: relative;
           z-index: 1;
+          font-size: clamp(16px, 3.4vw, 20px);
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          color: rgba(55, 48, 163, 0.9);
         }
 
-        .axis,
-        .axis-glow {
+        .timeline-card {
+          border-radius: clamp(24px, 5vw, 32px);
+          padding: clamp(22px, 4.5vw, 32px);
+          background: rgba(255, 255, 255, 0.9);
+          border: 1.5px dashed rgba(148, 163, 184, 0.45);
+          box-shadow: 0 26px 70px rgba(15, 23, 42, 0.12);
+          display: grid;
+          gap: 10px;
+          position: relative;
+        }
+
+        .timeline-card::before {
+          content: "";
           position: absolute;
-          top: clamp(-120px, -12vw, -80px);
-          bottom: clamp(-120px, -12vw, -80px);
-          left: 50%;
-          transform: translateX(-50%);
+          inset: 12px;
+          border-radius: inherit;
+          border: 1.5px solid rgba(148, 163, 184, 0.18);
           pointer-events: none;
-          border-radius: 9999px;
-          z-index: 0;
         }
 
-        .axis {
-          width: 4px;
-          background: linear-gradient(180deg, #6366f1 0%, #22d3ee 45%, #f97316 100%);
-          transform-origin: top center;
-          box-shadow: 0 0 24px rgba(79, 70, 229, 0.45);
+        .timeline-card h3 {
+          font-size: clamp(18px, 3.6vw, 22px);
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0;
         }
 
-        .axis-glow {
-          width: var(--glow-width);
-          margin-left: calc(var(--glow-width) / -2);
-          background: radial-gradient(160px 440px at 50% 38%, rgba(99, 102, 241, 0.28), transparent 72%);
-          filter: blur(0.6px);
-          opacity: 0;
-        }
-
-        .event.active .event-card {
-          background: rgba(15, 23, 42, 0.94);
-          color: rgba(248, 250, 252, 0.96);
-          box-shadow: 0 38px 92px rgba(15, 23, 42, 0.46);
-        }
-
-        .event.active .event-card::after {
-          opacity: 0.9;
-        }
-
-        .event.active .timeline-year {
-          color: rgba(165, 180, 252, 0.92);
-        }
-
-        .event.active .timeline-body {
-          color: rgba(226, 232, 240, 0.86);
-        }
-
-        .event.active .event-marker::before {
-          opacity: 1;
-          animation: markerPulse 2.4s ease-out infinite;
-        }
-
-        .event-card:hover:not(.active) {
-          transform: translateY(-6px);
-          box-shadow: 0 28px 64px rgba(15, 23, 42, 0.26);
-        }
-
-        @keyframes markerPulse {
-          0% {
-            transform: scale(0.5);
-            opacity: 0.6;
-          }
-          60% {
-            transform: scale(1.05);
-            opacity: 0.12;
-          }
-          100% {
-            transform: scale(1.2);
-            opacity: 0;
-          }
-        }
-
-        @media (max-width: 1180px) {
-          .journey-shell {
-            width: min(1100px, calc(100vw - clamp(30px, 6vw, 100px)));
-          }
-        }
-
-        @media (max-width: 1024px) {
-          .journey-shell {
-            grid-template-columns: 1fr;
-            gap: clamp(30px, 6vw, 58px);
-          }
-
-          .journey-copy {
-            max-width: none;
-          }
+        .timeline-card p {
+          margin: 0;
+          font-size: clamp(14px, 3vw, 15px);
+          line-height: 1.65;
+          color: rgba(30, 41, 59, 0.78);
         }
 
         @media (max-width: 900px) {
-          .timeline {
-            --glow-width: clamp(160px, 58vw, 220px);
+          .journey-shell {
+            width: min(720px, calc(100vw - clamp(24px, 6vw, 80px)));
           }
 
-          .timeline-events {
-            --axis-column-width: 0px;
-            --column-gap: 0px;
-            --connector-run: 0px;
-            gap: clamp(26px, 8vw, 36px);
+          .timeline-axis,
+          .timeline-axis-glow {
+            left: clamp(24px, 12vw, 42px);
           }
 
-          .event {
-            grid-template-columns: 1fr;
-            row-gap: clamp(12px, 4vw, 18px);
-            padding-left: clamp(54px, 18vw, 70px);
+          .timeline-item {
+            grid-template-columns: minmax(0, 1fr);
+            row-gap: clamp(12px, 3vw, 18px);
+            padding-left: clamp(58px, 18vw, 74px);
           }
 
-          .event-card,
-          .event-left .event-card,
-          .event-right .event-card {
-            justify-self: stretch;
-            text-align: left;
+          .timeline-item::after {
+            left: clamp(24px, 12vw, 42px);
+            width: clamp(18px, 10vw, 38px);
           }
 
-          .event-card::after {
-            display: none;
-          }
-
-          .event-marker {
+          .timeline-dot {
+            width: clamp(68px, 18vw, 86px);
+            height: clamp(68px, 18vw, 86px);
             position: absolute;
-            left: clamp(26px, 12vw, 34px);
-            top: 50%;
-            transform: translate(-50%, -50%);
+            left: clamp(24px, 12vw, 42px);
+            transform: translateX(-50%);
           }
 
-          .axis,
-          .axis-glow {
-            left: clamp(26px, 12vw, 34px);
+          .timeline-card {
+            padding: clamp(20px, 6vw, 26px);
           }
         }
 
         @media (max-width: 600px) {
           .journey {
-            padding: clamp(32px, 12vw, 60px) 0;
+            padding: clamp(34px, 14vw, 60px) 0;
           }
 
           .journey-shell {
-            padding: clamp(24px, 9vw, 36px);
-            border-radius: 36px;
-          }
-
-          .timeline-title {
-            font-size: 16px;
-          }
-
-          .timeline-body {
-            font-size: 12.5px;
+            padding: clamp(26px, 10vw, 36px);
+            border-radius: 32px;
+            gap: clamp(32px, 10vw, 48px);
           }
 
           .quick {
-            gap: 8px;
+            gap: 10px 16px;
             font-size: 13px;
+          }
+
+          .timeline-card {
+            gap: 8px;
           }
         }
       `}</style>

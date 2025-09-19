@@ -36,12 +36,17 @@ const STEP_BADGE_META = {
 } as const;
 
 const TONE_META: Record<CommentaryTone, { label: string; helper: string; className: string }> = {
+
   praise: { label: "Positive note", helper: "Nice work on that step.", className: "bg-emerald-500/15 text-emerald-200" },
   snark: { label: "Side note", helper: "A quick aside from the attending.", className: "bg-fuchsia-500/20 text-fuchsia-200" },
   alert: { label: "Warning", helper: "Watch this choice closely.", className: "bg-amber-500/20 text-amber-200" },
   serious: { label: "Notice", helper: "The attending wants your attention here.", className: "bg-sky-500/20 text-sky-200" },
   neutral: { label: "Note", helper: "A short update from the attending.", className: "bg-slate-700/60 text-slate-200" },
 };
+
+const CASE_PANEL_CLASS = "rounded-3xl border border-white/10 bg-[#101c3e]/80 backdrop-blur-xl shadow-xl shadow-indigo-950/25";
+const CASE_SURFACE_CLASS = "rounded-2xl border border-white/10 bg-white/5";
+const CASE_CONTINUE_GRADIENT = "bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#22d3ee]";
 
 export default function CasePlayer({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -275,13 +280,13 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
 
   if (!caseSummary) {
     return (
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-900/70 p-10 text-center text-slate-200">
+      <div className={`${CASE_PANEL_CLASS} p-10 text-center text-slate-100`}>
         <p>Case not found.</p>
         <div className="mt-4 flex justify-center gap-3 text-sm">
-          <button onClick={() => router.back()} className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 hover:border-slate-500">
+          <button onClick={() => router.back()} className="rounded-full border border-white/20 px-4 py-2 text-slate-200 hover:border-sky-300">
             Go back
           </button>
-          <Link href={baseHref} className="rounded-full bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-400">
+          <Link href={baseHref} className={`rounded-full ${CASE_CONTINUE_GRADIENT} px-4 py-2 text-white shadow-md shadow-indigo-900/20`}>
             Return to library
           </Link>
         </div>
@@ -291,12 +296,12 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
 
   if (state.status === "unsupported") {
     return (
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-900/70 p-10 text-center text-slate-200">
+      <div className={`${CASE_PANEL_CLASS} p-10 text-center text-slate-100`}>
         <h2 className="text-xl font-semibold text-white">This case needs a graph upgrade</h2>
         <p className="mt-3 text-sm text-slate-300">
           We are migrating all cases to the new saga engine. This one still uses the legacy single-step format.
         </p>
-        <Link href={baseHref} className="mt-6 inline-flex items-center rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400">
+        <Link href={baseHref} className={`mt-6 inline-flex items-center rounded-full ${CASE_CONTINUE_GRADIENT} px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-900/20`}>
           Choose another case
         </Link>
       </div>
@@ -305,8 +310,9 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
 
   return (
     <div className="space-y-6">
-      <header className={`relative overflow-hidden rounded-3xl border border-slate-800/60 bg-gradient-to-r ${theme.headerGradient} p-6 shadow-2xl shadow-indigo-950/30`}>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(99,102,241,0.15),transparent_55%),radial-gradient(circle_at_85%_25%,rgba(56,189,248,0.15),transparent_55%)]" aria-hidden="true" />
+      <header className={`relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r ${theme.headerGradient} p-6 shadow-2xl shadow-indigo-950/30`}>
+
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(147,197,253,0.25),transparent_55%),radial-gradient(circle_at_80%_15%,rgba(244,114,182,0.22),transparent_55%)]" aria-hidden="true" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-4">
             <span className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] ${theme.chip}`}>
@@ -317,7 +323,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
             <QuickPrimer />
           </div>
           <div className="flex flex-wrap items-start gap-4 text-sm text-slate-100">
-            <div className="flex min-w-[220px] flex-col gap-2 rounded-2xl border border-slate-800/60 bg-slate-950/60 p-4 text-xs text-slate-200">
+            <div className="flex min-w-[220px] flex-col gap-2 rounded-2xl border border-white/10 bg-[#14204a]/70 p-4 text-xs text-slate-100 shadow-lg shadow-indigo-900/20">
               <span className="text-[10px] text-slate-400">Think it through</span>
               <p className="text-sm text-slate-100">Review the clues, jot a quick plan, then pick the next action.</p>
               <p className="text-[11px] text-slate-400">You'll see the outcome after you choose.</p>
@@ -402,10 +408,10 @@ function StageStepper({ items }: { items: StageStepperItem[] }) {
     <div className="overflow-x-auto py-2">
       <ol className="flex min-w-full gap-2">
         {items.map((item, index) => {
-          const badge = item.status === "completed" ? "bg-emerald-500/20 border-emerald-400" : item.status === "current" ? "bg-indigo-500/20 border-indigo-400" : "bg-slate-900/70 border-slate-700";
+          const badge = item.status === "completed" ? "bg-emerald-400/20 border-emerald-300" : item.status === "current" ? "bg-sky-400/25 border-sky-300" : "bg-white/5 border-white/10";
           return (
             <li key={item.slug} className={`flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl border px-4 py-3 text-xs text-slate-300 ${badge}`}>
-              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${item.status === "completed" ? "bg-emerald-500 text-emerald-950" : item.status === "current" ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-200"}`}>
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${item.status === "completed" ? "bg-emerald-300 text-emerald-900" : item.status === "current" ? "bg-sky-400 text-sky-950" : "bg-white/10 text-slate-200"}`}>
                 {index + 1}
               </span>
               <div className="min-w-0 text-left">
@@ -465,7 +471,7 @@ function StagePanel({
 }) {
   if (!stage) {
     return (
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-8 text-center text-slate-200 shadow-xl shadow-indigo-950/10">
+      <div className={`${CASE_PANEL_CLASS} p-8 text-center text-slate-100`}>
         <p>{isCompleted ? "Saga complete!" : "Loading stage..."}</p>
       </div>
     );
@@ -488,12 +494,12 @@ function StagePanel({
 
   return (
     <section className="space-y-4">
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-6 shadow-xl shadow-indigo-950/10">
+      <div className={`${CASE_PANEL_CLASS} p-6 text-slate-100`}>
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-3 text-xs text-slate-200">
               <span className={`rounded-full border ${theme.stepChip} px-3 py-1 tracking-[0.2em]`}>Step {stepNumber} of {total}</span>
-              <span className={`rounded-full border border-slate-700 px-3 py-1 tracking-[0.2em] ${stageTypeMeta.accent}`}>{stageTypeMeta.label}</span>
+              <span className={`rounded-full border border-white/20 px-3 py-1 tracking-[0.2em] ${stageTypeMeta.accent}`}>{stageTypeMeta.label}</span>
               {inSession && (
                 <span className="rounded-full border border-indigo-400 px-3 py-1 tracking-[0.2em] text-indigo-200">
                   Session {sessionCursor + 1} of {sessionTotal}
@@ -503,17 +509,17 @@ function StagePanel({
             <h2 className="mt-3 text-2xl font-semibold text-white">{stage.title}</h2>
             {stage.subtitle && <p className="mt-1 text-sm text-slate-300">{stage.subtitle}</p>}
           </div>
-          <div className="space-y-2 text-xs text-slate-400">
-            <span className="block rounded-full border border-slate-700 px-3 py-1 tracking-[0.2em]">Phase {stage.phase}</span>
+          <div className="space-y-2 text-xs text-slate-200">
+            <span className="block rounded-full border border-white/20 px-3 py-1 tracking-[0.2em] text-slate-200">Phase {stage.phase}</span>
             <CoachCallout stageType={stage.stageType} />
           </div>
         </header>
 
         {stage.info.length > 0 && (
-          <ul className="mt-5 space-y-2 rounded-2xl border border-slate-800/60 bg-slate-900/60 p-4 text-sm text-slate-200">
+          <ul className={`mt-5 space-y-2 ${CASE_SURFACE_CLASS} p-4 text-sm text-slate-100`}>
             {stage.info.map((item, idx) => (
               <li key={idx} className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-slate-500" aria-hidden="true" />
+                <span className="mt-1 h-2 w-2 rounded-full bg-sky-300/80" aria-hidden="true" />
                 <span>{item}</span>
               </li>
             ))}
@@ -533,7 +539,7 @@ function StagePanel({
           <div className="mt-6">
             <button
               onClick={onAdvance}
-              className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30"
+              className={`w-full rounded-2xl ${CASE_CONTINUE_GRADIENT} px-5 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30`}
               disabled={isCompleted}
             >
               Continue
@@ -555,11 +561,11 @@ function StagePanel({
               />
             ))}
             {awaitingAdvance && (
-              <div className="rounded-2xl border border-indigo-500/40 bg-indigo-500/10 p-4">
-                <p className="text-xs text-slate-300">The attending weighed in. Read the feedback, then continue.</p>
+              <div className="rounded-2xl border border-rose-400/70 bg-rose-500/20 p-4 text-rose-50 shadow-lg shadow-rose-900/20">
+                <p className="text-xs font-medium">The attending weighed in. Read the feedback, then continue.</p>
                 <button
                   onClick={onAdvance}
-                  className="mt-3 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30"
+                  className={`mt-3 inline-flex items-center justify-center rounded-full ${CASE_CONTINUE_GRADIENT} px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-900/30 transition hover:translate-y-[-1px] hover:shadow-sky-700/40`}
                 >
                   Continue
                 </button>
@@ -632,10 +638,10 @@ function InteractionPanel({
 }) {
   if (!interactions.length) return null;
   return (
-    <div className="mt-6 space-y-3 rounded-2xl border border-slate-800/60 bg-slate-900/60 p-4">
-      <div className="flex items-center justify-between text-xs text-slate-400">
-        <span className="tracking-[0.2em]">Optional info</span>
-        <span>Open extra info before you decide.</span>
+    <div className={`mt-6 space-y-3 ${CASE_SURFACE_CLASS} p-4`}>
+      <div className="flex items-center justify-between text-xs text-slate-300">
+        <span className="tracking-[0.2em] text-slate-200">Optional info</span>
+        <span className="text-slate-300/80">Open extra info before you decide.</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {interactions.map((interaction) => {
@@ -646,7 +652,9 @@ function InteractionPanel({
               onClick={() => onTrigger(interaction.id)}
               disabled={disabled || used}
               className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                used ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-100" : "border-slate-700 bg-slate-900/70 text-slate-200 hover:border-indigo-400"
+                used
+                  ? "border-emerald-300/70 bg-emerald-400/20 text-emerald-100"
+                  : "border-white/10 bg-white/5 text-slate-100 hover:border-sky-300"
               } ${disabled ? "opacity-60" : ""}`}
             >
               {interaction.label}
@@ -666,6 +674,7 @@ function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
   const hasFeedback = Boolean(step.feedback || hasCommentary || hasBadge || hasFailure);
   if (!hasFeedback) return null;
 
+  const isIncorrect = step.isCorrect === false;
   const baseMeta = step.kind === "interaction"
     ? STEP_BADGE_META.interaction
     : step.kind === "system"
@@ -674,32 +683,44 @@ function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
         ? STEP_BADGE_META.correct
         : STEP_BADGE_META.incorrect;
   const toneMeta = step.tone ? TONE_META[step.tone] : undefined;
-  const badgeClass = toneMeta?.className ?? baseMeta.className;
+  const badgeClass = toneMeta?.className ?? (isIncorrect ? "bg-rose-500/30 text-rose-100" : baseMeta.className);
   const badgeLabel = toneMeta?.label ?? baseMeta.label;
   const toneHelper = toneMeta?.helper;
   const fatal = step.failure?.fatal ?? false;
 
+  const containerClass = isIncorrect
+    ? "rounded-3xl border border-rose-400/70 bg-rose-500/15 p-5 text-sm text-rose-50 shadow-xl shadow-rose-900/25"
+    : `${CASE_PANEL_CLASS} p-5 text-sm text-slate-100`;
   const badgeChipClass = `rounded-full px-3 py-1 font-semibold tracking-[0.2em] ${badgeClass}`;
+  const secondaryChipClass = toneMeta ? "rounded-full border border-white/20 px-2 py-0.5 text-[11px] text-white/80" : null;
+  const feedbackHighlightClass = isIncorrect
+    ? "mt-3 rounded-2xl border border-rose-300/60 bg-rose-400/25 p-4 text-base font-semibold text-rose-50"
+    : "mt-3 text-slate-100";
+  const commentaryClass = isIncorrect ? "mt-2 space-y-2 text-rose-100" : "mt-2 space-y-2 text-slate-300";
   const failureClass = fatal
-    ? "mt-3 rounded-2xl border border-rose-500 bg-rose-600/20 p-3 text-rose-50"
-    : "mt-3 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-rose-100";
+    ? "mt-3 rounded-2xl border border-rose-500 bg-rose-600/30 p-3 text-rose-50"
+    : "mt-3 rounded-2xl border border-rose-400/40 bg-rose-500/15 p-3 text-rose-100";
 
   return (
-    <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
+    <div className={containerClass}>
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           <span className={badgeChipClass}>{badgeLabel}</span>
-          {toneMeta && (
-            <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[11px] text-slate-300">{baseMeta.label}</span>
+          {secondaryChipClass && (
+            <span className={secondaryChipClass}>{baseMeta.label}</span>
           )}
         </div>
         {step.audio && <AudioCue src={step.audio} label={toneMeta?.label ?? baseMeta.label} />}
       </div>
-      {toneHelper && <p className="mt-2 text-[11px] text-slate-400">{toneHelper}</p>}
-      {step.funStatus && <p className="mt-2 text-xs text-slate-400">{step.funStatus}</p>}
-      {step.feedback && <p className="mt-3 text-slate-200">{step.feedback}</p>}
+      {toneHelper && <p className="mt-2 text-[11px] text-white/70">{toneHelper}</p>}
+      {step.funStatus && (
+        <p className={`mt-2 text-xs ${isIncorrect ? 'text-rose-100/80' : 'text-slate-300'}`}>{step.funStatus}</p>
+      )}
+      {step.feedback && (
+        <p className={feedbackHighlightClass}>{step.feedback}</p>
+      )}
       {hasCommentary && (
-        <ul className="mt-2 space-y-2 text-slate-300">
+        <ul className={commentaryClass}>
           {step.commentary!.map((line, idx) => (
             <li key={idx}>{line}</li>
           ))}
@@ -709,20 +730,20 @@ function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
         <div className={failureClass}>
           <p className="font-semibold">{step.failure!.headline}</p>
           {step.failure!.detail && <p className="mt-1 text-sm text-current/80">{step.failure!.detail}</p>}
-          {fatal && <p className="mt-2 text-[11px] text-slate-300">Run ended. Reset to try another path.</p>}
+          {fatal && <p className="mt-2 text-[11px] text-white/80">Run ended. Reset to try another path.</p>}
         </div>
       )}
       {hasBadge && (
-        <div className="mt-3 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-3 text-emerald-100">
+        <div className="mt-3 rounded-2xl border border-emerald-400/50 bg-emerald-500/15 p-3 text-emerald-100">
           <p className="text-xs text-emerald-200">Badge earned</p>
           <p className="mt-1 text-sm font-semibold text-white">{step.badgeEarned!.label}</p>
           {step.badgeEarned!.description && <p className="mt-1 text-xs text-emerald-100/80">{step.badgeEarned!.description}</p>}
         </div>
       )}
-      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
-        <span>Energy change {step.masteryEnergyDelta >= 0 ? '+' : ''}{Math.round(step.masteryEnergyDelta)}</span>
-        <span>Score change {step.scoreDelta >= 0 ? '+' : ''}{step.scoreDelta}</span>
-        <span>Time cost {step.costTime} min</span>
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/70">
+        <span>Energy {step.masteryEnergyDelta >= 0 ? '+' : ''}{Math.round(step.masteryEnergyDelta)}</span>
+        <span>Score {step.scoreDelta >= 0 ? '+' : ''}{step.scoreDelta}</span>
+        <span>Time {step.costTime} min</span>
       </div>
     </div>
   );
@@ -740,7 +761,7 @@ function AudioCue({ src, label }: { src: string; label?: string }) {
     setIsPlaying(false);
   }, [src]);
 
-  const audioButtonClass = `rounded-full border px-3 py-1 font-semibold ${isPlaying ? 'border-emerald-400 text-emerald-200' : 'border-slate-700 text-slate-300 hover:border-indigo-400'}`;
+  const audioButtonClass = `rounded-full border px-3 py-1 font-semibold ${isPlaying ? 'border-emerald-300 text-emerald-100' : 'border-white/20 text-slate-200 hover:border-sky-300'}`;
 
   return (
     <div className="flex items-center gap-2">
@@ -794,14 +815,14 @@ function ActionCard({
 }) {
   const isDisabled = disabled || selected || (locked && !selected);
   const badge = selected
-    ? "border-emerald-400 bg-emerald-500/10"
+    ? "border-emerald-300 bg-emerald-400/20"
     : locked
-      ? "border-slate-800 bg-slate-900/40"
-      : "border-slate-800 bg-slate-900/60";
+      ? "border-rose-300/70 bg-rose-500/15"
+      : "border-white/10 bg-white/5";
   const helperText = locked
     ? "Review the attending note, then continue."
     : "Choose an option to see what happens next.";
-  const helperClass = locked ? "text-amber-200/80" : "text-indigo-200/70";
+  const helperClass = locked ? "text-rose-200/90" : "text-indigo-200/80";
   const buttonClass = `w-full rounded-2xl border px-5 py-4 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400/70 ${badge} ${
     isDisabled && !selected ? "opacity-60 cursor-not-allowed" : "hover:border-indigo-400/80"
   }`;
@@ -813,15 +834,15 @@ function ActionCard({
       className={buttonClass}
     >
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
           <span>{`Option ${index + 1}`}</span>
-          {hotkey && <span className="text-slate-500">Press {hotkey}</span>}
+          {hotkey && <span className="text-indigo-200/80">Press {hotkey}</span>}
           {selected && <span className="text-emerald-300">Selected</span>}
         </div>
         <div>
           <p className="text-base font-semibold text-white">{option.label}</p>
           {option.description && <p className="mt-1 text-sm text-slate-300">{option.description}</p>}
-          {option.detail && <p className="mt-2 text-xs text-slate-400">{option.detail}</p>}
+          {option.detail && <p className="mt-2 text-xs text-slate-300">{option.detail}</p>}
         </div>
         {!selected && (
           <p className={`text-[11px] ${helperClass}`}>{helperText}</p>
@@ -843,23 +864,23 @@ function RightRail({
 
   return (
     <aside className="space-y-4">
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs tracking-[0.2em] text-slate-400">Case progress</p>
+      <div className={`${CASE_PANEL_CLASS} p-5 text-sm text-slate-100`}>
+        <p className="text-xs tracking-[0.2em] text-slate-200">Case progress</p>
         <ProgressBar percent={progressPercent} label={progressPercent >= 100 ? "Case finished" : "Progress"} />
-        <div className="mt-4 space-y-1 text-xs text-slate-300">
+        <div className="mt-4 space-y-1 text-xs text-slate-200">
           <p>Scenes visited {scenesExplored} of {scenesTotal}</p>
-          <p className="text-slate-500">Evidence items {engineState.evidence.length}</p>
+          <p className="text-slate-200/70">Evidence items {engineState.evidence.length}</p>
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs tracking-[0.2em] text-slate-400">Working diagnoses</p>
+      <div className={`${CASE_PANEL_CLASS} p-5 text-sm text-slate-100`}>
+        <p className="text-xs tracking-[0.2em] text-slate-200">Working diagnoses</p>
         {engineState.hypotheses.length === 0 ? (
-          <p className="mt-3 text-xs text-slate-400">Add ideas as you collect evidence.</p>
+          <p className="mt-3 text-xs text-slate-300">Add ideas as you collect evidence.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {engineState.hypotheses.map((hypothesis) => (
-              <li key={hypothesis} className="rounded-2xl border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100">
+              <li key={hypothesis} className={`${CASE_SURFACE_CLASS} px-3 py-2 text-sm text-slate-100`}>
                 {hypothesis}
               </li>
             ))}
@@ -867,14 +888,14 @@ function RightRail({
         )}
       </div>
 
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs tracking-[0.2em] text-slate-400">Evidence</p>
+      <div className={`${CASE_PANEL_CLASS} p-5 text-sm text-slate-100`}>
+        <p className="text-xs tracking-[0.2em] text-slate-200">Evidence</p>
         {engineState.evidence.length === 0 ? (
-          <p className="mt-3 text-xs text-slate-400">Findings you unlock show up here.</p>
+          <p className="mt-3 text-xs text-slate-300">Findings you unlock show up here.</p>
         ) : (
           <ul className="mt-3 space-y-2 max-h-60 overflow-y-auto pr-1 text-sm">
             {engineState.evidence.map((item, idx) => (
-              <li key={idx} className="rounded-xl border border-slate-800/60 bg-slate-900/60 px-3 py-2 text-slate-100">
+              <li key={idx} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100">
                 {item}
               </li>
             ))}
@@ -882,7 +903,7 @@ function RightRail({
         )}
       </div>
 
-      <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
+      <div className={`${CASE_PANEL_CLASS} p-5 text-sm text-slate-100`}>
         <p className="text-xs tracking-[0.2em] text-slate-400">Notes</p>
         <p className="mt-3 text-xs text-slate-400">Jot down how your thinking changed and what to check next.</p>
       </div>
@@ -892,9 +913,9 @@ function RightRail({
 
 function QuickPrimer() {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-xs text-slate-200">
+    <div className={`${CASE_SURFACE_CLASS} bg-white/10 px-4 py-3 text-xs text-slate-100`}>
       <p className="font-semibold text-white">How to use this case</p>
-      <ol className="mt-2 list-decimal space-y-1 pl-4 text-slate-300">
+      <ol className="mt-2 list-decimal space-y-1 pl-4 text-slate-200">
         <li>Read the card.</li>
         <li>Decide on the next action.</li>
         <li>Choose Continue when no actions remain.</li>
@@ -905,7 +926,7 @@ function QuickPrimer() {
 
 function CoachCallout({ stageType }: { stageType: CaseStage["stageType"] }) {
   const helper = STAGE_TYPE_META[stageType].helper;
-  return <span className="rounded-full border border-slate-800 px-3 py-1 text-[11px] text-slate-400">{helper}</span>;
+  return <span className="rounded-full border border-white/20 px-3 py-1 text-[11px] text-slate-200">{helper}</span>;
 }
 
 function ProgressBar({ percent, label }: { percent: number; label: string }) {
@@ -931,7 +952,7 @@ function SessionBadge({ session, currentSlug }: { session: ActiveSession; curren
   const remaining = Math.max(total - index - 1, 0);
   const statusLabel = session.status === "completed" ? "Completed" : `${remaining} remaining`;
   return (
-    <div className="flex min-w-[180px] flex-col gap-1 rounded-2xl border border-slate-800/60 bg-slate-950/70 p-4 text-xs text-slate-200 shadow-lg shadow-indigo-950/10">
+    <div className="flex min-w-[180px] flex-col gap-1 rounded-2xl border border-white/10 bg-[#14204a]/80 p-4 text-xs text-slate-100 shadow-lg shadow-indigo-900/20">
       <span className="text-[10px] uppercase tracking-[0.3em] text-indigo-200">Session</span>
       <span className="text-lg font-semibold text-white">{index + 1} / {total}</span>
       <span className="text-[11px] text-slate-400">{statusLabel}</span>
@@ -949,15 +970,15 @@ const STAGE_TYPE_META: Record<CaseStage["stageType"], { label: string; helper: s
 };
 
 const DIAGNOSIS_THEME = {
-  headerGradient: "from-sky-600/40 via-slate-900 to-slate-950",
-  chip: "border-sky-500/40 bg-sky-500/10 text-sky-100",
-  statAccent: "text-sky-200",
-  stepChip: "border-slate-700",
+  headerGradient: "from-[#6366f1]/80 via-[#8b5cf6]/70 to-[#22d3ee]/70",
+  chip: "border-white/20 bg-[#312e81]/50 text-indigo-100",
+  statAccent: "text-[#c7d2fe]",
+  stepChip: "border-white/20",
 };
 
 const MANAGEMENT_THEME = {
-  headerGradient: "from-amber-600/40 via-slate-900 to-slate-950",
-  chip: "border-amber-500/50 bg-amber-500/10 text-amber-100",
-  statAccent: "text-amber-200",
-  stepChip: "border-slate-700",
+  headerGradient: "from-[#f97316]/80 via-[#ec4899]/70 to-[#6366f1]/70",
+  chip: "border-white/20 bg-[#7c2d12]/50 text-orange-100",
+  statAccent: "text-amber-100",
+  stepChip: "border-white/20",
 };
