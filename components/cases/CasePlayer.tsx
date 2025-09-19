@@ -8,6 +8,8 @@ import type { CaseEngineState, CaseEngineStep } from "@/lib/cases/engine";
 import type { CaseStage, CaseStageOption, CaseSummary, CaseStageInteraction, CommentaryTone } from "@/lib/cases/types";
 import { usePractice, type ActiveSession } from "./PracticeProvider";
 
+import { CASE_PANEL_CLASS, CASE_SURFACE_CLASS, CASE_GRADIENT_BUTTON } from "./theme";
+
 const HOTKEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 type StageStepperItem = {
@@ -43,10 +45,6 @@ const TONE_META: Record<CommentaryTone, { label: string; helper: string; classNa
   serious: { label: "Notice", helper: "The attending wants your attention here.", className: "bg-sky-500/20 text-sky-200" },
   neutral: { label: "Note", helper: "A short update from the attending.", className: "bg-slate-700/60 text-slate-200" },
 };
-
-const CASE_PANEL_CLASS = "rounded-3xl border border-white/10 bg-[#101c3e]/80 backdrop-blur-xl shadow-xl shadow-indigo-950/25";
-const CASE_SURFACE_CLASS = "rounded-2xl border border-white/10 bg-white/5";
-const CASE_CONTINUE_GRADIENT = "bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#22d3ee]";
 
 export default function CasePlayer({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -286,7 +284,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
           <button onClick={() => router.back()} className="rounded-full border border-white/20 px-4 py-2 text-slate-200 hover:border-sky-300">
             Go back
           </button>
-          <Link href={baseHref} className={`rounded-full ${CASE_CONTINUE_GRADIENT} px-4 py-2 text-white shadow-md shadow-indigo-900/20`}>
+          <Link href={baseHref} className={`rounded-full ${CASE_GRADIENT_BUTTON} px-4 py-2 text-white shadow-md shadow-indigo-900/20`}>
             Return to library
           </Link>
         </div>
@@ -301,7 +299,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
         <p className="mt-3 text-sm text-slate-300">
           We are migrating all cases to the new saga engine. This one still uses the legacy single-step format.
         </p>
-        <Link href={baseHref} className={`mt-6 inline-flex items-center rounded-full ${CASE_CONTINUE_GRADIENT} px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-900/20`}>
+        <Link href={baseHref} className={`mt-6 inline-flex items-center rounded-full ${CASE_GRADIENT_BUTTON} px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-900/20`}>
           Choose another case
         </Link>
       </div>
@@ -539,7 +537,7 @@ function StagePanel({
           <div className="mt-6">
             <button
               onClick={onAdvance}
-              className={`w-full rounded-2xl ${CASE_CONTINUE_GRADIENT} px-5 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30`}
+              className={`w-full rounded-2xl ${CASE_GRADIENT_BUTTON} px-5 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30`}
               disabled={isCompleted}
             >
               Continue
@@ -565,7 +563,7 @@ function StagePanel({
                 <p className="text-xs font-medium">The attending weighed in. Read the feedback, then continue.</p>
                 <button
                   onClick={onAdvance}
-                  className={`mt-3 inline-flex items-center justify-center rounded-full ${CASE_CONTINUE_GRADIENT} px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-900/30 transition hover:translate-y-[-1px] hover:shadow-sky-700/40`}
+                  className={`mt-3 inline-flex items-center justify-center rounded-full ${CASE_GRADIENT_BUTTON} px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-900/30 transition hover:translate-y-[-1px] hover:shadow-sky-700/40`}
                 >
                   Continue
                 </button>
