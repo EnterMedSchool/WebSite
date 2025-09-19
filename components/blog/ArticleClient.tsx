@@ -153,7 +153,7 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
 
   return (
     <>
-      <div className="relative isolate overflow-hidden pb-32">
+      <div className="relative isolate overflow-hidden bg-[linear-gradient(180deg,rgba(15,23,42,0.12),rgba(238,242,255,0.4) 45%,#ffffff)] pb-32">
         <div className="pointer-events-none absolute inset-x-0 top-[-420px] h-[720px] bg-[radial-gradient(180%_120%_at_50%_0%,rgba(88,28,135,0.28),rgba(49,46,129,0.18)_45%,transparent)]" />
         <div className="pointer-events-none absolute left-[-220px] top-12 h-[620px] w-[520px] rounded-full bg-[radial-gradient(circle,_rgba(236,72,153,0.28)_0%,_transparent_62%)] blur-3xl" />
         <div className="pointer-events-none absolute right-[-180px] top-24 h-[520px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(56,189,248,0.24)_0%,_transparent_64%)] blur-3xl" />
@@ -166,8 +166,8 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
             style={{
               position: "fixed",
               top: "7.5rem",
-              left: "max(1.5rem, calc((100vw - 1280px) / 2 - 280px))",
-              width: "18rem",
+              left: "max(1.5rem, calc((100vw - 1320px) / 2 - 240px))",
+              width: "16.5rem",
               zIndex: 40,
             }}
           >
@@ -197,21 +197,21 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
           </motion.aside>
         )}
 
-        <div className="relative mx-auto w-full max-w-[1600px] px-4 pt-10 sm:px-8 xl:px-12 2xl:px-16">
+        <div className="relative mx-auto w-full max-w-[1320px] px-6 pt-14 sm:px-8 xl:px-10 2xl:px-14 xl:pl-[320px]">
           <div className="space-y-16">
-            <section className="relative overflow-hidden rounded-[54px] bg-gradient-to-br from-indigo-950/70 via-indigo-900/55 to-indigo-900/60 p-[1px] shadow-[0_40px_120px_rgba(30,64,175,0.4)] ring-1 ring-indigo-500/30">
-              <div className="rounded-[53px] bg-gradient-to-br from-white/90 via-white/92 to-white/95 p-8 sm:p-12 lg:p-14">
-                <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-14">
+            <section className="relative overflow-hidden rounded-[36px] bg-gradient-to-br from-indigo-950/70 via-indigo-900/55 to-indigo-900/60 p-[1px] shadow-[0_40px_120px_rgba(30,64,175,0.4)] ring-1 ring-indigo-500/30">
+              <div className="rounded-[35px] bg-gradient-to-br from-white/96 via-white/98 to-white/95 px-6 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+                <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
                   <div className="flex-1 space-y-8">
-                    <div className="flex flex-wrap gap-3 text-sm">
+                    <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.26em] text-indigo-500">
                       {heroChips.map((chip) => (
                         <span
                           key={chip.label}
                           className={clsx(
-                            "rounded-full px-4 py-1 font-medium shadow",
-                            chip.tone === "exam" && "bg-indigo-600/90 text-white shadow-indigo-500/40",
-                            chip.tone === "country" && "bg-sky-100/80 text-sky-700 shadow-sky-400/30",
-                            chip.tone === "time" && "bg-white text-indigo-600 shadow-indigo-500/10",
+                            "rounded-full border px-3 py-1 transition",
+                            chip.tone === "exam" && "border-indigo-500 bg-indigo-500/10 text-indigo-700",
+                            chip.tone === "country" && "border-sky-400 bg-sky-100/60 text-sky-700",
+                            chip.tone === "time" && "border-slate-300 bg-white/70 text-slate-700",
                           )}
                         >
                           {chip.label}
@@ -220,18 +220,18 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                     </div>
 
                     <div className="space-y-6 text-slate-900">
-                      <h1 className="font-brand text-4xl leading-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+                      <h1 className="font-brand text-4xl leading-tight sm:text-[2.75rem] lg:text-[3rem]">
                         {meta.title}
                       </h1>
-                      <p className="max-w-2xl text-lg text-slate-600 sm:text-xl">
+                      <p className="max-w-2xl text-base text-slate-600 sm:text-lg">
                         {meta.description}
                       </p>
                     </div>
 
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-10">
-                      <div className="rounded-3xl bg-white/85 p-5 shadow-[0_16px_42px_rgba(15,23,42,0.18)] ring-1 ring-white/60">
+                      <div className="rounded-2xl border border-indigo-100/70 bg-white/80 px-5 py-4 shadow-sm">
                         <div className="flex items-center gap-4">
-                          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-400 text-xl font-semibold text-white shadow-lg">
+                          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-400 text-base font-semibold text-white shadow-md">
                             {meta.author.avatarInitials ?? meta.author.name.slice(0, 2).toUpperCase()}
                           </span>
                           <div className="text-xs sm:text-sm">
@@ -261,13 +261,13 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                       ) : null}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-indigo-600">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-indigo-600">
                       <span className="text-xs font-semibold uppercase tracking-[0.32em] text-indigo-500">Explore IMAT hub</span>
                       {examHubPills.map((pill) => (
                         <a
                           key={pill.label}
                           href={pill.href}
-                          className="rounded-full border border-indigo-200/70 bg-white/70 px-3 py-1 text-xs font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-400 hover:text-indigo-700"
+                          className="rounded-full border border-indigo-200/70 bg-white px-3 py-1 transition hover:border-indigo-400 hover:text-indigo-700"
                         >
                           {pill.label}
                         </a>
@@ -275,26 +275,23 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                     </div>
                   </div>
 
-                  <div className="w-full max-w-xl space-y-6">
-                    <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-indigo-600/85 via-indigo-500/60 to-sky-400/75 p-[6px] shadow-[0_30px_80px_rgba(30,64,175,0.4)]">
-                      <div className="absolute inset-0 animate-pulse rounded-[38px] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.22),transparent_60%)]" aria-hidden="true" />
-                      <div className="relative rounded-[34px] bg-white pb-6">
-                        <div className="relative overflow-hidden rounded-t-[34px]">
+                  <div className="w-full max-w-xl space-y-5">
+                    <div className="relative overflow-hidden rounded-[30px] border border-indigo-100/60 bg-white/85 shadow-[0_18px_48px_rgba(30,64,175,0.28)] backdrop-blur">
+                      <div className="relative">
                           <Image
                             src={meta.heroImage.src}
                             alt={meta.heroImage.alt}
                             width={meta.heroImage.width ?? 960}
                             height={meta.heroImage.height ?? 540}
-                            className="h-[300px] w-full object-cover"
+                            className="h-[220px] w-full object-cover"
                             priority
                           />
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
-                          <div className="absolute left-5 top-5 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-indigo-600 shadow-lg shadow-indigo-500/50">
-                            {"\u203A"}
+                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
+                          <div className="absolute left-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-indigo-600 shadow-lg shadow-indigo-500/40">
+                            {"\u25B6"}
                           </div>
-                        </div>
                         {meta.personas?.length ? (
-                          <div className="space-y-4 px-6 text-sm text-slate-700">
+                          <div className="space-y-4 px-5 py-6 text-sm text-slate-700">
                             <h2 className="pt-6 text-base font-semibold text-slate-900">Who this guide unlocks</h2>
                             <ul className="space-y-2">
                               {meta.personas.map((item) => (
@@ -319,12 +316,12 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                               )}
                               {meta.educationLevels?.length ? (
                                 <div className="rounded-2xl bg-slate-100 px-3 py-3">
-                                  <span className="block text-[11px] uppercase tracking-wide text-slate-500">Level</span>
+                                  <span className="block text-[11px] uppercase tracking-wide text-slate-500">Audience</span>
                                   <span>{meta.educationLevels.join(", ")}</span>
                                 </div>
                               ) : null}
                               <div className="rounded-2xl bg-slate-100 px-3 py-3">
-                                <span className="block text-[11px] uppercase tracking-wide text-slate-500">Reading</span>
+                                <span className="block text-[11px] uppercase tracking-wide text-slate-500">Reading time</span>
                                 <span>{`${article.readingMinutes} minutes`}</span>
                               </div>
                             </div>
@@ -362,26 +359,26 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
               </div>
             </section>
 
-            <section className="relative overflow-hidden rounded-[48px] bg-gradient-to-br from-indigo-600/20 via-white/95 to-white/95 p-1 shadow-[0_32px_110px_rgba(30,64,175,0.2)]">
-              <div className="rounded-[46px] bg-white/92 p-6 sm:p-10">
+            <section className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-indigo-600/15 via-white/96 to-white/96 p-[1px] shadow-[0_24px_80px_rgba(30,64,175,0.18)]">
+              <div className="rounded-[30px] bg-white/96 px-6 py-8 sm:px-10 sm:py-9">
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.32em] text-indigo-500">Enrollment path</p>
-                    <h2 className="mt-2 text-3xl font-semibold text-slate-900">From idea to IMAT seat</h2>
+                    <h2 className="mt-2 text-2xl font-semibold text-slate-900">From idea to IMAT seat</h2>
                     <p className="mt-3 max-w-2xl text-sm text-slate-600">
                       Follow the essential checkpoints for international applicants. We pair every milestone with tools inside EnterMedSchool so nothing slips.
                     </p>
                   </div>
                   <a
                     href="#"
-                    className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-xs font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-400 hover:text-indigo-700"
+                    className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2 text-xs font-semibold text-indigo-600 transition hover:border-indigo-400 hover:text-indigo-700"
                   >
                     Save this as PDF
                     <span aria-hidden="true">{"\u2192"}</span>
                   </a>
                 </div>
 
-                <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
                   {timelineSteps.map((step, index) => (
                     <motion.div
                       key={step.title}
@@ -389,7 +386,7 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.4 }}
                       transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
-                      className="relative flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-indigo-50/80 via-white to-white p-5 shadow-[0_18px_46px_rgba(37,99,235,0.18)] ring-1 ring-indigo-100/60"
+                      className="relative flex flex-col gap-3 rounded-2xl border border-indigo-100/70 bg-white/90 p-5 shadow-[0_16px_40px_rgba(37,99,235,0.15)]"
                     >
                       <div className="flex items-center justify-between text-xs font-semibold text-indigo-500">
                         <span>{step.phase}</span>
@@ -554,6 +551,3 @@ export default function ArticleClient({ meta, article, siteUrl, structuredData }
     </>
   );
 }
-
-
-
