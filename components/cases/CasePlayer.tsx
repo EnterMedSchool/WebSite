@@ -18,13 +18,6 @@ type StageStepperItem = {
   status: "completed" | "current" | "upcoming";
 };
 
-type Achievement = {
-  id: string;
-  title: string;
-  detail: string;
-  status: "earned" | "in_progress";
-};
-
 type AttemptStepPayload = {
   stageId: number;
   stageSlug: string;
@@ -37,17 +30,17 @@ type AttemptStepPayload = {
 
 const STEP_BADGE_META = {
   interaction: { label: "Interaction", className: "bg-indigo-500/15 text-indigo-200" },
-  system: { label: "Scene update", className: "bg-sky-500/15 text-sky-200" },
-  correct: { label: "Great move", className: "bg-emerald-500/15 text-emerald-200" },
-  incorrect: { label: "Outcome", className: "bg-amber-500/15 text-amber-200" },
+  system: { label: "Update", className: "bg-sky-500/15 text-sky-200" },
+  correct: { label: "Correct", className: "bg-emerald-500/15 text-emerald-200" },
+  incorrect: { label: "Result", className: "bg-amber-500/15 text-amber-200" },
 } as const;
 
 const TONE_META: Record<CommentaryTone, { label: string; helper: string; className: string }> = {
-  praise: { label: "Attending fist bump", helper: "Team loves what you just pulled off.", className: "bg-emerald-500/15 text-emerald-200" },
-  snark: { label: "Snark mode", helper: "Attending delivers a spicy aside.", className: "bg-fuchsia-500/20 text-fuchsia-200" },
-  alert: { label: "Red flag", helper: "This move tripped alarms - tread carefully.", className: "bg-amber-500/20 text-amber-200" },
-  serious: { label: "Critical briefing", helper: "Attending gives a sober warning.", className: "bg-sky-500/20 text-sky-200" },
-  neutral: { label: "Quick note", helper: "A calm status update from the attending.", className: "bg-slate-700/60 text-slate-200" },
+  praise: { label: "Positive note", helper: "Nice work on that step.", className: "bg-emerald-500/15 text-emerald-200" },
+  snark: { label: "Side note", helper: "A quick aside from the attending.", className: "bg-fuchsia-500/20 text-fuchsia-200" },
+  alert: { label: "Warning", helper: "Watch this choice closely.", className: "bg-amber-500/20 text-amber-200" },
+  serious: { label: "Notice", helper: "The attending wants your attention here.", className: "bg-sky-500/20 text-sky-200" },
+  neutral: { label: "Note", helper: "A short update from the attending.", className: "bg-slate-700/60 text-slate-200" },
 };
 
 export default function CasePlayer({ caseId }: { caseId: string }) {
@@ -244,11 +237,6 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
   const totalSteps = state.orderedStageSlugs.length;
   const currentIndex = currentStage ? state.orderedStageSlugs.indexOf(currentStage.slug) : -1;
   const progressPercent = Math.round((state.visitedStageSlugs.length / Math.max(totalSteps, 1)) * 100);
-  const achievements = useMemo(() => {
-    if (!caseSummary) return [];
-    return buildAchievements(state, caseSummary, progressPercent);
-  }, [state, caseSummary, progressPercent]);
-  const recommendedOption = currentStage?.options.find((option) => option.isCorrect) ?? null;
   const triggeredInteractions = useMemo(() => {
     const set = new Set<string>();
     for (const step of state.timeline) {
@@ -321,17 +309,18 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-4">
             <span className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] ${theme.chip}`}>
-              {state.phase <= 1 ? "Phase 1 - Diagnosis hunt" : "Phase 2 - Management cascade"}
+              {state.phase <= 1 ? "Phase 1: Diagnosis" : "Phase 2: Management"}
             </span>
             <h1 className="text-3xl font-semibold text-white md:text-4xl lg:text-5xl">{caseSummary.title}</h1>
-            <p className="max-w-2xl text-sm text-slate-200 md:text-base">{caseSummary.overview ?? caseSummary.subtitle ?? "Move through the scene-by-scene investigation. We will prompt you when it is time to continue."}</p>
+            <p className="max-w-2xl text-sm text-slate-200 md:text-base">{caseSummary.overview ?? caseSummary.subtitle ?? "Work through the case one step at a time. We'll prompt you when it's time to continue."}</p>
             <QuickPrimer />
           </div>
           <div className="flex flex-wrap items-start gap-4 text-sm text-slate-100">
-            <EnergyMeter energy={state.masteryEnergy} comboLevel={state.comboLevel} />
-            <StatCard label="Time budget" value={`${state.timeSpent} / ${caseSummary.estimatedMinutes ?? 20} min`} helper="Target the budget but do not rush." accent={theme.statAccent} />
-            <StatCard label="Score" value={`${state.score > 0 ? "+" : ""}${state.score}`} helper="Score shifts with each decision." accent={theme.statAccent} />
-            <StatCard label="Actions" value={`${state.totalActions}`} helper={`${state.mistakes} missteps - streak ${state.streak}`} accent={theme.statAccent} />
+            <div className="flex min-w-[220px] flex-col gap-2 rounded-2xl border border-slate-800/60 bg-slate-950/60 p-4 text-xs text-slate-200">
+              <span className="text-[10px] text-slate-400">Think it through</span>
+              <p className="text-sm text-slate-100">Review the clues, jot a quick plan, then pick the next action.</p>
+              <p className="text-[11px] text-slate-400">You'll see the outcome after you choose.</p>
+            </div>
             {session && <SessionBadge session={session} currentSlug={caseSummary.slug} />}
             <div className="min-w-[140px] text-xs text-slate-400">
               {saveStatus === "saving" && <span>Syncing attempt...</span>}
@@ -373,7 +362,6 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
           isCompleted={state.status === "completed"}
           baseHref={baseHref}
           theme={theme}
-          recommended={recommendedOption?.value ?? null}
           feedbackStep={state.lastStep}
           triggeredInteractions={triggeredInteractions}
           session={session}
@@ -384,10 +372,8 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
         />
 
         <RightRail
-          theme={theme}
           engineState={state}
           progressPercent={progressPercent}
-          achievements={achievements}
         />
       </div>
     </div>
@@ -416,7 +402,7 @@ function StageStepper({ items }: { items: StageStepperItem[] }) {
         {items.map((item, index) => {
           const badge = item.status === "completed" ? "bg-emerald-500/20 border-emerald-400" : item.status === "current" ? "bg-indigo-500/20 border-indigo-400" : "bg-slate-900/70 border-slate-700";
           return (
-            <li key={item.slug} className={`flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl border px-4 py-3 text-xs uppercase tracking-[0.25em] text-slate-300 ${badge}`}>
+            <li key={item.slug} className={`flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl border px-4 py-3 text-xs text-slate-300 ${badge}`}>
               <span className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${item.status === "completed" ? "bg-emerald-500 text-emerald-950" : item.status === "current" ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-200"}`}>
                 {index + 1}
               </span>
@@ -445,7 +431,6 @@ function StagePanel({
   isCompleted,
   baseHref,
   theme,
-  recommended,
   feedbackStep,
   triggeredInteractions,
   session,
@@ -466,7 +451,6 @@ function StagePanel({
   isCompleted: boolean;
   baseHref: string;
   theme: typeof DIAGNOSIS_THEME;
-  recommended: string | null;
   feedbackStep?: CaseEngineStep;
   triggeredInteractions: Set<string>;
   session?: ActiveSession | null;
@@ -483,6 +467,7 @@ function StagePanel({
     );
   }
 
+  const stageTypeMeta = STAGE_TYPE_META[stage.stageType];
   const options = stage.options ?? [];
   const stepNumber = stepIndex >= 0 ? stepIndex + 1 : 1;
   const total = totalSteps || 1;
@@ -501,10 +486,10 @@ function StagePanel({
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 text-xs text-slate-400">
-              <span className={`rounded-full border ${theme.stepChip} px-3 py-1 uppercase tracking-[0.3em]`}>Step {stepNumber} of {total}</span>
-              <span className={`rounded-full border border-slate-700 px-3 py-1 uppercase tracking-[0.3em] ${STAGE_TYPE_META[stage.stageType].accent}`}>{stage.stageType}</span>
+              <span className={`rounded-full border ${theme.stepChip} px-3 py-1 tracking-[0.2em]`}>Step {stepNumber} of {total}</span>
+              <span className={`rounded-full border border-slate-700 px-3 py-1 tracking-[0.2em] ${stageTypeMeta.accent}`}>{stageTypeMeta.label}</span>
               {inSession && (
-                <span className="rounded-full border border-indigo-400 px-3 py-1 uppercase tracking-[0.3em] text-indigo-200">
+                <span className="rounded-full border border-indigo-400 px-3 py-1 tracking-[0.2em] text-indigo-200">
                   Session {sessionCursor + 1} of {sessionTotal}
                 </span>
               )}
@@ -513,7 +498,7 @@ function StagePanel({
             {stage.subtitle && <p className="mt-1 text-sm text-slate-300">{stage.subtitle}</p>}
           </div>
           <div className="space-y-2 text-xs text-slate-400">
-            <span className="block rounded-full border border-slate-700 px-3 py-1 uppercase tracking-[0.3em]">Phase {stage.phase}</span>
+            <span className="block rounded-full border border-slate-700 px-3 py-1 tracking-[0.2em]">Phase {stage.phase}</span>
             <CoachCallout stageType={stage.stageType} />
           </div>
         </header>
@@ -545,9 +530,9 @@ function StagePanel({
               className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30"
               disabled={isCompleted}
             >
-              Continue to the next clue
+              Continue
             </button>
-            <p className="mt-3 text-xs text-slate-400">Read the clue and continue. Optional inspections stay available above.</p>
+            <p className="mt-3 text-xs text-slate-400">Read the info, then continue. You can still open the optional items above.</p>
           </div>
         ) : (
           <div className="mt-6 space-y-3">
@@ -560,7 +545,6 @@ function StagePanel({
                 selected={selected.includes(option.value)}
                 disabled={isCompleted}
                 onChoose={() => onSelect(option)}
-                recommended={recommended === option.value}
               />
             ))}
           </div>
@@ -571,8 +555,8 @@ function StagePanel({
 
       {isCompleted && (
         <div className="rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-5 text-sm text-emerald-100 shadow-lg shadow-emerald-900/30">
-          <h3 className="text-lg font-semibold text-emerald-100">Diagnosis unlocked!</h3>
-          <p className="mt-2 text-emerald-200/80">You completed the reasoning arc. Jump into the debrief or reset to explore alternate paths.</p>
+          <h3 className="text-lg font-semibold text-emerald-100">Case complete</h3>
+          <p className="mt-2 text-emerald-200/80">You're done with this case. Open the debrief or reset to try different choices.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             {showNextCaseButton && (
               <button
@@ -606,10 +590,10 @@ function StagePanel({
             </button>
           </div>
           {showFinishSessionButton && (
-            <p className="mt-3 text-xs text-slate-400">This was the final case in your session. Finish to wrap up your run.</p>
+            <p className="mt-3 text-xs text-slate-400">This was the last case in your session. Finish to wrap up.</p>
           )}
           {showReturnToBuilder && (
-            <p className="mt-3 text-xs text-slate-400">Session completed. Head back to the builder for the next plan.</p>
+            <p className="mt-3 text-xs text-slate-400">Session completed. Head back to the builder when you're ready.</p>
           )}
         </div>
       )}
@@ -632,8 +616,8 @@ function InteractionPanel({
   return (
     <div className="mt-6 space-y-3 rounded-2xl border border-slate-800/60 bg-slate-900/60 p-4">
       <div className="flex items-center justify-between text-xs text-slate-400">
-        <span className="uppercase tracking-[0.3em]">Optional inspections</span>
-        <span>Unlock more clues before you continue.</span>
+        <span className="tracking-[0.2em]">Optional info</span>
+        <span>Open extra info before you decide.</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {interactions.map((interaction) => {
@@ -677,7 +661,7 @@ function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
   const toneHelper = toneMeta?.helper;
   const fatal = step.failure?.fatal ?? false;
 
-  const badgeChipClass = `rounded-full px-3 py-1 font-semibold uppercase tracking-[0.3em] ${badgeClass}`;
+  const badgeChipClass = `rounded-full px-3 py-1 font-semibold tracking-[0.2em] ${badgeClass}`;
   const failureClass = fatal
     ? "mt-3 rounded-2xl border border-rose-500 bg-rose-600/20 p-3 text-rose-50"
     : "mt-3 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-rose-100";
@@ -688,12 +672,12 @@ function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
         <div className="flex flex-wrap items-center gap-2">
           <span className={badgeChipClass}>{badgeLabel}</span>
           {toneMeta && (
-            <span className="rounded-full border border-slate-700 px-2 py-0.5 uppercase tracking-[0.3em] text-slate-300">{baseMeta.label}</span>
+            <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[11px] text-slate-300">{baseMeta.label}</span>
           )}
         </div>
         {step.audio && <AudioCue src={step.audio} label={toneMeta?.label ?? baseMeta.label} />}
       </div>
-      {toneHelper && <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-slate-400">{toneHelper}</p>}
+      {toneHelper && <p className="mt-2 text-[11px] text-slate-400">{toneHelper}</p>}
       {step.funStatus && <p className="mt-2 text-xs text-slate-400">{step.funStatus}</p>}
       {step.feedback && <p className="mt-3 text-slate-200">{step.feedback}</p>}
       {hasCommentary && (
@@ -707,20 +691,20 @@ function FeedbackPanel({ step }: { step?: CaseEngineStep }) {
         <div className={failureClass}>
           <p className="font-semibold">{step.failure!.headline}</p>
           {step.failure!.detail && <p className="mt-1 text-sm text-current/80">{step.failure!.detail}</p>}
-          {fatal && <p className="mt-2 text-[11px] uppercase tracking-[0.3em]">Run ended - reset to explore fresh branches.</p>}
+          {fatal && <p className="mt-2 text-[11px] text-slate-300">Run ended. Reset to try another path.</p>}
         </div>
       )}
       {hasBadge && (
         <div className="mt-3 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-3 text-emerald-100">
-          <p className="text-xs uppercase tracking-[0.3em]">Badge earned</p>
+          <p className="text-xs text-emerald-200">Badge earned</p>
           <p className="mt-1 text-sm font-semibold text-white">{step.badgeEarned!.label}</p>
           {step.badgeEarned!.description && <p className="mt-1 text-xs text-emerald-100/80">{step.badgeEarned!.description}</p>}
         </div>
       )}
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
-        <span>Energy {step.masteryEnergyDelta >= 0 ? '+' : ''}{Math.round(step.masteryEnergyDelta)}</span>
-        <span>Score {step.scoreDelta >= 0 ? '+' : ''}{step.scoreDelta}</span>
-        <span>Cost {step.costTime} min</span>
+        <span>Energy change {step.masteryEnergyDelta >= 0 ? '+' : ''}{Math.round(step.masteryEnergyDelta)}</span>
+        <span>Score change {step.scoreDelta >= 0 ? '+' : ''}{step.scoreDelta}</span>
+        <span>Time cost {step.costTime} min</span>
       </div>
     </div>
   );
@@ -738,7 +722,7 @@ function AudioCue({ src, label }: { src: string; label?: string }) {
     setIsPlaying(false);
   }, [src]);
 
-  const audioButtonClass = `rounded-full border px-3 py-1 font-semibold uppercase tracking-[0.3em] ${isPlaying ? 'border-emerald-400 text-emerald-200' : 'border-slate-700 text-slate-300 hover:border-indigo-400'}`;
+  const audioButtonClass = `rounded-full border px-3 py-1 font-semibold ${isPlaying ? 'border-emerald-400 text-emerald-200' : 'border-slate-700 text-slate-300 hover:border-indigo-400'}`;
 
   return (
     <div className="flex items-center gap-2">
@@ -780,7 +764,6 @@ function ActionCard({
   selected,
   disabled,
   onChoose,
-  recommended,
 }: {
   option: CaseStageOption;
   index: number;
@@ -788,12 +771,8 @@ function ActionCard({
   selected: boolean;
   disabled: boolean;
   onChoose: () => void;
-  recommended: boolean;
 }) {
-  const cost = option.costTime ?? 0;
-  const delta = option.scoreDelta ?? 0;
   const badge = selected ? "border-emerald-400 bg-emerald-500/10" : "border-slate-800 bg-slate-900/60";
-  const accent = delta >= 0 ? "text-emerald-300" : "text-rose-300";
 
   return (
     <button
@@ -801,56 +780,50 @@ function ActionCard({
       disabled={disabled || selected}
       className={`w-full rounded-2xl border px-5 py-4 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400/70 ${badge} ${disabled ? "opacity-60" : "hover:border-indigo-400/80"}`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span>{`Option ${index + 1}`}</span>
+          {hotkey && <span className="text-slate-500">Press {hotkey}</span>}
+          {selected && <span className="text-emerald-300">Selected</span>}
+        </div>
         <div>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
-            <span>{hotkey ? `Key ${hotkey}` : `#${index + 1}`}</span>
-            {selected && <span className="text-emerald-300">Locked in</span>}
-            {!selected && recommended && <span className="text-indigo-300">High yield</span>}
-          </div>
-          <p className="mt-1 text-base font-semibold text-white">{option.label}</p>
+          <p className="text-base font-semibold text-white">{option.label}</p>
           {option.description && <p className="mt-1 text-sm text-slate-300">{option.description}</p>}
           {option.detail && <p className="mt-2 text-xs text-slate-400">{option.detail}</p>}
         </div>
-        <div className="flex flex-col items-end text-xs text-slate-300">
-          <span className="rounded-full border border-slate-700 px-2 py-0.5 uppercase tracking-[0.2em]">{cost} min</span>
-          <span className={`mt-2 text-sm font-semibold ${accent}`}>
-            {delta >= 0 ? "+" : ""}
-            {delta} pts
-          </span>
-        </div>
+        {!selected && (
+          <p className="text-[11px] text-indigo-200/70">Choose an option to see what happens next.</p>
+        )}
       </div>
     </button>
   );
 }
 
 function RightRail({
-  theme,
   engineState,
   progressPercent,
-  achievements,
 }: {
-  theme: typeof DIAGNOSIS_THEME;
   engineState: CaseEngineState;
   progressPercent: number;
-  achievements: Achievement[];
 }) {
+  const scenesTotal = Math.max(engineState.orderedStageSlugs.length, 1);
+  const scenesExplored = engineState.visitedStageSlugs.length;
+
   return (
     <aside className="space-y-4">
       <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Progress</p>
-        <ProgressBar percent={progressPercent} label={progressPercent >= 100 ? "Case complete" : `${progressPercent}% ready`} />
-        <div className="mt-4 grid gap-2 text-xs text-slate-400">
-          <span>Mastery energy {Math.round(engineState.masteryEnergy)} / 150</span>
-          <span>Combo streak {engineState.streak}</span>
-          <span>Scenes visited {engineState.visitedStageSlugs.length} / {engineState.orderedStageSlugs.length}</span>
+        <p className="text-xs tracking-[0.2em] text-slate-400">Case progress</p>
+        <ProgressBar percent={progressPercent} label={progressPercent >= 100 ? "Case finished" : "Progress"} />
+        <div className="mt-4 space-y-1 text-xs text-slate-300">
+          <p>Scenes visited {scenesExplored} of {scenesTotal}</p>
+          <p className="text-slate-500">Evidence items {engineState.evidence.length}</p>
         </div>
       </div>
 
       <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Hypothesis board</p>
+        <p className="text-xs tracking-[0.2em] text-slate-400">Working diagnoses</p>
         {engineState.hypotheses.length === 0 ? (
-          <p className="mt-3 text-xs text-slate-400">Hypotheses appear as you gather evidence.</p>
+          <p className="mt-3 text-xs text-slate-400">Add ideas as you collect evidence.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {engineState.hypotheses.map((hypothesis) => (
@@ -863,9 +836,9 @@ function RightRail({
       </div>
 
       <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Evidence log</p>
+        <p className="text-xs tracking-[0.2em] text-slate-400">Evidence</p>
         {engineState.evidence.length === 0 ? (
-          <p className="mt-3 text-xs text-slate-400">Key findings land here after each action.</p>
+          <p className="mt-3 text-xs text-slate-400">Findings you unlock show up here.</p>
         ) : (
           <ul className="mt-3 space-y-2 max-h-60 overflow-y-auto pr-1 text-sm">
             {engineState.evidence.map((item, idx) => (
@@ -878,16 +851,9 @@ function RightRail({
       </div>
 
       <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Resource telemetry</p>
-        <div className="mt-4 space-y-3 text-xs">
-          <ResourceRow label="Minutes spent" value={`${engineState.timeSpent} min`} theme={theme} />
-          <ResourceRow label="Actions taken" value={`${engineState.totalActions}`} theme={theme} />
-          <ResourceRow label="Mistakes" value={`${engineState.mistakes}`} theme={theme} />
-          <ResourceRow label="Combo level" value={`${engineState.comboLevel}`} theme={theme} />
-        </div>
+        <p className="text-xs tracking-[0.2em] text-slate-400">Notes</p>
+        <p className="mt-3 text-xs text-slate-400">Jot down how your thinking changed and what to check next.</p>
       </div>
-
-      <AchievementsList achievements={achievements} />
     </aside>
   );
 }
@@ -895,11 +861,11 @@ function RightRail({
 function QuickPrimer() {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-xs text-slate-200">
-      <p className="font-semibold text-white">How to move through a case</p>
+      <p className="font-semibold text-white">How to use this case</p>
       <ol className="mt-2 list-decimal space-y-1 pl-4 text-slate-300">
-        <li>Read the clue card.</li>
-        <li>Pick the action that best advances the workup.</li>
-        <li>Tap Continue when a card has no actions.</li>
+        <li>Read the card.</li>
+        <li>Decide on the next action.</li>
+        <li>Choose Continue when no actions remain.</li>
       </ol>
     </div>
   );
@@ -907,16 +873,7 @@ function QuickPrimer() {
 
 function CoachCallout({ stageType }: { stageType: CaseStage["stageType"] }) {
   const helper = STAGE_TYPE_META[stageType].helper;
-  return <span className="rounded-full border border-slate-800 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-slate-400">{helper}</span>;
-}
-
-function ResourceRow({ label, value, theme }: { label: string; value: string; theme: typeof DIAGNOSIS_THEME }) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-800/60 bg-slate-900/50 px-3 py-2">
-      <span className="text-slate-400">{label}</span>
-      <span className={`text-sm font-semibold ${theme.statAccent}`}>{value}</span>
-    </div>
-  );
+  return <span className="rounded-full border border-slate-800 px-3 py-1 text-[11px] text-slate-400">{helper}</span>;
 }
 
 function ProgressBar({ percent, label }: { percent: number; label: string }) {
@@ -930,66 +887,6 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
       <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
         <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-500 to-indigo-500" style={{ width: `${value}%` }} />
       </div>
-    </div>
-  );
-}
-
-function AchievementsList({ achievements }: { achievements: Achievement[] }) {
-  if (achievements.length === 0) return null;
-  return (
-    <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-5 text-sm text-slate-200 shadow-xl shadow-indigo-950/10">
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Achievements</p>
-      <ul className="mt-4 space-y-3">
-        {achievements.map((achievement) => (
-          <li
-            key={achievement.id}
-            className={`rounded-2xl border px-3 py-2 text-xs ${achievement.status === "earned" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100" : "border-slate-800 bg-slate-900/60 text-slate-300"}`}
-          >
-            <p className="font-semibold text-white">{achievement.title}</p>
-            <p className="mt-1 text-[11px] text-current">{achievement.detail}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function EnergyMeter({ energy, comboLevel }: { energy: number; comboLevel: number }) {
-  const percent = Math.round((energy / 150) * 100);
-  const cappedPercent = Math.min(100, Math.max(0, percent));
-  return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-2xl border border-indigo-500/40 bg-slate-900/60 p-4 text-xs text-slate-200">
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.25em]">
-        <span className="text-indigo-200">Mastery energy</span>
-        <span>{Math.round(energy)}</span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-        <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400" style={{ width: `${cappedPercent}%` }} />
-      </div>
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.25em]">
-        <span className="text-slate-400">Combo</span>
-        <span>{comboLevel}</span>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  helper,
-  accent,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-  accent: string;
-}) {
-  return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-2xl border border-slate-800/60 bg-slate-950/70 p-4 text-xs text-slate-200 shadow-lg shadow-indigo-950/10">
-      <span className="text-[10px] uppercase tracking-[0.3em] text-slate-400">{label}</span>
-      <span className={`text-2xl font-semibold ${accent}`}>{value}</span>
-      <span className="text-xs text-slate-400">{helper}</span>
     </div>
   );
 }
@@ -1010,48 +907,13 @@ function SessionBadge({ session, currentSlug }: { session: ActiveSession; curren
   );
 }
 
-function buildAchievements(state: CaseEngineState, summary: CaseSummary, progressPercent: number): Achievement[] {
-  const achievements: Achievement[] = [];
-  const targetMinutes = summary.estimatedMinutes ?? 20;
-
-  achievements.push({
-    id: "diagnostic-combo",
-    title: "Diagnostic combo",
-    detail: state.streak >= 3 ? "Maintained a triple-streak of correct moves." : "Chain 3 correct decisions in a row.",
-    status: state.streak >= 3 ? "earned" : "in_progress",
-  });
-
-  achievements.push({
-    id: "stewardship",
-    title: "Stewardship star",
-    detail: state.timeSpent <= targetMinutes ? `Stayed within the ${targetMinutes} minute budget.` : `Finish under ${targetMinutes} minutes to earn.`,
-    status: state.timeSpent <= targetMinutes ? "earned" : "in_progress",
-  });
-
-  achievements.push({
-    id: "investigation",
-    title: "Investigation complete",
-    detail: progressPercent >= 75 ? "Unlocked the critical scenes leading to the diagnosis." : "Unlock 75% of scenes to claim.",
-    status: progressPercent >= 75 ? "earned" : "in_progress",
-  });
-
-  achievements.push({
-    id: "bias-aware",
-    title: "Bias aware",
-    detail: state.mistakes <= 1 ? "Kept missteps to a minimum." : "Finish with 1 or fewer missteps to earn.",
-    status: state.mistakes <= 1 ? "earned" : "in_progress",
-  });
-
-  return achievements;
-}
-
 const STAGE_TYPE_META: Record<CaseStage["stageType"], { label: string; helper: string; accent: string }> = {
-  info: { label: "Intel drop", helper: "Read the clue then continue", accent: "text-indigo-200" },
-  decision: { label: "Decision node", helper: "Pick the best next move", accent: "text-emerald-200" },
-  order: { label: "Ordering bay", helper: "Choose the highest-yield test", accent: "text-sky-200" },
-  diagnosis: { label: "Hypothesis lock", helper: "Commit to the most likely answer", accent: "text-amber-200" },
-  management: { label: "Management cascade", helper: "Advance care deliberately", accent: "text-orange-200" },
-  summary: { label: "Debrief", helper: "Review what you learned", accent: "text-fuchsia-200" },
+  info: { label: "Info card", helper: "Read this, then continue.", accent: "text-indigo-200" },
+  decision: { label: "Decision", helper: "Pick the next step.", accent: "text-emerald-200" },
+  order: { label: "Order", helper: "Choose the best test.", accent: "text-sky-200" },
+  diagnosis: { label: "Diagnosis", helper: "Select the most likely answer.", accent: "text-amber-200" },
+  management: { label: "Management", helper: "Plan the next treatment move.", accent: "text-orange-200" },
+  summary: { label: "Summary", helper: "Review the takeaways.", accent: "text-fuchsia-200" },
 };
 
 const DIAGNOSIS_THEME = {
@@ -1067,5 +929,3 @@ const MANAGEMENT_THEME = {
   statAccent: "text-amber-200",
   stepChip: "border-slate-700",
 };
-
-

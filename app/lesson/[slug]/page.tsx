@@ -1,30 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import LessonBody from "@/components/lesson/LessonBody";
-// import AnkiDownload from "@/components/lesson/AnkiDownload";
-import FlashcardsCTA from "@/components/lesson/FlashcardsCTA";
-import ConceptChecklist from "@/components/lesson/ConceptChecklist";
-import BackgroundMap from "@/components/lesson/BackgroundMap";
-import StudyToolbar from "@/components/lesson/StudyToolbar";
-import FlashcardsWidget from "@/components/flashcards/FlashcardsWidget";
-import { dicDeck } from "@/data/flashcards/dic";
+import dynamic from "next/dynamic";
 import { getBundleCached, setBundleCached, getPlayerCached, setPlayerCached, fetchBundleDedupe, fetchPlayerDedupe } from "@/lib/study/cache";
-import UniResources from "@/components/lesson/UniResources";
-import SaveDock from "@/components/study/SaveDock";
 import { StudyStore } from "@/lib/study/store";
-import MCQPanel, { type MCQ } from "@/components/lesson/MCQPanel";
+import type { MCQ } from "@/components/lesson/MCQPanel";
+import { LessonPageContext, type LessonPageContextValue, type LessonQuestionItem, type QStatus } from "@/components/lesson/context";
 
-type LessonQuestionItem = {
-  id: string;
-  title: string;
-  status: 'todo' | 'correct' | 'incorrect';
-};
-
-// Local status alias to keep TSX parsing simple
-type QStatus = 'correct' | 'incorrect' | undefined;
-
+const MobileLessonShell = dynamic(() => import("@/components/lesson/mobile/MobileLessonShell"));
+const DesktopLessonShell = dynamic(() => import("@/components/lesson/desktop/DesktopLessonShell"));
 export default function LessonPage() {
   const { slug: rawSlug } = useParams() as { slug?: string | string[] };
   const slug = String(rawSlug || "lesson");
@@ -409,504 +394,128 @@ export default function LessonPage() {
     return m;
   }, [bundle, courseIdNum]);
 
-  // Mobile-specific presentation (separate UI, same underlying state)
+  const authors = useMemo(() => ({
+    author: ((bundle as any)?.authors?.author ?? (guest as any)?.authors?.author) || '',
+    reviewer: ((bundle as any)?.authors?.reviewer ?? (guest as any)?.authors?.reviewer) || '',
+  }), [bundle, guest]);
+
+  const chapterLabels = useMemo(() => [
+    String(chapter.title || 'Chapter'),
+    ...lessonsList.map((l: any) => String(l.title)),
+  ], [chapter.title, lessonsList]);
+
+  const chapterLessonsTotal = lessonsList.length;
+  const canToggleCompleted = authed && Boolean(bundle?.lesson?.courseId && bundle?.lesson?.id);
+
+  const toggleCompleted = useCallback(() => {
+    if (!canToggleCompleted || !bundle?.lesson?.courseId || !bundle?.lesson?.id) return;
+    try {
+      if (completed) {
+        StudyStore.removeLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
+        setCompleted(false);
+      } else {
+        StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
+        setCompleted(true);
+      }
+    } catch {}
+  }, [canToggleCompleted, completed, bundle]);
+
+  const toggleFavorite = useCallback(() => setFav((value) => !value), []);
+  const openFlashcards = useCallback(() => setFlashcardsOpen(true), []);
+  const closeFlashcards = useCallback(() => setFlashcardsOpen(false), []);
+  const toggleFocusMode = useCallback(() => setFocusMode((value) => !value), []);
+
+  const openPracticeAll = useCallback(() => {
+    setTab('practice');
+    setPracticeAll(true);
+    setOpenQuestionId(null);
+  }, []);
+
+  const openPracticeQuestion = useCallback((id: number) => {
+    setTab('practice');
+    setPracticeAll(false);
+    setOpenQuestionId(id);
+  }, []);
+
+  const onAnswerQuestion = useCallback((qid: number, status: QStatus) => {
+    if (!courseIdNum) return;
+    if (status !== 'correct' && status !== 'incorrect') return;
+    try {
+      StudyStore.addQuestionStatus(courseIdNum, qid, status);
+    } catch {}
+  }, [courseIdNum]);
+
+  const bundleHasQuestions = Boolean(bundle && mcqs.length > 0);
+  const canPractice = authed && bundleHasQuestions;
+
+  const contextValue: LessonPageContextValue = {
+    slug,
+    authed,
+    tab,
+    setTab,
+    focusMode,
+    toggleFocusMode,
+    completed,
+    canToggleCompleted,
+    toggleCompleted,
+    fav,
+    toggleFavorite,
+    flashcardsOpen,
+    openFlashcards,
+    closeFlashcards,
+    bundle,
+    bundleErr,
+    player,
+    playerErr,
+    guest,
+    course,
+    chapter,
+    lessonTitle,
+    bodyHtml,
+    authors,
+    chapterSummary,
+    chapterSummaryErr,
+    lessonsList,
+    chapterDotsCount,
+    activeDot,
+    chapterCompletedList,
+    chapterLabels,
+    chapterLabelsDetailed,
+    chapterLessonMenu,
+    chapterQTotal,
+    chapterQCorrect,
+    chapterLessonsDone,
+    chapterLessonsTotal,
+    chapterPctUnits,
+    qCorrect,
+    relevantQuestions,
+    effectiveIframeSrc,
+    courseIdNum,
+    mcqs,
+    initialStatus,
+    practiceAll,
+    setPracticeAll,
+    openQuestionId,
+    setOpenQuestionId,
+    openPracticeAll,
+    openPracticeQuestion,
+    onAnswerQuestion,
+    bundleHasQuestions,
+    canPractice,
+    saveDockCourseId: Number(bundle?.lesson?.courseId || 0),
+  };
+
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-[#f5f7fb] pb-24">
-        <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-10 pb-28">
-          <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm">
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-500">
-              <a href={`/${course.slug}`} className="text-slate-500 hover:text-slate-700">{course.title}</a>
-              <span className="h-1 w-1 rounded-full bg-slate-300" />
-              <a href={`/${course.slug}/${chapter.slug}`} className="text-slate-500 hover:text-slate-700">{chapter.title}</a>
-            </div>
-            <h1 className="mt-4 text-3xl font-semibold text-slate-900">{lessonTitle}</h1>
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-                <span>Chapter progress</span>
-                <span>{chapterPctUnits}%</span>
-              </div>
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white">
-                <div className="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-indigo-600" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
-              </div>
-              <div className="mt-3 text-sm font-medium text-slate-700">{chapterLessonsDone} lessons done &bull; {chapterQCorrect}/{chapterQTotal} questions correct</div>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button type="button" onClick={() => setTab('learn')} className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-slate-400/30 transition hover:bg-slate-800">
-                Start lesson
-              </button>
-              <button type="button" onClick={() => setFav((v) => !v)} className={`inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold transition ${fav ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-700 hover:bg-slate-50'}`} aria-pressed={fav} title={fav ? 'Remove from saved lessons' : 'Save this lesson'}>
-                {fav ? 'Saved' : 'Save for later'}
-              </button>
-              <button
-                type="button"
-                disabled={!authed || !bundle?.lesson?.courseId || !bundle?.lesson?.id}
-                onClick={() => {
-                  if (!authed) return;
-                  if (bundle?.lesson?.courseId && bundle?.lesson?.id) {
-                    try {
-                      if (completed) {
-                        StudyStore.removeLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
-                        setCompleted(false);
-                      } else {
-                        StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
-                        setCompleted(true);
-                      }
-                    } catch {}
-                  }
-                }}
-                className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition ${!authed ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : (completed ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50')}`}
-                title={!authed ? 'Log in to track progress' : (completed ? 'Mark as not complete' : 'Mark this lesson complete')}
-              >
-                {!authed ? 'Login required' : (completed ? 'Completed' : 'Mark complete')}
-              </button>
-            </div>
-            <div className="mt-4 text-xs text-slate-600">
-              <div>Author <span className="font-medium text-slate-800">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || ''}</span></div>
-              <div>Reviewed by <span className="font-medium text-slate-800">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || ''}</span></div>
-            </div>
-          </section>
-          <section className="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm">
-            <StudyToolbar
-              mode={tab}
-              onMode={(m) => setTab(m)}
-              onFocusToggle={() => setFocusMode((v) => !v)}
-              focus={focusMode}
-              chapterCount={chapterDotsCount}
-              activeStep={activeDot}
-              chapterLabels={[String(chapter.title || 'Chapter'), ...lessonsList.map((l: any) => String(l.title))]}
-              chapterCompleted={chapterCompletedList}
-            />
-          </section>
-          <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-sm">
-            <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-              {effectiveIframeSrc ? (
-                <iframe
-                  className="absolute inset-0 h-full w-full"
-                  src={effectiveIframeSrc}
-                  title="Lesson video"
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  loading="lazy"
-                  style={{ border: 0 }}
-                />
-              ) : (
-                <div className="absolute inset-0 grid place-items-center bg-slate-100 text-sm font-semibold text-slate-500">No video available</div>
-              )}
-              {player?.locked && (
-                <div className="absolute inset-0 grid place-items-center bg-white/85 backdrop-blur">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-medium text-slate-600 shadow-sm">
-                    {player?.lockReason || 'Login and enroll to watch this video.'}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-          {authed && (
-            <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm">
-              <header className="flex items-center justify-between">
-                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Question progress</div>
-                <button
-                  type="button"
-                  onClick={() => { setTab('practice'); setPracticeAll(true); setOpenQuestionId(null); }}
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-                >
-                  Practice all
-                </button>
-              </header>
-              <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                <div className="truncate text-xs font-semibold text-slate-700">Relevant to: {lessonTitle}</div>
-                <div className="mt-1 text-xs text-slate-600">{qCorrect}/{relevantQuestions.length} correct &bull; {Math.max(0, relevantQuestions.length - qCorrect)} remaining</div>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white">
-                  <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-700" style={{ width: `${Math.round((qCorrect / Math.max(1, relevantQuestions.length)) * 100)}%` }} />
-                </div>
-              </div>
-              {relevantQuestions.length > 0 && (
-                <ul className="mt-4 space-y-3">
-                  {relevantQuestions.map((q, i) => {
-                    const state =
-                      q.status === 'correct'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                        : q.status === 'incorrect'
-                          ? 'border-rose-200 bg-rose-50 text-rose-800'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/80';
-                    const label = q.status === 'correct' ? 'Correct' : q.status === 'incorrect' ? 'Review' : 'To do';
-                    return (
-                      <li key={q.id}>
-                        <button
-                          type="button"
-                          onClick={() => { setTab('practice'); setPracticeAll(false); setOpenQuestionId(Number(q.id)); }}
-                          className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${state}`}
-                        >
-                          <span className="mt-0.5 text-xs font-semibold text-slate-500">{i + 1}</span>
-                          <div className="flex-1 space-y-1">
-                            <div className="truncate">{q.title}</div>
-                            <span className="inline-flex rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{label}</span>
-                          </div>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-          )}
-          {tab === 'learn' && (
-            <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 text-sm shadow-sm">
-              {bodyHtml ? (
-                <LessonBody slug={slug} html={bodyHtml} noApi={!authed} />
-              ) : (
-                <div className="space-y-3 text-slate-500">Loading lesson...</div>
-              )}
-            </section>
-          )}
-          {tab === 'practice' && (
-            <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 text-sm shadow-sm">
-              {bundle && mcqs.length > 0 ? (
-                <MCQPanel
-                  courseId={courseIdNum}
-                  questions={mcqs}
-                  initialStatus={initialStatus}
-                  openAll={practiceAll}
-                  openOnlyId={openQuestionId}
-                  disabled={!authed}
-                  onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
-                />
-              ) : (
-                <p className="text-slate-600">{bundleErr === 'unauthenticated' ? 'Log in to practice.' : 'Loading questions...'}</p>
-              )}
-            </section>
-          )}
-          {tab === 'background' && (
-            <section className="space-y-4">
-              <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 text-sm shadow-sm">
-                <div className="text-sm font-semibold text-slate-800">Background knowledge</div>
-                <p className="mt-1 text-slate-600">Relevant foundations and reference material will appear here.</p>
-              </div>
-              <BackgroundMap comingSoon />
-            </section>
-          )}
-        </div>
-        <div className="lesson-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-inner md:hidden">
-          <div className="grid grid-cols-3 gap-2">
-            {(['learn', 'practice', 'background'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setTab(m)}
-                className={`h-10 rounded-full text-sm font-semibold transition ${tab === m ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-700 border border-slate-200'}`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        </div>
-        <SaveDock courseId={Number(bundle?.lesson?.courseId || 0)} />
-      </div>
+      <LessonPageContext.Provider value={contextValue}>
+        <MobileLessonShell />
+      </LessonPageContext.Provider>
     );
   }
 
-
   return (
-    <div className="min-h-screen bg-[#f5f7fb] pb-24">
-      <FlashcardsWidget open={flashcardsOpen} onClose={() => setFlashcardsOpen(false)} deck={dicDeck} title="DIC Review" />
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-14 lg:px-6">
-        <section className="rounded-[32px] border border-slate-200 bg-white/95 px-8 py-10 shadow-sm">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_220px]">
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-500">
-                <a href={`/${course.slug}`} className="text-slate-500 hover:text-slate-700">{course.title}</a>
-                <span className="h-1 w-1 rounded-full bg-slate-300" />
-                <a href={`/${course.slug}/${chapter.slug}`} className="text-slate-500 hover:text-slate-700">{chapter.title}</a>
-              </div>
-              <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-slate-900">{lessonTitle}</h1>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Progress</div>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white">
-                    <div className="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-indigo-600" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
-                  </div>
-                  <p className="mt-3 text-sm font-medium text-slate-700">{chapterPctUnits}% of chapter complete</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Accuracy</div>
-                  <p className="mt-3 text-2xl font-semibold text-slate-900">{chapterQCorrect}/{chapterQTotal}</p>
-                  <p className="text-xs text-slate-600">Questions answered correctly across the chapter.</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Lesson status</div>
-                  <p className="mt-3 text-2xl font-semibold text-slate-900">{completed ? 'Completed' : 'In progress'}</p>
-                  <p className="text-xs text-slate-600">Track your place and pick up where you left off.</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
-                <div>Author <span className="font-medium text-slate-800">{(bundle as any)?.authors?.author || (guest as any)?.authors?.author || ''}</span></div>
-                <div className="hidden h-1 w-1 rounded-full bg-slate-300 sm:inline" />
-                <div>Reviewed by <span className="font-medium text-slate-800">{(bundle as any)?.authors?.reviewer || (guest as any)?.authors?.reviewer || ''}</span></div>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => setTab('learn')}
-                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-slate-400/30 transition hover:bg-slate-800"
-              >
-                Start lesson
-              </button>
-              <button
-                type="button"
-                onClick={() => setFav((v) => !v)}
-                className={`inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold transition ${fav ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
-                aria-pressed={fav}
-                title={fav ? 'Remove from saved lessons' : 'Save this lesson'}
-              >
-                {fav ? 'Saved' : 'Save for later'}
-              </button>
-              <button
-                type="button"
-                disabled={!authed || !bundle?.lesson?.courseId || !bundle?.lesson?.id}
-                onClick={() => {
-                  if (!authed) return;
-                  if (bundle?.lesson?.courseId && bundle?.lesson?.id) {
-                    try {
-                      if (completed) {
-                        StudyStore.removeLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
-                        setCompleted(false);
-                      } else {
-                        StudyStore.addLessonComplete(Number(bundle.lesson.courseId), Number(bundle.lesson.id));
-                        setCompleted(true);
-                      }
-                    } catch {}
-                  }
-                }}
-                className={`inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition ${!authed ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : (completed ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50')}`}
-                title={!authed ? 'Log in to track progress' : (completed ? 'Mark as not complete' : 'Mark this lesson complete')}
-              >
-                {!authed ? 'Login required' : (completed ? 'Completed' : 'Mark complete')}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-[28px] border border-slate-200 bg-white/95 px-6 py-4 shadow-sm">
-          <StudyToolbar
-            mode={tab}
-            onMode={(m) => setTab(m)}
-            onFocusToggle={() => setFocusMode((v) => !v)}
-            focus={focusMode}
-            softLockPractice={false}
-            chapterCount={chapterDotsCount}
-            activeStep={activeDot}
-            chapterLabels={chapterLabelsDetailed}
-            chapterCompleted={chapterCompletedList}
-            lessonMenu={chapterLessonMenu}
-          />
-        </section>
-
-        <div className={`grid gap-6 ${focusMode ? '' : 'xl:grid-cols-[260px_minmax(0,1fr)_260px]'}`}>
-          {!focusMode && (
-            <aside className="hidden xl:flex flex-col gap-5">
-              <div className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Lesson snapshot</div>
-                <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="text-sm font-semibold text-slate-700">Chapter progress</div>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white">
-                    <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-700" style={{ width: `${Math.max(0, Math.min(100, chapterPctUnits))}%` }} />
-                  </div>
-                  <div className="mt-3 text-xs text-slate-600">{chapterLessonsDone} lessons complete &bull; {chapterQCorrect}/{chapterQTotal} correct</div>
-                </div>
-                <div className="mt-4 space-y-2 text-sm text-slate-600">
-                  <div className="flex items-center justify-between"><span>Status</span><span className="font-medium text-slate-800">{completed ? 'Completed' : 'In progress'}</span></div>
-                  <div className="flex items-center justify-between"><span>Relevant questions</span><span className="font-medium text-slate-800">{relevantQuestions.length || '0'}</span></div>
-                </div>
-              </div>
-              <div className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Flashcards</div>
-                <p className="mt-2 text-sm text-slate-600">Reinforce this lesson with a 10-card micro deck.</p>
-                <button
-                  type="button"
-                  onClick={() => setFlashcardsOpen(true)}
-                  className="mt-3 inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                >
-                  Open deck
-                </button>
-              </div>
-              {authed && (
-                <div className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Question progress</div>
-                    <button
-                      type="button"
-                      onClick={() => { setTab('practice'); setPracticeAll(true); setOpenQuestionId(null); }}
-                      className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700"
-                    >
-                      Practice all
-                    </button>
-                  </div>
-                  <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                    <div className="truncate text-xs font-semibold text-slate-700">Relevant to: {lessonTitle}</div>
-                    <div className="mt-1 text-xs text-slate-600">{qCorrect}/{relevantQuestions.length} correct &bull; {Math.max(0, relevantQuestions.length - qCorrect)} remaining</div>
-                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white">
-                      <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-700" style={{ width: `${Math.round((qCorrect / Math.max(1, relevantQuestions.length)) * 100)}%` }} />
-                    </div>
-                  </div>
-                  {relevantQuestions.length > 0 && (
-                    <ul className="mt-4 space-y-3">
-                      {relevantQuestions.map((q, i) => {
-                        const state =
-                          q.status === 'correct'
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                            : q.status === 'incorrect'
-                              ? 'border-rose-200 bg-rose-50 text-rose-800'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/70';
-                        const label = q.status === 'correct' ? 'Correct' : q.status === 'incorrect' ? 'Review' : 'To do';
-                        return (
-                          <li key={q.id}>
-                            <button
-                              type="button"
-                              onClick={() => { setTab('practice'); setPracticeAll(false); setOpenQuestionId(Number(q.id)); }}
-                              className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${state}`}
-                            >
-                              <span className="mt-0.5 text-xs font-semibold text-slate-500">{i + 1}</span>
-                              <div className="flex-1 space-y-1">
-                                <div className="truncate">{q.title}</div>
-                                <span className="inline-flex rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{label}</span>
-                              </div>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </aside>
-          )}
-
-          <div className="space-y-6">
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-                {effectiveIframeSrc ? (
-                  <iframe
-                    className="absolute inset-0 h-full w-full"
-                    src={effectiveIframeSrc}
-                    title="Lesson video"
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    loading="lazy"
-                    style={{ border: 0 }}
-                  />
-                ) : (
-                  <div className="absolute inset-0 grid place-items-center bg-slate-100 text-sm font-semibold text-slate-500">No video available</div>
-                )}
-                {player?.locked && (
-                  <div className="absolute inset-0 grid place-items-center bg-white/85 backdrop-blur">
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-medium text-slate-600 shadow-sm">
-                      {player?.lockReason || 'Login and enroll to watch this video.'}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {tab === 'learn' && (
-              <section className="rounded-3xl border border-slate-200 bg-white/95 p-8 text-sm shadow-sm">
-                {bodyHtml ? (
-                  <LessonBody slug={slug} html={bodyHtml} noApi={!authed} />
-                ) : (
-                  <div className="space-y-4 text-slate-500">
-                    <div className="h-5 w-1/3 rounded bg-slate-200" />
-                    <div className="h-3 w-full rounded bg-slate-200" />
-                    <div className="h-3 w-5/6 rounded bg-slate-200" />
-                    <div className="h-64 w-full rounded-2xl bg-slate-100" />
-                  </div>
-                )}
-              </section>
-            )}
-
-            {tab === 'practice' && (
-              <section className="rounded-3xl border border-slate-200 bg-white/95 p-8 text-sm shadow-sm">
-                <div className="mb-4 text-sm font-semibold text-slate-800">Practice questions</div>
-                {!bundle && !bundleErr && <p className="text-slate-600">Loading questions...</p>}
-                {bundleErr === 'unauthenticated' && !guest && (
-                  <p className="text-slate-600">Log in to see and practice questions.</p>
-                )}
-                {bundleErr === 'forbidden' && (
-                  <p className="text-slate-600">This course is paid. Your account does not have access.</p>
-                )}
-                {bundle && mcqs.length > 0 && (
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                    <MCQPanel
-                      courseId={courseIdNum}
-                      questions={mcqs}
-                      initialStatus={initialStatus}
-                      openAll={practiceAll}
-                      openOnlyId={openQuestionId}
-                      disabled={!authed}
-                      onAnswer={(qid, st) => { try { if (courseIdNum) StudyStore.addQuestionStatus(courseIdNum, qid, st); } catch {} }}
-                    />
-                  </div>
-                )}
-              </section>
-            )}
-
-            {tab === 'background' && (
-              <section className="space-y-4">
-                <div className="rounded-3xl border border-slate-200 bg-white/95 p-8 text-sm shadow-sm">
-                  <div className="text-sm font-semibold text-slate-800">Background knowledge</div>
-                  <p className="mt-1 text-slate-600">Relevant foundations and reference material will appear here.</p>
-                </div>
-                <BackgroundMap comingSoon />
-              </section>
-            )}
-          </div>
-
-          {!focusMode && (
-            <aside className="hidden xl:flex flex-col gap-5">
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center text-sm text-slate-600">
-                <div className="font-semibold text-slate-700">Concept check</div>
-                <p className="mt-2">Short review quizzes are being prepared.</p>
-              </div>
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center text-sm text-slate-600">
-                <div className="font-semibold text-slate-700">University resources</div>
-                <p className="mt-2">Curated clinical references will land here soon.</p>
-              </div>
-            </aside>
-          )}
-        </div>
-
-        <div className="lesson-bottom-nav fixed inset-x-4 bottom-6 z-30 border border-slate-200 bg-white/95 px-4 py-3 shadow-inner shadow-slate-200/70 lg:hidden">
-          <div className="grid grid-cols-3 gap-2">
-            {(['learn', 'practice', 'background'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setTab(m)}
-                className={`h-10 rounded-full border text-sm font-semibold transition ${tab === m ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <SaveDock courseId={Number(bundle?.lesson?.courseId || 0)} />
-    </div>
+    <LessonPageContext.Provider value={contextValue}>
+      <DesktopLessonShell />
+    </LessonPageContext.Provider>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

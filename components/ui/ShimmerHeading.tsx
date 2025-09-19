@@ -3,7 +3,7 @@
 import { useReducedMotion } from "framer-motion";
 import React from "react";
 
-type Variant = "indigo" | "teal" | "amber" | "electric";
+type Variant = "indigo" | "teal" | "amber" | "electric" | "violet";
 type Size = "sm" | "md" | "lg" | "xl";
 
 export default function ShimmerHeading({
@@ -30,6 +30,8 @@ export default function ShimmerHeading({
       ? "linear-gradient(90deg,#b45309 0%,#f59e0b 25%,#fb7185 50%,#f59e0b 75%,#b45309 100%)"
       : variant === "electric"
       ? "linear-gradient(90deg,#7dd3fc 0%,#60a5fa 18%,#a78bfa 38%,#22d3ee 58%,#93c5fd 78%,#e0e7ff 100%)"
+      : variant === "violet"
+      ? "linear-gradient(90deg,#4c1d95 0%,#7c3aed 22%,#a855f7 44%,#d946ef 66%,#7c3aed 88%,#4c1d95 100%)"
       : "linear-gradient(90deg,#312e81 0%,#6366f1 20%,#a78bfa 40%,#06b6d4 60%,#6366f1 80%,#312e81 100%)"
   );
 
@@ -54,6 +56,8 @@ export default function ShimmerHeading({
             ? "text-amber-900/70"
             : variant === "electric"
             ? "text-white/95 drop-shadow-[0_2px_10px_rgba(255,255,255,0.35)]"
+            : variant === "violet"
+            ? "text-violet-900/70"
             : "text-indigo-900/70"
         }`}>
           {pretitle}

@@ -2,6 +2,7 @@
 import React from "react";
 import ShimmerHeading from "@/components/ui/ShimmerHeading";
 import NewCourseSystem from "@/components/home/NewCourseSystem";
+import CasesFeatureShowcase from "@/components/home/CasesFeatureShowcase";
 
 export default function WhatsNew2026() {
   return (
@@ -82,6 +83,10 @@ export default function WhatsNew2026() {
       {/* New Course System feature */}
       <div className="mx-auto max-w-6xl px-6 sm:px-10 mt-10">
         <NewCourseSystem />
+      </div>
+
+      <div className="mx-auto max-w-6xl px-6 sm:px-10 mt-14">
+        <CasesFeatureShowcase />
       </div>
 
       {/* Component-scoped styles for underline + NEW pill + background */}

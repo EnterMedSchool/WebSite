@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
+import clsx from "clsx";
 import ShimmerHeading from "@/components/ui/ShimmerHeading";
 
 type TimelineEvent = {
@@ -10,23 +11,15 @@ type TimelineEvent = {
   title: string;
   body: string;
   align: "left" | "right";
-  side: "top" | "bottom";
-  progress: number; // 0..1 along the path
 };
 
-const VIEWBOX_WIDTH = 820;
-const VIEWBOX_HEIGHT = 380;
-const PATH_D = "M 24 350 C 140 320 260 260 330 190 C 410 110 520 70 620 46 C 700 26 780 18 800 12";
-
-const RAW_EVENTS: TimelineEvent[] = [
+const EVENTS: TimelineEvent[] = [
   {
     id: "2019",
     year: "2019",
     title: "EMS 1.0 launches",
     body: "Opened the first free IMAT forum with 30k words of guides and a dream to help anyone get into medical school in Italy.",
     align: "left",
-    side: "top",
-    progress: 0.05,
   },
   {
     id: "2020",
@@ -34,8 +27,6 @@ const RAW_EVENTS: TimelineEvent[] = [
     title: "Free prep library",
     body: "Published the full question bank, flashcards and the first iteration of the open-source biology & chemistry books.",
     align: "right",
-    side: "bottom",
-    progress: 0.2,
   },
   {
     id: "2021",
@@ -43,8 +34,6 @@ const RAW_EVENTS: TimelineEvent[] = [
     title: "Community milestones",
     body: "10,000 students joined EMS Discord. Introduced live study rooms, weekly sprint planning and mentor office hours.",
     align: "left",
-    side: "bottom",
-    progress: 0.36,
   },
   {
     id: "2022",
@@ -52,8 +41,6 @@ const RAW_EVENTS: TimelineEvent[] = [
     title: "Scholarships & clinics",
     body: "Launched the paid course to reinvest into free content, funded the first EMS scholarship cohort and started monthly strategy clinics.",
     align: "right",
-    side: "top",
-    progress: 0.53,
   },
   {
     id: "2023",
@@ -61,8 +48,6 @@ const RAW_EVENTS: TimelineEvent[] = [
     title: "Learning graph",
     body: "Built the adaptive learning graph, automated diagnostics and progress trackers so every student could see their next best step.",
     align: "left",
-    side: "top",
-    progress: 0.72,
   },
   {
     id: "2024",
@@ -70,8 +55,6 @@ const RAW_EVENTS: TimelineEvent[] = [
     title: "Global map & cohorts",
     body: "Released the interactive university map, cohort dashboards and the upgraded mobile learning experience.",
     align: "right",
-    side: "bottom",
-    progress: 0.86,
   },
   {
     id: "2026",
@@ -79,74 +62,37 @@ const RAW_EVENTS: TimelineEvent[] = [
     title: "The next chapter",
     body: "Preparing a full medical journey platform: admissions, courseware, clinical prep and a global support network built with students.",
     align: "left",
-    side: "top",
-    progress: 0.97,
   },
 ];
 
-type PositionedEvent = TimelineEvent & { x: number; y: number };
+const ROW_VARIANTS = {
+  hidden: { opacity: 0, y: 36 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 0.18 + index * 0.08,
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  }),
+};
 
 export default function ProgressTimeline() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const pathRef = useRef<SVGPathElement | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [active, setActive] = useState<string>(RAW_EVENTS[RAW_EVENTS.length - 1].id);
-  const [positions, setPositions] = useState<PositionedEvent[]>(() =>
-    RAW_EVENTS.map((event) => ({ ...event, x: 0, y: 0 }))
-  );
+  const headingId = "journey-heading";
+  const timelineRef = useRef<HTMLDivElement | null>(null);
+  const inView = useInView(timelineRef, { once: true, margin: "-25% 0px" });
+  const [activeId, setActiveId] = useState(EVENTS[EVENTS.length - 1].id);
 
-  const recompute = useCallback(() => {
-    const path = pathRef.current;
-    if (!path) return;
-    const length = path.getTotalLength();
-    const next = RAW_EVENTS.map((event) => {
-      const distance = Math.max(0, Math.min(length, event.progress * length));
-      const point = path.getPointAtLength(distance);
-      return {
-        ...event,
-        x: (point.x / VIEWBOX_WIDTH) * 100,
-        y: (point.y / VIEWBOX_HEIGHT) * 100,
-      };
-    });
-    setPositions(next);
-  }, []);
-
-  useEffect(() => {
-    recompute();
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", recompute, { passive: true });
-      return () => window.removeEventListener("resize", recompute);
-    }
-    return undefined;
-  }, [recompute]);
-
-  useEffect(() => {
-    const node = containerRef.current;
-    if (!node || typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            io.disconnect();
-          }
-        });
-      },
-      { threshold: 0.35 }
-    );
-    io.observe(node);
-    return () => io.disconnect();
-  }, []);
-
-  const mobileEvents = useMemo(() => positions, [positions]);
+  const handleActivate = (id: string) => setActiveId(id);
 
   return (
-    <section ref={containerRef} className="journey" aria-labelledby="journey-heading">
+    <section className="journey" aria-labelledby={headingId}>
       <div className="journey-shell">
         <div className="journey-copy">
+          <span id={headingId} className="sr-only">
+            Our journey — Built with students, for students. From 2019 to the next chapter.
+          </span>
           <span className="kicker">Our Journey</span>
           <ShimmerHeading
             title="From 2019 to the next chapter"
@@ -164,145 +110,403 @@ export default function ProgressTimeline() {
           </ul>
         </div>
 
-        <div className="journey-visual">
-          <svg
-            className={`timeline ${visible ? "timeline-visible" : ""}`}
-            viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
-            role="presentation"
-            aria-hidden
-          >
-            <defs>
-              <linearGradient id="timeline-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#6366F1" />
-                <stop offset="45%" stopColor="#22D3EE" />
-                <stop offset="90%" stopColor="#F97316" />
-              </linearGradient>
-              <radialGradient id="timeline-glow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(99,102,241,0.45)" />
-                <stop offset="100%" stopColor="rgba(99,102,241,0)" />
-              </radialGradient>
-            </defs>
-            <path ref={pathRef} d={PATH_D} className="line" />
-            <path d={PATH_D} className="glow" />
-          </svg>
-
-          {positions.map((event, index) => {
-            const delay = index * 0.06;
-            const classes = ["node", `node-${event.align}`, `node-${event.side}`];
-            if (active === event.id) classes.push("active");
-            return (
-              <motion.button
-                key={event.id}
-                type="button"
-                className={classes.join(" ")}
-                style={{ left: `${event.x}%`, top: `${event.y}%` }}
-                onMouseEnter={() => setActive(event.id)}
-                onFocus={() => setActive(event.id)}
-                initial={{ opacity: 0, y: 14 }}
-                animate={visible ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.45, delay }}
-              >
-                <span className="card">
-                  <span className="year">{event.year}</span>
-                  <span className="title">{event.title}</span>
-                  <span className="body">{event.body}</span>
-                </span>
-                <span className="dot" aria-hidden />
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="journey-mobile">
-        <div className="progress-column">
-          <span className="rail" aria-hidden />
-          {mobileEvents.map((event, idx) => (
+        <div className="journey-timeline">
+          <div className="timeline" ref={timelineRef}>
             <motion.div
-              key={`mobile-${event.id}`}
-              className="mobile-card"
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.4, delay: idx * 0.04 }}
-            >
-              <span className="marker" aria-hidden />
-              <span className="content">
-                <span className="year">{event.year}</span>
-                <span className="title">{event.title}</span>
-                <p>{event.body}</p>
-              </span>
-            </motion.div>
-          ))}
+              className="axis"
+              initial={{ scaleY: 0 }}
+              animate={inView ? { scaleY: 1 } : {}}
+              transition={{ duration: 1.6, ease: [0.18, 0.92, 0.25, 1] }}
+            />
+            <motion.div
+              className="axis-glow"
+              initial={{ opacity: 0 }}
+              animate={inView ? { opacity: 0.8 } : { opacity: 0 }}
+              transition={{ delay: 0.25, duration: 1.2, ease: "easeOut" }}
+            />
+
+            <div className="timeline-events">
+              {EVENTS.map((event, index) => (
+                <motion.div
+                  key={event.id}
+                  className={clsx("row", `row-${event.align}`, {
+                    "row-active": activeId === event.id,
+                  })}
+                  variants={ROW_VARIANTS}
+                  initial="hidden"
+                  animate={inView ? "visible" : "hidden"}
+                  custom={index}
+                >
+                  <motion.button
+                    type="button"
+                    className={clsx("timeline-card", `card-${event.align}`, {
+                      active: activeId === event.id,
+                    })}
+                    onPointerEnter={() => handleActivate(event.id)}
+                    onFocus={() => handleActivate(event.id)}
+                    onClick={() => handleActivate(event.id)}
+                    aria-current={activeId === event.id ? "step" : undefined}
+                    whileHover={{ y: -6 }}
+                    whileTap={{ scale: 0.99 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                  >
+                    <span className="timeline-year">{event.year}</span>
+                    <span className="timeline-title">{event.title}</span>
+                    <span className="timeline-body">{event.body}</span>
+                  </motion.button>
+                  <span className="timeline-marker" aria-hidden />
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       <style jsx>{`
-        .journey { padding: clamp(24px, 6vw, 48px) 0; overflow: hidden; }
-        .journey-shell { position: relative; max-width: min(1180px, calc(100vw - 3rem)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: clamp(24px, 5vw, 48px); border-radius: 42px; padding: clamp(26px, 5vw, 48px); background: linear-gradient(135deg, rgba(79,70,229,0.16), rgba(6,182,212,0.12)); box-shadow: 0 32px 90px rgba(15,23,42,0.18); overflow: hidden; }
-        .journey-shell::before { content:""; position:absolute; inset: -10% -16% -6% -16%; background: radial-gradient(720px 420px at 10% 20%, rgba(99,102,241,0.26), transparent 72%), radial-gradient(640px 360px at 90% 82%, rgba(6,182,212,0.24), transparent 70%); z-index:0; }
-        .journey-shell > * { position: relative; z-index: 1; }
-        .journey-copy { color: #0f172a; display: grid; gap: 16px; align-content: start; }
-        .kicker { font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(49,46,129,0.75); }
-        .lead { font-size: 15px; line-height: 1.7; color: rgba(15,23,42,0.85); max-width: 44ch; }
-        .quick { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; font-weight: 600; color: rgba(15,23,42,0.86); }
-        .quick li { position: relative; padding-left: 18px; }
-        .quick li::before { content:""; position:absolute; left:0; top:6px; width:8px; height:8px; border-radius:9999px; background: linear-gradient(135deg,#6366f1,#22d3ee); box-shadow: 0 6px 14px rgba(99,102,241,0.25); }
+        .journey {
+          padding: clamp(40px, 8vw, 100px) 0;
+          position: relative;
+        }
 
-        .journey-visual { position: relative; min-height: clamp(320px, 36vw, 420px); }
-        .timeline { position: absolute; inset: 0; width: 100%; height: 100%; }
-        .line { fill: none; stroke: rgba(148,163,184,0.4); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1100; stroke-dashoffset: 1100; transition: stroke-dashoffset 2.2s cubic-bezier(0.22, 1, 0.36, 1); }
-        .timeline-visible .line { stroke-dashoffset: 0; stroke: url(#timeline-stroke); }
-        .glow { fill: none; stroke: url(#timeline-glow); stroke-width: 16; opacity: 0; transition: opacity 1.4s ease 0.3s; }
-        .timeline-visible .glow { opacity: 0.75; }
+        .journey-shell {
+          position: relative;
+          margin: 0 auto;
+          width: min(1180px, calc(100vw - clamp(32px, 8vw, 120px)));
+          border-radius: clamp(32px, 4vw, 48px);
+          padding: clamp(28px, 6vw, 56px);
+          background: linear-gradient(135deg, rgba(79, 70, 229, 0.18), rgba(6, 182, 212, 0.14));
+          box-shadow: 0 28px 90px rgba(15, 23, 42, 0.18);
+          overflow: hidden;
+          display: grid;
+          gap: clamp(32px, 6vw, 72px);
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+          color: #0f172a;
+        }
 
-        .node { position: absolute; display: flex; align-items: center; gap: 0; transform: translate(-50%, -50%); width: clamp(180px, 20vw, 240px); background: none; border: 0; padding: 0; cursor: pointer; color: inherit; }
-        .node:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(129,140,248,0.6); border-radius: 32px; }
-        .node .card { width: 100%; border-radius: 24px; background: rgba(255,255,255,0.94); border: 1px solid rgba(148,163,184,0.28); box-shadow: 0 20px 48px rgba(15,23,42,0.18); padding: 16px 18px; display: grid; gap: 6px; position: relative; pointer-events: none; transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease; }
-        .node .card::after { content:""; position:absolute; left:50%; width:2px; height:18px; transform: translateX(-50%); background: linear-gradient(180deg, rgba(99,102,241,0.65), rgba(34,211,238,0)); opacity: 0.6; }
-        .node .card .year { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(79,70,229,0.9); }
-        .node .card .title { font-size: 16px; font-weight: 800; color: #0f172a; line-height: 1.3; }
-        .node .card .body { font-size: 13px; line-height: 1.55; color: rgba(15,23,42,0.78); }
-        .node .dot { width: 16px; height: 16px; border-radius: 9999px; background: linear-gradient(135deg,#6366f1,#22d3ee); box-shadow: 0 14px 32px rgba(79,70,229,0.35); position: relative; }
-        .node .dot::after { content:""; position:absolute; inset:4px; border-radius:9999px; background:white; }
+        .journey-shell::before {
+          content: "";
+          position: absolute;
+          inset: -12% -18% -10% -18%;
+          background:
+            radial-gradient(600px 360px at 16% 22%, rgba(99, 102, 241, 0.32), transparent 72%),
+            radial-gradient(520px 320px at 84% 80%, rgba(6, 182, 212, 0.26), transparent 70%);
+          opacity: 0.92;
+          z-index: 0;
+        }
 
-        .node-top { flex-direction: column; }
-        .node-top .card { order: 0; margin-bottom: 18px; }
-        .node-top .card::after { bottom: -18px; }
-        .node-top .dot { order: 1; }
-        .node-bottom { flex-direction: column-reverse; }
-        .node-bottom .card { order: 0; margin-top: 18px; }
-        .node-bottom .card::after { top: -18px; transform: translateX(-50%) rotate(180deg); }
+        .journey-copy,
+        .journey-timeline {
+          position: relative;
+          z-index: 1;
+        }
 
-        .node-left { align-items: flex-end; }
-        .node-left .card { text-align: right; }
-        .node-right { align-items: flex-start; }
-        .node-right .card { text-align: left; }
+        .journey-copy {
+          display: grid;
+          gap: clamp(18px, 3.2vw, 30px);
+          align-content: start;
+          max-width: 420px;
+        }
 
-        .node.active .card { background: rgba(15,23,42,0.94); color: rgba(248,250,252,0.96); box-shadow: 0 28px 60px rgba(15,23,42,0.36); transform: translateY(-4px); }
-        .node.active .card .year { color: rgba(165,180,252,0.92); }
-        .node.active .card .body { color: rgba(226,232,240,0.84); }
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
 
-        .journey-mobile { display: none; max-width: min(600px, calc(100vw - 2.5rem)); margin: clamp(18px,5vw,32px) auto 0; border-radius: 32px; padding: clamp(22px, 6vw, 34px) clamp(20px, 5vw, 30px); background: linear-gradient(135deg, rgba(79,70,229,0.16), rgba(6,182,212,0.12)); box-shadow: 0 26px 72px rgba(15,23,42,0.18); }
-        .progress-column { position: relative; }
-        .progress-column .rail { position: absolute; left: 14px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg,#6366f1,#22d3ee); opacity: 0.7; }
-        .mobile-card { position: relative; display: grid; grid-template-columns: 26px 1fr; gap: 16px; margin-bottom: 24px; }
-        .mobile-card:last-of-type { margin-bottom: 0; }
-        .mobile-card .marker { width: 12px; height: 12px; border-radius: 9999px; background: linear-gradient(135deg,#6366f1,#22d3ee); box-shadow: 0 12px 30px rgba(79,70,229,0.35); align-self: center; }
-        .mobile-card .content { border-radius: 22px; background: rgba(255,255,255,0.95); border: 1px solid rgba(148,163,184,0.25); padding: 16px; box-shadow: 0 22px 54px rgba(15,23,42,0.18); display: grid; gap: 6px; }
-        .mobile-card .content .year { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(79,70,229,0.9); }
-        .mobile-card .content .title { font-size: 16px; font-weight: 800; color: #0f172a; }
-        .mobile-card .content p { font-size: 13px; line-height: 1.6; color: rgba(15,23,42,0.78); margin: 0; }
+        .kicker {
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: rgba(49, 46, 129, 0.75);
+        }
 
-        @media (max-width: 1080px) {
-          .journey-shell { grid-template-columns: 1fr; gap: clamp(22px, 4vw, 36px); }
-          .journey-copy { max-width: 620px; }
-          .journey-visual { min-height: clamp(300px, 50vw, 380px); }
+        .lead {
+          font-size: 15px;
+          line-height: 1.7;
+          color: rgba(15, 23, 42, 0.85);
+        }
+
+        .quick {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: grid;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          color: rgba(15, 23, 42, 0.88);
+        }
+
+        .quick li {
+          position: relative;
+          padding-left: 20px;
+        }
+
+        .quick li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 7px;
+          width: 8px;
+          height: 8px;
+          border-radius: 9999px;
+          background: linear-gradient(135deg, #6366f1, #22d3ee);
+          box-shadow: 0 6px 14px rgba(99, 102, 241, 0.28);
+        }
+
+        .journey-timeline {
+          position: relative;
+        }
+
+        .timeline {
+          position: relative;
+          padding: clamp(6px, 1.5vw, 16px) 0;
+        }
+
+        .timeline-events {
+          position: relative;
+          display: grid;
+          gap: clamp(30px, 5vw, 54px);
+          --connector-length: clamp(38px, 7vw, 82px);
+          --axis-x: 50%;
+          --axis-translate: -50%;
+          z-index: 1;
+        }
+
+        .row {
+          position: relative;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: clamp(36px, 7vw, 120px);
+          align-items: center;
+        }
+
+        .row-left .timeline-card {
+          grid-column: 1;
+          justify-self: end;
+          text-align: right;
+        }
+
+        .row-right .timeline-card {
+          grid-column: 2;
+          justify-self: start;
+          text-align: left;
+        }
+
+        .timeline-card {
+          width: min(320px, 100%);
+          border-radius: 24px;
+          padding: clamp(18px, 3vw, 24px);
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid rgba(148, 163, 184, 0.28);
+          box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
+          display: grid;
+          gap: 8px;
+          color: inherit;
+          transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+          position: relative;
+          cursor: pointer;
+          border: 0;
+          text-align: inherit;
+        }
+
+        .timeline-card:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.45), 0 24px 56px rgba(15, 23, 42, 0.26);
+        }
+
+        .timeline-card.active,
+        .timeline-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 26px 60px rgba(15, 23, 42, 0.24);
+        }
+
+        .timeline-year {
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(79, 70, 229, 0.9);
+        }
+
+        .timeline-title {
+          font-size: 17px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.35;
+        }
+
+        .timeline-body {
+          font-size: 13px;
+          line-height: 1.6;
+          color: rgba(15, 23, 42, 0.78);
+        }
+
+        .timeline-marker {
+          position: absolute;
+          top: 50%;
+          left: var(--axis-x);
+          width: 18px;
+          height: 18px;
+          border-radius: 9999px;
+          transform: translateX(var(--axis-translate)) translateY(-50%);
+          background: linear-gradient(135deg, #6366f1, #22d3ee);
+          box-shadow: 0 14px 36px rgba(79, 70, 229, 0.35);
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+          z-index: 2;
+        }
+
+        .timeline-marker::after {
+          content: "";
+          position: absolute;
+          inset: 4px;
+          border-radius: inherit;
+          background: #fff;
+        }
+
+        .timeline-marker::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          height: 2px;
+          background: linear-gradient(90deg, #6366f1, #22d3ee);
+          opacity: 0.7;
+          transform: translateY(-50%);
+        }
+
+        .row-left .timeline-marker::before {
+          right: 100%;
+          width: var(--connector-length);
+        }
+
+        .row-right .timeline-marker::before {
+          left: 100%;
+          width: var(--connector-length);
+          background: linear-gradient(90deg, #22d3ee, #6366f1);
+        }
+
+        .row-active .timeline-card {
+          background: rgba(15, 23, 42, 0.94);
+          color: rgba(248, 250, 252, 0.96);
+          box-shadow: 0 32px 72px rgba(15, 23, 42, 0.42);
+        }
+
+        .row-active .timeline-year {
+          color: rgba(165, 180, 252, 0.92);
+        }
+
+        .row-active .timeline-body {
+          color: rgba(226, 232, 240, 0.84);
+        }
+
+        .row-active .timeline-marker {
+          box-shadow: 0 22px 50px rgba(79, 70, 229, 0.5);
+        }
+
+        .axis,
+        .axis-glow {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: var(--axis-x);
+          transform: translateX(var(--axis-translate));
+          border-radius: 9999px;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .axis {
+          width: 4px;
+          background: linear-gradient(180deg, #6366f1 0%, #22d3ee 45%, #f97316 100%);
+          transform-origin: top center;
+        }
+
+        .axis-glow {
+          width: 160px;
+          margin-left: -80px;
+          background: radial-gradient(120px 420px at 50% 50%, rgba(99, 102, 241, 0.22), transparent 68%);
+          opacity: 0;
+        }
+
+        @media (max-width: 1180px) {
+          .journey-shell {
+            width: min(1120px, calc(100vw - clamp(32px, 6vw, 96px)));
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .journey-shell {
+            grid-template-columns: 1fr;
+            gap: clamp(28px, 6vw, 52px);
+          }
+
+          .journey-copy {
+            max-width: none;
+          }
         }
 
         @media (max-width: 900px) {
-          .journey-shell { display: none; }
-          .journey-mobile { display: block; }
+          .journey {
+            padding: clamp(28px, 9vw, 64px) 0;
+          }
+
+          .journey-shell {
+            padding: clamp(22px, 7vw, 38px);
+            border-radius: 32px;
+          }
+
+          .timeline {
+            padding: 0;
+          }
+
+          .timeline-events {
+            --axis-x: clamp(22px, 10vw, 34px);
+            --connector-length: clamp(20px, 8vw, 34px);
+          }
+
+          .row {
+            grid-template-columns: 1fr;
+            row-gap: 14px;
+            column-gap: 0;
+            padding-left: calc(var(--axis-x) + var(--connector-length) + 20px);
+          }
+
+          .row-left .timeline-card,
+          .row-right .timeline-card {
+            grid-column: 1;
+            justify-self: stretch;
+            text-align: left;
+          }
+
+          .timeline-card {
+            width: 100%;
+          }
+
+          .timeline-marker::before {
+            display: none;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .quick {
+            gap: 8px;
+            font-size: 13px;
+          }
+
+          .timeline-title {
+            font-size: 16px;
+          }
+
+          .timeline-body {
+            font-size: 12.5px;
+          }
         }
       `}</style>
     </section>
