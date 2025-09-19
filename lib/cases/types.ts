@@ -126,6 +126,23 @@ export interface CaseAttemptStep {
   takenAt: string;
 }
 
+export interface CaseAttemptRecord {
+  id: number;
+  caseId: number;
+  caseSlug: string;
+  subjectSlug: string;
+  subjectName: string;
+  collectionSlug: string;
+  score: number;
+  totalActions: number;
+  correctActions: number;
+  incorrectActions: number;
+  mistakes: number;
+  timeSpentSeconds: number;
+  startedAt: string;
+  completedAt?: string | null;
+}
+
 export interface CaseAttemptState {
   attemptId: number;
   caseId: number;
@@ -248,6 +265,7 @@ export interface PracticeBundle {
   collection: CaseCollectionSummary;
   availableCollections: CaseCollectionSummary[];
   subjects: CaseSubjectSummary[];
+  history: CaseAttemptRecord[];
   activeSubject: CaseSubjectSummary;
   cases: CaseSummary[];
   todayPlan: TodayPlanBlock[];
@@ -266,7 +284,3 @@ export interface PracticeBundle {
     media?: { src: string; alt: string };
   }>;
 }
-
-
-
-

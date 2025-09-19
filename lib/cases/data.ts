@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   caseCollections,
@@ -6,6 +6,7 @@ import {
   caseCases,
   caseStages,
   caseStageOptions,
+  caseAttempts,
   users,
 } from "@/drizzle/schema";
 import type {
@@ -19,6 +20,7 @@ import type {
   OptionFailure,
   CommentaryTone,
   PracticeBundle,
+  CaseAttemptRecord,
 } from "@/lib/cases/types";
 import {
   buildTodayPlan,
@@ -780,6 +782,59 @@ export async function loadCaseExperience({ userId, collectionSlug }: LoadCaseExp
   };
 
   const activeCases = cases.filter((c) => c.subjectSlug === activeSubject.slug);
+  const attemptRows = await db
+    .select({
+      id: caseAttempts.id,
+      caseId: caseAttempts.caseId,
+      caseSlug: caseCases.slug,
+      status: caseAttempts.status,
+      score: caseAttempts.score,
+      startedAt: caseAttempts.startedAt,
+      completedAt: caseAttempts.completedAt,
+      state: caseAttempts.state,
+      subjectSlug: caseSubjects.slug,
+      subjectName: caseSubjects.name,
+      collectionSlug: caseCollections.slug,
+    })
+    .from(caseAttempts)
+    .innerJoin(caseCases, eq(caseCases.id, caseAttempts.caseId))
+    .innerJoin(caseSubjects, eq(caseSubjects.id, caseCases.subjectId))
+    .innerJoin(caseCollections, eq(caseCollections.id, caseSubjects.collectionId))
+    .where(and(eq(caseAttempts.userId, userId), eq(caseCollections.slug, collection.slug)))
+    .orderBy(desc(caseAttempts.completedAt), desc(caseAttempts.updatedAt), desc(caseAttempts.startedAt))
+    .limit(400);
+
+  const history = attemptRows
+    .filter((row) => row.status === "completed")
+    .map((row) => {
+      const snapshot = toRecord(row.state) ?? {};
+      const totalActionsRaw = snapshot.totalActions ?? snapshot.timelineLength ?? snapshot.totalSteps;
+      const totalActions = typeof totalActionsRaw === "number" ? Number(totalActionsRaw) : 0;
+      const correctActionsRaw = snapshot.correctActions;
+      const incorrectActionsRaw = snapshot.incorrectActions ?? snapshot.mistakes;
+      const correctActions = typeof correctActionsRaw === "number" ? Number(correctActionsRaw) : Math.max(0, totalActions - Number(incorrectActionsRaw ?? 0));
+      const incorrectActions = typeof incorrectActionsRaw === "number" ? Number(incorrectActionsRaw) : Math.max(0, totalActions - correctActions);
+      const mistakesRaw = snapshot.mistakes;
+      const mistakes = typeof mistakesRaw === "number" ? Number(mistakesRaw) : incorrectActions;
+      const timeSpentRaw = snapshot.timeSpentSeconds ?? snapshot.timeSpent;
+      const timeSpentSeconds = typeof timeSpentRaw === "number" ? Math.max(0, Number(timeSpentRaw)) : 0;
+      return {
+        id: Number(row.id),
+        caseId: Number(row.caseId),
+        caseSlug: row.caseSlug,
+        subjectSlug: row.subjectSlug,
+        subjectName: row.subjectName,
+        collectionSlug: row.collectionSlug,
+        score: Number(row.score ?? 0),
+        totalActions,
+        correctActions,
+        incorrectActions,
+        mistakes,
+        timeSpentSeconds,
+        startedAt: row.startedAt ? row.startedAt.toISOString() : new Date().toISOString(),
+        completedAt: row.completedAt ? row.completedAt.toISOString() : null,
+      } satisfies CaseAttemptRecord;
+    });
 
   const userRow = await db
     .select({ name: users.name })
@@ -797,6 +852,7 @@ export async function loadCaseExperience({ userId, collectionSlug }: LoadCaseExp
     activeSubject,
     cases,
     activeCases,
+    history,
   });
 
   return { bundle, collection, subjects, cases, availableCollections: collections };
@@ -811,6 +867,7 @@ type BuildBundleArgs = {
   activeSubject: CaseSubjectSummary;
   cases: CaseSummary[];
   activeCases: CaseSummary[];
+  history: CaseAttemptRecord[];
 };
 
 function buildPracticeBundle({
@@ -822,6 +879,7 @@ function buildPracticeBundle({
   activeSubject,
   cases,
   activeCases,
+  history,
 }: BuildBundleArgs): PracticeBundle {
   const now = new Date();
   const iso = (offsetDays: number) => {
@@ -830,14 +888,15 @@ function buildPracticeBundle({
     return d.toISOString();
   };
 
-  const todayPlan = buildTodayPlan(activeSubject, activeCases);
+  const subjectAttempts = history.filter((attempt) => attempt.subjectSlug === activeSubject.slug);
+  const todayPlan = buildTodayPlan(activeSubject, activeCases, subjectAttempts);
   const paceStatus = buildPaceStatus(todayPlan);
-  const weaknessNudges = buildWeaknessNudges(activeSubject, activeCases);
-  const reviewQueue = buildReviewQueue(activeSubject, activeCases, iso);
-  const notifications = buildNotifications(collection.slug, activeSubject, activeCases, iso);
-  const sessionSummary = buildSessionSummary(activeSubject, activeCases);
-  const dashboard = buildDashboard(activeSubject, cases);
-  const resources = buildResources(activeCases);
+  const weaknessNudges = buildWeaknessNudges(activeSubject, activeCases, subjectAttempts);
+  const reviewQueue = buildReviewQueue(activeSubject, activeCases, subjectAttempts, iso);
+  const notifications = buildNotifications(collection.slug, activeSubject, activeCases, subjectAttempts, iso);
+  const sessionSummary = buildSessionSummary(activeSubject, activeCases, subjectAttempts);
+  const dashboard = buildDashboard(activeSubject, cases, history);
+  const resources = buildResources(activeCases, subjectAttempts);
 
   return {
     user: {
@@ -869,6 +928,7 @@ function buildPracticeBundle({
     weaknessNudges,
     modes: ["study", "exam", "rapid", "adaptive", "custom"],
     cases,
+    history: history.map((item) => ({ ...item })),
     reviewQueue,
     sessionSummary,
     dashboard,
@@ -876,4 +936,3 @@ function buildPracticeBundle({
     resources,
   };
 }
-

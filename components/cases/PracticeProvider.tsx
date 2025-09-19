@@ -17,6 +17,7 @@ import type {
   CaseSubjectSummary,
   CaseSummary,
   TodayPlanBlock,
+  CaseAttemptRecord,
 } from "@/lib/cases/types";
 
 export type SessionFilters = {
@@ -82,6 +83,7 @@ type PracticeState = {
   todayPlanStatus: Record<string, "pending" | "in_progress" | "completed">;
   onboarding: OnboardingState;
   activeSession: ActiveSession | null;
+  history: CaseAttemptRecord[];
 };
 
 type Action =
@@ -100,7 +102,8 @@ type Action =
   | { type: "complete-onboarding" }
   | { type: "start-session"; session: ActiveSession }
   | { type: "advance-session"; completedSlug?: string | null }
-  | { type: "end-session" };
+  | { type: "end-session" }
+  | { type: "append-attempt"; attempt: CaseAttemptRecord };
 
 export interface PracticeContextValue {
   bundle: PracticeBundle;
@@ -121,6 +124,7 @@ export interface PracticeContextValue {
   startSession: (draft: SessionDraft) => void;
   advanceSession: (completedSlug?: string | null) => void;
   endSession: () => void;
+  recordAttempt: (attempt: CaseAttemptRecord) => void;
 }
 
 const PracticeContext = createContext<PracticeContextValue | null>(null);
@@ -174,7 +178,8 @@ const deriveSubjectCases = (bundle: PracticeBundle, subjectSlug: string): { subj
 export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle; children: React.ReactNode }) {
   const initialSubjectSlug = bundle.activeSubject?.slug ?? bundle.subjects[0]?.slug ?? "general";
   const { subject: initialSubject, cases: initialCases } = deriveSubjectCases(bundle, initialSubjectSlug);
-  const initialPlan = buildTodayPlan(initialSubject, initialCases);
+  const initialSubjectAttempts = bundle.history.filter((attempt) => attempt.subjectSlug === initialSubject.slug);
+  const initialPlan = buildTodayPlan(initialSubject, initialCases, initialSubjectAttempts);
 
   const initialState: PracticeState = {
     mode: bundle.user.preferredMode,
@@ -186,6 +191,7 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
     todayPlanStatus: buildInitialPlanStatus(initialPlan),
     onboarding: buildDefaultOnboarding(bundle),
     activeSession: null,
+    history: bundle.history ?? [],
   };
 
   const reducer = (state: PracticeState, action: Action): PracticeState => {
@@ -194,7 +200,8 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
         return { ...state, mode: action.mode };
       case "set-subject": {
         const { subject, cases } = deriveSubjectCases(bundle, action.subjectSlug);
-        const nextPlan = buildTodayPlan(subject, cases);
+        const subjectAttempts = state.history.filter((attempt) => attempt.subjectSlug === subject.slug);
+        const nextPlan = buildTodayPlan(subject, cases, subjectAttempts);
         return {
           ...state,
           activeSubjectSlug: subject.slug,
@@ -329,6 +336,13 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
           activeSession: null,
         };
       }
+      case "append-attempt": {
+        const filtered = state.history.filter((item) => item.id !== action.attempt.id);
+        return {
+          ...state,
+          history: [action.attempt, ...filtered].slice(0, 400),
+        };
+      }
       default:
         return state;
     }
@@ -338,7 +352,8 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
 
   const derivedBundle = useMemo(() => {
     const { subject, cases } = deriveSubjectCases(bundle, state.activeSubjectSlug);
-    const todayPlan = buildTodayPlan(subject, cases);
+    const subjectAttempts = state.history.filter((attempt) => attempt.subjectSlug === subject.slug);
+    const todayPlan = buildTodayPlan(subject, cases, subjectAttempts);
     const completedMinutes = todayPlan.reduce((acc, block) => {
       return (
         acc +
@@ -349,21 +364,22 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
       );
     }, 0);
     const paceStatus = buildPaceStatus(todayPlan, completedMinutes);
-    const weaknessNudges = buildWeaknessNudges(subject, cases);
+    const weaknessNudges = buildWeaknessNudges(subject, cases, subjectAttempts);
     const now = new Date();
     const iso = (offset: number) => {
       const d = new Date(now);
       d.setDate(d.getDate() + offset);
       return d.toISOString();
     };
-    const reviewQueue = buildReviewQueue(subject, cases, iso);
-    const notifications = buildNotifications(bundle.collection.slug, subject, cases, iso);
-    const sessionSummary = buildSessionSummary(subject, cases);
-    const dashboard = buildDashboard(subject, bundle.cases);
-    const resources = buildResources(cases);
+    const reviewQueue = buildReviewQueue(subject, cases, subjectAttempts, iso);
+    const notifications = buildNotifications(bundle.collection.slug, subject, cases, subjectAttempts, iso);
+    const sessionSummary = buildSessionSummary(subject, cases, subjectAttempts);
+    const dashboard = buildDashboard(subject, bundle.cases, state.history);
+    const resources = buildResources(cases, subjectAttempts);
 
     return {
       ...bundle,
+      history: state.history.map((item) => ({ ...item })),
       activeSubject: subject,
       todayPlan,
       paceStatus,
@@ -374,7 +390,7 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
       dashboard,
       resources,
     } satisfies PracticeBundle;
-  }, [bundle, state.activeSubjectSlug, state.todayPlanStatus]);
+  }, [bundle, state.activeSubjectSlug, state.todayPlanStatus, state.history]);
 
   const value = useMemo<PracticeContextValue>(
     () => ({
@@ -409,6 +425,7 @@ export function PracticeProvider({ bundle, children }: { bundle: PracticeBundle;
       },
       advanceSession: (completedSlug) => dispatch({ type: "advance-session", completedSlug: completedSlug ?? null }),
       endSession: () => dispatch({ type: "end-session" }),
+      recordAttempt: (attempt) => dispatch({ type: "append-attempt", attempt }),
     }),
     [derivedBundle, state]
   );

@@ -25,6 +25,16 @@ type Achievement = {
   status: "earned" | "in_progress";
 };
 
+type AttemptStepPayload = {
+  stageId: number;
+  stageSlug: string;
+  optionId: number;
+  optionValue: string;
+  correct: boolean;
+  costTime: number | null;
+  takenAt: number;
+};
+
 const STEP_BADGE_META = {
   interaction: { label: "Interaction", className: "bg-indigo-500/15 text-indigo-200" },
   system: { label: "Scene update", className: "bg-sky-500/15 text-sky-200" },
@@ -42,13 +52,22 @@ const TONE_META: Record<CommentaryTone, { label: string; helper: string; classNa
 
 export default function CasePlayer({ caseId }: { caseId: string }) {
   const router = useRouter();
-  const { bundle, state: practiceState, selectCase: setActiveCase, advanceSession, endSession } = usePractice();
+  const { bundle, state: practiceState, selectCase: setActiveCase, advanceSession, endSession, setPlanStatus, recordAttempt } = usePractice();
   const baseHref = useMemo(() => `/cases/${bundle.collection.slug}`, [bundle.collection.slug]);
   const caseSummary = useMemo(
     () => bundle.cases.find((item) => item.id === caseId || item.slug === caseId),
     [bundle.cases, caseId]
   );
 
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const attemptSignatureRef = useRef<string | null>(null);
+  const inFlightSignatureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    attemptSignatureRef.current = null;
+    inFlightSignatureRef.current = null;
+    setSaveStatus("idle");
+  }, [caseSummary?.id]);
 
   useEffect(() => {
     if (caseSummary && practiceState.activeCaseSlug !== caseSummary.slug) {
@@ -75,6 +94,150 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [currentStage, selectOption]);
+
+  useEffect(() => {
+    if (!caseSummary || state.status !== "completed" || !caseSummary.graph?.stageMap) {
+      return;
+    }
+    if (!state.timeline.length) {
+      return;
+    }
+    if (saveStatus === "error") {
+      return;
+    }
+
+    const stageMap = caseSummary.graph.stageMap;
+    const optionSteps: AttemptStepPayload[] = state.timeline
+      .filter((step) => step.kind === "option" && step.optionValue && stageMap[step.stageSlug])
+      .map((step) => {
+        const stage = stageMap[step.stageSlug];
+        const option = stage?.options.find((candidate) => candidate.value === step.optionValue);
+        if (!stage || !option) return null;
+        return {
+          stageId: stage.id,
+          stageSlug: stage.slug,
+          optionId: option.id,
+          optionValue: option.value,
+          correct: Boolean(step.isCorrect),
+          costTime: option.costTime ?? null,
+          takenAt: step.takenAt ?? Date.now(),
+        };
+      })
+      .filter((item): item is AttemptStepPayload => item !== null);
+
+    if (!optionSteps.length) {
+      return;
+    }
+
+    const sortedByTime = [...optionSteps].sort((a, b) => a.takenAt - b.takenAt);
+    const startedAt = Math.round(sortedByTime[0]?.takenAt ?? Date.now());
+    const completedAt = Math.round(sortedByTime[sortedByTime.length - 1]?.takenAt ?? startedAt);
+    const signature = `${caseSummary.id}:${state.timeline.length}:${completedAt}`;
+
+    if (attemptSignatureRef.current === signature || inFlightSignatureRef.current === signature) {
+      return;
+    }
+
+    inFlightSignatureRef.current = signature;
+
+    const totalActions = state.totalActions;
+    const correctActions = optionSteps.filter((step) => step.correct).length;
+    const incorrectActions = optionSteps.length - correctActions;
+    const mistakes = state.mistakes;
+    const timeSpentSeconds = Math.max(0, Math.round((completedAt - startedAt) / 1000));
+
+    const payload = {
+      caseSlug: caseSummary.slug,
+      steps: optionSteps,
+      summary: {
+        totalActions,
+        correctActions,
+        incorrectActions,
+        score: state.score,
+        mistakes,
+        phase: state.phase,
+        masteryEnergy: state.masteryEnergy,
+        comboLevel: state.comboLevel,
+        startedAt,
+        completedAt,
+        timeSpentSeconds,
+      },
+      evidence: state.evidence ?? [],
+    };
+
+    setSaveStatus("saving");
+    fetch(`/api/cases/${bundle.collection.slug}/practice/${caseSummary.slug}/attempts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to record attempt: ${response.status}`);
+        }
+        let attemptPayload: any = null;
+        try {
+          const data = await response.json();
+          attemptPayload = data?.attempt ?? null;
+        } catch {}
+
+        const startedAtIso =
+          typeof attemptPayload?.startedAt === "string"
+            ? attemptPayload.startedAt
+            : new Date(startedAt).toISOString();
+        const completedAtIso =
+          typeof attemptPayload?.completedAt === "string"
+            ? attemptPayload.completedAt
+            : new Date(completedAt).toISOString();
+
+        const attemptRecord = {
+          id: Number(attemptPayload?.id ?? Date.now()),
+          caseId: caseSummary.dbId,
+          caseSlug: caseSummary.slug,
+          subjectSlug: caseSummary.subjectSlug,
+          subjectName: caseSummary.subjectName,
+          collectionSlug: bundle.collection.slug,
+          score: Number(attemptPayload?.score ?? state.score),
+          totalActions: Number(attemptPayload?.totalActions ?? totalActions),
+          correctActions: Number(attemptPayload?.correctActions ?? correctActions),
+          incorrectActions: Number(attemptPayload?.incorrectActions ?? incorrectActions),
+          mistakes,
+          timeSpentSeconds: Number(attemptPayload?.timeSpentSeconds ?? timeSpentSeconds),
+          startedAt: startedAtIso,
+          completedAt: completedAtIso,
+        };
+
+        attemptSignatureRef.current = signature;
+        inFlightSignatureRef.current = null;
+
+        recordAttempt(attemptRecord);
+        setPlanStatus(caseSummary.slug, "completed");
+        setSaveStatus("saved");
+      })
+      .catch((error) => {
+        inFlightSignatureRef.current = null;
+        if (attemptSignatureRef.current === signature) {
+          attemptSignatureRef.current = null;
+        }
+        console.error("Failed to sync case attempt", error);
+        setSaveStatus("error");
+      });
+  }, [
+    bundle.collection.slug,
+    caseSummary,
+    recordAttempt,
+    saveStatus,
+    setPlanStatus,
+    state.comboLevel,
+    state.evidence,
+    state.masteryEnergy,
+    state.mistakes,
+    state.phase,
+    state.score,
+    state.status,
+    state.timeline,
+    state.totalActions,
+  ]);
 
   const orderedStages = useMemo(() => buildStepper(state), [state]);
   const selectedForStage = currentStage ? state.selectedOptions[currentStage.slug] ?? [] : [];
@@ -164,12 +327,32 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
             <p className="max-w-2xl text-sm text-slate-200 md:text-base">{caseSummary.overview ?? caseSummary.subtitle ?? "Move through the scene-by-scene investigation. We will prompt you when it is time to continue."}</p>
             <QuickPrimer />
           </div>
-          <div className="flex flex-wrap gap-4 text-sm text-slate-100">
+          <div className="flex flex-wrap items-start gap-4 text-sm text-slate-100">
             <EnergyMeter energy={state.masteryEnergy} comboLevel={state.comboLevel} />
             <StatCard label="Time budget" value={`${state.timeSpent} / ${caseSummary.estimatedMinutes ?? 20} min`} helper="Target the budget but do not rush." accent={theme.statAccent} />
             <StatCard label="Score" value={`${state.score > 0 ? "+" : ""}${state.score}`} helper="Score shifts with each decision." accent={theme.statAccent} />
             <StatCard label="Actions" value={`${state.totalActions}`} helper={`${state.mistakes} missteps - streak ${state.streak}`} accent={theme.statAccent} />
             {session && <SessionBadge session={session} currentSlug={caseSummary.slug} />}
+            <div className="min-w-[140px] text-xs text-slate-400">
+              {saveStatus === "saving" && <span>Syncing attempt...</span>}
+              {saveStatus === "saved" && <span className="text-emerald-300">Attempt saved</span>}
+              {saveStatus === "error" && (
+                <span className="flex items-center gap-2 text-amber-300">
+                  Sync failed
+                  <button
+                    type="button"
+                    className="rounded border border-amber-400/60 px-2 py-[2px] text-xs text-amber-200 hover:border-amber-300 hover:text-amber-100"
+                    onClick={() => {
+                      attemptSignatureRef.current = null;
+                      inFlightSignatureRef.current = null;
+                      setSaveStatus("idle");
+                    }}
+                  >
+                    Retry
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -884,13 +1067,5 @@ const MANAGEMENT_THEME = {
   statAccent: "text-amber-200",
   stepChip: "border-slate-700",
 };
-
-
-
-
-
-
-
-
 
 

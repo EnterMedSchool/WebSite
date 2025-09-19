@@ -71,8 +71,8 @@ type CaseEngineAction =
   | { type: "reset"; summary?: CaseSummary }
   | { type: "select-option"; stageSlug?: string; optionValue: string }
   | { type: "jump-stage"; stageSlug: string }
-  | { type: "advance-stage"; stageSlug?: string };
-  | { type: "trigger-interaction"; stageSlug?: string; interactionId: string };
+  | { type: "advance-stage"; stageSlug?: string }
+  | { type: "trigger-interaction"; stageSlug?: string; interactionId: string }
 
 const INITIAL_STATE: CaseEngineState = {
   status: "loading",
@@ -394,10 +394,11 @@ function triggerInteraction(state: CaseEngineState, stage: CaseStage, interactio
 
   const timeline = [...state.timeline, step];
   let badges = state.badges;
-  if (interaction.badge) {
-    const exists = badges.some((item) => item.id === interaction.badge.id);
+  const badge = interaction.badge;
+  if (badge) {
+    const exists = badges.some((item) => item.id === badge.id);
     if (!exists) {
-      badges = [...badges, interaction.badge];
+      badges = [...badges, badge];
     }
   }
 
@@ -525,3 +526,5 @@ export function useCaseEngine(summary: CaseSummary | undefined) {
     currentStage,
   };
 }
+
+

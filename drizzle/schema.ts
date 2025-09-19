@@ -1274,8 +1274,10 @@ export const caseAttempts = pgTable(
     completedAt: timestamp("completed_at"),
   },
   (t) => ({
-    userCaseUnique: uniqueIndex("case_attempts_user_active_idx").on(t.userId, t.caseId, t.status),
+    userActive: uniqueIndex("case_attempts_user_active_idx").on(t.userId, t.caseId).where(sql`${t.status} = 'in_progress'`),
     userIdx: index("case_attempts_user_idx").on(t.userId, t.caseId),
+    userStatusIdx: index("case_attempts_user_status_idx").on(t.userId, t.status, t.completedAt),
+    caseStatusIdx: index("case_attempts_case_status_idx").on(t.caseId, t.status, t.completedAt),
   })
 );
 
