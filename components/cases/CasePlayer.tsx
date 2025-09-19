@@ -75,6 +75,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
     const handler = (event: KeyboardEvent) => {
       if (!currentStage || currentStage.options.length === 0) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (state.pendingStageSlug && !currentStage.allowMultiple) return;
       if (HOTKEYS.includes(event.key)) {
         const index = Number(event.key) - 1;
         const option = currentStage.options[index];
@@ -86,7 +87,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [currentStage, selectOption]);
+  }, [currentStage, selectOption, state.pendingStageSlug]);
 
   useEffect(() => {
     if (!caseSummary || state.status !== "completed" || !caseSummary.graph?.stageMap) {
@@ -363,6 +364,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
           baseHref={baseHref}
           theme={theme}
           feedbackStep={state.lastStep}
+          pendingStageSlug={state.pendingStageSlug}
           triggeredInteractions={triggeredInteractions}
           session={session}
           sessionCursor={sessionIndex}
@@ -432,6 +434,7 @@ function StagePanel({
   baseHref,
   theme,
   feedbackStep,
+  pendingStageSlug,
   triggeredInteractions,
   session,
   sessionCursor,
@@ -452,6 +455,7 @@ function StagePanel({
   baseHref: string;
   theme: typeof DIAGNOSIS_THEME;
   feedbackStep?: CaseEngineStep;
+  pendingStageSlug: string | null;
   triggeredInteractions: Set<string>;
   session?: ActiveSession | null;
   sessionCursor: number;
@@ -473,6 +477,8 @@ function StagePanel({
   const total = totalSteps || 1;
   const infoOnly = options.length === 0;
   const interactions = stage.interactions ?? [];
+  const awaitingAdvance = Boolean(pendingStageSlug);
+  const allowMultiple = stage.allowMultiple;
   const feedback = feedbackStep && feedbackStep.stageSlug === stage.slug ? feedbackStep : undefined;
   const inSession = Boolean(session && sessionCursor >= 0);
   const sessionTotal = session?.caseSlugs.length ?? 0;
@@ -544,9 +550,21 @@ function StagePanel({
                 hotkey={HOTKEYS[index]}
                 selected={selected.includes(option.value)}
                 disabled={isCompleted}
+                locked={awaitingAdvance && !allowMultiple}
                 onChoose={() => onSelect(option)}
               />
             ))}
+            {awaitingAdvance && (
+              <div className="rounded-2xl border border-indigo-500/40 bg-indigo-500/10 p-4">
+                <p className="text-xs text-slate-300">The attending weighed in. Read the feedback, then continue.</p>
+                <button
+                  onClick={onAdvance}
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:translate-y-[-1px] hover:shadow-indigo-700/30"
+                >
+                  Continue
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -763,6 +781,7 @@ function ActionCard({
   hotkey,
   selected,
   disabled,
+  locked,
   onChoose,
 }: {
   option: CaseStageOption;
@@ -770,15 +789,28 @@ function ActionCard({
   hotkey?: string;
   selected: boolean;
   disabled: boolean;
+  locked: boolean;
   onChoose: () => void;
 }) {
-  const badge = selected ? "border-emerald-400 bg-emerald-500/10" : "border-slate-800 bg-slate-900/60";
+  const isDisabled = disabled || selected || (locked && !selected);
+  const badge = selected
+    ? "border-emerald-400 bg-emerald-500/10"
+    : locked
+      ? "border-slate-800 bg-slate-900/40"
+      : "border-slate-800 bg-slate-900/60";
+  const helperText = locked
+    ? "Review the attending note, then continue."
+    : "Choose an option to see what happens next.";
+  const helperClass = locked ? "text-amber-200/80" : "text-indigo-200/70";
+  const buttonClass = `w-full rounded-2xl border px-5 py-4 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400/70 ${badge} ${
+    isDisabled && !selected ? "opacity-60 cursor-not-allowed" : "hover:border-indigo-400/80"
+  }`;
 
   return (
     <button
       onClick={onChoose}
-      disabled={disabled || selected}
-      className={`w-full rounded-2xl border px-5 py-4 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400/70 ${badge} ${disabled ? "opacity-60" : "hover:border-indigo-400/80"}`}
+      disabled={isDisabled}
+      className={buttonClass}
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
@@ -792,7 +824,7 @@ function ActionCard({
           {option.detail && <p className="mt-2 text-xs text-slate-400">{option.detail}</p>}
         </div>
         {!selected && (
-          <p className="text-[11px] text-indigo-200/70">Choose an option to see what happens next.</p>
+          <p className={`text-[11px] ${helperClass}`}>{helperText}</p>
         )}
       </div>
     </button>

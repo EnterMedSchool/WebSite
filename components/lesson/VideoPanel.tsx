@@ -51,14 +51,15 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
     try {
       const el = document.querySelector(`[data-lesson-anchor="${id}"]`) as HTMLElement | null;
       if (!el) return;
-      el.classList.add('ring-2','ring-indigo-300','bg-indigo-50');
+      el.classList.add('ring-2','ring-sky-300','bg-sky-50');
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      window.setTimeout(() => el.classList.remove('ring-2','ring-indigo-300','bg-indigo-50'), 1800);
+      window.setTimeout(() => el.classList.remove('ring-2','ring-sky-300','bg-sky-50'), 1800);
     } catch {}
   }
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5">
+      <div className="relative overflow-hidden rounded-3xl bg-white/90 shadow-xl ring-1 ring-sky-100">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-50 via-amber-50 to-rose-50 opacity-90" aria-hidden="true" />
         {/* Preview image with start CTA; loads embed only after click */}
         {!playing ? (
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
@@ -70,9 +71,9 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
                   <div className="text-xs opacity-90">{overlaySubtitle || ''}</div>
                   <div className="text-lg font-semibold">{overlayTitle || 'Lesson'}</div>
                 </div>
-                <button onClick={() => setPlaying(true)} className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">
+                <button onClick={() => setPlaying(true)} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  <span>Start · Resume</span>
+                  <span>Start / Resume</span>
                 </button>
               </div>
             </div>
@@ -106,12 +107,12 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
         {/* In-player controls overlay (skeleton) */}
         <div className="pointer-events-none absolute right-3 top-3 z-10 flex gap-2">
           <div className="relative pointer-events-auto">
-            <button aria-haspopup="menu" onClick={() => setCcOpen((v)=>!v)} className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/70">CC • English</button>
+            <button aria-haspopup="menu" onClick={() => setCcOpen((v)=>!v)} className="rounded-full bg-slate-900/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-slate-900/80">CC | English</button>
             {ccOpen && (
-              <div className="absolute right-0 z-10 mt-2 w-40 rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-black/5">
-                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-indigo-50">English</button>
-                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-indigo-50">Italiano</button>
-                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-indigo-50">Subtitles off</button>
+              <div className="absolute right-0 z-10 mt-2 w-40 rounded-xl border border-sky-100 bg-white/95 p-2 text-sm shadow-lg ring-1 ring-sky-100">
+                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-sky-50">English</button>
+                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-sky-50">Italiano</button>
+                <button className="block w-full rounded-lg px-2 py-1 text-left hover:bg-sky-50">Subtitles off</button>
               </div>
             )}
           </div>
@@ -131,9 +132,9 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
       </div>
 
       {/* Animated timeline with anchor dots */}
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 p-3 ring-1 ring-inset ring-indigo-100">
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/70 shadow-inner ring-1 ring-indigo-100">
-          <div className="fill absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" style={{ width: `${progress}%` }} />
+      <div className="rounded-3xl bg-gradient-to-br from-sky-50 via-rose-50 to-amber-50 p-3 ring-1 ring-inset ring-sky-100">
+        <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/80 shadow-inner ring-1 ring-sky-100">
+          <div className="fill absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-rose-500" style={{ width: `${progress}%` }} />
           {(anchors || [
             { pos: 12, id: 'a1', label: 'Overview' },
             { pos: 42, id: 'a2', label: 'Key labs' },
@@ -145,14 +146,14 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
               aria-label={a.label}
               onMouseEnter={() => highlight(a.id)}
               onClick={() => highlight(a.id)}
-              className="dot pulse group absolute top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-white text-indigo-700 ring-2 ring-indigo-600 transition-transform hover:scale-110"
+              className="dot pulse group absolute top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-white text-sky-700 ring-2 ring-sky-500 transition-transform hover:scale-110"
               style={{ left: `${Math.max(0, Math.min(100, a.pos))}%` }}
             >
-              <span className="pointer-events-none tooltip absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">{a.label}</span>
+              <span className="pointer-events-none tooltip absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow">{a.label}</span>
             </button>
           ))}
         </div>
-        <div className="mt-1 flex items-center justify-between text-[11px] text-indigo-800/70">
+        <div className="mt-1 flex items-center justify-between text-[11px] text-sky-900/70">
           <span>Intro</span>
           <span>Summary</span>
         </div>
@@ -160,7 +161,7 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
           .fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); transform: translateX(-100%); animation: sheen 2.5s linear infinite; }
           @keyframes sheen { from { transform: translateX(-100%);} to { transform: translateX(100%);} }
           .pulse { animation: pulse 2s ease-out infinite; }
-          @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,.35);} 70% { box-shadow: 0 0 0 10px rgba(99,102,241,0);} 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0);} }
+          @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(14,165,233,.35);} 70% { box-shadow: 0 0 0 10px rgba(14,165,233,0);} 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0);} }
           .dot:hover .tooltip { opacity: 1; }
           .tooltip { opacity: 0; transition: opacity .15s ease; }
         `}</style>
@@ -173,7 +174,7 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
         <div className="flex items-center justify-between">
           <div>
             {prev ? (
-              <a href={prev.href} className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">
+              <a href={prev.href} className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-sky-700 shadow-sm hover:bg-sky-50">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 <span className="truncate max-w-[200px]">{prev.title}</span>
               </a>
@@ -181,7 +182,7 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
           </div>
           <div>
             {next ? (
-              <a href={next.href} className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50">
+              <a href={next.href} className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-sky-700 shadow-sm hover:bg-sky-50">
                 <span className="truncate max-w-[200px]">{next.title}</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </a>
@@ -192,3 +193,4 @@ export default function VideoPanel({ src, iframeSrc, poster, locked, lockReason,
     </div>
   );
 }
+

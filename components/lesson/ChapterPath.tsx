@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 
 type Step = {
   key: string | number;
@@ -54,7 +54,7 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
   const viewH = 80;
   const padX = 60;
   const baseY = viewH / 2; // baseline
-  const amp = 12; // small amplitude for a flatter line
+  const amp = 16; // slightly higher amplitude for a lively curve
 
   const points = useMemo(() => {
     const out: { x: number; y: number }[] = [];
@@ -62,7 +62,7 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
       const t = i / Math.max(1, N - 1);
       const x = padX + (viewW - padX * 2) * t;
       // Gentle single-wave curve across the path for compact height
-      const y = baseY + Math.sin(t * Math.PI) * amp * 0.8;
+      const y = baseY + Math.sin(t * Math.PI) * amp * 0.9;
       out.push({ x, y });
     }
     return out;
@@ -106,18 +106,28 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
     }
   }, [length, targetOffset, animate]);
 
+  const gradientId = useId();
+  const trackGradientId = `${gradientId}-track`;
+  const progressGradientId = `${gradientId}-progress`;
+
   return (
-    <div className="rounded-2xl border bg-white p-3 shadow-sm ring-1 ring-black/5">
-      <div className="mb-1 text-sm font-semibold text-gray-900">Chapter path</div>
+    <div className="relative overflow-hidden rounded-3xl bg-white/90 p-4 shadow-lg ring-1 ring-sky-100">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-50 via-amber-50 to-fuchsia-50 opacity-80" aria-hidden="true" />
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-sm font-semibold text-slate-900">Chapter path</div>
+        <div className="rounded-full bg-white/70 px-2.5 py-0.5 text-[11px] font-semibold text-sky-600 ring-1 ring-inset ring-sky-200">
+          Step {currentIndex + 1} of {N}
+        </div>
+      </div>
       <div className="relative">
-        <svg viewBox={`0 0 ${viewW} ${viewH}`} className="block h-16 w-full">
+        <svg viewBox={`0 0 ${viewW} ${viewH}`} className="block h-20 w-full">
           {/* Track */}
           <path
             ref={pathRef}
             d={pathD}
             fill="none"
-            stroke="url(#trackGradient)"
-            strokeWidth={7}
+            stroke={`url(#${trackGradientId})`}
+            strokeWidth={8}
             strokeLinecap="round"
           />
           {/* Animated progress overlay */}
@@ -125,20 +135,21 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
             ref={progressRef}
             d={pathD}
             fill="none"
-            stroke="url(#progressGradient)"
-            strokeWidth={8}
+            stroke={`url(#${progressGradientId})`}
+            strokeWidth={10}
             strokeLinecap="round"
             style={{ strokeDasharray: length, strokeDashoffset: length }}
           />
 
           <defs>
-            <linearGradient id="trackGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#E5E7EB" />
-              <stop offset="100%" stopColor="#E5E7EB" />
+            <linearGradient id={trackGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#bae6fd" />
+              <stop offset="100%" stopColor="#fbcfe8" />
             </linearGradient>
-            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10B981" />
-              <stop offset="100%" stopColor="#34D399" />
+            <linearGradient id={progressGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#0ea5e9" />
+              <stop offset="50%" stopColor="#6366f1" />
+              <stop offset="100%" stopColor="#ec4899" />
             </linearGradient>
           </defs>
 
@@ -146,9 +157,9 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
           {points.map((p, i) => {
             const done = i < currentIndex;
             const current = i === currentIndex;
-            const fill = done ? "#10B981" : current ? "#4F46E5" : "#FFFFFF";
-            const stroke = done ? "#047857" : current ? "#4338CA" : "#D1D5DB";
-            const r = current ? 8 : 7;
+            const fill = done ? "#14b8a6" : current ? "#f97316" : "#FFFFFF";
+            const stroke = done ? "#0f766e" : current ? "#c2410c" : "#cbd5f5";
+            const r = current ? 9 : 8;
             return (
               <g key={`dot-${i}`}>
                 <circle cx={p.x} cy={p.y} r={r + 2} fill="#FFFFFF" stroke={stroke} strokeWidth={2} />
@@ -159,7 +170,7 @@ export default function ChapterPath({ steps, activeIndex, animate = true }: Chap
                   textAnchor="middle"
                   fontSize="9"
                   fontWeight={700}
-                  fill={done || current ? "#FFFFFF" : "#6B7280"}
+                  fill={done || current ? "#FFFFFF" : "#475569"}
                 >
                   {i + 1}
                 </text>

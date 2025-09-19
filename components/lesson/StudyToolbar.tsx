@@ -87,9 +87,9 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   function askAI() { try { window.dispatchEvent(new CustomEvent('ai:open')); } catch {} onAskAI?.(); }
 
   // 44px hit-targets
-  const segBtn = (active: boolean) => `inline-flex h-10 md:h-11 items-center gap-1 rounded-full px-3 md:px-3 text-sm font-semibold transition ${active ? 'bg-white text-indigo-700 shadow' : 'text-gray-800 hover:text-indigo-700'}`;
-  const ghostBtn = `inline-flex h-10 md:h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-50`;
-  const primaryBtn = `inline-flex h-10 md:h-11 items-center gap-2 rounded-full bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 active:scale-[.98]`;
+  const segBtn = (active: boolean) => `inline-flex h-10 md:h-11 items-center gap-1 rounded-full px-3 md:px-3 text-sm font-semibold transition ${active ? 'bg-gradient-to-r from-sky-100 via-rose-100 to-white text-sky-700 shadow' : 'text-slate-600 hover:text-sky-700'}`;
+  const ghostBtn = `inline-flex h-10 md:h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500`;
+  const primaryBtn = `inline-flex h-10 md:h-11 items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-rose-500 px-4 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 active:scale-[.98]`;
   // Focus should be primary (blue) in both states
   const toggleBtn = primaryBtn;
   function goUniResources() {
@@ -101,12 +101,13 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
   }
 
   return (
-    <div className="lesson-toolbar sticky top-20 sm:top-24 z-[5] rounded-2xl border bg-white/95 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <div className="lesson-toolbar sticky top-20 sm:top-24 z-[5] relative overflow-hidden rounded-3xl bg-white/90 p-3 shadow-xl ring-1 ring-sky-100/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-50 via-rose-50 to-amber-50 opacity-85" aria-hidden="true" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         {!focus ? (
           <>
             {/* Mode switch (hidden on mobile; duplicated by bottom nav) */}
-            <div className="ios-segmented hidden sm:inline-flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+            <div className="ios-segmented hidden sm:inline-flex items-center gap-1 rounded-full bg-white/80 p-1 ring-1 ring-inset ring-sky-100 shadow">
               <button onClick={() => onMode('learn')} className={segBtn(mode==='learn')}><IconBook /><span>Learn</span></button>
               {/* Practice tab removed as requested */}
               <button onClick={() => onMode('background')} className={segBtn(mode==='background')}><IconLamp /><span>Background</span></button>
@@ -139,7 +140,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
                   />
                 </button>
                 {pathOpen && Array.isArray(lessonMenu) && lessonMenu.length > 0 && (
-                  <div className="absolute left-0 right-0 z-10 mt-2 max-h-72 overflow-auto rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-black/5">
+                  <div className="absolute left-0 right-0 z-10 mt-2 max-h-72 overflow-auto rounded-xl border border-sky-100 bg-white/95 p-2 text-sm shadow-lg ring-1 ring-sky-100">
                     {lessonMenu.map((it, i) => {
                       const chip = it.done ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-gray-300';
                       const isCurrent = it.current;
@@ -147,7 +148,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
                         <a
                           key={i}
                           href={it.href}
-                          className={`flex items-center justify-between gap-2 rounded-lg px-2 py-2 hover:bg-indigo-50 ${isCurrent ? 'bg-indigo-50' : ''}`}
+                          className={`flex items-center justify-between gap-2 rounded-lg px-2 py-2 hover:bg-sky-50 ${isCurrent ? 'bg-sky-50' : ''}`}
                           role="option"
                           aria-selected={!!isCurrent}
                         >
@@ -169,7 +170,7 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
             {/* Primary CTA + overflow menu (hide on mobile to save space) */}
             <div className="hidden sm:inline-flex items-center gap-2">
               <button className={primaryBtn} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <span>Start · Resume</span>
+                <span>Start / Resume</span>
               </button>
               <div className="relative">
                 <button aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v)=>!v)} className={ghostBtn}>
@@ -177,12 +178,12 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 z-10 mt-2 w-48 rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-black/5">
-                    <button onClick={share} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-indigo-50"><IconShare />Share</button>
-                    <button onClick={printPage} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-indigo-50"><IconPrint />Print</button>
-                    <button onClick={askAI} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-indigo-50"><IconGPT />Ask AI</button>
-                    <a href="/graph" className="flex w-full items-center gap-2 rounded-lg px-2 py-2 hover:bg-indigo-50">Mind map</a>
-                    <button onClick={onFocusToggle} className="mt-1 flex w-full items-center gap-2 rounded-lg bg-indigo-600 px-2 py-2 font-semibold text-white hover:bg-indigo-700">{focus ? 'Exit focus' : 'Focus mode'}</button>
+                  <div className="absolute right-0 z-10 mt-2 w-48 rounded-xl border bg-white p-2 text-sm shadow-lg ring-1 ring-sky-100">
+                    <button onClick={share} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-sky-50"><IconShare />Share</button>
+                    <button onClick={printPage} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-sky-50"><IconPrint />Print</button>
+                    <button onClick={askAI} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-sky-50"><IconGPT />Ask AI</button>
+                    <a href="/graph" className="flex w-full items-center gap-2 rounded-lg px-2 py-2 hover:bg-sky-50">Mind map</a>
+                    <button onClick={onFocusToggle} className="mt-1 flex w-full items-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 via-indigo-500 to-rose-500 px-2 py-2 font-semibold text-white hover:brightness-110">{focus ? 'Exit focus' : 'Focus mode'}</button>
                   </div>
                 )}
               </div>
@@ -190,12 +191,12 @@ export default function StudyToolbar({ mode, onMode, onShare, onPrint, onAskAI, 
           </>
         ) : (
           <div className="flex w-full items-center justify-between">
-            <div className="text-[12px] font-semibold text-indigo-900">Focus mode</div>
+            <div className="text-[12px] font-semibold text-sky-900">Focus mode</div>
             <button onClick={onFocusToggle} className={toggleBtn}>{focus ? 'Exit focus' : 'Focus'}</button>
           </div>
         )}
       </div>
-      {!focus && copied && <div className="mt-1 text-center text-[11px] text-indigo-700">Link copied to clipboard</div>}
+      {!focus && copied && <div className="mt-1 text-center text-[11px] text-sky-700">Link copied to clipboard</div>}
     </div>
   );
 }

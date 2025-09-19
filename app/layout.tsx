@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Baloo_2, Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import EMSFooter from "@/components/EMSFooter";
@@ -59,10 +59,14 @@ export const metadata: Metadata = {
       "https://entermedschool.b-cdn.net/wp-content/uploads/2023/03/ems_thumbnail_2-1024x512.png",
     ],
   },
-  themeColor: "#4F46E5", // indigo-600 (prominent brand blue)
   robots: process.env.NEXT_PUBLIC_ALLOW_INDEX === "true"
     ? { index: true, follow: true }
     : { index: false, follow: false },
+};
+
+
+export const viewport: Viewport = {
+  themeColor: "#4F46E5",
 };
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700" ] });

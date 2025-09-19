@@ -58,6 +58,7 @@ export interface CaseEngineState {
   hypotheses: string[];
   timeline: CaseEngineStep[];
   visitedStageSlugs: string[];
+  pendingStageSlug: string | null;
   selectedOptions: Record<string, string[]>;
   phaseTransitions: Array<{ from: number; to: number; at: string }>;
   badges: BadgeReward[];
@@ -91,6 +92,7 @@ const INITIAL_STATE: CaseEngineState = {
   hypotheses: [],
   timeline: [],
   visitedStageSlugs: [],
+  pendingStageSlug: null,
   selectedOptions: {},
   phaseTransitions: [],
   badges: [],
@@ -188,6 +190,7 @@ function createInitialState(summary: CaseSummary | undefined): CaseEngineState {
     visitedStageSlugs,
     masteryEnergy: 100,
     comboLevel: 0,
+    pendingStageSlug: null,
     selectedOptions: {},
     phaseTransitions: [],
   };
@@ -310,30 +313,55 @@ function nextStateAfterSelection(state: CaseEngineState, stage: CaseStage, optio
   }
 
   const nextStage = nextStageSlug ? registered.stageMap[nextStageSlug] : undefined;
-
-  const visitedStageSlugs = nextStageSlug && !registered.visitedStageSlugs.includes(nextStageSlug)
-    ? [...registered.visitedStageSlugs, nextStageSlug]
-    : registered.visitedStageSlugs;
-
-  const phaseTransitions = !nextStage || nextStage.phase === stage.phase
-    ? registered.phaseTransitions
-    : [...registered.phaseTransitions, { from: stage.phase, to: nextStage.phase, at: registered.lastStep?.id ?? `${stage.slug}:${option.value}` }];
-
+  const shouldQueueAdvance = Boolean(nextStageSlug && nextStageSlug !== stage.slug);
+  const pendingStageSlug = shouldQueueAdvance ? nextStageSlug : null;
   const caseCompleted = Boolean(option.outcomes?.caseComplete) || (!nextStageSlug && stage.isTerminal) || (nextStage?.isTerminal ?? false);
 
   return {
     ...registered,
     status: caseCompleted ? "completed" : registered.status,
-    currentStageSlug: nextStage ? nextStage.slug : caseCompleted ? stage.slug : null,
+    currentStageSlug: stage.slug,
+    phase: stage.phase,
+    pendingStageSlug,
+    visitedStageSlugs: registered.visitedStageSlugs,
+    phaseTransitions: registered.phaseTransitions,
+  } satisfies CaseEngineState;
+}
+
+function applyPendingAdvance(state: CaseEngineState, stage: CaseStage): CaseEngineState {
+  const nextStageSlug = state.pendingStageSlug;
+  if (!nextStageSlug) {
+    return state;
+  }
+
+  const nextStage = state.stageMap[nextStageSlug];
+  const visitedStageSlugs = nextStageSlug && !state.visitedStageSlugs.includes(nextStageSlug)
+    ? [...state.visitedStageSlugs, nextStageSlug]
+    : state.visitedStageSlugs;
+  const transitionId = state.lastStep?.id ?? `${stage.slug}:${state.timeline.length}`;
+  const phaseTransitions = !nextStage || nextStage.phase === stage.phase
+    ? state.phaseTransitions
+    : [...state.phaseTransitions, { from: stage.phase, to: nextStage.phase, at: transitionId }];
+  const caseCompleted = Boolean(state.lastStep?.outcomes?.caseComplete) || (!nextStage && stage.isTerminal) || (nextStage?.isTerminal ?? false);
+  const status = caseCompleted ? "completed" : state.status;
+
+  return {
+    ...state,
+    currentStageSlug: nextStage ? nextStage.slug : (caseCompleted ? stage.slug : state.currentStageSlug),
     phase: nextStage?.phase ?? stage.phase,
     visitedStageSlugs,
     phaseTransitions,
+    pendingStageSlug: null,
+    status,
   } satisfies CaseEngineState;
 }
 
 function advanceStage(state: CaseEngineState, stage: CaseStage): CaseEngineState {
   if (stage.options.length > 0) {
-    return state;
+    if (!state.pendingStageSlug) {
+      return state;
+    }
+    return applyPendingAdvance(state, stage);
   }
 
   const continueOption: CaseStageOption = {
@@ -350,9 +378,12 @@ function advanceStage(state: CaseEngineState, stage: CaseStage): CaseEngineState
     outcomes: null,
   };
 
-  return nextStateAfterSelection(state, stage, continueOption, { neutral: true, kind: "system" });
+  const registered = nextStateAfterSelection(state, stage, continueOption, { neutral: true, kind: "system" });
+  if (!registered.pendingStageSlug) {
+    return registered;
+  }
+  return applyPendingAdvance(registered, stage);
 }
-
 
 function triggerInteraction(state: CaseEngineState, stage: CaseStage, interaction: CaseStageInteraction): CaseEngineState {
   const reveals = interaction.reveals ?? [];
@@ -431,6 +462,7 @@ function caseEngineReducer(state: CaseEngineState, action: CaseEngineAction): Ca
         ...state,
         currentStageSlug: action.stageSlug,
         phase: state.stageMap[action.stageSlug].phase,
+        pendingStageSlug: null,
       } satisfies CaseEngineState;
     }
     case "select-option": {
