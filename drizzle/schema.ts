@@ -1,4 +1,4 @@
-import {
+﻿import {
   pgTable,
   serial,
   integer,
@@ -39,6 +39,14 @@ export const users = pgTable("users", {
   studyYear: integer("study_year"),
   matesVerified: boolean("mates_verified").default(false).notNull(),
   matesPublic: boolean("mates_public").default(false).notNull(),
+  profileStage: varchar("profile_stage", { length: 24 }).default('guest').notNull(),
+  examTracks: jsonb("exam_tracks").default(sql`'[]'::jsonb`).notNull(),
+  admissionsFocusCountry: varchar("admissions_focus_country", { length: 64 }),
+  admissionsFocusRegion: varchar("admissions_focus_region", { length: 64 }),
+  schoolStatus: varchar("school_status", { length: 24 }).default('unknown').notNull(),
+  schoolPreferences: jsonb("school_preferences").default(sql`'{}'::jsonb`),
+  dashboardPreferences: jsonb("dashboard_preferences").default(sql`'{}'::jsonb`).notNull(),
+  onboardingState: jsonb("onboarding_state").default(sql`'{}'::jsonb`).notNull(),
 });
 
 export const courses = pgTable(
@@ -1326,3 +1334,488 @@ export const verificationTokens = pgTable(
     userPurposeIdx: index("verification_tokens_user_purpose_idx").on(t.userId, t.purpose),
   })
 );
+
+// ---------------- Question bank tables ----------------
+
+export const qbankExams = pgTable(
+  "qbank_exams",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 80 }).notNull().unique(),
+    name: varchar("name", { length: 160 }).notNull(),
+    description: text("description"),
+    locale: varchar("locale", { length: 16 }).default("en").notNull(),
+    defaultUnitSystem: varchar("default_unit_system", { length: 8 }).default("SI").notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({ localeIdx: index("qbank_exams_locale_idx").on(table.locale) })
+);
+
+export const qbankSections = pgTable(
+  "qbank_sections",
+  {
+    id: serial("id").primaryKey(),
+    examId: integer("exam_id")
+      .references(() => qbankExams.id, { onDelete: "cascade" })
+      .notNull(),
+    slug: varchar("slug", { length: 80 }).notNull(),
+    name: varchar("name", { length: 160 }).notNull(),
+    description: text("description"),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    examOrderIdx: index("qbank_sections_exam_order_idx").on(table.examId, table.orderIndex),
+  })
+);
+
+export const qbankTopics = pgTable(
+  "qbank_topics",
+  {
+    id: serial("id").primaryKey(),
+    examId: integer("exam_id")
+      .references(() => qbankExams.id, { onDelete: "cascade" })
+      .notNull(),
+    sectionId: integer("section_id").references(() => qbankSections.id, { onDelete: "set null" }),
+    parentTopicId: integer("parent_topic_id").references(() => qbankTopics.id, { onDelete: "cascade" }),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    blueprintCode: varchar("blueprint_code", { length: 120 }),
+    depth: integer("depth").default(0).notNull(),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    sectionIdx: index("qbank_topics_section_idx").on(table.sectionId, table.orderIndex),
+    parentIdx: index("qbank_topics_parent_idx").on(table.parentTopicId, table.orderIndex),
+    blueprintIdx: index("qbank_topics_blueprint_idx").on(table.blueprintCode),
+  })
+);
+
+export const qbankQuestions = pgTable(
+  "qbank_questions",
+  {
+    id: serial("id").primaryKey(),
+    publicId: varchar("public_id", { length: 120 }).notNull(),
+    version: integer("version").default(1).notNull(),
+    isLatest: boolean("is_latest").default(false).notNull(),
+    status: varchar("status", { length: 24 }).default("draft").notNull(),
+    examId: integer("exam_id")
+      .references(() => qbankExams.id, { onDelete: "cascade" })
+      .notNull(),
+    sectionId: integer("section_id").references(() => qbankSections.id, { onDelete: "set null" }),
+    primaryTopicId: integer("primary_topic_id").references(() => qbankTopics.id, { onDelete: "set null" }),
+    questionType: varchar("question_type", { length: 32 }).default("sba").notNull(),
+    difficulty: varchar("difficulty", { length: 24 }),
+    cognitiveLevel: varchar("cognitive_level", { length: 32 }),
+    skillType: varchar("skill_type", { length: 32 }),
+    calculatorPolicy: varchar("calculator_policy", { length: 24 }).default("disallowed").notNull(),
+    unitSystem: varchar("unit_system", { length: 8 }).default("SI").notNull(),
+    primaryLocale: varchar("primary_locale", { length: 16 }).default("en").notNull(),
+    timeEstimateSec: integer("time_estimate_sec").default(90).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    tags: jsonb("tags").default(sql`'[]'::jsonb`),
+    security: jsonb("security").default(sql`'{}'::jsonb`),
+    irtA: doublePrecision("irt_a"),
+    irtB: doublePrecision("irt_b"),
+    irtC: doublePrecision("irt_c"),
+    psychometrics: jsonb("psychometrics").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    publishedAt: timestamp("published_at"),
+    retiredAt: timestamp("retired_at"),
+  },
+  (table) => ({
+    examIdx: index("qbank_questions_exam_idx").on(table.examId, table.status),
+    topicIdx: index("qbank_questions_topic_idx").on(table.primaryTopicId),
+    statusIdx: index("qbank_questions_status_idx").on(table.status, table.updatedAt),
+    latestIdx: uniqueIndex("qbank_questions_latest_idx")
+      .on(table.publicId)
+      .where(sql`${table.isLatest} = true`),
+  })
+);
+
+export const qbankQuestionStimuli = pgTable(
+  "qbank_question_stimuli",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    locale: varchar("locale", { length: 16 }).default("en").notNull(),
+    stimulusType: varchar("stimulus_type", { length: 24 }).default("vignette").notNull(),
+    content: jsonb("content").notNull(),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({ questionIdx: index("qbank_question_stimuli_question_idx").on(table.questionId) })
+);
+
+export const qbankQuestionMedia = pgTable(
+  "qbank_question_media",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    assetId: varchar("asset_id", { length: 120 }).notNull(),
+    mediaKind: varchar("media_kind", { length: 24 }).notNull(),
+    locale: varchar("locale", { length: 16 }).default("en").notNull(),
+    uri: text("uri"),
+    caption: text("caption"),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    security: jsonb("security").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({ mediaKindIdx: index("qbank_question_media_kind_idx").on(table.mediaKind) })
+);
+
+export const qbankQuestionOptions = pgTable(
+  "qbank_question_options",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    value: varchar("value", { length: 32 }).notNull(),
+    label: text("label"),
+    content: jsonb("content"),
+    isCorrect: boolean("is_correct").default(false).notNull(),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({ questionIdx: index("qbank_question_options_question_idx").on(table.questionId) })
+);
+
+export const qbankOptionRationales = pgTable("qbank_option_rationales", {
+  id: serial("id").primaryKey(),
+  optionId: integer("option_id")
+    .references(() => qbankQuestionOptions.id, { onDelete: "cascade" })
+    .notNull(),
+  rationaleType: varchar("rationale_type", { length: 24 }).default("why_incorrect").notNull(),
+  body: jsonb("body").notNull(),
+  metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const qbankQuestionExplanations = pgTable(
+  "qbank_question_explanations",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    explanationType: varchar("explanation_type", { length: 32 }).notNull(),
+    locale: varchar("locale", { length: 16 }).default("en").notNull(),
+    body: jsonb("body").notNull(),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({ questionIdx: index("qbank_question_explanations_question_idx").on(table.questionId) })
+);
+
+export const qbankQuestionReferences = pgTable(
+  "qbank_question_references",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    label: text("label").notNull(),
+    url: text("url"),
+    citation: text("citation"),
+    orderIndex: integer("order_index").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({ questionIdx: index("qbank_question_references_question_idx").on(table.questionId) })
+);
+
+export const qbankQuestionVariants = pgTable("qbank_question_variants", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id")
+    .references(() => qbankQuestions.id, { onDelete: "cascade" })
+    .notNull(),
+  variantCode: varchar("variant_code", { length: 80 }).notNull(),
+  seed: jsonb("seed").default(sql`'{}'::jsonb`),
+  metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const qbankQuestionTopicLinks = pgTable(
+  "qbank_question_topic_links",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    topicId: integer("topic_id")
+      .references(() => qbankTopics.id, { onDelete: "cascade" })
+      .notNull(),
+    coverageWeight: doublePrecision("coverage_weight"),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+  },
+  (table) => ({ topicIdx: index("qbank_question_topic_links_topic_idx").on(table.topicId) })
+);
+
+export const qbankQuestionStats = pgTable("qbank_question_stats", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id")
+    .references(() => qbankQuestions.id, { onDelete: "cascade" })
+    .notNull(),
+  sampleSize: integer("sample_size").default(0).notNull(),
+  pValue: doublePrecision("p_value"),
+  pointBiserial: doublePrecision("point_biserial"),
+  exposureCount: integer("exposure_count").default(0).notNull(),
+  difFlags: jsonb("dif_flags").default(sql`'[]'::jsonb`),
+  metrics: jsonb("metrics").default(sql`'{}'::jsonb`),
+  lastCalibratedAt: timestamp("last_calibrated_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const qbankOptionStats = pgTable("qbank_option_stats", {
+  id: serial("id").primaryKey(),
+  optionId: integer("option_id")
+    .references(() => qbankQuestionOptions.id, { onDelete: "cascade" })
+    .notNull(),
+  selectionCount: integer("selection_count").default(0).notNull(),
+  correctCount: integer("correct_count").default(0).notNull(),
+  misconceptionNotes: text("misconception_notes"),
+  cohorts: jsonb("cohorts").default(sql`'{}'::jsonb`),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const qbankQuestionFeedback = pgTable(
+  "qbank_question_feedback",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+    feedbackType: varchar("feedback_type", { length: 32 }).default("issue").notNull(),
+    body: text("body").notNull(),
+    status: varchar("status", { length: 24 }).default("open").notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => ({
+    statusIdx: index("qbank_question_feedback_status_idx").on(table.status, table.createdAt),
+    questionIdx: index("qbank_question_feedback_question_idx").on(table.questionId),
+  })
+);
+
+export const qbankQuestionBookmarks = pgTable(
+  "qbank_question_bookmarks",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    bookmarkType: varchar("bookmark_type", { length: 24 }).default("bookmark").notNull(),
+    note: text("note"),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({ questionIdx: index("qbank_question_bookmarks_question_idx").on(table.questionId) })
+);
+
+export const qbankAttempts = pgTable(
+  "qbank_attempts",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    examId: integer("exam_id").references(() => qbankExams.id, { onDelete: "set null" }),
+    sectionId: integer("section_id").references(() => qbankSections.id, { onDelete: "set null" }),
+    mode: varchar("mode", { length: 24 }).notNull(),
+    status: varchar("status", { length: 24 }).default("in_progress").notNull(),
+    questionCount: integer("question_count").default(0).notNull(),
+    settings: jsonb("settings").default(sql`'{}'::jsonb`),
+    analytics: jsonb("analytics").default(sql`'{}'::jsonb`),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+    durationSec: integer("duration_sec"),
+    scoreRaw: doublePrecision("score_raw"),
+    scorePercent: doublePrecision("score_percent"),
+    abilityEstimate: doublePrecision("ability_estimate"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("qbank_attempts_user_idx").on(table.userId, table.status),
+    examIdx: index("qbank_attempts_exam_idx").on(table.examId, table.mode),
+  })
+);
+
+export const qbankAttemptItems = pgTable(
+  "qbank_attempt_items",
+  {
+    id: serial("id").primaryKey(),
+    attemptId: integer("attempt_id")
+      .references(() => qbankAttempts.id, { onDelete: "cascade" })
+      .notNull(),
+    questionId: integer("question_id").references(() => qbankQuestions.id, { onDelete: "set null" }),
+    questionPublicId: varchar("question_public_id", { length: 120 }),
+    questionVersion: integer("question_version"),
+    variantCode: varchar("variant_code", { length: 80 }),
+    displayOrder: integer("display_order").default(0).notNull(),
+    promptSeed: jsonb("prompt_seed").default(sql`'{}'::jsonb`),
+    response: jsonb("response").default(sql`'{}'::jsonb`),
+    selectedOptions: jsonb("selected_options").default(sql`'[]'::jsonb`),
+    isCorrect: boolean("is_correct"),
+    scoreDelta: doublePrecision("score_delta"),
+    confidenceLevel: smallint("confidence_level"),
+    whyResponse: text("why_response"),
+    timeStarted: timestamp("time_started"),
+    timeCompleted: timestamp("time_completed"),
+    timeSpentMs: integer("time_spent_ms"),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    attemptIdx: index("qbank_attempt_items_attempt_idx").on(table.attemptId),
+    questionIdx: index("qbank_attempt_items_question_idx").on(table.questionId),
+    confidenceIdx: index("qbank_attempt_items_confidence_idx").on(table.confidenceLevel),
+  })
+);
+
+export const qbankQuestionNotes = pgTable(
+  "qbank_question_notes",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    attemptItemId: integer("attempt_item_id").references(() => qbankAttemptItems.id, { onDelete: "set null" }),
+    locale: varchar("locale", { length: 16 }).default("en").notNull(),
+    body: text("body").notNull(),
+    isPrivate: boolean("is_private").default(true).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({ userIdx: index("qbank_question_notes_user_idx").on(table.userId, table.questionId) })
+);
+
+export const qbankQuestionLinks = pgTable(
+  "qbank_question_links",
+  {
+    id: serial("id").primaryKey(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    relatedQuestionId: integer("related_question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    relationType: varchar("relation_type", { length: 24 }).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({ relatedIdx: index("qbank_question_links_related_idx").on(table.relatedQuestionId) })
+);
+
+export const qbankMasteryStates = pgTable(
+  "qbank_mastery_states",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    examId: integer("exam_id")
+      .references(() => qbankExams.id, { onDelete: "cascade" })
+      .notNull(),
+    topicId: integer("topic_id")
+      .references(() => qbankTopics.id, { onDelete: "cascade" })
+      .notNull(),
+    dimension: varchar("dimension", { length: 32 }).default("overall").notNull(),
+    abilityEstimate: doublePrecision("ability_estimate").default(0).notNull(),
+    standardError: doublePrecision("standard_error").default(1).notNull(),
+    attemptsCount: integer("attempts_count").default(0).notNull(),
+    correctCount: integer("correct_count").default(0).notNull(),
+    streak: integer("streak").default(0).notNull(),
+    lastPracticedAt: timestamp("last_practiced_at"),
+    forgettingCurve: jsonb("forgetting_curve").default(sql`'{}'::jsonb`),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+  },
+  (table) => ({
+    examIdx: index("qbank_mastery_states_exam_idx").on(table.examId, table.topicId),
+    userIdx: index("qbank_mastery_states_user_idx").on(table.userId, table.dimension),
+  })
+);
+
+export const qbankReviewQueue = pgTable(
+  "qbank_review_queue",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    questionId: integer("question_id")
+      .references(() => qbankQuestions.id, { onDelete: "cascade" })
+      .notNull(),
+    dueAt: timestamp("due_at").notNull(),
+    priority: integer("priority").default(0).notNull(),
+    status: varchar("status", { length: 24 }).default("pending").notNull(),
+    schedulerState: jsonb("scheduler_state").default(sql`'{}'::jsonb`),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    dueIdx: index("qbank_review_queue_due_idx").on(table.userId, table.dueAt),
+    pendingUnique: uniqueIndex("qbank_review_queue_user_question_pending_idx")
+      .on(table.userId, table.questionId)
+      .where(sql`${table.status} = 'pending'`),
+  })
+);
+
+export const qbankGoalProgress = pgTable(
+  "qbank_goal_progress",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    examId: integer("exam_id").references(() => qbankExams.id, { onDelete: "set null" }),
+    weekStart: date("week_start").notNull(),
+    questionsTarget: integer("questions_target").default(0).notNull(),
+    questionsCompleted: integer("questions_completed").default(0).notNull(),
+    minutesTarget: integer("minutes_target").default(0).notNull(),
+    minutesCompleted: integer("minutes_completed").default(0).notNull(),
+    streakCount: integer("streak_count").default(0).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+  },
+  (table) => ({ userIdx: index("qbank_goal_progress_user_idx").on(table.userId, table.weekStart) })
+);
+
+export const qbankUserSettings = pgTable("qbank_user_settings", {
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .primaryKey(),
+  preferredExams: jsonb("preferred_exams").default(sql`'[]'::jsonb`),
+  preferences: jsonb("preferences").default(sql`'{}'::jsonb`),
+  syncState: jsonb("sync_state").default(sql`'{}'::jsonb`),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

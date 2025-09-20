@@ -12,7 +12,8 @@
     "lessons:free": "node scripts/build-free-lessons-json.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "qbank:import": "node scripts/qbank-import.mjs"
   },
   "dependencies": {
     "@react-sigma/core": "^5.0.4",
@@ -36,7 +37,8 @@
     "react-window": "^1.8.9",
     "remark-gfm": "^4.0.0",
     "sigma": "^3.0.2",
-    "zustand": "^4.5.5"
+    "zustand": "^4.5.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",

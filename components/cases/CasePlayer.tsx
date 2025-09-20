@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -324,7 +324,7 @@ export default function CasePlayer({ caseId }: { caseId: string }) {
             <div className="flex min-w-[220px] flex-col gap-2 rounded-2xl border border-white/10 bg-[#14204a]/70 p-4 text-xs text-slate-100 shadow-lg shadow-indigo-900/20">
               <span className="text-[10px] text-slate-400">Think it through</span>
               <p className="text-sm text-slate-100">Review the clues, jot a quick plan, then pick the next action.</p>
-              <p className="text-[11px] text-slate-400">You'll see the outcome after you choose.</p>
+              <p className="text-[11px] text-slate-400">{"You'll see the outcome after you choose."}</p>
             </div>
             {session && <SessionBadge session={session} currentSlug={caseSummary.slug} />}
             <div className="min-w-[140px] text-xs text-slate-400">
@@ -578,7 +578,7 @@ function StagePanel({
       {isCompleted && (
         <div className="rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-5 text-sm text-emerald-100 shadow-lg shadow-emerald-900/30">
           <h3 className="text-lg font-semibold text-emerald-100">Case complete</h3>
-          <p className="mt-2 text-emerald-200/80">You're done with this case. Open the debrief or reset to try different choices.</p>
+          <p className="mt-2 text-emerald-200/80">{"You're done with this case. Open the debrief or reset to try different choices."}</p>
           <div className="mt-4 flex flex-wrap gap-3">
             {showNextCaseButton && (
               <button
@@ -615,7 +615,7 @@ function StagePanel({
             <p className="mt-3 text-xs text-slate-400">This was the last case in your session. Finish to wrap up.</p>
           )}
           {showReturnToBuilder && (
-            <p className="mt-3 text-xs text-slate-400">Session completed. Head back to the builder when you're ready.</p>
+            <p className="mt-3 text-xs text-slate-400">{"Session completed. Head back to the builder when you're ready."}</p>
           )}
         </div>
       )}
