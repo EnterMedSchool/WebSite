@@ -13,13 +13,15 @@ const HomeMap = dynamic(() => import("@/components/home/HomeMap"), { ssr: false 
 
 export default function DesktopHome() {
   return (
-    <div className="relative space-y-12 overflow-x-hidden">
+    <div className="relative space-y-12 overflow-x-hidden pb-14">
       <HomeBackdrop />
       <section
         id="universities"
-        className="relative w-full mt-0 -top-16 sm:-top-20 md:-top-24 overflow-hidden rounded-b-[36px] shadow-[0_16px_40px_rgba(49,46,129,0.08)] lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen"
+        className="relative w-full -top-12 sm:-top-16 md:-top-20 px-4 sm:px-6 lg:px-0"
       >
-        <HomeMap />
+        <div className="relative overflow-hidden rounded-[32px] shadow-[0_16px_40px_rgba(49,46,129,0.08)] lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw] lg:w-screen">
+          <HomeMap />
+        </div>
       </section>
 
       <section className="relative -mt-8 z-10 mx-auto w-full max-w-6xl rounded-3xl px-4 py-6">

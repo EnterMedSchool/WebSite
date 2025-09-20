@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { geoCentroid } from "d3-geo";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,6 +54,9 @@ type Feature = {
 
 type Viewport = { width: number; height: number };
 
+const slugify = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
 export default function HomeMap({ variant = "default" }: { variant?: "default" | "compact" } = {}) {
   const router = useRouter();
   const forcedCompact = variant === "compact";
@@ -68,9 +71,6 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
 
   // Desktop-only layout constants (we don't handle mobile/tablet yet)
   // Keep panel tightly under the menu inside the map container.
-  const PANEL_GUTTER = 8;    // spacing from container bottom
-  const PANEL_TOP_GAP = 4;   // small gap under menu
-
   // Static JSON dataset (from public/). Starts empty and fills from /map/v1/*.json
   const [uniData, setUniData] = useState<CountryCities | null>(null);
   const [enrichedCountries, setEnrichedCountries] = useState<Set<string>>(new Set());
@@ -78,6 +78,18 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
   const [filters, setFilters] = useState<MapFilters>(() => ({ q: "", country: initialSmall ? "Italy" : "", language: "", exam: "" }));
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<{ x: number; y: number; data: any } | null>(null);
+  const updateSearchParams = useCallback((mutator: (params: URLSearchParams) => void) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const before = params.toString();
+    mutator(params);
+    const after = params.toString();
+    if (after === before) return;
+    const next = `${window.location.pathname}${after ? `?${after}` : ""}`;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next === current) return;
+    router.replace(next, { scroll: false });
+  }, [router]);
   const countryHasData = useMemo(() => new Set(Object.keys(uniData ?? {})), [uniData]);
   // Flatten all cities
   const allCityDataRaw = useMemo(
@@ -97,29 +109,26 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     });
   }, [allCityDataRaw, filters]);
   const cityData = useMemo(() => (selected ? allCityData.filter((c) => c.country === selected.name) : []), [selected, allCityData]);
+  const sortKey = (filters as any)?.sort || '';
   const cityDataSorted = useMemo(() => {
     const arr = [...cityData];
-    const s = (filters as any)?.sort || '';
-    if (!s) return arr;
-    if (s === 'tuition-asc') {
+    if (!sortKey) return arr;
+    if (sortKey === 'tuition-asc') {
       // placeholder: sort by rating ascending (proxy)
       return arr.sort((a: any, b: any) => (a.rating ?? 999) - (b.rating ?? 999));
     }
-    if (s === 'seats-desc') {
+    if (sortKey === 'seats-desc') {
       // placeholder: sort by lastScore descending (proxy)
       return arr.sort((a: any, b: any) => (b.lastScore ?? -1) - (a.lastScore ?? -1));
     }
-    if (s === 'deadline-asc') {
+    if (sortKey === 'deadline-asc') {
       // placeholder: alphabetical by uni (proxy)
       return arr.sort((a: any, b: any) => (a.uni || '').localeCompare(b.uni || ''));
     }
     return arr;
-  }, [cityData, (filters as any)?.sort]);
+  }, [cityData, sortKey]);
   const markerScale = useMemo(() => 0.35 / Math.sqrt(position.zoom || 1), [position.zoom]);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ width: 1440, height: 900 });
-  const [panelOffset, setPanelOffset] = useState(140);
   const searchParams = useSearchParams();
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<Array<any>>([]);
@@ -128,10 +137,49 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
   const [savedOpen, setSavedOpen] = useState(false);
   const [saved, setSaved] = useState<Array<any>>([]);
   const savedSet = useMemo(() => new Set(saved.map((i) => i.uni)), [saved]);
-  // Mobile results control
+
+  const { q: rawSearch } = filters;
+  const searchQuery = rawSearch.trim();
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery) return [];
+    const uniq = new Set<string>();
+    for (const c of allCityDataRaw) {
+      uniq.add(`uni:${c.uni}`);
+      uniq.add(`city:${c.city}`);
+      uniq.add(`country:${c.country}`);
+    }
+    return Array.from(uniq)
+      .map((key) => {
+        const [kind, label] = key.split(':');
+        return { kind: kind as 'uni' | 'city' | 'country', label, value: label };
+      })
+      .filter((s) => s.label.toLowerCase().includes(searchQuery.toLowerCase()))
+      .slice(0, 12);
+  }, [allCityDataRaw, searchQuery]);
+
+  const availableCountries = useMemo(() => {
+    const entries = new Set(allCityDataRaw
+      .map((c) => c.country)
+      .filter((country): country is string => !!country));
+    return Array.from(entries).sort();
+  }, [allCityDataRaw]);
+  const availableLanguages = useMemo(() => {
+    const entries = new Set(allCityDataRaw
+      .map((c) => c.language)
+      .filter((lang): lang is string => !!lang));
+    return Array.from(entries).sort();
+  }, [allCityDataRaw]);
+  const availableExams = useMemo(() => {
+    const entries = new Set(allCityDataRaw
+      .map((c) => c.exam)
+      .filter((exam): exam is string => !!exam));
+    return Array.from(entries).sort();
+  }, [allCityDataRaw]);
+
   const [sheetCustomItems, setSheetCustomItems] = useState<any[] | null>(null); // if set, sheet shows these instead of selected country
   const [isSmall, setIsSmall] = useState(initialSmall);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
 
   // Compare persistence + deep link
   useEffect(() => {
@@ -143,19 +191,19 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     if (s2) { try { setSaved(JSON.parse(s2)); } catch {} }
   }, []);
   useEffect(() => {
-    if (typeof window !== 'undefined') window.localStorage.setItem('ems_compare', JSON.stringify(compare));
-    // Deep link param
-    const slugs = compare.map((c) => c.uni.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
-    const params = new URLSearchParams(window.location.search);
-    if (slugs.length) params.set('compare', slugs.join(',')); else params.delete('compare');
-    const qs = params.toString();
-    router.replace(qs ? `?${qs}` : `?`, { scroll: false });
-  }, [compare, router]);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('ems_compare', JSON.stringify(compare));
+    }
+    updateSearchParams((params) => {
+      const slugs = compare.map((c) => slugify(c.uni)).filter(Boolean);
+      if (slugs.length > 0) params.set('compare', slugs.join(',')); else params.delete('compare');
+    });
+  }, [compare, updateSearchParams]);
   useEffect(() => {
     const pre = searchParams?.get('compare');
     if (pre) {
       const slugs = pre.split(',').filter(Boolean);
-      const found = allCityDataRaw.filter((c) => slugs.includes(c.uni.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')))
+      const found = allCityDataRaw.filter((c) => slugs.includes(slugify(c.uni)))
         .map((c) => ({ uni: c.uni, country: c.country, city: c.city, kind: c.kind, language: (c as any).language, exam: (c as any).exam, rating: c.rating, lastScore: c.lastScore, logo: c.logo }));
       if (found.length) setCompare(found);
     }
@@ -199,6 +247,36 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     });
   }
 
+  const handleSuggestionPick = (s: { label: string; kind: 'uni' | 'city' | 'country'; value: string }) => {
+    if (s.kind === 'country') {
+      const baseCenter = s.value === 'Italy' ? italyCenter : position.center;
+      setFilters((f) => ({ ...f, country: s.value }));
+      setSelected({ name: s.value, center: baseCenter, baseCenter });
+      if (isSmall) {
+        setPosition({ center: baseCenter, zoom: 10.5 });
+      }
+    } else if (s.kind === 'uni') {
+      const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
+    } else {
+      setFilters((f) => ({ ...f, q: s.value }));
+    }
+  };
+
+  const handleOpenMobileResults = () => {
+    if (!isSmall) return;
+    if (filters.country) {
+      const baseCenter = filters.country === 'Italy' ? italyCenter : (selected?.baseCenter ?? position.center);
+      setSelected({ name: filters.country, center: baseCenter, baseCenter });
+      setPosition({ center: baseCenter, zoom: 10.5 });
+      setSheetCustomItems(null);
+    } else {
+      setSheetCustomItems(allCityData);
+    }
+    setFiltersSheetOpen(false);
+    setSheetOpen(true);
+  };
+
   // Deep-link: read on first render
   useEffect(() => {
     const hasAnyParam = ['q', 'country', 'language', 'exam', 'sort', 'color', 'kind'].some((key) => searchParams?.has(key));
@@ -223,38 +301,24 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Measure overlay height to place the left panel just beneath it
-  useEffect(() => {
-    function measure() {
-      const h = overlayRef.current?.offsetHeight ?? 140;
-      // Ensure the results panel always clears the filter with extra buffer
-      setPanelOffset(Math.min(320, Math.max(140, h + 48)));
-    }
-    measure();
-    if (typeof window !== 'undefined') {
-      const ro = new ResizeObserver(measure);
-      if (overlayRef.current) ro.observe(overlayRef.current);
-      window.addEventListener('resize', measure);
-      return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
-    }
-  }, []);
+
 
   // Deep-link: write on filter change (debounced)
   useEffect(() => {
     const t = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (filters.q) params.set('q', filters.q);
-      if (filters.country) params.set('country', filters.country);
-      if (filters.language) params.set('language', filters.language);
-      if (filters.exam) params.set('exam', filters.exam);
-      if (filters.sort) params.set('sort', filters.sort);
-      if (filters.colorMode) params.set('color', String(filters.colorMode));
-      if (filters.kind) params.set('kind', String(filters.kind));
-      const qs = params.toString();
-      router.replace(qs ? `?${qs}` : `?`, { scroll: false });
+      updateSearchParams((params) => {
+        ['q', 'country', 'language', 'exam', 'sort', 'color', 'kind'].forEach((key) => params.delete(key));
+        if (filters.q) params.set('q', filters.q);
+        if (filters.country) params.set('country', filters.country);
+        if (filters.language) params.set('language', filters.language);
+        if (filters.exam) params.set('exam', filters.exam);
+        if (filters.sort) params.set('sort', filters.sort);
+        if (filters.colorMode) params.set('color', String(filters.colorMode));
+        if (filters.kind) params.set('kind', String(filters.kind));
+      });
     }, 300);
     return () => clearTimeout(t);
-  }, [filters, router]);
+  }, [filters, updateSearchParams]);
 
   // Load minimal markers from static JSON under public/map/v1/markers.min.json
   useEffect(() => {
@@ -337,6 +401,12 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     }
   }, [forcedCompact]);
 
+  useEffect(() => {
+    if (!isSmall) {
+      setFiltersSheetOpen(false);
+    }
+  }, [isSmall]);
+
   // Initial mobile focus will be snapped to Italy centroid once geographies are available
   const initApplied = useRef(false);
 
@@ -380,8 +450,13 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
     const targetZoom = isSmall ? 10.5 : (vh < 850 ? 6.0 : 6.2);
     const center = isSmall ? baseCenter : computeOffsetCenter(baseCenter, targetZoom);
     setSelected({ name, center, baseCenter });
+    setFilters((prev) => ({ ...prev, country: name }));
     setPosition({ center, zoom: targetZoom });
-    if (isSmall && openSheet) { setSheetCustomItems(null); setSheetOpen(true); }
+    if (isSmall && openSheet) {
+      setSheetCustomItems(null);
+      setFiltersSheetOpen(true);
+      setSheetOpen(false);
+    }
   }
 
   function handleCountryClick(geo: any) {
@@ -448,8 +523,6 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
           onWheelCapture={(e) => {
             // Allow interactive zoom on desktop; on small screens, keep wheel scrolling the page
             if (!isSmall) return;
-            const target = e.target as HTMLElement;
-            if ((panelRef.current && panelRef.current.contains(target)) || (overlayRef.current && overlayRef.current.contains(target))) return;
             e.preventDefault();
             e.stopPropagation();
             window.scrollBy({ top: e.deltaY, behavior: "auto" });
@@ -562,6 +635,7 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
                           if (!selected) {
                             setSelected({ name: c.country || "", center: position.center, baseCenter: position.center });
                           }
+                          setFiltersSheetOpen(false);
                           setSheetOpen(true);
                         } else {
                           const slug = (c.uni || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -615,142 +689,120 @@ export default function HomeMap({ variant = "default" }: { variant?: "default" |
         </div>
 
         {/* Filters rail (desktop) or floating compact bar (mobile) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--page-bg,#f6f7fb)]/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--page-bg,#f6f7fb)]/80 to-transparent" />
         {isSmall ? (
-          <div className="pointer-events-none absolute inset-x-0 z-30 flex justify-center" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)" }}>
-            <motion.div
-              ref={overlayRef}
-              className="pointer-events-auto"
-              initial={{ opacity: 0, y: 10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 180, damping: 18 }}
-              style={{ width: "min(calc(100vw - 24px), 560px)" }}
+          <motion.div
+            className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <button
+              type="button"
+              onClick={() => setFiltersSheetOpen(true)}
+              className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-white/95 px-5 py-3 text-sm font-semibold text-indigo-700 shadow-[0_18px_38px_rgba(79,70,229,0.22)] backdrop-blur-sm"
             >
+              <span className="h-2 w-2 rounded-full bg-indigo-500" />
+              Adjust filters
+            </button>
+          </motion.div>
+        ) : (
+          <>
+            <FloatingPanel
+              id="home-map-filters"
+              initialSize={{ width: 420, height: 520 }}
+              minWidth={360}
+              minHeight={320}
+              initialPos={{ x: 24, y: 96 }}
+              className="hidden lg:block z-30"
+            >
+              <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-white/95 shadow-[0_20px_46px_rgba(36,43,72,0.2)] ring-1 ring-indigo-100/70 backdrop-blur">
+                <div className="ems-win-drag select-none px-5 py-3 text-xs font-semibold uppercase tracking-wide text-indigo-600/90">
+                  Map filters
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                  <MapFiltersBar
+                    filters={filters}
+                    onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+                    countries={availableCountries}
+                    languages={availableLanguages}
+                    exams={availableExams}
+                    resultCount={allCityData.length}
+                    suggestions={searchSuggestions}
+                    onPick={handleSuggestionPick}
+                    onOpenSaved={() => setSavedOpen(true)}
+                    onOpenCompare={() => setCompareOpen(true)}
+                    savedCount={saved.length}
+                    compareCount={compare.length}
+                    defaultAdvancedOpen
+                  />
+                </div>
+              </div>
+            </FloatingPanel>
+            {selected && cityDataSorted.length > 0 && (
+              <FloatingPanel
+                id="home-map-results"
+                initialSize={{ width: 520, height: 540 }}
+                minWidth={420}
+                minHeight={360}
+                initialPos={{ x: 476, y: 96 }}
+                className="hidden lg:block z-30"
+              >
+                <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-white/95 shadow-[0_22px_50px_rgba(36,43,72,0.24)] ring-1 ring-indigo-100/70 backdrop-blur">
+                  <UniversitiesPanelFloating
+                    selectedName={selected.name}
+                    items={cityDataSorted as any}
+                    onAddCompare={(c: any) => addToCompare(c)}
+                    compareSet={compareSet}
+                    onHover={(item) => {
+                      if (!item) {
+                        setHoveredKey(null);
+                        setHoverCard(null);
+                        return;
+                      }
+                      const key = `${item.country ?? selected.name}-${item.city}-${item.uni}`;
+                      setHoveredKey(key);
+                      setHoverCard(null);
+                    }}
+                    savedSet={savedSet}
+                    onToggleSave={(item: any) => toggleSaved(item)}
+                  />
+                </div>
+              </FloatingPanel>
+            )}
+          </>
+        )}
+
+
+        {isSmall && (
+          <BottomSheet
+            open={filtersSheetOpen}
+            onClose={() => setFiltersSheetOpen(false)}
+            title="Filter universities"
+            height="72vh"
+          >
+            <div className="pb-3">
               <MapFiltersBar
-                compact={true}
+                compact
                 filters={filters}
                 onChange={(p) => setFilters((f) => ({ ...f, ...p }))}
-                countries={Array.from(new Set(allCityDataRaw.map((c) => c.country))).sort()}
-                languages={Array.from(new Set(allCityDataRaw.map((c) => c.language).filter(Boolean) as string[])).sort()}
-                exams={Array.from(new Set(allCityDataRaw.map((c) => c.exam).filter(Boolean) as string[])).sort()}
+                countries={availableCountries}
+                languages={availableLanguages}
+                exams={availableExams}
                 resultCount={allCityData.length}
                 onOpenSaved={() => setSavedOpen(true)}
                 onOpenCompare={() => setCompareOpen(true)}
                 savedCount={saved.length}
                 compareCount={compare.length}
-                onViewMobile={() => {
-                  if (filters.country) {
-                    const baseCenter = filters.country === "Italy" ? italyCenter : (selected?.baseCenter ?? position.center);
-                    setSelected({ name: filters.country, center: baseCenter, baseCenter });
-                    if (isSmall) {
-                      setPosition({ center: baseCenter, zoom: 10.5 });
-                    }
-                    setSheetCustomItems(null);
-                    setSheetOpen(true);
-                  } else {
-                    setSheetCustomItems(allCityData);
-                    setSheetOpen(true);
-                  }
-                }}
-                suggestions={
-                  filters.q.trim().length >= 1
-                    ? Array.from(new Set([
-                        ...allCityDataRaw.map((c) => ({ label: c.uni, value: c.uni, kind: 'uni' as const })),
-                        ...allCityDataRaw.map((c) => ({ label: c.city, value: c.city, kind: 'city' as const })),
-                        ...allCityDataRaw.map((c) => ({ label: c.country, value: c.country, kind: 'country' as const })),
-                      ].map((s) => `${s.kind}:${s.label}`)))
-                        .map((key) => {
-                          const [kind, label] = key.split(':');
-                          return { kind: kind as 'uni'|'city'|'country', label, value: label };
-                        })
-                        .filter((s) => s.label.toLowerCase().includes(filters.q.toLowerCase()))
-                        .slice(0, 12)
-                    : []
-                }
-                onPick={(s) => {
-                  if (s.kind === 'country') {
-                    const baseCenter = s.value === 'Italy' ? italyCenter : position.center;
-                    setFilters((f) => ({ ...f, country: s.value }));
-                    setSelected({ name: s.value, center: baseCenter, baseCenter });
-                    if (isSmall) {
-                      setPosition({ center: baseCenter, zoom: 10.5 });
-                    }
-                  } else if (s.kind === 'uni') {
-                    const slug = s.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    try { router.push(`/university/${encodeURIComponent(slug)}`); } catch {}
-                  } else {
-                    setFilters((f) => ({ ...f, q: s.value }));
-                  }
-                }}
+                onViewMobile={handleOpenMobileResults}
+                suggestions={searchSuggestions}
+                onPick={handleSuggestionPick}
               />
-            </motion.div>
-          </div>
-        ) : (
-          <>
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--page-bg,#f6f7fb)]/0 to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--page-bg,#f6f7fb)]/0 to-transparent" />
-          </>
+            </div>
+          </BottomSheet>
         )}
 
-        {/* Right side panel (legacy) — kept disabled */}
-        {false && selected && cityData.length > 0 && (
-          <div
-            className="pointer-events-auto absolute left-3 z-20 w-[min(520px,42vw)] rounded-2xl border bg-white/95 p-4 shadow-2xl backdrop-blur overflow-hidden"
-            style={{
-              top: PANEL_TOP_GAP,
-              bottom: PANEL_GUTTER,
-              maxHeight: `calc(100% - ${PANEL_TOP_GAP + PANEL_GUTTER}px)`
-            }}
-            ref={panelRef}
-          >
-            <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo-600">{selected?.name}</div>
-            <div className="space-y-3 max-h-full overflow-auto pr-1">
-              {cityData.map((c, i) => (
-                <div key={`${c.city}-${i}`} className="rounded-xl border p-3 hover:bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-indigo-100">
-                      {c.logo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.logo} alt="logo" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="text-lg font-semibold text-indigo-700">{c.city[0]}</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{c.uni}</div>
-                      <div className="text-sm text-gray-500">{c.city} • {c.kind === "private" ? "Private" : "Public"}</div>
-                    </div>
-                    <div className="ml-auto text-sm font-semibold text-gray-700">⭐ {c.rating?.toFixed(1) ?? "4.3"}</div>
-                  </div>
-                  {/* Meta grid */}
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    <div className="col-span-1 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
-                      <div className="font-semibold text-gray-700">Last Score</div>
-                      <div className="mt-1 text-gray-800">{c.lastScore ?? 65}/100</div>
-                    </div>
-                    <div className="col-span-2 rounded-lg bg-gray-50 p-2">
-                      <div className="mb-1 text-xs font-semibold text-gray-700">Gallery</div>
-                      <div className="flex gap-1">
-                        {(c.photos ?? ["https://placehold.co/64x64", "https://placehold.co/64x64", "https://placehold.co/64x64"]).slice(0,3).map((src, idx) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img key={idx} src={src} alt="photo" className="h-12 w-12 rounded object-cover" />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Orgs + article */}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {(c.orgs ?? ["EMS", "Volunteering"]).slice(0,3).map((o) => (
-                      <span key={o} className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{o}</span>
-                    ))}
-                    {c.article && (
-                      <span className="ml-auto text-xs text-indigo-600 underline">{c.article.title}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         {(isSmall && sheetOpen && ( (selected && (sheetCustomItems===null)) || (sheetCustomItems && sheetCustomItems.length>0) )) && (
           <BottomSheet
             open={true}

@@ -67,7 +67,15 @@ type ResponseEntry = {
   optionValues: string[];
 };
 
+type QuestionStatus = {
+  index: number;
+  attemptItemId: number;
+  answered: boolean;
+  correct: boolean | null;
+};
+
 const QUESTION_LIMIT_OPTIONS = [3, 5, 8, 10];
+
 export default function QbankPracticeClient({ exam, sections, looseTopics, isLoggedIn }: QbankPracticeClientProps) {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [questionLimit, setQuestionLimit] = useState<number>(5);
@@ -99,6 +107,21 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
     }
     return map;
   }, [summary]);
+
+  const questionStatuses = useMemo<QuestionStatus[]>(() => {
+    if (!attempt) return [];
+    return attempt.questions.map((question, index) => {
+      const response = responses.get(question.attemptItemId);
+      const answered = Boolean(response && response.optionIds.length);
+      const detail = summary?.details?.find((entry) => entry.attemptItemId === question.attemptItemId) ?? null;
+      return {
+        index,
+        attemptItemId: question.attemptItemId,
+        answered,
+        correct: detail ? detail.isCorrect : null,
+      };
+    });
+  }, [attempt, responses, summary]);
 
   async function startAttempt() {
     if (!isLoggedIn) {
@@ -177,6 +200,7 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
       const data = (await res.json()) as { summary: AttemptSummary };
       setSummary(data.summary);
       setStatus("review");
+      setCurrentIndex(0);
     } catch (err) {
       console.error("[qbank attempt complete]", err);
       setError("Network error while submitting. Please try again.");
@@ -195,7 +219,7 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
   }
 
   const activeQuestion = attempt?.questions[currentIndex];
-  const activeDetail = activeQuestion ? detailByItemId.get(activeQuestion.attemptItemId) : undefined;
+  const activeDetail = activeQuestion ? detailByItemId.get(activeQuestion.attemptItemId) : null;
 
   return (
     <div className="space-y-8">
@@ -228,7 +252,7 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
               <option value="">All topics</option>
               {topicOptions.map((topic) => (
                 <option key={topic.slug} value={topic.slug}>
-                  {topic.sectionName ? `${topic.sectionName} - ${topic.title}` : topic.title}
+                  {topic.sectionName ? `${topic.sectionName} — ${topic.title}` : topic.title}
                 </option>
               ))}
             </select>
@@ -253,82 +277,111 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
             disabled={status === "loading"}
             className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300 sm:w-auto"
           >
-            {status === "loading" ? "Preparing..." : "Start practice"}
+            {status === "loading" ? "Preparing…" : "Start practice"}
           </button>
         </div>
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       </section>
 
       {status === "in_progress" && attempt && activeQuestion ? (
-        <section className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <QuestionCard
-            question={activeQuestion}
-            detail={activeDetail}
-            response={responses.get(activeQuestion.attemptItemId)}
-            onSelect={(optionId, optionValue, isMulti) =>
-              setResponses((prev) => {
-                const next = new Map(prev);
-                const existing = next.get(activeQuestion.attemptItemId) ?? { optionIds: [], optionValues: [] };
-                if (isMulti) {
-                  const index = existing.optionIds.indexOf(optionId);
-                  if (index >= 0) {
-                    existing.optionIds = existing.optionIds.filter((value) => value !== optionId);
-                    existing.optionValues = existing.optionValues.filter((value) => value !== optionValue);
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <QuestionCard
+              question={activeQuestion}
+              detail={activeDetail}
+              response={responses.get(activeQuestion.attemptItemId)}
+              onSelect={(optionId, optionValue, isMulti) =>
+                setResponses((prev) => {
+                  const next = new Map(prev);
+                  const existing = next.get(activeQuestion.attemptItemId) ?? { optionIds: [], optionValues: [] };
+                  if (isMulti) {
+                    const index = existing.optionIds.indexOf(optionId);
+                    if (index >= 0) {
+                      existing.optionIds = existing.optionIds.filter((value) => value !== optionId);
+                      existing.optionValues = existing.optionValues.filter((value) => value !== optionValue);
+                    } else {
+                      existing.optionIds = [...existing.optionIds, optionId];
+                      existing.optionValues = [...existing.optionValues, optionValue];
+                    }
                   } else {
-                    existing.optionIds = [...existing.optionIds, optionId];
-                    existing.optionValues = [...existing.optionValues, optionValue];
+                    existing.optionIds = [optionId];
+                    existing.optionValues = [optionValue];
                   }
-                } else {
-                  existing.optionIds = [optionId];
-                  existing.optionValues = [optionValue];
-                }
-                next.set(activeQuestion.attemptItemId, normalizeResponse(existing));
-                return next;
-              })
-            }
-          />
+                  next.set(activeQuestion.attemptItemId, normalizeResponse(existing));
+                  return next;
+                })
+              }
+            />
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm text-slate-500">
-              Question {currentIndex + 1} of {attempt.questions.length}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
-                disabled={currentIndex === 0}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Previous
-              </button>
-              {currentIndex < attempt.questions.length - 1 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-slate-500">
+                Question {currentIndex + 1} of {attempt.questions.length}
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentIndex((index) => Math.min(attempt.questions.length - 1, index + 1))}
-                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
+                  disabled={currentIndex === 0}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Next
+                  Previous
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={submitAttempt}
-                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                >
-                  Submit set
-                </button>
-              )}
+                {currentIndex < attempt.questions.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentIndex((index) => Math.min(attempt.questions.length - 1, index + 1))}
+                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={submitAttempt}
+                    className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  >
+                    Submit set
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+
+          <QuestionQuickNav
+            statuses={questionStatuses}
+            currentIndex={currentIndex}
+            onSelect={(index) => setCurrentIndex(index)}
+            mode="practice"
+          />
         </section>
       ) : null}
 
       {status === "review" && attempt && summary ? (
-        <ReviewPanel attempt={attempt} summary={summary} responses={responses} onRetry={resetSession} />
+        <ReviewPanel
+          attempt={attempt}
+          summary={summary}
+          responses={responses}
+          questionStatuses={questionStatuses}
+          currentIndex={currentIndex}
+          onJump={(index) => {
+            if (!attempt) return;
+            const safeIndex = Math.max(0, Math.min(index, attempt.questions.length - 1));
+            setCurrentIndex(safeIndex);
+            const target = attempt.questions[safeIndex];
+            if (target) {
+              const el = document.getElementById(`q-${target.attemptItemId}`);
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }
+          }}
+          onRetry={resetSession}
+        />
       ) : null}
     </div>
   );
 }
+
 function QuestionCard({
   question,
   detail,
@@ -380,7 +433,7 @@ function QuestionCard({
           <div className="flex items-center justify-between text-sm text-emerald-800">
             <span>{detail.isCorrect ? "Correct" : "Not quite yet"}</span>
             <span>
-              {detail.correctOptionIds.length > 1 ? "Correct answers" : "Correct answer"}: {detail.correctOptionIds.length || detail.correctOptionValues.length ? formatAnswerList(detail, question) : "-"}
+              {detail.correctOptionIds.length > 1 ? "Correct answers" : "Correct answer"}: {detail.correctOptionIds.length || detail.correctOptionValues.length ? formatAnswerList(detail, question) : "—"}
             </span>
           </div>
           {question.explanations.length ? (
@@ -422,43 +475,68 @@ function ReviewPanel({
   attempt,
   summary,
   responses,
+  questionStatuses,
+  currentIndex,
+  onJump,
   onRetry,
 }: {
   attempt: PracticeAttempt;
   summary: AttemptSummary;
   responses: Map<number, ResponseEntry>;
+  questionStatuses: QuestionStatus[];
+  currentIndex: number;
+  onJump: (index: number) => void;
   onRetry: () => void;
 }) {
   const accuracyPercent = Math.round((summary.scorePercent + Number.EPSILON) * 100) / 100;
 
   return (
     <section className="space-y-6">
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
-        <div className="text-sm uppercase tracking-wide">Session complete</div>
-        <div className="mt-2 text-3xl font-semibold">
-          {summary.correctCount} / {summary.totalCount} correct
+      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="order-last lg:order-first">
+          <QuestionQuickNav
+            statuses={questionStatuses}
+            currentIndex={currentIndex}
+            onSelect={onJump}
+            mode="review"
+          />
         </div>
-        <div className="text-sm text-emerald-800">Accuracy {accuracyPercent}%</div>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
-        >
-          Start another set
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {attempt.questions.map((question) => (
-          <div key={question.attemptItemId} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <QuestionCard
-              question={question}
-              detail={summary.details.find((detail) => detail.attemptItemId === question.attemptItemId)}
-              response={responses.get(question.attemptItemId)}
-              onSelect={() => {}}
-            />
+        <div className="space-y-6">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
+            <div className="text-sm uppercase tracking-wide">Session complete</div>
+            <div className="mt-2 text-3xl font-semibold">
+              {summary.correctCount} / {summary.totalCount} correct
+            </div>
+            <div className="text-sm text-emerald-800">Accuracy {accuracyPercent}%</div>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+            >
+              Start another set
+            </button>
           </div>
-        ))}
+
+          <div className="space-y-4">
+            {attempt.questions.map((question) => {
+              const navStatus = questionStatuses.find((status) => status.attemptItemId === question.attemptItemId);
+              const isActive = navStatus ? navStatus.index === currentIndex : false;
+              const containerClass = `space-y-3 rounded-lg border ${
+                isActive ? "border-indigo-400 ring-1 ring-indigo-200" : "border-slate-200"
+              } bg-white p-4 shadow-sm`;
+              return (
+                <div key={question.attemptItemId} id={`q-${question.attemptItemId}`} className={containerClass}>
+                  <QuestionCard
+                    question={question}
+                    detail={summary.details.find((detail) => detail.attemptItemId === question.attemptItemId)}
+                    response={responses.get(question.attemptItemId)}
+                    onSelect={() => {}}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -533,6 +611,103 @@ function optionButtonClasses({
     ? "flex w-full items-start justify-between rounded-md border border-indigo-500 bg-indigo-50 px-3 py-2 text-left text-sm text-indigo-700"
     : "flex w-full items-start justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 transition hover:border-indigo-400 hover:bg-indigo-50";
 }
+
+function QuestionQuickNav({
+  statuses,
+  currentIndex,
+  onSelect,
+  mode,
+}: {
+  statuses: QuestionStatus[];
+  currentIndex: number;
+  onSelect: (index: number) => void;
+  mode: "practice" | "review";
+}) {
+  if (!statuses.length) return null;
+
+  const handleClick = (index: number) => {
+    const safeIndex = Math.max(0, Math.min(index, statuses.length - 1));
+    onSelect(safeIndex);
+  };
+
+  return (
+    <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <h3 className="text-sm font-semibold text-slate-700">
+        {mode === "review" ? "Review navigator" : "Question navigator"}
+      </h3>
+      <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6">
+        {statuses.map((status) => (
+          <button
+            key={status.attemptItemId}
+            type="button"
+            onClick={() => handleClick(status.index)}
+            className={quickNavButtonClasses({ status, isActive: status.index === currentIndex, mode })}
+            aria-current={status.index === currentIndex ? "true" : undefined}
+            aria-label={`Question ${status.index + 1}`}
+          >
+            {status.index + 1}
+          </button>
+        ))}
+      </div>
+      <QuestionQuickNavLegend mode={mode} />
+    </aside>
+  );
+}
+
+function quickNavButtonClasses({
+  status,
+  isActive,
+  mode,
+}: {
+  status: QuestionStatus;
+  isActive: boolean;
+  mode: "practice" | "review";
+}) {
+  const base = "flex h-9 w-9 items-center justify-center rounded-md border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1";
+  let color = "border-slate-200 bg-white text-slate-600 hover:border-indigo-400 hover:bg-indigo-50";
+
+  if (mode === "review") {
+    if (status.correct === true) {
+      color = "border-emerald-500 bg-emerald-50 text-emerald-700";
+    } else if (status.correct === false) {
+      color = "border-rose-500 bg-rose-50 text-rose-700";
+    } else if (status.answered) {
+      color = "border-indigo-500 bg-indigo-50 text-indigo-700";
+    }
+  } else if (status.answered) {
+    color = "border-indigo-500 bg-indigo-50 text-indigo-700";
+  }
+
+  const active = isActive ? " shadow ring-2 ring-indigo-500 ring-offset-1" : "";
+  return `${base} ${color}${active}`;
+}
+
+function QuestionQuickNavLegend({ mode }: { mode: "practice" | "review" }) {
+  const entries =
+    mode === "review"
+      ? [
+          { color: "bg-emerald-500", label: "Correct" },
+          { color: "bg-rose-500", label: "Incorrect" },
+          { color: "bg-indigo-500", label: "Answered" },
+          { color: "bg-slate-300", label: "Unanswered" },
+        ]
+      : [
+          { color: "bg-indigo-500", label: "Answered" },
+          { color: "bg-slate-300", label: "Unanswered" },
+        ];
+
+  return (
+    <div className="mt-4 space-y-2 text-xs text-slate-500">
+      {entries.map(({ color, label }) => (
+        <div key={label} className="flex items-center gap-2">
+          <span className={`inline-flex h-2.5 w-2.5 rounded-full ${color}`} />
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function normalizeResponse(entry: ResponseEntry): ResponseEntry {
   const uniquePairs = entry.optionIds.map((id, index) => ({ id, value: entry.optionValues[index] ?? "" }));
   const uniqueMap = new Map<number, string>();
@@ -589,4 +764,3 @@ function humanizeError(code: string) {
       return "Something went wrong. Please try again.";
   }
 }
-

@@ -1,4 +1,4 @@
-﻿import type { DashboardExamTrack } from "@/lib/dashboard/context";
+import type { DashboardExamTrack } from "@/lib/dashboard/context";
 
 type HeroStat = { label: string; value: string; meta: string };
 type QuickAction = { title: string; copy: string; href: string; badge: string; meta: string };
@@ -8,6 +8,11 @@ type MapSpotlight = { name: string; city: string; seats: number; trend: string; 
 type ArticleCard = { title: string; excerpt: string; href: string; badge: string };
 type CohortRoom = { title: string; detail: string; activity: string; memberCount: string; href: string };
 type CohortSpotlight = { name: string; status: string; focus: string; href: string };
+type LeaderboardEntry = { rank: number; name: string; location: string; xp: number; delta: number; streak: number; highlight: string };
+type QuestionBankItem = { id: string; title: string; topic: string; difficulty: "Easy" | "Medium" | "Hard"; timeAgo: string; href: string; peers: number };
+type XPSeriesPoint = { day: string; xp: number; questions: number };
+type XPMetrics = { totalXP: number; weeklyGoal: number; questions: number; streak: number; label: string; series: XPSeriesPoint[] };
+type ChapterProgress = { course: string; chapter: string; lessonCompletion: number; questionCompletion: number; lessonsRemaining: number; questionsRemaining: number; href: string };
 
 type AdmissionsContent = {
   heroStats: HeroStat[];
@@ -18,6 +23,10 @@ type AdmissionsContent = {
   map: MapSpotlight[];
   cohortRooms: CohortRoom[];
   cohortSpotlights: CohortSpotlight[];
+  leaderboard: LeaderboardEntry[];
+  questionBank: QuestionBankItem[];
+  xp: XPMetrics;
+  chapters: ChapterProgress[];
 };
 
 const DEFAULT_LESSONS: ResourceCard[] = [
@@ -126,15 +135,80 @@ const DEFAULT_COHORT_SPOTLIGHTS: CohortSpotlight[] = [
   { name: "Lina M.", status: "Streak 14", focus: "Chemistry recap", href: "/study/peers/lina" },
 ];
 
+const DEFAULT_LEADERBOARD: LeaderboardEntry[] = [
+  { rank: 1, name: "Amelia R.", location: "Milan, IT", xp: 8420, delta: 132, streak: 16, highlight: "Top mock percentile" },
+  { rank: 2, name: "Jamal O.", location: "Rome, IT", xp: 8290, delta: 98, streak: 11, highlight: "Review sprint finisher" },
+  { rank: 3, name: "Elena V.", location: "Naples, IT", xp: 8015, delta: 76, streak: 9, highlight: "Biology drills boost" },
+  { rank: 4, name: "Marco D.", location: "Turin, IT", xp: 7840, delta: 54, streak: 6, highlight: "New streak this week" },
+  { rank: 5, name: "Priya K.", location: "Florence, IT", xp: 7695, delta: 61, streak: 4, highlight: "Chapter reviews" },
+];
+
+const DEFAULT_QUESTION_BANK: QuestionBankItem[] = [
+  { id: "q1", title: "Enzyme kinetics crossover question", topic: "Biology - Metabolism", difficulty: "Medium", timeAgo: "2h ago", href: "/qbank/enzyme-kinetics-crossover", peers: 28 },
+  { id: "q2", title: "Torque balance with mixed forces", topic: "Physics - Mechanics", difficulty: "Hard", timeAgo: "6h ago", href: "/qbank/torque-balance-mixed", peers: 19 },
+  { id: "q3", title: "Probability of compound events", topic: "Math - Statistics", difficulty: "Medium", timeAgo: "9h ago", href: "/qbank/probability-compound-events", peers: 23 },
+  { id: "q4", title: "Critical reading: data interpretation", topic: "Critical Thinking", difficulty: "Easy", timeAgo: "1d ago", href: "/qbank/critical-reading-data", peers: 34 },
+];
+
+const DEFAULT_XP_SERIES: XPSeriesPoint[] = [
+  { day: "Mon", xp: 780, questions: 24 },
+  { day: "Tue", xp: 860, questions: 28 },
+  { day: "Wed", xp: 910, questions: 26 },
+  { day: "Thu", xp: 1020, questions: 30 },
+  { day: "Fri", xp: 980, questions: 27 },
+  { day: "Sat", xp: 1140, questions: 34 },
+  { day: "Sun", xp: 880, questions: 26 },
+];
+
+const DEFAULT_CHAPTERS: ChapterProgress[] = [
+  {
+    course: "Intensive IMAT Prep",
+    chapter: "Chemistry foundations",
+    lessonCompletion: 72,
+    questionCompletion: 64,
+    lessonsRemaining: 2,
+    questionsRemaining: 18,
+    href: "/courses/imat-intensive/chemistry-foundations",
+  },
+  {
+    course: "IMAT Crash Course",
+    chapter: "Human physiology overview",
+    lessonCompletion: 58,
+    questionCompletion: 52,
+    lessonsRemaining: 3,
+    questionsRemaining: 24,
+    href: "/courses/imat-crash-course/human-physiology",
+  },
+  {
+    course: "Math Bootcamp",
+    chapter: "Combinatorics essentials",
+    lessonCompletion: 81,
+    questionCompletion: 70,
+    lessonsRemaining: 1,
+    questionsRemaining: 12,
+    href: "/courses/math-bootcamp/combinatorics-essentials",
+  },
+  {
+    course: "Critical Thinking Studio",
+    chapter: "Data interpretation labs",
+    lessonCompletion: 63,
+    questionCompletion: 55,
+    lessonsRemaining: 2,
+    questionsRemaining: 16,
+    href: "/courses/critical-thinking/data-interpretation",
+  },
+];
+
 export function buildAdmissionsContent(track: DashboardExamTrack | undefined, primaryCountry: string | null): AdmissionsContent {
   const examLabel = track?.label ?? "Admissions track";
   const regionLabel = primaryCountry || track?.country || "Global";
   const shortRegion = regionLabel.split(/[\s,]+/)[0] ?? regionLabel;
+  const shortExam = examLabel.split(/[\s-]+/)[0] ?? examLabel;
 
   const heroStats: HeroStat[] = [
     { label: "Focus", value: examLabel, meta: `Region: ${regionLabel}` },
     { label: "Checklist", value: "6 tasks", meta: "2 due this week" },
-    { label: "Practice", value: "3 mocks", meta: "Next on Friday" },
+    { label: "Practice", value: "3 mocks", meta: `Next ${shortExam} review on Friday` },
     { label: "XP streak", value: "12 days", meta: "+2 vs last week" },
   ];
 
@@ -187,7 +261,10 @@ export function buildAdmissionsContent(track: DashboardExamTrack | undefined, pr
           title: `${examLabel} strategy: from shortlist to seat`,
           excerpt: article.excerpt,
         }
-      : article,
+      : {
+          ...article,
+          excerpt: index === 1 ? `Latest ${shortExam} mock schedule and scoring tips.` : article.excerpt,
+        },
   );
 
   const map = DEFAULT_MAP.map((item, index) => {
@@ -228,7 +305,79 @@ export function buildAdmissionsContent(track: DashboardExamTrack | undefined, pr
     return spotlight;
   });
 
-  return { heroStats, quickActions, timeline, lessons, articles, map, cohortRooms, cohortSpotlights };
+  const leaderboard = DEFAULT_LEADERBOARD.map((entry, index) => {
+    if (index === 0) {
+      return {
+        ...entry,
+        highlight: `Leading this week's ${shortExam} streak`,
+      } satisfies LeaderboardEntry;
+    }
+    if (index === 1) {
+      return {
+        ...entry,
+        highlight: `${shortExam} drills complete`,
+      } satisfies LeaderboardEntry;
+    }
+    return entry;
+  });
+
+  const questionBank = DEFAULT_QUESTION_BANK.map((item, index) => {
+    if (index === 0) {
+      return {
+        ...item,
+        topic: `${examLabel} - Metabolism`,
+      } satisfies QuestionBankItem;
+    }
+    if (index === 1) {
+      return {
+        ...item,
+        topic: `${examLabel} - Mechanics`,
+      } satisfies QuestionBankItem;
+    }
+    return item;
+  });
+
+  const xpSeries = DEFAULT_XP_SERIES.map((point, index) =>
+    index === DEFAULT_XP_SERIES.length - 1
+      ? { ...point, xp: point.xp + 120, questions: point.questions + 4 }
+      : point,
+  );
+  const xpTotal = xpSeries.reduce((sum, point) => sum + point.xp, 0);
+  const xpQuestions = xpSeries.reduce((sum, point) => sum + point.questions, 0);
+  const xp: XPMetrics = {
+    totalXP: xpTotal,
+    weeklyGoal: xpTotal + 420,
+    questions: xpQuestions,
+    streak: 12,
+    label: examLabel,
+    series: xpSeries,
+  };
+
+  const chapters = DEFAULT_CHAPTERS.map((chapter, index) => {
+    if (index === 0) {
+      return {
+        ...chapter,
+        course: `${examLabel} mastery`,
+        chapter: `${shortExam} chemistry foundations`,
+      } satisfies ChapterProgress;
+    }
+    return chapter;
+  });
+
+  return {
+    heroStats,
+    quickActions,
+    timeline,
+    lessons,
+    articles,
+    map,
+    cohortRooms,
+    cohortSpotlights,
+    leaderboard,
+    questionBank,
+    xp,
+    chapters,
+  };
 }
 
 export type {
@@ -241,4 +390,9 @@ export type {
   ArticleCard,
   CohortRoom,
   CohortSpotlight,
+  LeaderboardEntry,
+  QuestionBankItem,
+  XPMetrics,
+  XPSeriesPoint,
+  ChapterProgress,
 };

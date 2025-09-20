@@ -350,13 +350,60 @@ export async function completePracticeAttempt({
     throw new QbankServiceError("attempt_not_found");
   }
 
+  const detailEntries: Array<{
+    attemptItemId: number;
+    isCorrect: boolean;
+    selectedOptionIds: number[];
+    selectedOptionValues: string[];
+    correctOptionIds: number[];
+    correctOptionValues: string[];
+  }> = [];
+
   if (attempt.status === "completed") {
+    const existingItems = await db.query.qbankAttemptItems.findMany({
+      where: eq(qbankAttemptItems.attemptId, attemptId),
+      orderBy: (item, { asc }) => [asc(item.displayOrder)],
+    });
+
+    for (const item of existingItems) {
+      const seed = (item.promptSeed as any) ?? {};
+      const correctIds: number[] = Array.isArray(seed.correctOptionIds)
+        ? seed.correctOptionIds
+            .map((value: any) => Number(value))
+            .filter((value: number) => Number.isFinite(value))
+        : [];
+      const correctValues: string[] = Array.isArray(seed.correctOptionValues)
+        ? seed.correctOptionValues.map((value: any) => String(value))
+        : [];
+      const responsePayload = (item.response as any) ?? {};
+      const selectedIds: number[] = Array.isArray(responsePayload.selectedOptionIds)
+        ? responsePayload.selectedOptionIds
+            .map((value: any) => Number(value))
+            .filter((value: number) => Number.isFinite(value))
+        : [];
+      const selectedValues: string[] = Array.isArray(responsePayload.selectedOptionValues)
+        ? responsePayload.selectedOptionValues.map((value: any) => String(value))
+        : Array.isArray(item.selectedOptions)
+        ? (item.selectedOptions as any[]).map((value) => String(value))
+        : [];
+
+      detailEntries.push({
+        attemptItemId: Number(item.id),
+        isCorrect: Boolean(item.isCorrect),
+        selectedOptionIds: selectedIds,
+        selectedOptionValues: selectedValues,
+        correctOptionIds: correctIds,
+        correctOptionValues: correctValues,
+      });
+    }
+
     return {
       attemptId: Number(attempt.id),
       status: "already_completed" as const,
       correctCount: Number(attempt.scoreRaw ?? 0),
       totalCount: Number(attempt.questionCount ?? 0),
       scorePercent: Number(attempt.scorePercent ?? 0),
+      details: detailEntries,
     };
   }
 
@@ -391,7 +438,9 @@ export async function completePracticeAttempt({
 
     const seed = (item.promptSeed as any) ?? {};
     const correctIds: number[] = Array.isArray(seed.correctOptionIds)
-      ? seed.correctOptionIds.map((value: any) => Number(value)).filter((value: number) => Number.isFinite(value))
+      ? seed.correctOptionIds
+          .map((value: any) => Number(value))
+          .filter((value: number) => Number.isFinite(value))
       : [];
     const correctValues: string[] = Array.isArray(seed.correctOptionValues)
       ? seed.correctOptionValues.map((value: any) => String(value))
@@ -402,7 +451,9 @@ export async function completePracticeAttempt({
 
     if (response) {
       if (Array.isArray(response.selectedOptionIds)) {
-        selectedIds = response.selectedOptionIds.map((value) => Number(value)).filter((value) => Number.isFinite(value));
+        selectedIds = response.selectedOptionIds
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value));
       }
       if (Array.isArray(response.selectedOptionValues)) {
         selectedValues = response.selectedOptionValues.map((value) => String(value));
@@ -444,6 +495,15 @@ export async function completePracticeAttempt({
       whyResponse: response?.whyResponse ?? null,
       timeSpentMs: response?.timeSpentMs ?? null,
       metadata: item.metadata,
+    });
+
+    detailEntries.push({
+      attemptItemId: itemId,
+      isCorrect,
+      selectedOptionIds: selectedIds,
+      selectedOptionValues: selectedValues,
+      correctOptionIds: correctIds,
+      correctOptionValues: correctValues,
     });
   }
 
@@ -494,9 +554,9 @@ export async function completePracticeAttempt({
     correctCount,
     totalCount,
     scorePercent,
+    details: detailEntries,
   };
 }
-
 function evaluateCorrectness({
   questionType,
   correctIds,
@@ -590,4 +650,5 @@ function shuffle<T>(input: T[]): T[] {
   }
   return input;
 }
+
 
