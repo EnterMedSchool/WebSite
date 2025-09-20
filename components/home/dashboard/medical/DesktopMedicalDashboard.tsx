@@ -1,1 +1,193 @@
-≵獥⁣汩敮琢㬊੩浰潲琠䱩湫⁦牯洠≮數琯汩湫∻੩浰潲琠笠畳敍敭漠素晲潭•牥慣琢㬊੩浰潲琠䡯浥䉡捫摲潰⁦牯洠≀⽣潭灯湥湴猯桯浥⽈潭敂慣此牯瀢㬊業灯牴⁴祰攠笠䑡獨扯慲摃潮瑥硴⁽⁦牯洠≀⽬楢⽤慳桢潡牤⽣潮瑥硴∻ਊ瑹灥⁄敳歴潰䵥摩捡汄慳桢潡牤偲潰猠㴠笊†捯湴數琺⁄慳桢潡牤䍯湴數琻ਠ⁳桯督慳效牥昺⁳瑲楮朻੽㬊੣潮獴⁦慬汢慣歃潵牳敳‽⁛ਠ⁻⁴楴汥㨠≁摶慮捥搠敮摯捲楮攠捡獥猢Ⱐ摥獣物灴楯渺•䥮瑥牡捴楶攠灩瑵楴慲礠慮搠慤牥湡氠摥捩獩潮⁴牥敳⸢Ⱐ瑡机•䍡獥猢Ⱐ桲敦㨠∯捡獥猢⁽Ⰺ†笠瑩瑬攺•䍬敲歳桩瀠獫楬汳⁲敦牥獨∬⁤敳捲楰瑩潮㨠≖楤敯⁲敦牥獨敲猠景爠体䍅⁳瑡瑩潮献∬⁴慧㨠≓歩汬猢Ⱐ桲敦㨠∯捯畲獥猯獫楬汳∠紬ਠ⁻⁴楴汥㨠≒慰楤⁰桡牭⁲敶楥眢Ⱐ摥獣物灴楯渺•䙬慳栠摲楬汳⁯渠敮摯捲楮攠瑨敲慰敵瑩捳⸢Ⱐ瑡机•䙬慳档慲摳∬⁨牥昺•⽦污獨捡牤猢⁽Ⰺ崻ਊ捯湳琠晡汬扡捫却慴猠㴠嬊†笠污扥氺•副瑡瑩潮猢Ⱐ癡汵攺•䕮摯捲楮攢Ⱐ浥瑡㨠∲⁷敥歳⁲敭慩湩湧∠紬ਠ⁻⁬慢敬㨠≗敥步湤⁰污渢Ⱐ癡汵攺•却畤礠橡洢Ⱐ浥瑡㨠≓慴‰㤺〰⁃䕔∠紬ਠ⁻⁬慢敬㨠≐敥爠牥灬楥猢Ⱐ癡汵攺•㔢Ⱐ浥瑡㨠≎敷⁴桩猠睥敫∠紬ਠ⁻⁬慢敬㨠≓瑲敡欢Ⱐ癡汵攺•㜠摡祳∬⁭整愺•⬱⁶猠污獴⁷敥欢⁽Ⰺ崻ਊ捯湳琠晡汬扡捫呩浥汩湥‽⁛ਠ⁻⁴楴汥㨠≐慴楥湴⁬潧⁵灤慴攢Ⱐ摥瑡楬㨠≓畢浩琠敮摯捲楮攠捬楮楣⁲敦汥捴楯湳⁢礠瑯湩杨琮∬⁳瑡瑵猺•慣瑩癥∠紬ਠ⁻⁴楴汥㨠≗慲搠牯畮搠灲数∬⁤整慩氺•剥癩敷⁰楴畩瑡特⁩浡杩湧⁴慬歩湧⁰潩湴献∬⁳瑡瑵猺•異捯浩湧∠紬ਠ⁻⁴楴汥㨠≍敮瑯爠捨散欭楮∬⁤整慩氺•卨慲攠瑷漠汥慲湩湧⁷楮猠晲潭⁴桥⁷敥欮∬⁳瑡瑵猺•異捯浩湧∠紬੝㬊੣潮獴⁦慬汢慣歁牴楣汥猠㴠嬊†笠瑩瑬攺•䡡湤ⵯ晦⁭慳瑥特∬⁥硣敲灴㨠≃桥捫汩獴⁴漠步数⁉䍕⁴牡湳晥牳⁣物獰⁡湤⁦物敮摬礮∬⁨牥昺•⽢汯术桡湤潦昭浡獴敲礢Ⱐ扡摧攺•佮⁴桥⁷慲摳∠紬ਠ⁻⁴楴汥㨠≅湥牧礠浡湡来浥湴⁦潲⁤潵扬攠獨楦瑳∬⁥硣敲灴㨠≌慹敲⁳瑵摹⁢汯捫猠睩瑨⁲散潶敲礠牯畴楮敳⸢Ⱐ桲敦㨠∯扬潧⽥湥牧礭浡湡来浥湴∬⁢慤来㨠≗敬汮敳猢⁽Ⰺ†笠瑩瑬攺•体䍅⁰敡牬猢Ⱐ數捥牰琺•䍯浭潮⁥湤潣物湥⁰楴晡汬猠慮搠桯眠瑯⁡癯楤⁴桥洮∬⁨牥昺•⽢汯术潳捥⵰敡牬猢Ⱐ扡摧攺•体䍅∠紬੝㬊੣潮獴⁦慬汢慣歃潭浵湩瑹‽⁛ਠ⁻⁴楴汥㨠≃潵牳攭浡瑥猠뜠䕮摯捲楮攢Ⱐ捡灴楯渺•ㄸ⁣潬汥慧略猠汩癥∬⁨牥昺•⽣潵牳攭浡瑥猢⁽Ⰺ†笠瑩瑬攺•䵥湴潲⁯晦楣攠桯畲猢Ⱐ捡灴楯渺•呯浯牲潷‱㠺〰ₗ⁢物湧⁣慳敳∬⁨牥昺•⽣潵牳攭浡瑥猯浥湴潲猢⁽Ⰺ†笠瑩瑬攺•健敲⁲敳潵牣敳∬⁣慰瑩潮㨠≁祡⁳桡牥搠愠污戠楮瑥牰牥瑡瑩潮⁣桥慴⁳桥整∬⁨牥昺•⽣潵牳攭浡瑥猯牥獯畲捥猢⁽Ⰺ崻ਊ數灯牴⁤敦慵汴⁦畮捴楯渠䑥獫瑯灍敤楣慬䑡獨扯慲搨笠捯湴數琬⁳桯督慳效牥映紺⁄敳歴潰䵥摩捡汄慳桢潡牤偲潰猩⁻ਠ⁣潮獴⁦物敮摬祎慭攠㴠畳敍敭漨⠩‽㸠笊††捯湳琠癡汵攠㴠捯湴數琮摩獰污祎慭攠㼿•晲楥湤∻ਠ†⁣潮獴⁦楲獴‽⁶慬略⹳灬楴⠯屳⬯⥛そ㼮瑲業⠩㬊††牥瑵牮⁦楲獴…☠晩牳琮汥湧瑨‾‰‿⁦楲獴›•晲楥湤∻ਠ⁽Ⱐ季潮瑥硴⹤楳灬慹乡浥崩㬊ਠ⁣潮獴⁳捨潯汓瑡瑵猠㴠⡣潮瑥硴⹳捨潯汓瑡瑵猠㼿•畮歮潷渢⤮瑯䱯睥牃慳攨⤻ਠ⁣潮獴⁳捨潯汌慢敬‽⁳捨潯汓瑡瑵猠㴽㴠≶敲楦楥搢‿•噥物晩敤∠㨠獣桯潬却慴畳‽㴽•灥湤楮朢‿•健湤楮朠癥物晩捡瑩潮∠㨠≕湶敲楦楥搢㬊ਠ⁲整畲渠⠊††㱤楶⁣污獳乡浥㴢牥污瑩癥⁭楮⵨⵳捲敥渠潶敲晬潷⵨楤摥渠执⵳污瑥ⴹ㔰⁴數琭睨楴攢㸊†††㱈潭敂慣此牯瀠⼾ਠ††‼摩瘠捬慳獎慭攽≲敬慴楶攠浸ⵡ畴漠晬數⁷ⵦ畬氠浡砭眭㝸氠晬數ⵣ潬⁧慰ⴸ⁰砭㘠灢ⴲ〠灴ⴱ〢㸊††††㱨敡摥爠捬慳獎慭攽≲潵湤敤ⵛ㌲灸崠执ⵧ牡摩敮琭瑯ⵢ爠晲潭ⵥ浥牡汤ⴶ〰⁶楡⵳歹ⴶ〰⁴漭楮摩杯ⴶ〰⁰ⴸ⁳桡摯眭嬰弳ば硟㠰灸彲杢愨ㄳⰱ㐸ⰱ㌶ⰰ⸳㔩崠物湧ⴱ⁲楮札睨楴支ㄵ∾ਠ††††‼摩瘠捬慳獎慭攽≦汥砠晬數ⵣ潬⁧慰ⴶ⁬机晬數⵲潷⁬机楴敭猭敮搠汧㩪畳瑩晹ⵢ整睥敮∾ਠ†††††‼摩瘠捬慳獎慭攽≭慸⵷ⴲ硬∾ਠ††††††‼瀠捬慳獎慭攽≴數琭硳⁵灰敲捡獥⁴牡捫楮札嬰⸴敭崠瑥硴⵷桩瑥⼶㔢㹍敤⁳捨潯氠摡獨扯慲搼⽰㸊†††††††㱨ㄠ捬慳獎慭攽≭琭㌠瑥硴ⴳ硬⁦潮琭獥浩扯汤⁬机瑥硴ⴴ硬∾坥汣潭攠扡捫Ⱐ筦物敮摬祎慭敽㰯栱㸊†††††††㱰⁣污獳乡浥㴢浴ⴳ⁴數琭獭⁴數琭睨楴支㠰∾坥⁡牥⁰牯瑯瑹灩湧⁴桩猠癩敷⁷楴栠灬慣敨潬摥爠摡瑡⸠卯潮⁹潵⁷楬氠獥攠祯畲⁬楶攠捯畲獥ⁱ略略Ⱐ捬敲歳桩瀠瑡獫猬⁡湤⁣潵牳攭浡瑥猠楮獩杨瑳⸼⽰㸊†††††††筣潮瑥硴⹮敥摳卣桯潬剥煵敳琠㼠⠊††††††††㱌楮權†††††††††桲敦㴢浡楬瑯㩨敬汯䁥湴敲浥摳捨潯氮捯洿獵扪散琽䅤搠浹⁭敤楣慬⁳捨潯氢ਠ††††††††⁣污獳乡浥㴢浴ⴴ⁩湬楮攭晬數⁩瑥浳ⵣ敮瑥爠橵獴楦礭捥湴敲⁲潵湤敤ⵦ畬氠执⵷桩瑥⁰砭㐠灹ⴲ⁴數琭獭⁦潮琭獥浩扯汤⁴數琭敭敲慬搭㘰〠獨慤潷⵬朢ਠ†††††††‾ਠ††††††††⁒敱略獴⁭礠獣桯潬ਠ†††††††‼⽌楮款ਠ†††††† ›⁮畬汽ਠ†††††‼⽤楶㸊††††††㱤楶⁣污獳乡浥㴢晬數⁦汥砭捯氠楴敭猭獴慲琠条瀭㌠汧㩩瑥浳ⵥ湤∾ਠ††††††‼摩瘠捬慳獎慭攽≲潵湤敤ⴳ硬⁢札睨楴支ㄵ⁰砭㐠灹ⴲ⁴數琭獭⁴數琭睨楴支㤰∾ਠ†††††††‼瀠捬慳獎慭攽≴數琭嬱ㅰ硝⁵灰敲捡獥⁴牡捫楮札睩摥⁴數琭睨楴支㘰∾卣桯潬⁳瑡瑵猼⽰㸊††††††††㱰⁣污獳乡浥㴢浴ⴱ⁴數琭獭⁦潮琭獥浩扯汤∾筳捨潯汌慢敬紼⽰㸊†††††††㰯摩瘾ਠ††††††‼䱩湫ਠ†††††††⁨牥昽筳桯督慳效牥晽ਠ†††††††⁣污獳乡浥㴢牯畮摥搭晵汬⁢潲摥爠扯牤敲⵷桩瑥⼴〠灸ⴳ⁰礭ㄠ瑥硴ⵛㄲ灸崠景湴⵳敭楢潬搠瑥硴⵷桩瑥⼹〠扡捫摲潰ⵢ汵爠瑲慮獩瑩潮⁨潶敲㩢札睨楴支㈰∊†††††††㸊††††††††卷楴捨⁴漠獨潷捡獥ਠ††††††‼⽌楮款ਠ†††††‼⽤楶㸊†††††㰯摩瘾ਠ†††‼⽨敡摥爾ਊ††††㱳散瑩潮⁣污獳乡浥㴢杲楤⁧慰ⴴ⁭携杲楤ⵣ潬猭㈠硬㩧物搭捯汳ⴴ∾ਠ††††⁻晡汬扡捫却慴献浡瀨⡳瑡琩‽㸠⠊††††††㱡牴楣汥⁫敹㵻獴慴⹬慢敬素捬慳獎慭攽≲潵湤敤ⵛ㈸灸崠扯牤敲⁢潲摥爭睨楴支㄰⁢札睨楴支㄰⁰ⴶ∾ਠ††††††‼瀠捬慳獎慭攽≴數琭嬱ㅰ硝⁵灰敲捡獥⁴牡捫楮札睩摥⁴數琭睨楴支㘵∾筳瑡琮污扥汽㰯瀾ਠ††††††‼瀠捬慳獎慭攽≭琭㌠瑥硴ⴲ硬⁦潮琭獥浩扯汤∾筳瑡琮癡汵敽㰯瀾ਠ††††††‼瀠捬慳獎慭攽≭琭ㄠ瑥硴⵳洠瑥硴⵷桩瑥⼷〢㹻獴慴⹭整慽㰯瀾ਠ†††††‼⽡牴楣汥㸊†††††⤩紊††††㰯獥捴楯渾ਊ††††㱳散瑩潮⁣污獳乡浥㴢杲楤⁧慰ⴶ⁬机杲楤ⵣ潬猭嬲晲ⰳ晲崢㸊†††††㱤楶⁣污獳乡浥㴢牯畮摥搭嬳㉰硝⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼱〠瀭㘢㸊††††††㱨敡摥爠捬慳獎慭攽≦汥砠楴敭猭捥湴敲⁪畳瑩晹ⵢ整睥敮∾ਠ††††††‼摩瘾ਠ†††††††‼瀠捬慳獎慭攽≴數琭嬱ㅰ硝⁵灰敲捡獥⁴牡捫楮札睩摥⁴數琭睨楴支㘰∾呩浥汩湥㰯瀾ਠ†††††††‼栲⁣污獳乡浥㴢瑥硴⵸氠景湴⵳敭楢潬搢㹏渠祯畲⁲慤慲㰯栲㸊†††††††㰯摩瘾ਠ††††††‼獰慮⁣污獳乡浥㴢牯畮摥搭晵汬⁢札睨楴支㄰⁰砭㌠灹ⴱ⁴數琭嬱ㅰ硝⁦潮琭獥浩扯汤⁴數琭睨楴支㠰∾偲敶楥眼⽳灡渾ਠ†††††‼⽨敡摥爾ਠ†††††‼潬⁣污獳乡浥㴢浴ⴴ⁳灡捥⵹ⴴ∾ਠ††††††⁻晡汬扡捫呩浥汩湥⹭慰⠨楴敭⤠㴾 ਠ†††††††‼汩⁫敹㵻楴敭⹴楴汥素捬慳獎慭攽≲潵湤敤ⴳ硬⁢潲摥爠扯牤敲⵷桩瑥⼱㈠执⵷桩瑥⼱〠瀭㐢㸊†††††††††㱤楶⁣污獳乡浥㴢晬數⁩瑥浳ⵣ敮瑥爠橵獴楦礭扥瑷敥渢㸊††††††††††㱰⁣污獳乡浥㴢景湴⵳敭楢潬搢㹻楴敭⹴楴汥紼⽰㸊††††††††††㱳灡渠捬慳獎慭攽≴數琭嬱ㅰ硝⁵灰敲捡獥⁴牡捫楮札睩摥⁴數琭睨楴支㘰∾筩瑥洮獴慴畳紼⽳灡渾ਠ††††††††‼⽤楶㸊†††††††††㱰⁣污獳乡浥㴢浴ⴲ⁴數琭獭⁴數琭睨楴支㜵∾筩瑥洮摥瑡楬紼⽰㸊††††††††㰯汩㸊†††††††⤩紊††††††㰯潬㸊†††††㰯摩瘾ਊ†††††㱤楶⁣污獳乡浥㴢牯畮摥搭嬳㉰硝⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼵⁰ⴶ∾ਠ†††††‼桥慤敲⁣污獳乡浥㴢晬數⁩瑥浳ⵣ敮瑥爠橵獴楦礭扥瑷敥渢㸊†††††††㱤楶㸊††††††††㱰⁣污獳乡浥㴢瑥硴ⵛㄱ灸崠異灥牣慳攠瑲慣歩湧⵷楤攠瑥硴⵷桩瑥⼶〢㹃潵牳敳…⁴潯汳㰯瀾ਠ†††††††‼栲⁣污獳乡浥㴢瑥硴⵸氠景湴⵳敭楢潬搢㹓瑲敮杴桥渠祯畲⁳歩汬猼⽨㈾ਠ††††††‼⽤楶㸊†††††††㱌楮欠桲敦㴢⽣潵牳敳∠捬慳獎慭攽≲潵湤敤ⵦ畬氠执⵷桩瑥⼱〠灸ⴳ⁰礭ㄠ瑥硴ⵛㄱ灸崠景湴⵳敭楢潬搠瑥硴⵷桩瑥∾䉲潷獥⁡汬㰯䱩湫㸊††††††㰯桥慤敲㸊††††††㱤楶⁣污獳乡浥㴢浴ⴴ⁳灡捥⵹ⴴ∾ਠ††††††⁻晡汬扡捫䍯畲獥献浡瀨⡣潵牳攩‽㸠⠊††††††††㱌楮欠步礽筣潵牳攮瑩瑬敽⁨牥昽筣潵牳攮桲敦素捬慳獎慭攽≢汯捫⁲潵湤敤ⴳ硬⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼱〠瀭㐠瑲慮獩瑩潮⁨潶敲㩢潲摥爭睨楴支㌰⁨潶敲㩢札睨楴支㈰∾ਠ††††††††‼摩瘠捬慳獎慭攽≦汥砠楴敭猭捥湴敲⁪畳瑩晹ⵢ整睥敮∾ਠ†††††††††‼瀠捬慳獎慭攽≴數琭汧⁦潮琭獥浩扯汤∾筣潵牳攮瑩瑬敽㰯瀾ਠ†††††††††‼獰慮⁣污獳乡浥㴢牯畮摥搭晵汬⁢札睨楴支ㄵ⁰砭㌠灹ⴱ⁴數琭嬱ㅰ硝⁦潮琭獥浩扯汤⁴數琭睨楴支㠵∾筣潵牳攮瑡杽㰯獰慮㸊†††††††††㰯摩瘾ਠ††††††††‼瀠捬慳獎慭攽≭琭㈠瑥硴⵳洠瑥硴⵷桩瑥⼷㔢㹻捯畲獥⹤敳捲楰瑩潮紼⽰㸊††††††††㰯䱩湫㸊†††††††⤩紊††††††㰯摩瘾ਠ††††‼⽤楶㸊††††㰯獥捴楯渾ਊ††††㱳散瑩潮⁣污獳乡浥㴢杲楤⁧慰ⴶ⁬机杲楤ⵣ潬猭嬲晲ⰲ晲ⰳ晲崢㸊†††††㱤楶⁣污獳乡浥㴢牯畮摥搭嬳㉰硝⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼵⁰ⴶ∾ਠ†††††‼瀠捬慳獎慭攽≴數琭嬱ㅰ硝⁵灰敲捡獥⁴牡捫楮札睩摥⁴數琭睨楴支㘰∾䍯浭畮楴礼⽰㸊††††††㱨㈠捬慳獎慭攽≭琭㈠瑥硴⵸氠景湴⵳敭楢潬搢㹐畬獥⁦牯洠祯畲⁰敥牳㰯栲㸊††††††㱤楶⁣污獳乡浥㴢浴ⴴ⁳灡捥⵹ⴴ∾ਠ††††††⁻晡汬扡捫䍯浭畮楴礮浡瀨⡣慲搩‽㸠⠊††††††††㱌楮欠步礽筣慲搮瑩瑬敽⁨牥昽筣慲搮桲敦素捬慳獎慭攽≢汯捫⁲潵湤敤ⴳ硬⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼱〠瀭㐠瑥硴⵳洠瑲慮獩瑩潮⁨潶敲㩢潲摥爭睨楴支㌰⁨潶敲㩢札睨楴支㈰∾ਠ††††††††‼瀠捬慳獎慭攽≴數琭扡獥⁦潮琭獥浩扯汤∾筣慲搮瑩瑬敽㰯瀾ਠ††††††††‼瀠捬慳獎慭攽≭琭㈠瑥硴⵳洠瑥硴⵷桩瑥⼷㔢㹻捡牤⹣慰瑩潮紼⽰㸊††††††††㰯䱩湫㸊†††††††⤩紊††††††㰯摩瘾ਠ††††‼⽤楶㸊ਠ††††‼摩瘠捬慳獎慭攽≲潵湤敤ⵛ㌲灸崠扯牤敲⁢潲摥爭睨楴支㄰⁢札睨楴支㄰⁰ⴶ∾ਠ†††††‼瀠捬慳獎慭攽≴數琭嬱ㅰ硝⁵灰敲捡獥⁴牡捫楮札睩摥⁴數琭睨楴支㘰∾坥汬湥獳…⁣桥捫猼⽰㸊††††††㱨㈠捬慳獎慭攽≭琭㈠瑥硴⵸氠景湴⵳敭楢潬搢㹋敥瀠扡污湣敤㰯栲㸊††††††㱵氠捬慳獎慭攽≭琭㐠獰慣攭礭㌠瑥硴⵳洠瑥硴⵷桩瑥⼷㔢㸊†††††††㱬椠捬慳獎慭攽≲潵湤敤ⴳ硬⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼵⁰ⴳ∾䱯朠祯畲⁳汥数⁨潵牳⁦潲⁴桩猠睥敫⸼⽬椾ਠ††††††‼汩⁣污獳乡浥㴢牯畮摥搭㍸氠扯牤敲⁢潲摥爭睨楴支㄰⁢札睨楴支㔠瀭㌢㹓捨敤畬攠愠浩捲漭扲敡欠慦瑥爠瑯浯牲潷♡灯猻猠汯湧⁣慳攮㰯汩㸊†††††††㱬椠捬慳獎慭攽≲潵湤敤ⴳ硬⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼵⁰ⴳ∾卨慲攠潮攠汥慲湩湧⁷楮⁷楴栠祯畲⁭敮瑯爮㰯汩㸊††††††㰯畬㸊†††††㰯摩瘾ਊ†††††㱤楶⁣污獳乡浥㴢牯畮摥搭嬳㉰硝⁢潲摥爠扯牤敲⵷桩瑥⼱〠执⵷桩瑥⼵⁰ⴶ∾ਠ†††††‼桥慤敲⁣污獳乡浥㴢晬數⁩瑥浳ⵣ敮瑥爠橵獴楦礭扥瑷敥渢㸊†††††††㱤楶㸊††††††††㱰⁣污獳乡浥㴢瑥硴ⵛㄱ灸崠異灥牣慳攠瑲慣歩湧⵷楤攠瑥硴⵷桩瑥⼶〢㹁牴楣汥猼⽰㸊††††††††㱨㈠捬慳獎慭攽≴數琭硬⁦潮琭獥浩扯汤∾坨慴⁴漠牥慤⁮數琼⽨㈾ਠ††††††‼⽤楶㸊†††††††㱌楮欠桲敦㴢⽢汯朢⁣污獳乡浥㴢牯畮摥搭晵汬⁢札睨楴支㄰⁰砭㌠灹ⴱ⁴數琭嬱ㅰ硝⁦潮琭獥浩扯汤⁴數琭睨楴攢㹂汯朼⽌楮款ਠ†††††‼⽨敡摥爾ਠ†††††‼摩瘠捬慳獎慭攽≭琭㐠獰慣攭礭㌢㸊†††††††筦慬汢慣歁牴楣汥献浡瀨⡡牴楣汥⤠㴾 ਠ†††††††‼䱩湫⁫敹㵻慲瑩捬攮瑩瑬敽⁨牥昽筡牴楣汥⹨牥晽⁣污獳乡浥㴢扬潣欠牯畮摥搭㍸氠扯牤敲⁢潲摥爭睨楴支㄰⁢札睨楴支㄰⁰ⴴ⁴數琭獭⁴牡湳楴楯渠桯癥爺扯牤敲⵷桩瑥⼳〠桯癥爺执⵷桩瑥⼲〢㸊†††††††††㱳灡渠捬慳獎慭攽≲潵湤敤ⵦ畬氠执⵷桩瑥⼱〠灸ⴲ⁰礭ㄠ瑥硴ⵛㄱ灸崠景湴⵳敭楢潬搠瑥硴⵷桩瑥⼸〢㹻慲瑩捬攮扡摧敽㰯獰慮㸊†††††††††㱰⁣污獳乡浥㴢浴ⴲ⁴數琭扡獥⁦潮琭獥浩扯汤∾筡牴楣汥⹴楴汥紼⽰㸊†††††††††㱰⁣污獳乡浥㴢浴ⴲ⁴數琭獭⁴數琭睨楴支㜰∾筡牴楣汥⹥硣敲灴紼⽰㸊††††††††㰯䱩湫㸊†††††††⤩紊††††††㰯摩瘾ਠ††††‼⽤楶㸊††††㰯獥捴楯渾ਊ††††㱰⁣污獳乡浥㴢灢ⴸ⁴數琭捥湴敲⁴數琭嬱㉰硝⁴數琭睨楴支㘰∾偲敶楥眠楮瑥牦慣攠霠汩癥⁭敤⁳捨潯氠摡瑡⁷楬氠慲物癥⁳潯渮㰯瀾ਠ††‼⽤楶㸊††㰯摩瘾ਠ 㬊納਍਀
+"use client";
+
+import Link from "next/link";
+import { useMemo } from "react";
+
+import HomeBackdrop from "@/components/home/HomeBackdrop";
+import type { DashboardContext } from "@/lib/dashboard/context";
+
+type DesktopMedicalDashboardProps = {
+  context: DashboardContext;
+  showcaseHref: string;
+};
+
+const fallbackCourses = [
+  { title: "Advanced endocrine cases", description: "Interactive pituitary and adrenal decision trees.", tag: "Cases", href: "/cases" },
+  { title: "Clerkship skills refresh", description: "Video refreshers for OSCE stations.", tag: "Skills", href: "/courses/skills" },
+  { title: "Rapid pharm review", description: "Flash drills on endocrine therapeutics.", tag: "Flashcards", href: "/flashcards" },
+];
+
+const fallbackStats = [
+  { label: "Rotations", value: "Endocrine", meta: "2 weeks remaining" },
+  { label: "Weekend plan", value: "Study jam", meta: "Sat 09:00 CET" },
+  { label: "Peer replies", value: "5", meta: "New this week" },
+  { label: "Streak", value: "7 days", meta: "+1 vs last week" },
+];
+
+const fallbackTimeline = [
+  { title: "Patient log update", detail: "Submit endocrine clinic reflections by tonight.", status: "active" },
+  { title: "Ward round prep", detail: "Review pituitary imaging talking points.", status: "upcoming" },
+  { title: "Mentor check-in", detail: "Share two learning wins from the week.", status: "upcoming" },
+];
+
+const fallbackArticles = [
+  { title: "Hand-off mastery", excerpt: "Checklist to keep ICU transfers crisp and friendly.", href: "/blog/handoff-mastery", badge: "On the wards" },
+  { title: "Energy management for double shifts", excerpt: "Layer study blocks with recovery routines.", href: "/blog/energy-management", badge: "Wellness" },
+  { title: "OSCE pearls", excerpt: "Common endocrine pitfalls and how to avoid them.", href: "/blog/osce-pearls", badge: "OSCE" },
+];
+
+const fallbackCommunity = [
+  { title: "Course-mates - Endocrine", caption: "18 colleagues live", href: "/course-mates" },
+  { title: "Mentor office hours", caption: "Tomorrow 18:00 - bring cases", href: "/course-mates/mentors" },
+  { title: "Peer resources", caption: "Aya shared a lab interpretation cheat sheet", href: "/course-mates/resources" },
+];
+
+export default function DesktopMedicalDashboard({ context, showcaseHref }: DesktopMedicalDashboardProps) {
+  const friendlyName = useMemo(() => {
+    const value = context.displayName ?? "friend";
+    const first = value.split(/\s+/)[0]?.trim();
+    return first && first.length > 0 ? first : "friend";
+  }, [context.displayName]);
+
+  const schoolStatus = (context.schoolStatus ?? "unknown").toLowerCase();
+  const schoolLabel = schoolStatus === "verified" ? "Verified" : schoolStatus === "pending" ? "Pending verification" : "Unverified";
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <HomeBackdrop />
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 pb-20 pt-10">
+        <header className="rounded-[32px] bg-gradient-to-br from-emerald-600 via-sky-600 to-indigo-600 p-8 shadow-[0_30px_80px_rgba(13,148,136,0.35)] ring-1 ring-white/15">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs uppercase tracking-[0.4em] text-white/65">Med school dashboard</p>
+              <h1 className="mt-3 text-3xl font-semibold lg:text-4xl">Welcome back, {friendlyName}</h1>
+              <p className="mt-3 text-sm text-white/80">We are prototyping this view with placeholder data. Soon you will see your live course queue, clerkship tasks, and course-mates insights.</p>
+              {context.needsSchoolRequest ? (
+                <Link
+                  href="mailto:hello@entermedschool.com?subject=Add my medical school"
+                  className="mt-4 inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-600 shadow-lg"
+                >
+                  Request my school
+                </Link>
+              ) : null}
+            </div>
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              <div className="rounded-3xl bg-white/15 px-4 py-2 text-sm text-white/90">
+                <p className="text-[11px] uppercase tracking-wide text-white/60">School status</p>
+                <p className="mt-1 text-sm font-semibold">{schoolLabel}</p>
+              </div>
+              <Link
+                href={showcaseHref}
+                className="rounded-full border border-white/40 px-3 py-1 text-[12px] font-semibold text-white/90 backdrop-blur transition hover:bg-white/20"
+              >
+                Switch to showcase
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {fallbackStats.map((stat) => (
+            <article key={stat.label} className="rounded-[28px] border border-white/10 bg-white/10 p-6">
+              <p className="text-[11px] uppercase tracking-wide text-white/65">{stat.label}</p>
+              <p className="mt-3 text-2xl font-semibold">{stat.value}</p>
+              <p className="mt-1 text-sm text-white/70">{stat.meta}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[2fr,3fr]">
+          <div className="rounded-[32px] border border-white/10 bg-white/10 p-6">
+            <header className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-white/60">Timeline</p>
+                <h2 className="text-xl font-semibold">On your radar</h2>
+              </div>
+              <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/80">Preview</span>
+            </header>
+            <ol className="mt-4 space-y-4">
+              {fallbackTimeline.map((item) => (
+                <li key={item.title} className="rounded-3xl border border-white/12 bg-white/10 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">{item.title}</p>
+                    <span className="text-[11px] uppercase tracking-wide text-white/60">{item.status}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-white/75">{item.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="rounded-[32px] border border-white/10 bg-white/5 p-6">
+            <header className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-white/60">Courses & tools</p>
+                <h2 className="text-xl font-semibold">Strengthen your skills</h2>
+              </div>
+              <Link href="/courses" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white">Browse all</Link>
+            </header>
+            <div className="mt-4 space-y-4">
+              {fallbackCourses.map((course) => (
+                <Link key={course.title} href={course.href} className="block rounded-3xl border border-white/10 bg-white/10 p-4 transition hover:border-white/30 hover:bg-white/20">
+                  <div className="flex items-center justify-between">
+                    <p className="text-lg font-semibold">{course.title}</p>
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold text-white/85">{course.tag}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-white/75">{course.description}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[2fr,2fr,3fr]">
+          <div className="rounded-[32px] border border-white/10 bg-white/5 p-6">
+            <p className="text-[11px] uppercase tracking-wide text-white/60">Community</p>
+            <h2 className="mt-2 text-xl font-semibold">Pulse from your peers</h2>
+            <div className="mt-4 space-y-4">
+              {fallbackCommunity.map((card) => (
+                <Link key={card.title} href={card.href} className="block rounded-3xl border border-white/10 bg-white/10 p-4 text-sm transition hover:border-white/30 hover:bg-white/20">
+                  <p className="text-base font-semibold">{card.title}</p>
+                  <p className="mt-2 text-sm text-white/75">{card.caption}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[32px] border border-white/10 bg-white/10 p-6">
+            <p className="text-[11px] uppercase tracking-wide text-white/60">Wellness & checks</p>
+            <h2 className="mt-2 text-xl font-semibold">Keep balanced</h2>
+            <ul className="mt-4 space-y-3 text-sm text-white/75">
+              <li className="rounded-3xl border border-white/10 bg-white/5 p-3">Log your sleep hours for this week.</li>
+              <li className="rounded-3xl border border-white/10 bg-white/5 p-3">Schedule a micro-break after tomorrow&apos;s long case.</li>
+              <li className="rounded-3xl border border-white/10 bg-white/5 p-3">Share one learning win with your mentor.</li>
+            </ul>
+          </div>
+
+          <div className="rounded-[32px] border border-white/10 bg-white/5 p-6">
+            <header className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-white/60">Articles</p>
+                <h2 className="text-xl font-semibold">What to read next</h2>
+              </div>
+              <Link href="/blog" className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white">Blog</Link>
+            </header>
+            <div className="mt-4 space-y-3">
+              {fallbackArticles.map((article) => (
+                <Link key={article.title} href={article.href} className="block rounded-3xl border border-white/10 bg-white/10 p-4 text-sm transition hover:border-white/30 hover:bg-white/20">
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/80">{article.badge}</span>
+                  <p className="mt-2 text-base font-semibold">{article.title}</p>
+                  <p className="mt-2 text-sm text-white/70">{article.excerpt}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <p className="pb-8 text-center text-[12px] text-white/60">Preview interface - live med school data will arrive soon.</p>
+      </div>
+    </div>
+  );
+}
+
+

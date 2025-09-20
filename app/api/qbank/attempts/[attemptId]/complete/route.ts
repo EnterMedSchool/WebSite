@@ -25,32 +25,37 @@ export async function POST(req: Request, { params }: { params: { attemptId: stri
   }
 
   const rawResponses: any[] = Array.isArray(payload?.responses) ? payload.responses : [];
-  const responses: AttemptResponseInput["responses"] = rawResponses
-    .map((entry) => {
-      if (!entry || typeof entry !== "object") return null;
-      const itemId = Number((entry as any).attemptItemId);
-      if (!Number.isFinite(itemId) || itemId <= 0) return null;
-      const selectedOptionIds = Array.isArray(entry.selectedOptionIds)
-        ? entry.selectedOptionIds
-            .map((value: unknown) => Number(value))
-            .filter((value) => Number.isFinite(value) && value > 0)
-        : undefined;
-      const selectedOptionValues = Array.isArray(entry.selectedOptionValues)
-        ? entry.selectedOptionValues.map((value: unknown) => String(value))
-        : undefined;
-      const confidenceLevel = entry.confidenceLevel != null ? Number(entry.confidenceLevel) : null;
-      const timeSpentMs = entry.timeSpentMs != null ? Number(entry.timeSpentMs) : null;
-      const whyResponse = typeof entry.whyResponse === "string" ? entry.whyResponse : undefined;
-      return {
-        attemptItemId: itemId,
-        selectedOptionIds,
-        selectedOptionValues,
-        confidenceLevel,
-        timeSpentMs,
-        whyResponse,
-      };
-    })
-    .filter((entry): entry is AttemptResponseInput["responses"][number] => Boolean(entry));
+  const responses: AttemptResponseInput["responses"] = rawResponses.reduce<AttemptResponseInput["responses"]>((acc, entry) => {
+    if (!entry || typeof entry !== "object") {
+      return acc;
+    }
+    const itemId = Number((entry as any).attemptItemId);
+    if (!Number.isFinite(itemId) || itemId <= 0) {
+      return acc;
+    }
+    const selectedOptionIds = Array.isArray(entry.selectedOptionIds)
+      ? entry.selectedOptionIds
+          .map((value: unknown) => Number(value))
+          .filter((value: number) => Number.isFinite(value) && value > 0)
+      : undefined;
+    const selectedOptionValues = Array.isArray(entry.selectedOptionValues)
+      ? entry.selectedOptionValues.map((value: unknown) => String(value))
+      : undefined;
+    const confidenceLevel = entry.confidenceLevel != null ? Number(entry.confidenceLevel) : null;
+    const timeSpentMs = entry.timeSpentMs != null ? Number(entry.timeSpentMs) : null;
+    const whyResponse = typeof entry.whyResponse === "string" ? entry.whyResponse : undefined;
+
+    acc.push({
+      attemptItemId: itemId,
+      selectedOptionIds,
+      selectedOptionValues,
+      confidenceLevel,
+      timeSpentMs,
+      whyResponse,
+    });
+
+    return acc;
+  }, []);
 
   const startedAtMs = payload?.startedAt ? Number(payload.startedAt) : undefined;
   const completedAtMs = payload?.completedAt ? Number(payload.completedAt) : undefined;
@@ -74,3 +79,4 @@ export async function POST(req: Request, { params }: { params: { attemptId: stri
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }
+

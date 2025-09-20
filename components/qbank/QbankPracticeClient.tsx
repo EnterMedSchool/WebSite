@@ -195,7 +195,7 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
   }
 
   const activeQuestion = attempt?.questions[currentIndex];
-  const activeDetail = activeQuestion ? detailByItemId.get(activeQuestion.attemptItemId) : null;
+  const activeDetail = activeQuestion ? detailByItemId.get(activeQuestion.attemptItemId) : undefined;
 
   return (
     <div className="space-y-8">
@@ -228,7 +228,7 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
               <option value="">All topics</option>
               {topicOptions.map((topic) => (
                 <option key={topic.slug} value={topic.slug}>
-                  {topic.sectionName ? `${topic.sectionName} — ${topic.title}` : topic.title}
+                  {topic.sectionName ? `${topic.sectionName} - ${topic.title}` : topic.title}
                 </option>
               ))}
             </select>
@@ -253,7 +253,7 @@ export default function QbankPracticeClient({ exam, sections, looseTopics, isLog
             disabled={status === "loading"}
             className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300 sm:w-auto"
           >
-            {status === "loading" ? "Preparing…" : "Start practice"}
+            {status === "loading" ? "Preparing..." : "Start practice"}
           </button>
         </div>
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
@@ -380,7 +380,7 @@ function QuestionCard({
           <div className="flex items-center justify-between text-sm text-emerald-800">
             <span>{detail.isCorrect ? "Correct" : "Not quite yet"}</span>
             <span>
-              {detail.correctOptionIds.length > 1 ? "Correct answers" : "Correct answer"}: {detail.correctOptionIds.length || detail.correctOptionValues.length ? formatAnswerList(detail, question) : "—"}
+              {detail.correctOptionIds.length > 1 ? "Correct answers" : "Correct answer"}: {detail.correctOptionIds.length || detail.correctOptionValues.length ? formatAnswerList(detail, question) : "-"}
             </span>
           </div>
           {question.explanations.length ? (
@@ -589,3 +589,4 @@ function humanizeError(code: string) {
       return "Something went wrong. Please try again.";
   }
 }
+

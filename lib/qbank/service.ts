@@ -391,7 +391,7 @@ export async function completePracticeAttempt({
 
     const seed = (item.promptSeed as any) ?? {};
     const correctIds: number[] = Array.isArray(seed.correctOptionIds)
-      ? seed.correctOptionIds.map((value: any) => Number(value)).filter((value) => Number.isFinite(value))
+      ? seed.correctOptionIds.map((value: any) => Number(value)).filter((value: number) => Number.isFinite(value))
       : [];
     const correctValues: string[] = Array.isArray(seed.correctOptionValues)
       ? seed.correctOptionValues.map((value: any) => String(value))
@@ -464,7 +464,6 @@ export async function completePracticeAttempt({
             whyResponse: update.whyResponse ?? null,
             timeSpentMs: update.timeSpentMs ?? null,
             metadata: update.metadata ?? {},
-            updatedAt: new Date(),
           })
           .where(eq(qbankAttemptItems.id, update.id as number));
       }
@@ -591,8 +590,4 @@ function shuffle<T>(input: T[]): T[] {
   }
   return input;
 }
-
-
-
-
 

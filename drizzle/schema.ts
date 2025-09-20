@@ -1,13 +1,16 @@
-﻿import {
+import {
   pgTable,
   serial,
   integer,
+  smallint,
   varchar,
   text,
   boolean,
+  date,
   timestamp,
   jsonb,
   index,
+  foreignKey,
   doublePrecision,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -1381,7 +1384,7 @@ export const qbankTopics = pgTable(
       .references(() => qbankExams.id, { onDelete: "cascade" })
       .notNull(),
     sectionId: integer("section_id").references(() => qbankSections.id, { onDelete: "set null" }),
-    parentTopicId: integer("parent_topic_id").references(() => qbankTopics.id, { onDelete: "cascade" }),
+    parentTopicId: integer("parent_topic_id"),
     slug: varchar("slug", { length: 120 }).notNull(),
     title: varchar("title", { length: 200 }).notNull(),
     blueprintCode: varchar("blueprint_code", { length: 120 }),
@@ -1395,6 +1398,10 @@ export const qbankTopics = pgTable(
     sectionIdx: index("qbank_topics_section_idx").on(table.sectionId, table.orderIndex),
     parentIdx: index("qbank_topics_parent_idx").on(table.parentTopicId, table.orderIndex),
     blueprintIdx: index("qbank_topics_blueprint_idx").on(table.blueprintCode),
+    parentTopicFk: foreignKey({
+      columns: [table.parentTopicId],
+      foreignColumns: [table.id],
+    }).onDelete("cascade"),
   })
 );
 
@@ -1819,3 +1826,4 @@ export const qbankUserSettings = pgTable("qbank_user_settings", {
   syncState: jsonb("sync_state").default(sql`'{}'::jsonb`),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
