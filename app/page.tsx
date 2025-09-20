@@ -47,21 +47,11 @@ export default async function HomePage({ searchParams = {} }: PageProps) {
   const shouldSync = desiredCookie !== cookieOverride;
 
   if (shouldShowShowcase) {
-    if (platform === "mobile") {
-      const MobileHome = (await import("@/components/home/mobile/MobileHome")).default;
-      return (
-        <>
-          {shouldSync ? <PlatformCookieSync cookieKey={cookieKey} desired={desiredCookie} /> : null}
-          <MobileHome />
-        </>
-      );
-    }
-
-    const DesktopHome = (await import("@/components/home/desktop/DesktopHome")).default;
+    const ShowcaseHome = (await import("@/components/home/desktop/DesktopHome")).default;
     return (
       <>
         {shouldSync ? <PlatformCookieSync cookieKey={cookieKey} desired={desiredCookie} /> : null}
-        <DesktopHome />
+        <ShowcaseHome />
         {onboardingContext ? <OnboardingRoot context={onboardingContext} /> : null}
       </>
     );
